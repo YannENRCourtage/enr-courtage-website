@@ -1,59 +1,118 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { ExternalLink, Users, Zap, TrendingUp, Shield, Home, Building, ShoppingCart, HeartPulse } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import HowItWorksSection from '@/components/HowItWorksSection';
+import { Sun, BatteryCharging, TrendingDown, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
 
 const AutoconsommationSection = () => {
   const advantages = [
-    { icon: <Users className="h-8 w-8 text-blue-600" />, title: "Mutualisation des coûts", description: "Partagez les investissements et réduisez vos coûts énergétiques" },
-    { icon: <Zap className="h-8 w-8 text-green-600" />, title: "Énergie locale", description: "Consommez l'énergie produite localement et réduisez les pertes" },
-    { icon: <TrendingUp className="h-8 w-8 text-purple-600" />, title: "Rentabilité optimisée", description: "Maximisez votre retour sur investissement énergétique" },
-    { icon: <Shield className="h-8 w-8 text-orange-600" />, title: "Sécurité énergétique", description: "Garantissez votre approvisionnement énergétique durable" }
+    { 
+      icon: <Sun className="h-7 w-7" />, 
+      title: "Production sur site", 
+      description: "Installez une centrale solaire photovoltaïque directement sur votre toiture ou au sol et produisez votre propre électricité verte.",
+      accent: "#d4a843"
+    },
+    { 
+      icon: <TrendingDown className="h-7 w-7" />, 
+      title: "Réduction de facture", 
+      description: "Diminuez votre facture d'électricité de 30 à 70% en consommant directement l'énergie que vous produisez.",
+      accent: "#0f9b8e"
+    },
+    { 
+      icon: <BatteryCharging className="h-7 w-7" />, 
+      title: "Avec ou sans batterie", 
+      description: "Optimisez votre taux d'autoconsommation grâce à un système de stockage par batterie pour utiliser votre énergie même la nuit.",
+      accent: "#6366f1"
+    },
+    { 
+      icon: <Shield className="h-7 w-7" />, 
+      title: "Sécurité énergétique", 
+      description: "Protégez-vous contre la hausse des prix de l'électricité et sécurisez votre approvisionnement énergétique sur le long terme.",
+      accent: "#2563eb"
+    }
   ];
 
-  const examples = [
-    { icon: <Home className="h-10 w-10 text-blue-500" />, bgColor: 'bg-blue-100', title: 'Particulier', subtitle: 'Famille de 4 personnes', consumption: '4 500 kWh/an', savings: '~ 180 €', percentage: '~ 17 % d\'économies', btnColor: 'bg-gradient-to-r from-blue-400 to-cyan-400' },
-    { icon: <Building className="h-10 w-10 text-purple-500" />, bgColor: 'bg-purple-100', title: 'Entreprise', subtitle: 'PME de 20 salariés', consumption: '25 000 kWh/an', savings: '~ 1000 €', percentage: '~ 17 % d\'économies', btnColor: 'bg-gradient-to-r from-purple-400 to-pink-400' },
-    { icon: <ShoppingCart className="h-10 w-10 text-orange-500" />, bgColor: 'bg-orange-100', title: 'Commerce', subtitle: 'Boulangerie', consumption: '15 000 kWh/an', savings: '~ 600 €', percentage: '~ 17 % d\'économies', btnColor: 'bg-gradient-to-r from-orange-400 to-red-400' },
-    { icon: <HeartPulse className="h-10 w-10 text-green-500" />, bgColor: 'bg-green-100', title: 'Établissement de santé', subtitle: 'EHPAD, clinique...', consumption: '180 000 kWh/an', savings: '~ 3600 €', percentage: '~ 10 % d\'économies', btnColor: 'bg-gradient-to-r from-green-400 to-emerald-400' }
+  const features = [
+    "Étude de dimensionnement personnalisée",
+    "Installation clé en main par nos partenaires certifiés",
+    "Formule en abonnement : aucun investissement initial",
+    "Monitoring de production en temps réel",
+    "Maintenance et garantie incluses",
+    "Accompagnement administratif complet"
   ];
+
+  const fadeInUp = {
+    hidden: { opacity: 0, y: 30 },
+    visible: (i) => ({
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, delay: i * 0.1, ease: "easeOut" }
+    })
+  };
 
   return (
-    <div className="bg-gray-50">
-      {/* Top Section with White Background */}
-      <section className="py-20 bg-white" aria-labelledby="acc-title">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-16">
-            <h2 id="acc-title" className="text-4xl font-bold text-gray-900 mb-6">Autoconsommation Collective</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Découvrez les avantages de l'autoconsommation collective (ACC) et rejoignez une communauté énergétique durable et économique.
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="section-padding bg-white" aria-labelledby="acc-title">
+        <div className="max-w-7xl mx-auto container-padding">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.8 }} 
+            className="text-center mb-20"
+          >
+            <p className="text-sm uppercase tracking-[0.2em] text-[#d4a843] font-semibold mb-4">Notre solution</p>
+            <h2 id="acc-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
+              Autoconsommation Solaire
+            </h2>
+            <p className="text-lg text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
+              Produisez votre propre électricité grâce à une centrale solaire photovoltaïque installée sur votre site. 
+              Réduisez votre facture énergétique sans investissement initial grâce à notre formule en abonnement.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
               <img
-                className="w-full h-96 object-cover rounded-xl shadow-[0_25px_50px_-12px_rgba(0,0,0,0.25)] transform hover:scale-105 transition-transform duration-300"
-                alt="Projet d'autoconsommation collective"
-                src="https://images.unsplash.com/photo-1677938438353-3df2b797568a"
+                className="w-full h-[450px] object-cover rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)]"
+                alt="Installation de panneaux solaires en autoconsommation"
+                src="https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1200"
                 width="1200" height="600" loading="lazy" decoding="async"
               />
             </motion.div>
 
-            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.4 }} className="space-y-6">
-              <h3 className="text-2xl font-semibold text-gray-900">Qu'est-ce que l'Autoconsommation Collective ?</h3>
-              <p className="text-gray-600 leading-relaxed">
-                L'autoconsommation collective permet à plusieurs consommateurs de partager l'électricité produite par une ou plusieurs installations de production d'énergies renouvelables. Elle optimise l'utilisation de l'énergie locale et réduit significativement les coûts.
-              </p>
-              <p className="text-gray-600 leading-relaxed">Un système gagnant-gagnant : le producteur valorise son énergie, le consommateur bénéficie d'une électricité verte et moins chère.</p>
-              <div className="text-right">
-                <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white text-center"
-                  onClick={() => window.open('https://mapartdesoleil.fr/', '_blank', 'noopener,noreferrer')}>
-                  Découvrir les projets sur<br/>mapartdesoleil.fr
-                  <ExternalLink className="ml-2 h-5 w-5" />
-                </Button>
+            <motion.div 
+              initial={{ opacity: 0, x: 30 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ duration: 0.8, delay: 0.4 }} 
+              className="space-y-8"
+            >
+              <div>
+                <h3 className="text-2xl font-bold text-[#0f2847] mb-4">
+                  Produisez et consommez votre propre énergie
+                </h3>
+                <p className="text-gray-500 leading-relaxed text-base">
+                  L'autoconsommation solaire vous permet de produire l'électricité dont vous avez besoin directement sur votre site. 
+                  Grâce à l'installation d'une centrale photovoltaïque sur votre toiture, parking ou terrain, vous consommez 
+                  une énergie propre et locale, tout en maîtrisant vos coûts énergétiques.
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 leading-relaxed text-base">
+                  Avec ou sans batterie de stockage, notre solution s'adapte à votre profil de consommation. 
+                  Le surplus d'énergie peut être revendu sur le réseau, générant des revenus complémentaires pour votre activité.
+                </p>
+              </div>
+
+              {/* Subscription highlight */}
+              <div className="bg-gradient-to-br from-[#0f2847] to-[#1a3a5c] rounded-2xl p-6 text-white">
+                <h4 className="text-lg font-bold mb-2">Formule Abonnement</h4>
+                <p className="text-white/70 text-sm leading-relaxed">
+                  Aucun investissement initial. Nous finançons, installons et maintenons votre centrale solaire. 
+                  Vous payez un abonnement mensuel fixe, inférieur à votre ancienne facture d'électricité.
+                </p>
               </div>
             </motion.div>
           </div>
@@ -61,69 +120,105 @@ const AutoconsommationSection = () => {
       </section>
 
       {/* Avantages Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-50 to-purple-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="mb-8">
-            <h3 className="text-3xl font-semibold text-center text-gray-900 mb-12">Les avantages de l'ACC</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {advantages.map((advantage, index) => (
-                <Card key={index} className="card-hover bg-white border-none shadow-lg">
-                  <CardHeader className="text-center pb-2">
-                    <div className="mx-auto mb-4 bg-gray-50 p-4 rounded-full">{advantage.icon}</div>
-                    <CardTitle className="text-lg text-gray-900">{advantage.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent><p className="text-gray-600 text-center text-sm leading-relaxed">{advantage.description}</p></CardContent>
-                </Card>
-              ))}
-            </div>
+      <section className="section-padding gradient-bg-section">
+        <div className="max-w-7xl mx-auto container-padding">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            whileInView={{ opacity: 1, y: 0 }} 
+            viewport={{ once: true }} 
+            transition={{ duration: 0.8 }}
+            className="text-center mb-16"
+          >
+            <h3 className="text-3xl md:text-4xl font-bold text-[#0f2847] mb-4">
+              Les avantages de l'autoconsommation
+            </h3>
+            <p className="text-gray-500 max-w-xl mx-auto">
+              Une solution rentable, durable et adaptée à votre activité.
+            </p>
           </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {advantages.map((advantage, index) => (
+              <motion.div
+                key={index}
+                custom={index}
+                variants={fadeInUp}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+              >
+                <div className="bg-white rounded-2xl p-7 h-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-400 group border border-gray-100/80">
+                  <div 
+                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
+                    style={{ backgroundColor: advantage.accent + '15', color: advantage.accent }}
+                  >
+                    {advantage.icon}
+                  </div>
+                  <h4 className="text-lg font-bold text-[#0f2847] mb-3">{advantage.title}</h4>
+                  <p className="text-gray-500 text-sm leading-relaxed">{advantage.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* How it Works Section */}
-      <HowItWorksSection />
+      {/* Features & CTA Section */}
+      <section className="section-padding bg-white">
+        <div className="max-w-7xl mx-auto container-padding">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -30 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.8 }}
+            >
+              <h3 className="text-3xl font-bold text-[#0f2847] mb-8">
+                Ce que comprend notre offre
+              </h3>
+              <ul className="space-y-4">
+                {features.map((feature, index) => (
+                  <motion.li 
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.5, delay: index * 0.08 }}
+                    className="flex items-start gap-3"
+                  >
+                    <CheckCircle2 className="h-5 w-5 text-[#0f9b8e] flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-600 text-base">{feature}</span>
+                  </motion.li>
+                ))}
+              </ul>
+            </motion.div>
 
-      {/* Examples & CTA Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8 }} className="mb-16">
-            <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold text-gray-900">Des exemples <span className="text-green-500">concrets</span></h3>
-              <p className="text-gray-600 mt-2 max-w-2xl mx-auto">Économies annuelles possibles en rejoignant une opération d'autoconsommation collective.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {examples.map((example, index) => (
-                <Card key={index} className={`${example.bgColor} rounded-2xl shadow-lg border-0 overflow-hidden transform hover:-translate-y-2 transition-transform duration-300`}>
-                  <CardContent className="p-6 flex flex-col h-full">
-                    <div className="flex justify-between items-start">
-                      <div className={`p-3 rounded-xl ${example.bgColor} shadow-inner`}>{example.icon}</div>
-                      <span className="text-5xl font-bold text-gray-300/70">€</span>
-                    </div>
-                    <div className="mt-4">
-                      <h4 className="text-xl font-bold text-gray-800">{example.title}</h4>
-                      <p className="text-gray-600 text-sm">{example.subtitle}</p>
-                    </div>
-                    <div className="mt-6 space-y-3 text-sm">
-                      <div className="flex justify-between items-center"><span className="text-gray-500">Consommation</span><span className="font-bold text-gray-700">{example.consumption}</span></div>
-                      <div className="flex justify-between items-center"><span className="text-gray-500">Économie annuelle</span><span className="font-bold text-green-600">{example.savings}</span></div>
-                    </div>
-                    <div className="mt-auto pt-6">
-                      <div className={`${example.btnColor} text-white text-center font-bold py-3 rounded-lg`}>{example.percentage}</div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.8, delay: 0.2 }} className="text-center bg-gradient-to-br from-yellow-400 to-orange-500 text-white rounded-xl p-8 shadow-xl">
-            <h3 className="text-2xl font-semibold mb-4 text-gray-900">Prêt à rejoindre un projet d'autoconsommation collective ?</h3>
-            <p className="text-gray-800 mb-6 text-lg">Découvrez nos projets en cours et adhérez à une communauté énergétique durable.</p>
-            <Button size="lg" className="bg-blue-600 text-white hover:bg-blue-700 font-bold px-8 py-6 text-lg"
-              onClick={() => window.open('https://mapartdesoleil.fr/', '_blank', 'noopener,noreferrer')}>
-              Voir les projets <ExternalLink className="ml-2 h-5 w-5" />
-            </Button>
-          </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }} 
+              whileInView={{ opacity: 1, y: 0 }} 
+              viewport={{ once: true }} 
+              transition={{ duration: 0.8, delay: 0.2 }}
+            >
+              <div className="bg-gradient-to-br from-[#0f2847] to-[#163a5f] rounded-2xl p-10 text-center">
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Prêt à réduire votre facture d'électricité ?
+                </h3>
+                <p className="text-white/60 mb-8 text-base leading-relaxed">
+                  Contactez-nous pour une étude personnalisée gratuite de votre potentiel d'autoconsommation solaire.
+                </p>
+                <button 
+                  className="btn-secondary inline-flex items-center"
+                  onClick={() => {
+                    const contactForm = document.querySelector('[data-contact-form]');
+                    if (contactForm) contactForm.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  Demander une étude gratuite
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </button>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
     </div>

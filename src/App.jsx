@@ -6,9 +6,7 @@ import Header from '@/components/Header';
 import Hero from '@/components/Hero';
 import AutoconsommationSection from '@/components/AutoconsommationSection';
 import ConstructionSection from '@/components/ConstructionSection';
-import ToitureSection from '@/components/ToitureSection';
 import AboutSection from '@/components/AboutSection';
-import CertificatesSection from '@/components/CertificatesSection';
 import BatterieSection from '@/components/BatterieSection';
 import BatterieDetailPage from '@/components/BatterieDetailPage';
 import TestimonialsCarousel from '@/components/TestimonialsCarousel';
@@ -42,7 +40,7 @@ function MainPage() {
             <div className="pt-28">
               <AutoconsommationSection />
               <TestimonialsCarousel />
-              <div ref={contactFormRef}><ContactForm /></div>
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );
@@ -53,17 +51,7 @@ function MainPage() {
               <ConstructionSection />
               <TestimonialsCarousel />
               <CatalogueSection />
-              <div ref={contactFormRef}><ContactForm /></div>
-            </div>
-          </motion.div>
-        );
-      case 'toiture':
-        return (
-          <motion.div key="toiture" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
-              <ToitureSection scrollToContact={scrollToContact} />
-              <TestimonialsCarousel />
-              <div ref={contactFormRef}><ContactForm /></div>
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );
@@ -72,16 +60,7 @@ function MainPage() {
           <motion.div key="batterie" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-28">
               <BatterieSection scrollToContact={scrollToContact} />
-              <div ref={contactFormRef}><ContactForm /></div>
-            </div>
-          </motion.div>
-        );
-      case 'certificates':
-        return (
-          <motion.div key="certificates" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
-              <CertificatesSection />
-              <div ref={contactFormRef}><ContactForm /></div>
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );
@@ -91,7 +70,7 @@ function MainPage() {
             <div className="pt-28">
               <AboutSection />
               <TestimonialsCarousel />
-              <div ref={contactFormRef}><ContactForm /></div>
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );
@@ -100,7 +79,7 @@ function MainPage() {
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-28">
               <div className="relative">
-                <div className="absolute inset-0 z-0 opacity-75 hidden md:block" aria-hidden="true">
+                <div className="absolute inset-0 z-0 hidden md:block" aria-hidden="true">
                   <video
                     src="/1.mp4"
                     autoPlay
@@ -110,12 +89,14 @@ function MainPage() {
                     className="w-full h-full object-cover"
                   />
                 </div>
+                {/* Mobile fallback: dark gradient background */}
+                <div className="absolute inset-0 z-0 md:hidden gradient-bg-hero" aria-hidden="true" />
                 <div className="relative z-10">
                   <Hero setActiveTab={handleSetActiveTab} />
                 </div>
               </div>
               <TestimonialsCarousel />
-              <div ref={contactFormRef}><ContactForm /></div>
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );
@@ -125,9 +106,9 @@ function MainPage() {
   return (
     <div className="min-h-screen bg-white">
       <Helmet>
-        <title>ENR COURTAGE – Bâtiment gratuit & location de toiture photovoltaïque</title>
-        <meta name="description" content="Bénéficiez d'un bâtiment ou d'une rénovation de toiture financée à 100% par des investisseurs. ENR COURTAGE compare les offres et sélectionne la meilleure solution." />
-        <meta name="keywords" content="bâtiment gratuit, hangar gratuit, bâtiment agricole, location de toiture photovoltaïque, batterie de soutien réseau, ENR COURTAGE" />
+        <title>ENR COURTAGE – Courtier en énergies renouvelables | Bâtiment gratuit, IRVE, Autoconsommation</title>
+        <meta name="description" content="ENR COURTAGE, courtier en énergies renouvelables. Batterie de soutien réseau, bornes IRVE, bâtiments & ombrières tiers financées, autoconsommation solaire en abonnement." />
+        <meta name="keywords" content="bâtiment gratuit, hangar gratuit, ombrière photovoltaïque, borne de recharge IRVE, batterie de soutien réseau, autoconsommation solaire, ENR COURTAGE" />
       </Helmet>
 
       <Header activeTab={activeTab} setActiveTab={handleSetActiveTab} scrollToContact={scrollToContact} />

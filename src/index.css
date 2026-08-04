@@ -16,7 +16,7 @@ img {
 }
 
 :focus-visible {
-  outline: 2px solid #f6ad55;
+  outline: 2px solid #2563eb;
   outline-offset: 2px;
 }
 
@@ -24,155 +24,176 @@ img {
   min-height: 100vh;
 }
 
-/* --- ENR COURTAGE Brand Tokens & Design System --- */
+/* --- ENR COURTAGE Corporate Design System --- */
 @layer base {
   :root {
-    /* Primary Brand Colors */
-    --primary: 217 91% 60%;
+    /* Primary: Deep Navy */
+    --primary: 220 60% 20%;
     --primary-foreground: 0 0% 100%;
     
-    /* Secondary Brand Colors */
-    --secondary: 24 95% 53%;
-    --secondary-foreground: 0 0% 100%;
+    /* Secondary: Warm Gold */
+    --secondary: 40 90% 55%;
+    --secondary-foreground: 220 60% 15%;
     
-    /* Accent Colors */
-    --accent: 45 93% 47%;
-    --accent-foreground: 0 0% 9%;
+    /* Accent: Emerald */
+    --accent: 160 60% 45%;
+    --accent-foreground: 0 0% 100%;
     
     /* Neutral Colors */
     --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    --foreground: 220 25% 15%;
     
     /* UI Component Colors */
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 25% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 25% 15%;
     
     /* State Colors */
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 15% 96%;
+    --muted-foreground: 220 10% 45%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     
     /* Border & Input */
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 217 91% 60%;
+    --border: 220 15% 90%;
+    --input: 220 15% 90%;
+    --ring: 220 60% 20%;
     
     /* Chart Colors */
-    --chart-1: 217 91% 60%;
-    --chart-2: 24 95% 53%;
-    --chart-3: 173 58% 39%;
-    --chart-4: 45 93% 47%;
-    --chart-5: 142 76% 36%;
+    --chart-1: 220 60% 20%;
+    --chart-2: 40 90% 55%;
+    --chart-3: 160 60% 45%;
+    --chart-4: 200 70% 50%;
+    --chart-5: 280 50% 50%;
     
     /* Border Radius */
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217 91% 60%;
+    --background: 220 25% 8%;
+    --foreground: 220 10% 95%;
+    --card: 220 25% 12%;
+    --card-foreground: 220 10% 95%;
+    --popover: 220 25% 12%;
+    --popover-foreground: 220 10% 95%;
+    --primary: 220 60% 55%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 24 95% 53%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 217 33% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 17%;
-    --accent-foreground: 210 40% 98%;
+    --secondary: 40 90% 55%;
+    --secondary-foreground: 220 60% 15%;
+    --muted: 220 20% 18%;
+    --muted-foreground: 220 10% 60%;
+    --accent: 160 60% 45%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62% 30%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
-    --ring: 217 91% 60%;
-    --chart-1: 217 91% 60%;
-    --chart-2: 24 95% 53%;
-    --chart-3: 173 58% 39%;
-    --chart-4: 45 93% 47%;
-    --chart-5: 142 76% 36%;
+    --destructive-foreground: 220 10% 95%;
+    --border: 220 20% 18%;
+    --input: 220 20% 18%;
+    --ring: 220 60% 55%;
+    --chart-1: 220 60% 55%;
+    --chart-2: 40 90% 55%;
+    --chart-3: 160 60% 45%;
+    --chart-4: 200 70% 50%;
+    --chart-5: 280 50% 50%;
   }
 }
 
 /* --- Typography Scale --- */
 .text-display-xl {
   font-size: 4.5rem;
-  line-height: 1.1;
+  line-height: 1.05;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
 }
 
 .text-display-lg {
   font-size: 3.75rem;
-  line-height: 1.1;
+  line-height: 1.08;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
 }
 
 .text-display-md {
   font-size: 3rem;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.text-display-sm {
+  font-size: 2.25rem;
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
 
-.text-display-sm {
-  font-size: 2.25rem;
-  line-height: 1.25;
-  font-weight: 700;
-}
-
 /* --- Spacing Utilities --- */
 .section-padding {
-  @apply py-16 md:py-24;
+  @apply py-20 md:py-28;
 }
 
 .container-padding {
   @apply px-4 sm:px-6 lg:px-8;
 }
 
-/* --- Shared Component Styles --- */
-.gradient-bg-primary {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+/* --- Corporate Glass Card --- */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.gradient-bg-secondary {
-  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--accent)) 100%);
+.glass-card:hover {
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+/* --- Shared Component Styles --- */
+.gradient-bg-primary {
+  background: linear-gradient(135deg, #0f2847 0%, #1a3a5c 50%, #0d3b66 100%);
+}
+
+.gradient-bg-hero {
+  background: linear-gradient(160deg, #0a1628 0%, #0f2847 40%, #163a5f 100%);
 }
 
 .gradient-bg-accent {
-  background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--primary)) 100%);
+  background: linear-gradient(135deg, #d4a843 0%, #e8c547 100%);
+}
+
+.gradient-bg-section {
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .glass-effect {
-  backdrop-filter: blur(10px);
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .hero-pattern {
   background-image:
-    radial-gradient(circle at 15% 25%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-    radial-gradient(circle at 85% 75%, rgba(251, 146, 60, 0.15) 0%, transparent 50%);
+    radial-gradient(circle at 15% 25%, rgba(212, 168, 67, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 85% 75%, rgba(15, 40, 71, 0.1) 0%, transparent 50%);
 }
 
 .card-hover {
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .card-hover:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+  transform: translateY(-6px);
+  box-shadow: 0 20px 50px rgba(15, 40, 71, 0.12);
 }
 
 .testimonial-card {
-  background: linear-gradient(145deg, #fff, #fefcbf);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: linear-gradient(145deg, #ffffff, #f8fafc);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .section-divider {
@@ -182,19 +203,26 @@ img {
 
 /* --- Brand-specific Utilities --- */
 .enr-shadow-primary {
-  box-shadow: 0 10px 30px -5px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 10px 40px -8px rgba(15, 40, 71, 0.2);
 }
 
-.enr-shadow-secondary {
-  box-shadow: 0 10px 30px -5px rgba(251, 146, 60, 0.3);
+.enr-shadow-gold {
+  box-shadow: 0 10px 40px -8px rgba(212, 168, 67, 0.25);
 }
 
-.enr-shadow-accent {
-  box-shadow: 0 10px 30px -5px rgba(234, 179, 8, 0.3);
+.enr-shadow-soft {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .enr-gradient-text {
-  background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
+  background: linear-gradient(135deg, #0f2847 0%, #2563eb 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.enr-gradient-text-gold {
+  background: linear-gradient(135deg, #d4a843 0%, #e8c547 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -202,15 +230,29 @@ img {
 
 /* --- Button Variants --- */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all duration-200;
+  @apply bg-[#0f2847] hover:bg-[#1a3a5c] text-white font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-300;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(15, 40, 71, 0.3);
+  transform: translateY(-1px);
 }
 
 .btn-secondary {
-  @apply bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all duration-200;
+  @apply bg-[#d4a843] hover:bg-[#c49a3a] text-[#0f2847] font-semibold px-8 py-3 rounded-lg shadow-lg transition-all duration-300;
 }
 
-.btn-accent {
-  @apply bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-semibold px-6 py-3 rounded-lg shadow-lg transition-all duration-200;
+.btn-secondary:hover {
+  box-shadow: 0 8px 25px rgba(212, 168, 67, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  @apply border-2 border-[#0f2847] text-[#0f2847] font-semibold px-8 py-3 rounded-lg transition-all duration-300 bg-transparent;
+}
+
+.btn-outline:hover {
+  @apply bg-[#0f2847] text-white;
 }
 
 /* --- Animation Utilities --- */
@@ -229,15 +271,47 @@ img {
   animation: fadeInUp 0.6s ease-out;
 }
 
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 20px rgba(15, 40, 71, 0.2);
   }
   50% {
-    box-shadow: 0 0 30px rgba(59, 130, 246, 0.6);
+    box-shadow: 0 0 40px rgba(15, 40, 71, 0.35);
   }
 }
 
 .animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* --- Subtle grain texture overlay --- */
+.grain-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  pointer-events: none;
 }
