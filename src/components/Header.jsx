@@ -64,7 +64,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-      <div className="bg-white/95 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-gray-100/80">
+      <div className="relative z-20 bg-white/95 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-gray-100/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigation principale">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
@@ -275,7 +275,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
       </div>
 
       {/* Tagline Bar - Refined */}
-      <div className="bg-[#0f2847] text-white text-center py-2 hidden md:block">
+      <div className="relative z-10 bg-[#0f2847] text-white text-center py-2 hidden md:block">
         <p className="text-xs tracking-wide font-light opacity-80">"Parce qu'on est jamais mieux accompagné que par un expert... surtout s'il est gratuit !"</p>
       </div>
     </header>

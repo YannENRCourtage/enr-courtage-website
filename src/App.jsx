@@ -15,6 +15,8 @@ import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
 import CatalogueSection from '@/components/CatalogueSection';
 
+import IrveSection from '@/components/IrveSection';
+
 function MainPage() {
   const [activeTab, setActiveTab] = useState('home');
   const contactFormRef = useRef(null);
@@ -39,6 +41,16 @@ function MainPage() {
           <motion.div key="autoconsommation" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-28">
               <AutoconsommationSection />
+              <TestimonialsCarousel />
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
+            </div>
+          </motion.div>
+        );
+      case 'irve':
+        return (
+          <motion.div key="irve" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
+            <div className="pt-28">
+              <IrveSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>

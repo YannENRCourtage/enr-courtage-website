@@ -1,42 +1,42 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Sun, BatteryCharging, TrendingDown, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Car, Zap, ShieldCheck, BatteryCharging, ArrowRight, CheckCircle2 } from 'lucide-react';
 
-const AutoconsommationSection = () => {
+const IrveSection = () => {
   const advantages = [
     { 
-      icon: <Sun className="h-7 w-7" />, 
-      title: "Production sur site", 
-      description: "Installez une centrale solaire photovoltaïque directement sur votre toiture ou au sol et produisez votre propre électricité verte.",
+      icon: <Car className="h-7 w-7" />, 
+      title: "Tous types de puissances", 
+      description: "Installation de bornes allant de 7.4kW à 22kW pour s'adapter à la vitesse de charge nécessaire pour votre flotte ou vos clients.",
       accent: "#d4a843"
     },
     { 
-      icon: <TrendingDown className="h-7 w-7" />, 
-      title: "Réduction de facture", 
-      description: "Diminuez votre facture d'électricité de 30 à 70% en consommant directement l'énergie que vous produisez.",
+      icon: <Zap className="h-7 w-7" />, 
+      title: "Conseil sur mesure", 
+      description: "Nous vous orientons vers le meilleur investissement possible en analysant précisément vos besoins d'utilisation et de fréquentation.",
       accent: "#0f9b8e"
     },
     { 
       icon: <BatteryCharging className="h-7 w-7" />, 
-      title: "Avec ou sans batterie", 
-      description: "Optimisez votre taux d'autoconsommation grâce à un système de stockage par batterie pour utiliser votre énergie même la nuit.",
+      title: "Formule Abonnement", 
+      description: "Financez vos bornes de recharge par abonnement, sans investissement initial lourd, en préservant votre trésorerie.",
       accent: "#6366f1"
     },
     { 
-      icon: <Shield className="h-7 w-7" />, 
-      title: "Sécurité énergétique", 
-      description: "Protégez-vous contre la hausse des prix de l'électricité et sécurisez votre approvisionnement énergétique sur le long terme.",
+      icon: <ShieldCheck className="h-7 w-7" />, 
+      title: "Matériel certifié", 
+      description: "Des infrastructures robustes, sécurisées et conformes aux dernières réglementations (qualification IRVE obligatoire).",
       accent: "#2563eb"
     }
   ];
 
   const features = [
-    "Étude de dimensionnement personnalisée",
-    "Installation clé en main par nos partenaires certifiés",
-    "Formule en abonnement : aucun investissement initial",
-    "Monitoring de production en temps réel",
-    "Maintenance et garantie incluses",
-    "Accompagnement administratif complet"
+    "Audit électrique du site et conseil personnalisé",
+    "Fourniture et installation de bornes de 7.4kW à 22kW",
+    "Solutions de financement par abonnement",
+    "Supervision et gestion des recharges",
+    "Maintenance préventive et curative",
+    "Accompagnement pour l'obtention des aides (Advenir)"
   ];
 
   const fadeInUp = {
@@ -51,7 +51,7 @@ const AutoconsommationSection = () => {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="section-padding bg-white" aria-labelledby="acc-title">
+      <section className="section-padding bg-white" aria-labelledby="irve-title">
         <div className="max-w-7xl mx-auto container-padding">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
@@ -60,12 +60,12 @@ const AutoconsommationSection = () => {
             className="text-center mb-20"
           >
             <p className="text-sm uppercase tracking-[0.2em] text-[#d4a843] font-semibold mb-4">Notre solution</p>
-            <h2 id="acc-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
-              Autoconsommation
+            <h2 id="irve-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
+              Bornes de recharge IRVE
             </h2>
             <p className="text-lg text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
-              Produisez votre propre électricité grâce à une centrale solaire photovoltaïque installée sur votre site. 
-              Réduisez votre facture énergétique sans investissement initial grâce à notre formule en abonnement.
+              Déployez des infrastructures de recharge pour véhicules électriques (IRVE) adaptées à vos besoins, 
+              avec ou sans investissement initial grâce à nos offres d'abonnement.
             </p>
           </motion.div>
 
@@ -77,8 +77,8 @@ const AutoconsommationSection = () => {
             >
               <img
                 className="w-full h-[450px] object-cover rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)]"
-                alt="Installation de panneaux solaires en autoconsommation"
-                src="/autoconsommation-home.jpg"
+                alt="Installation de bornes de recharge IRVE"
+                src="/irve-home.png"
                 width="1200" height="600" loading="lazy" decoding="async"
               />
             </motion.div>
@@ -91,27 +91,27 @@ const AutoconsommationSection = () => {
             >
               <div>
                 <h3 className="text-2xl font-bold text-[#0f2847] mb-4">
-                  Produisez et consommez votre propre énergie
+                  De 7.4kW à 22kW : la solution idéale pour votre site
                 </h3>
                 <p className="text-gray-500 leading-relaxed text-base">
-                  L'autoconsommation solaire vous permet de produire l'électricité dont vous avez besoin directement sur votre site. 
-                  Grâce à l'installation d'une centrale photovoltaïque sur votre toiture, parking ou terrain, vous consommez 
-                  une énergie propre et locale, tout en maîtrisant vos coûts énergétiques.
+                  Que vous souhaitiez équiper le parking de votre entreprise, un commerce, ou une copropriété, 
+                  nous vous conseillons sur le meilleur investissement possible. Nous analysons l'utilisation prévue 
+                  (charge lente quotidienne ou charge plus rapide) pour dimensionner parfaitement votre installation.
                 </p>
               </div>
               <div>
                 <p className="text-gray-500 leading-relaxed text-base">
-                  Avec ou sans batterie de stockage, notre solution s'adapte à votre profil de consommation. 
-                  Le surplus d'énergie peut être revendu sur le réseau, générant des revenus complémentaires pour votre activité.
+                  Nous gérons l'intégralité de votre projet : de l'étude de faisabilité électrique à l'installation 
+                  par nos techniciens qualifiés, en passant par la maintenance et l'assistance utilisateur.
                 </p>
               </div>
 
               {/* Subscription highlight */}
               <div className="bg-gradient-to-br from-[#0f2847] to-[#1a3a5c] rounded-2xl p-6 text-white">
-                <h4 className="text-lg font-bold mb-2">Formule Abonnement</h4>
+                <h4 className="text-lg font-bold mb-2">Optez pour l'Abonnement</h4>
                 <p className="text-white/70 text-sm leading-relaxed">
-                  Aucun investissement initial. Nous finançons, installons et maintenons votre centrale solaire. 
-                  Vous payez un abonnement mensuel fixe, inférieur à votre ancienne facture d'électricité.
+                  Préservez votre trésorerie. Nos solutions de financement par abonnement couvrent le matériel, 
+                  l'installation et la maintenance. Simplifiez votre transition vers la mobilité électrique.
                 </p>
               </div>
             </motion.div>
@@ -130,10 +130,10 @@ const AutoconsommationSection = () => {
             className="text-center mb-16"
           >
             <h3 className="text-3xl md:text-4xl font-bold text-[#0f2847] mb-4">
-              Les avantages de l'autoconsommation
+              Pourquoi choisir notre accompagnement ?
             </h3>
             <p className="text-gray-500 max-w-xl mx-auto">
-              Une solution rentable, durable et adaptée à votre activité.
+              Une expertise pointue pour des bornes de recharge durables et performantes.
             </p>
           </motion.div>
 
@@ -174,7 +174,7 @@ const AutoconsommationSection = () => {
               transition={{ duration: 0.8 }}
             >
               <h3 className="text-3xl font-bold text-[#0f2847] mb-8">
-                Ce que comprend notre offre
+                Ce que comprend notre offre IRVE
               </h3>
               <ul className="space-y-4">
                 {features.map((feature, index) => (
@@ -186,7 +186,7 @@ const AutoconsommationSection = () => {
                     transition={{ duration: 0.5, delay: index * 0.08 }}
                     className="flex items-start gap-3"
                   >
-                    <CheckCircle2 className="h-5 w-5 text-[#0f9b8e] flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-5 w-5 text-[#d4a843] flex-shrink-0 mt-0.5" />
                     <span className="text-gray-600 text-base">{feature}</span>
                   </motion.li>
                 ))}
@@ -201,10 +201,10 @@ const AutoconsommationSection = () => {
             >
               <div className="bg-gradient-to-br from-[#0f2847] to-[#163a5f] rounded-2xl p-10 text-center">
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  Prêt à réduire votre facture d'électricité ?
+                  Prêt à équiper votre parking ?
                 </h3>
                 <p className="text-white/60 mb-8 text-base leading-relaxed">
-                  Contactez-nous pour une étude personnalisée gratuite de votre potentiel d'autoconsommation solaire.
+                  Contactez-nous pour étudier l'installation de bornes de recharge et découvrir nos formules d'abonnement.
                 </p>
                 <button 
                   className="btn-secondary inline-flex items-center"
@@ -213,7 +213,7 @@ const AutoconsommationSection = () => {
                     if (contactForm) contactForm.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  Demander une étude gratuite
+                  Demander un devis gratuit
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </button>
               </div>
@@ -225,4 +225,4 @@ const AutoconsommationSection = () => {
   );
 };
 
-export default AutoconsommationSection;
+export default IrveSection;
