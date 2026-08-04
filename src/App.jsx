@@ -101,11 +101,12 @@ function MainPage() {
             <div className="pt-28">
               <div className="relative">
                 <div className="absolute inset-0 z-0 opacity-75 hidden md:block" aria-hidden="true">
-                  <img
-                    src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/65b398063ce0d9ea3b0a4f93a4ae4f85.png"
-                    alt="Paysage rural avec bâtiments équipés de panneaux solaires"
-                    width="1600" height="900"
-                    loading="eager" decoding="async"
+                  <video
+                    src="/1.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
                     className="w-full h-full object-cover"
                   />
                 </div>
