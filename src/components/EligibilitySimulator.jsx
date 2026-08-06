@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Search, CheckCircle2, AlertCircle, XCircle, Info, Map as MapIcon, HelpCircle } from 'lucide-react';
+import { MapPin, Search, CheckCircle2, AlertCircle, XCircle, Info, Globe, HelpCircle } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// Fix leaflet default icon issue in React
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+// Utilisation d'une configuration d'icône plus sûre pour Vite
+const defaultIcon = new L.Icon({
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
 });
 
 const TARGET_REGIONS = ["Nouvelle-Aquitaine", "Occitanie", "Provence-Alpes-Côte d'Azur", "Provence"];
@@ -222,10 +225,11 @@ const EligibilitySimulator = () => {
                       position={location} 
                       draggable={true} 
                       eventHandlers={{ dragend: markerDragEnd }} 
+                      icon={defaultIcon}
                     />
                   </MapContainer>
                   <div className="absolute top-2 right-2 z-[400] bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-medium text-gray-600 shadow-sm border border-gray-200 flex items-center">
-                    <MapIcon className="w-3.5 h-3.5 mr-1.5 text-blue-500" />
+                    <Globe className="w-3.5 h-3.5 mr-1.5 text-blue-500" />
                     Déplacez le marqueur
                   </div>
                 </div>
