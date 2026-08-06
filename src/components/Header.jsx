@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown } from 'lucide-react';
@@ -7,16 +7,7 @@ import { Button } from '@/components/ui/button';
 const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [isLogoHovered, setIsLogoHovered] = useState(false);
   const navigate = useNavigate();
-
-  const handleLogoMouseEnter = useCallback(() => {
-    setIsLogoHovered(true);
-  }, []);
-
-  const handleLogoMouseLeave = useCallback(() => {
-    setIsLogoHovered(false);
-  }, []);
 
   const solutions = [
     { 
@@ -76,44 +67,16 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
       <div className="relative z-20 bg-white/95 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-gray-100/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigation principale">
           <div className="flex justify-between items-center h-20">
-            {/* Logo with hover animation on arrows only */}
+            {/* Logo */}
             <div className="flex-shrink-0">
-              <button 
-                onClick={() => handleTabClick('home')} 
-                aria-label="Aller à l'accueil"
-                onMouseEnter={handleLogoMouseEnter}
-                onMouseLeave={handleLogoMouseLeave}
-                className="relative block"
-              >
-                <div className="relative" style={{ width: '180px', height: '48px' }}>
-                  {/* Text portion - always static (right side) */}
-                  <img
-                    src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/7bd0f511a5866b092d723a1035903e1a.png"
-                    alt="ENR COURTAGE"
-                    width="180" 
-                    height="48"
-                    className="h-12 w-auto absolute top-0 left-0"
-                    style={{ clipPath: 'inset(0 0 0 22%)' }}
-                  />
-                  {/* Arrow mark - animated on hover (left side) */}
-                  <motion.div
-                    className="absolute top-0 left-0"
-                    animate={isLogoHovered ? {
-                      rotate: [0, 15, -10, 8, -4, 0],
-                    } : { rotate: 0 }}
-                    transition={{ duration: 0.7, ease: "easeInOut" }}
-                    style={{ transformOrigin: '20px 24px' }}
-                  >
-                    <img
-                      src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/7bd0f511a5866b092d723a1035903e1a.png"
-                      alt=""
-                      width="180"
-                      height="48"
-                      className="h-12 w-auto"
-                      style={{ clipPath: 'inset(0 76% 0 0)' }}
-                    />
-                  </motion.div>
-                </div>
+              <button onClick={() => handleTabClick('home')} aria-label="Aller à l'accueil">
+                <img
+                  src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/7bd0f511a5866b092d723a1035903e1a.png"
+                  alt="ENR COURTAGE"
+                  width="180" 
+                  height="48"
+                  className="h-12 w-auto"
+                />
               </button>
             </div>
 
