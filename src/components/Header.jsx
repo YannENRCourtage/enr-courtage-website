@@ -76,48 +76,44 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
       <div className="relative z-20 bg-white/95 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-gray-100/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigation principale">
           <div className="flex justify-between items-center h-20">
-            {/* Logo with hover dynamic animation */}
+            {/* Logo with hover animation on arrows only */}
             <div className="flex-shrink-0">
               <button 
                 onClick={() => handleTabClick('home')} 
                 aria-label="Aller à l'accueil"
                 onMouseEnter={handleLogoMouseEnter}
                 onMouseLeave={handleLogoMouseLeave}
-                className="relative block group"
+                className="relative block"
               >
-                <motion.div
-                  animate={isLogoHovered ? {
-                    scale: [1, 1.08, 1.05],
-                    filter: [
-                      'drop-shadow(0 0 0px transparent)',
-                      'drop-shadow(0 0 12px rgba(212, 168, 67, 0.6))',
-                      'drop-shadow(0 0 6px rgba(212, 168, 67, 0.3))'
-                    ]
-                  } : {
-                    scale: 1,
-                    filter: 'drop-shadow(0 0 0px transparent)'
-                  }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
-                  className="relative overflow-hidden rounded-md"
-                >
+                <div className="relative" style={{ width: '180px', height: '48px' }}>
+                  {/* Text portion - always static (right side) */}
                   <img
                     src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/7bd0f511a5866b092d723a1035903e1a.png"
                     alt="ENR COURTAGE"
                     width="180" 
                     height="48"
-                    className="h-12 w-auto relative z-10"
+                    className="h-12 w-auto absolute top-0 left-0"
+                    style={{ clipPath: 'inset(0 0 0 22%)' }}
                   />
-                  {/* Shimmer sweep effect */}
-                  <div 
-                    className="absolute inset-0 z-20 pointer-events-none"
-                    style={{
-                      background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.8) 50%, transparent 60%)',
-                      backgroundSize: '200% 100%',
-                      backgroundPosition: isLogoHovered ? '200% 0' : '-200% 0',
-                      transition: 'background-position 0.8s ease-in-out',
-                    }}
-                  />
-                </motion.div>
+                  {/* Arrow mark - animated on hover (left side) */}
+                  <motion.div
+                    className="absolute top-0 left-0"
+                    animate={isLogoHovered ? {
+                      rotate: [0, 15, -10, 8, -4, 0],
+                    } : { rotate: 0 }}
+                    transition={{ duration: 0.7, ease: "easeInOut" }}
+                    style={{ transformOrigin: '20px 24px' }}
+                  >
+                    <img
+                      src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/7bd0f511a5866b092d723a1035903e1a.png"
+                      alt=""
+                      width="180"
+                      height="48"
+                      className="h-12 w-auto"
+                      style={{ clipPath: 'inset(0 76% 0 0)' }}
+                    />
+                  </motion.div>
+                </div>
               </button>
             </div>
 
