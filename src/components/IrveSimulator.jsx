@@ -315,7 +315,16 @@ export default function IrveSimulator() {
           
           <div className="flex-grow flex items-end justify-around gap-2 sm:gap-6 pt-12 pb-4 h-64 sm:h-80 relative">
             {chargingStats.map((charger, idx) => {
-              const heightPercent = Math.max(15, (charger.timeHours / maxTimeHours) * 100);
+              const baseTime = chargingStats.length > 0 ? chargingStats[0].timeHours : maxTimeHours;
+              const gainHours = baseTime - charger.timeHours;
+              const gainFormatted = formatTime(gainHours);
+              
+              const isWallPlug = idx === 0;
+              
+              // Percentages
+              const fillPercent = Math.max(10, (charger.timeHours / maxTimeHours) * 100);
+              const minGreen = 15;
+              const gainPercent = gainHours > 0 ? Math.max((gainHours / maxTimeHours) * 100, minGreen) : 0;
               
               return (
                 <div key={idx} className="flex flex-col items-center justify-end w-full h-full relative group">
@@ -329,17 +338,41 @@ export default function IrveSimulator() {
                     </motion.div>
                   )}
                   
-                  <div className="text-center font-bold text-[#0f2847] mb-2 text-sm sm:text-base">
-                    {charger.timeFormatted}
+                  <div className="w-full max-w-[80px] flex-1 flex flex-col justify-end relative group">
+                    
+                    {!isWallPlug && gainHours > 0 && (
+                      <motion.div 
+                        initial={{ height: 0 }}
+                        animate={{ height: `${gainPercent}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: idx * 0.1 }}
+                        className={`w-full bg-[#10b981] flex flex-col items-center justify-center relative shadow-sm ${charger.isRecommended ? 'ring-4 ring-offset-0 ring-[#0f9b8e]/50 border-b border-[#0f9b8e]/50 rounded-t-lg' : 'rounded-t-lg'}`}
+                      >
+                        {gainPercent >= minGreen && (
+                          <div className="flex flex-col items-center">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-white/90 leading-tight">Gagné</span>
+                            <span className="text-xs sm:text-sm font-extrabold text-white leading-tight">{gainFormatted}</span>
+                          </div>
+                        )}
+                      </motion.div>
+                    )}
+
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${fillPercent}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut", delay: idx * 0.1 }}
+                      className={`w-full flex items-center justify-center relative shadow-sm ${charger.color} ${
+                        isWallPlug ? 'rounded-t-lg' : ''
+                      } ${
+                        charger.isRecommended && (!gainHours || gainHours <= 0) ? 'ring-4 ring-[#0f9b8e]/50 rounded-t-lg' : ''
+                      } ${
+                        charger.isRecommended && gainHours > 0 ? 'ring-4 ring-offset-0 ring-[#0f9b8e]/50 border-t-0 ring-t-0' : ''
+                      }`}
+                    >
+                      <span className={`font-bold text-white text-sm sm:text-base ${fillPercent < 15 ? "absolute -top-6 text-[#0f2847]" : ""}`}>
+                        {charger.timeFormatted}
+                      </span>
+                    </motion.div>
                   </div>
-                  
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${heightPercent}%` }}
-                    transition={{ duration: 0.8, ease: "easeOut", delay: idx * 0.1 }}
-                    className={`w-full max-w-[80px] rounded-t-lg shadow-sm ${charger.color} ${charger.isRecommended ? 'ring-4 ring-[#0f9b8e]/50 brightness-110' : ''}`}
-                  >
-                  </motion.div>
                   
                   <div className="text-center mt-3 h-10 flex flex-col items-center justify-center">
                     <span className="text-xs sm:text-sm font-semibold text-gray-700 leading-tight">{charger.name}</span>

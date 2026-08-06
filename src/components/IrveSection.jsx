@@ -52,7 +52,7 @@ const IrveSection = () => {
   return (
     <div className="bg-white">
       {/* Hero Section */}
-      <section className="section-padding bg-white" aria-labelledby="irve-title">
+      <section className="pt-20 md:pt-28 pb-10 md:pb-14 bg-white" aria-labelledby="irve-title">
         <div className="max-w-7xl mx-auto container-padding">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
