@@ -13,7 +13,7 @@ import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 import ContactForm from '@/components/ContactForm';
 import Footer from '@/components/Footer';
 import { Toaster } from '@/components/ui/toaster';
-import CatalogueSection from '@/components/CatalogueSection';
+import EligibilitySimulator from '@/components/EligibilitySimulator';
 
 import IrveSection from '@/components/IrveSection';
 
@@ -119,7 +119,7 @@ function MainPage() {
             <div className="pt-28">
               <ConstructionSection />
               <TestimonialsCarousel />
-              <CatalogueSection />
+              <EligibilitySimulator />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
