@@ -121,7 +121,7 @@ const IrveSection = () => {
       </section>
 
       {/* Simulateur IRVE */}
-      <section className="section-padding bg-white" aria-labelledby="irve-simulator">
+      <section className="pb-20 pt-4 bg-white" aria-labelledby="irve-simulator">
         <div className="max-w-7xl mx-auto container-padding">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
