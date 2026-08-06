@@ -12,16 +12,35 @@ const AboutSection = () => {
   ];
 
   return (
-    <section className="py-20 bg-white" aria-labelledby="about-title">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="bg-white" aria-labelledby="about-title">
+      {/* Hero Section with Full-Width Video Background */}
+      <div className="relative pt-40 pb-24 mb-16 overflow-hidden shadow-2xl" style={{ marginTop: '-80px' }}>
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover z-0"
+          src="/3.mp4"
+        />
+        <div className="absolute inset-0 bg-[#0f2847]/70 mix-blend-multiply z-0"></div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            transition={{ duration: 0.8 }} 
+            className="text-center"
+          >
+            <h1 id="about-title" className="text-4xl md:text-5xl font-bold text-white mb-6 tracking-tight">À propos d'ENR COURTAGE</h1>
+            <p className="text-xl text-blue-50 max-w-3xl mx-auto font-light leading-relaxed">
+              Votre partenaire de confiance pour tous vos projets d'énergies renouvelables. Découvrez notre expertise et notre engagement pour un avenir énergétique durable.
+            </p>
+          </motion.div>
+        </div>
+      </div>
 
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="text-center mb-16">
-          <h1 id="about-title" className="text-4xl font-bold text-gray-900 mb-6">À propos d'ENR COURTAGE</h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Votre partenaire de confiance pour tous vos projets d'énergies renouvelables. Découvrez notre expertise et notre engagement pour un avenir énergétique durable.
-          </p>
-        </motion.div>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
           <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.8, delay: 0.2 }}>
             <h2 className="text-2xl font-semibold text-gray-900 mb-6">Qui sommes-nous ?</h2>
