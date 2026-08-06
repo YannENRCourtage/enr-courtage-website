@@ -24,7 +24,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
     },
     { 
       id: 'construction', 
-      label: 'Bâtiments & Ombrières tiers financées', 
+      label: 'Bâtiments & Ombrières tiers financés', 
       icon: <Building2 className="h-5 w-5" />,
       color: 'hover:bg-indigo-50 hover:text-indigo-700'
     },

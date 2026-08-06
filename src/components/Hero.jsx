@@ -25,7 +25,7 @@ const Hero = ({ setActiveTab }) => {
     {
       id: 'construction',
       icon: <Building className="h-7 w-7" />,
-      title: "Bâtiments & Ombrières tiers financées",
+      title: "Bâtiments & Ombrières tiers financés",
       description: "Obtenez un bâtiment neuf ou une ombrière photovoltaïque 100% financé",
       accent: "#6366f1"
     },

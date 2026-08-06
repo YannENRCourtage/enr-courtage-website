@@ -119,7 +119,7 @@ function MainPage() {
             <div className="pt-28">
               <ConstructionSection />
               <TestimonialsCarousel />
-              <EligibilitySimulator />
+              {/* <EligibilitySimulator /> temporarily removed to fix blank page */}
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
