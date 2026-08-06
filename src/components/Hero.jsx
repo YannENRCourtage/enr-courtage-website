@@ -58,14 +58,11 @@ const Hero = ({ setActiveTab }) => {
           transition={{ duration: 0.9, ease: "easeOut" }}
           className="text-center mb-20"
         >
-          <p className="text-sm md:text-base uppercase tracking-[0.25em] text-white/60 font-medium mb-4">
-            Courtier en énergies renouvelables
-          </p>
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-8 leading-[1.05] tracking-tight">
             Votre Partenaire en <br />
             <span className="enr-gradient-text-gold">Transition Énergétique</span>
           </h1>
-          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-light leading-relaxed">
+          <p className="text-lg md:text-xl text-white/70 max-w-4xl mx-auto font-light leading-relaxed">
             Des solutions innovantes et gratuites pour valoriser votre patrimoine et réduire vos factures.
           </p>
         </motion.div>
