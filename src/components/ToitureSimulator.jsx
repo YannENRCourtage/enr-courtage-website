@@ -381,7 +381,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         });
       });
     }
-  }, [step, roofCorners]);
+  }, [step, centerCoords, roofCorners]);
 
   return (
     <div className="w-full h-full relative">
@@ -846,7 +846,7 @@ export default function ToitureSimulator() {
             <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl flex items-center gap-3">
               <Info className="w-5 h-5 text-amber-600 flex-shrink-0" />
               <p className="text-xs text-amber-900 font-semibold">
-                Positionnez le curseur sur votre toiture en le faisant glisser
+                Positionnez le curseur sur votre toiture en le faisant glisser ou en double-cliquant sur la carte
               </p>
             </div>
 
