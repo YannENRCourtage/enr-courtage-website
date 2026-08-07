@@ -60,7 +60,6 @@ const ToiturePhotovoltaiqueSection = () => {
             transition={{ duration: 0.8 }} 
             className="text-center mb-12"
           >
-            <p className="text-sm uppercase tracking-[0.2em] text-[#84cc16] font-bold mb-4">Notre solution</p>
             <h1 id="toiture-title" className="text-4xl md:text-5xl font-extrabold text-[#0f2847] mb-6 tracking-tight">
               Toiture photovoltaïque
             </h1>
@@ -90,12 +89,9 @@ const ToiturePhotovoltaiqueSection = () => {
             >
               <img
                 className="w-full h-[460px] object-cover rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)]"
-                alt="Centrale solaire photovoltaïque sur toiture professionnelle"
-                src="/hangar-1.jpg"
+                alt="Centrale solaire photovoltaïque sur toiture"
+                src="/toiture-photo.png"
                 width="1200" height="600" loading="lazy" decoding="async"
-                onError={(e) => {
-                  e.target.src = "https://images.unsplash.com/photo-1509391365360-2e959784a276?auto=format&fit=crop&w=1200&q=80";
-                }}
               />
             </motion.div>
 
@@ -153,7 +149,7 @@ const ToiturePhotovoltaiqueSection = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
             {advantages.map((advantage, index) => (
               <motion.div
                 key={index}
@@ -163,15 +159,17 @@ const ToiturePhotovoltaiqueSection = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <div className="bg-white rounded-2xl p-7 h-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-gray-100">
-                  <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: advantage.accent + '15', color: advantage.accent }}
-                  >
-                    {advantage.icon}
+                <div className="bg-white rounded-2xl p-5 sm:p-6 h-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-gray-100 flex flex-col justify-between">
+                  <div>
+                    <div 
+                      className="w-13 h-13 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: advantage.accent + '15', color: advantage.accent }}
+                    >
+                      {advantage.icon}
+                    </div>
+                    <h3 className="text-sm sm:text-base font-extrabold text-[#0f2847] mb-2.5 whitespace-nowrap tracking-tight">{advantage.title}</h3>
+                    <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">{advantage.description}</p>
                   </div>
-                  <h3 className="text-lg font-bold text-[#0f2847] mb-3">{advantage.title}</h3>
-                  <p className="text-gray-500 text-sm leading-relaxed">{advantage.description}</p>
                 </div>
               </motion.div>
             ))}

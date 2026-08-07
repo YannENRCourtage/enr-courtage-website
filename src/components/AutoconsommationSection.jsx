@@ -60,7 +60,6 @@ const AutoconsommationSection = () => {
             transition={{ duration: 0.8 }} 
             className="text-center mb-12"
           >
-            <p className="text-sm uppercase tracking-[0.2em] text-[#d4a843] font-semibold mb-4">Notre solution</p>
             <h2 id="acc-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
               Autoconsommation
             </h2>

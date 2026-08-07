@@ -1,12 +1,19 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Battery, Car, Building, Zap, ArrowRight } from 'lucide-react';
+import { Battery, Car, Building, Zap, ArrowRight, Sun } from 'lucide-react';
 
 const Hero = ({ setActiveTab }) => {
   const navigate = useNavigate();
 
   const cards = [
+    {
+      id: 'toiture',
+      icon: <Sun className="h-7 w-7" />,
+      title: "Toiture photovoltaïque",
+      description: "Valorisez votre toiture et générez des revenus annuels en revente d'électricité",
+      accent: "#84cc16"
+    },
     {
       id: 'batterie',
       icon: <Battery className="h-7 w-7" />,
@@ -68,7 +75,7 @@ const Hero = ({ setActiveTab }) => {
         </motion.div>
 
         {/* Desktop: Corporate card grid */}
-        <div className="hidden lg:grid grid-cols-4 gap-5">
+        <div className="hidden lg:grid grid-cols-5 gap-4">
           {cards.map((card, index) => (
             <motion.div
               key={card.id}

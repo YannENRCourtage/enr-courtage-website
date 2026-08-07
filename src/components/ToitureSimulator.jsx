@@ -174,15 +174,30 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
       // Marqueur central vert
       const centerMarkerIcon = new L.DivIcon({
         className: 'custom-center-marker',
-        html: `<div style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px;">
-                <div style="background-color: #84cc16; border: 4px solid #ffffff; width: 26px; height: 26px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
+        html: `<div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; cursor: grab;">
+                <div style="background-color: #84cc16; border: 4px solid #ffffff; width: 28px; height: 28px; border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;">
                   <div style="background-color: #ffffff; width: 8px; height: 8px; border-radius: 50%;"></div>
                 </div>
                </div>`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
+        iconSize: [44, 44],
+        iconAnchor: [22, 22]
       });
-      L.marker([centerCoords.lat, centerCoords.lng], { icon: centerMarkerIcon, interactive: false }).addTo(group);
+      const centerMarker = L.marker([centerCoords.lat, centerCoords.lng], { icon: centerMarkerIcon, draggable: true }).addTo(group);
+
+      centerMarker.on('dragend', async (e) => {
+        const latlng = e.target.getLatLng();
+        setCenterCoords({ lat: latlng.lat, lng: latlng.lng });
+        try {
+          const res = await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${latlng.lng}&lat=${latlng.lat}`);
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            const newLabel = data.features[0].properties.label;
+            if (onAddressUpdated) onAddressUpdated(newLabel, { lat: latlng.lat, lng: latlng.lng });
+          }
+        } catch (err) {
+          console.error("Erreur reverse geocoding:", err);
+        }
+      });
     }
 
     if (step === 3 && roofCorners && roofCorners.length === 4) {
