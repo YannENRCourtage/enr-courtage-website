@@ -90,7 +90,7 @@ const ToiturePhotovoltaiqueSection = () => {
               <img
                 className="w-full h-[450px] object-cover rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-gray-100"
                 alt="Panneaux photovoltaïques sur toiture métallique"
-                src="/toiture-photo.png"
+                src="/toiture-revente.png"
                 width="1200" height="600" loading="lazy" decoding="async"
               />
             </motion.div>
