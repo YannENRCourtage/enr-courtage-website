@@ -115,7 +115,7 @@ function loadJsPDF() {
 }
 
 // ==========================================
-// COMPOSANT CARTE LEAFLET LIBRE AVEC GEOLOCALISATION INVERSE
+// COMPOSANT CARTE LEAFLET AUTONOME
 // ==========================================
 function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2, onAddressUpdated }) {
   const containerRef = useRef(null);
@@ -153,19 +153,17 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     };
   }, []);
 
-  // Déplacement libre sans recentrage forcé lors du drag
   const lastCenterRef = useRef(centerCoords);
   useEffect(() => {
     if (mapRef.current && centerCoords) {
       const dist = Math.hypot(centerCoords.lat - lastCenterRef.current.lat, centerCoords.lng - lastCenterRef.current.lng);
-      if (dist > 0.001) { // Ne recentrer que si l'utilisateur a changé d'adresse via recherche
+      if (dist > 0.001) {
         mapRef.current.setView([centerCoords.lat, centerCoords.lng], mapRef.current.getZoom() || 19);
         lastCenterRef.current = centerCoords;
       }
     }
   }, [centerCoords]);
 
-  // Étape 2 : Déplacement libre + Geocoding inverse automatique sur le centre de la carte
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -176,7 +174,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         lastCenterRef.current = { lat: c.lat, lng: c.lng };
         setCenterCoords({ lat: c.lat, lng: c.lng });
 
-        // Geocoding inverse via API BAN
         try {
           const res = await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${c.lng}&lat=${c.lat}`);
           const data = await res.json();
@@ -280,7 +277,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
 }
 
 // ==========================================
-// GRAPHIQUE BARRES ROI AVEC AXE DES ABSCISSES CLAIR (1, 5, 10, 15, 20, 25, 30)
+// GRAPHIQUE BARRES ROI (1, 5, 10, 15, 20, 25, 30)
 // ==========================================
 function RoiBarChart({ activeMetrics, paybackYears }) {
   const years = Array.from({ length: 30 }, (_, i) => i + 1);
@@ -324,7 +321,6 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
       </div>
 
       <div className="relative h-60 w-full pt-6 pb-0">
-        {/* Ligne verticale pointillée ROI */}
         <div 
           className="absolute top-0 bottom-2 z-20 flex flex-col items-center pointer-events-none"
           style={{ left: `${roiLinePct}%` }}
@@ -335,10 +331,8 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
           <div className="w-px h-full border-r-2 border-dashed border-blue-400"></div>
         </div>
 
-        {/* Ligne zéro horizontal */}
         <div className="absolute left-6 right-2 top-[58%] h-px bg-slate-600 z-0"></div>
 
-        {/* Barres */}
         <div className="flex items-end justify-between h-full pl-6 pr-2 relative z-10">
           {data.map((d) => {
             const isPositive = d.netBalance >= 0;
@@ -348,7 +342,6 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
 
             return (
               <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                {/* Tooltip au survol */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-900 text-white text-[10px] py-1 px-2 rounded border border-slate-700 whitespace-nowrap z-30 pointer-events-none">
                   Année {d.year} : {d.netBalance > 0 ? `+${d.netBalance} €` : `${d.netBalance} €`}
                 </div>
@@ -367,7 +360,6 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
         </div>
       </div>
 
-      {/* AXE DES ABSCISSES AVEC LES ANNÉES (1, 5, 10, 15, 20, 25, 30) DIRECTEMENT SOUS L'AXE */}
       <div className="w-full h-px bg-slate-600 mt-2 mb-2"></div>
       <div className="flex justify-between pl-6 pr-2 text-xs font-bold text-slate-300">
         {targetYears.map((yr) => (
@@ -427,8 +419,8 @@ const SolarSimulator = ({ onCompleteLead }) => {
   // Étape 6.5 : Chargement
   const [loadingProgress, setLoadingProgress] = useState(0);
 
-  // Étape 7 : Onglet de puissance sélectionné
-  const [selectedPowerTab, setSelectedPowerTab] = useState(9);
+  // Étape 7 : Onglet de puissance sélectionné (3, 6, 9)
+  const [selectedPowerTab, setSelectedPowerTab] = useState(3);
 
   // Formulaire Lead & Options
   const [leadForm, setLeadForm] = useState({
@@ -589,18 +581,27 @@ const SolarSimulator = ({ onCompleteLead }) => {
     setConsumptionKwh(Math.round(euros / 0.25).toString());
   };
 
-  // CALCULS PHOTOVOLTAÏQUES ÉTAPE 7
+  // CALCULS PHOTOVOLTAÏQUES ÉTAPE 7 & FILTRAGE DE SURFACE
   const simulationResults = useMemo(() => {
     const kwhVal = parseFloat(consumptionKwh) || 6000;
     const eurVal = parseFloat(consumptionEuros) || 1500;
 
-    const exploitableSurface = Math.max(15, surfaceM2);
+    const exploitableSurface = surfaceM2;
     const installablePanels = Math.floor(exploitableSurface / 2);
     const installablePowerWatts = installablePanels * 480;
 
+    // Détermination stricte des puissances admises par la surface de toiture
+    // 3 kWc nécessite 15m² | 6 kWc nécessite 30m² | 9 kWc nécessite 45m²
+    let maxAllowedKw = 3;
+    if (exploitableSurface >= 45) maxAllowedKw = 9;
+    else if (exploitableSurface >= 30) maxAllowedKw = 6;
+    else maxAllowedKw = 3;
+
     let recommendedPower = 3;
-    if (kwhVal > 7500 || exploitableSurface > 40) recommendedPower = 9;
-    else if (kwhVal > 4000 || exploitableSurface > 25) recommendedPower = 6;
+    if (kwhVal > 7500 && maxAllowedKw >= 9) recommendedPower = 9;
+    else if (kwhVal > 4000 && maxAllowedKw >= 6) recommendedPower = 6;
+    else if (maxAllowedKw >= 6 && exploitableSurface >= 30) recommendedPower = Math.min(6, maxAllowedKw);
+    else recommendedPower = 3;
 
     let orientFactor = 0.95;
     if (orientation.code === 'S') orientFactor = 1.0;
@@ -670,6 +671,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
       exploitableSurface,
       installablePanels,
       installablePowerWatts,
+      maxAllowedKw,
       recommendedPower,
       metrics: {
         3: getMetricsForPower(3),
@@ -679,9 +681,16 @@ const SolarSimulator = ({ onCompleteLead }) => {
     };
   }, [surfaceM2, orientation, inclination, consumptionKwh, consumptionEuros, electricVehicles]);
 
-  const activeMetrics = simulationResults.metrics[selectedPowerTab] || simulationResults.metrics[9];
+  // Synchroniser l'onglet sélectionné avec la préconisation et la surface disponible dès l'arrivée à l'étape 7
+  useEffect(() => {
+    if (step === 7) {
+      setSelectedPowerTab(simulationResults.recommendedPower);
+    }
+  }, [step, simulationResults.recommendedPower]);
 
-  // GÉNÉRATION DU PDF SYNTHÉTIQUE PORTRAIT AVEC ADRESSE SUR 2 LIGNES
+  const activeMetrics = simulationResults.metrics[selectedPowerTab] || simulationResults.metrics[3];
+
+  // GÉNÉRATION DU PDF SYNTHÉTIQUE PORTRAIT
   const generatePdfStudy = async () => {
     try {
       const { jsPDF } = await loadJsPDF();
@@ -690,9 +699,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
       const primaryNavy = [15, 40, 71];
       const tealGreen = [15, 155, 142];
 
-      // =========================================================
       // PAGE 1
-      // =========================================================
       doc.setFillColor(...primaryNavy);
       doc.rect(0, 0, 210, 45, 'F');
 
@@ -706,7 +713,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.text('ETUDE DE FAISABILITE SOLAIRE & AUTOCONSOMMATION', 15, 28);
       doc.text(`Editee le ${new Date().toLocaleDateString('fr-FR')}`, 15, 35);
 
-      // Bloc Coordonnées Client & Adresse sur 2 Lignes
+      // Coordonnées Client & Adresse sur 2 Lignes
       doc.setFillColor(248, 250, 252);
       doc.roundedRect(15, 52, 180, 46, 3, 3, 'F');
       doc.setDrawColor(226, 232, 240);
@@ -724,7 +731,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.text(`Email : ${leadForm.email}`, 20, 77);
       doc.text(`Telephone : ${leadForm.phone}`, 20, 84);
 
-      // Adresse découpée sur 2 lignes à partir du code postal
       const { line1, line2 } = formatAddressForPdf(selectedAddress || addressInput);
       doc.text('Adresse du projet :', 105, 70);
       doc.setFont('helvetica', 'bold');
@@ -734,7 +740,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
         doc.text(line2, 105, 84);
       }
 
-      // Section Caractéristiques Toiture
+      // Caractéristiques Toiture
       doc.setTextColor(...primaryNavy);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -778,14 +784,11 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.text(`- Surface d'occupation necessaire : ${activeMetrics.surfaceOccupied} m2`, 20, 211);
       doc.text(`- Cout estimatif moyen de l'installation : ${activeMetrics.cost} EUR TTC`, 20, 218);
 
-      // Pied de page P1 mis à jour sans la mention d'origine
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
       doc.text('(c) 2026 ENR COURTAGE - Tous droits d\'utilisation et de reproduction reserves. | Page 1 sur 2', 105, 287, { align: 'center' });
 
-      // =========================================================
       // PAGE 2
-      // =========================================================
       doc.addPage('a4', 'portrait');
 
       doc.setFillColor(...primaryNavy);
@@ -795,7 +798,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.setFont('helvetica', 'bold');
       doc.text('ENR COURTAGE - RENDEMENT FINANCIER & IMPACT ECOLOGIQUE', 15, 16);
 
-      // Section 2
       doc.setTextColor(...primaryNavy);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -825,7 +827,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
         yPos += 11;
       });
 
-      // Section 3
       doc.setTextColor(...primaryNavy);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -840,7 +841,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.text(`- Equivalent en arbres plantes : ${activeMetrics.treesPlanted} arbres / an`, 20, 158);
       doc.text(`- Alimentation electrique equivalente : ${activeMetrics.foyersEquiv} foyer(s)`, 20, 166);
 
-      // Section 4
       doc.setTextColor(...primaryNavy);
       doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
@@ -855,7 +855,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.text(`- Option Borne de Recharge IRVE : ${leadForm.optBorne ? 'OUI' : 'NON'}`, 20, 213);
       doc.text(`- Demande de rappel sous 24h par un charge d'affaires : ${leadForm.requestCallback ? 'OUI' : 'NON'}`, 20, 221);
 
-      // Pied de page P2
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
       doc.text('(c) 2026 ENR COURTAGE - Tous droits d\'utilisation et de reproduction reserves. | Page 2 sur 2', 105, 287, { align: 'center' });
@@ -1366,11 +1365,11 @@ OPTIONS CHOISIES :
             </motion.div>
           )}
 
-          {/* ÉTAPE 7 */}
+          {/* ÉTAPE 7 : RÉSULTATS AVEC FILTRAGE DE SURFACE ET BOUTON DE NOUVELLE SIMULATION */}
           {step === 7 && (
             <motion.div key="step7" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
 
-              <div className="text-center border-b border-gray-100 pb-6">
+              <div className="text-center border-b border-gray-100 pb-6 relative">
                 <h2 className="text-3xl font-extrabold text-[#0f2847] mb-2">Résultats de votre simulation</h2>
                 {selectedAddress && (
                   <p className="text-sm text-gray-500 flex items-center justify-center space-x-1">
@@ -1378,6 +1377,15 @@ OPTIONS CHOISIES :
                     <span>{selectedAddress}</span>
                   </p>
                 )}
+
+                {/* Bouton pour recommencer une simulation en haut de la page des résultats */}
+                <button
+                  onClick={() => setStep(1)}
+                  className="mt-4 inline-flex items-center space-x-2 text-xs font-semibold text-[#0f9b8e] bg-[#0f9b8e]/10 hover:bg-[#0f9b8e]/20 px-4 py-2 rounded-full transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Refaire une simulation</span>
+                </button>
               </div>
 
               {/* Potentiel toiture */}
@@ -1413,26 +1421,36 @@ OPTIONS CHOISIES :
                 </div>
               </div>
 
-              {/* Onglets et préconisation */}
+              {/* Onglets et préconisation avec grisement automatique si surface insuffisante */}
               <div>
                 <div className="bg-[#0f9b8e] text-white p-4 rounded-t-2xl text-center font-bold text-lg">
                   ENR COURTAGE vous préconise l'installation {simulationResults.recommendedPower} kWc
                 </div>
 
                 <div className="grid grid-cols-3 bg-gray-100 p-1 border-x border-b border-gray-200">
-                  {[3, 6, 9].map((pwc) => (
-                    <button
-                      key={pwc}
-                      onClick={() => setSelectedPowerTab(pwc)}
-                      className={`py-3.5 font-bold text-sm md:text-base transition-all ${
-                        selectedPowerTab === pwc
-                          ? 'bg-[#0f2847] text-white shadow-md'
-                          : 'text-gray-600 hover:text-gray-900 bg-gray-200/60'
-                      }`}
-                    >
-                      Installation {pwc} kWc
-                    </button>
-                  ))}
+                  {[3, 6, 9].map((pwc) => {
+                    // Vérification de la surface minimale requise pour chaque puissance (3kWc: 15m², 6kWc: 30m², 9kWc: 45m²)
+                    const isAllowed = (pwc === 3 && surfaceM2 >= 15) || (pwc === 6 && surfaceM2 >= 30) || (pwc === 9 && surfaceM2 >= 45);
+                    const isSelected = selectedPowerTab === pwc;
+
+                    return (
+                      <button
+                        key={pwc}
+                        disabled={!isAllowed}
+                        onClick={() => isAllowed && setSelectedPowerTab(pwc)}
+                        className={`py-3.5 font-bold text-xs sm:text-sm md:text-base transition-all ${
+                          !isAllowed
+                            ? 'bg-gray-200/90 text-gray-400 opacity-50 cursor-not-allowed'
+                            : isSelected
+                            ? 'bg-[#0f2847] text-white shadow-md'
+                            : 'text-gray-600 hover:text-gray-900 bg-gray-200/60'
+                        }`}
+                      >
+                        Installation {pwc} kWc
+                        {!isAllowed && <span className="block text-[10px] font-normal text-gray-400">(Surface insuffisante)</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1516,7 +1534,7 @@ OPTIONS CHOISIES :
                   </p>
                 </div>
 
-                {/* GRAPHIQUE BARRES DU ROI AVEC AXE DES ABSCISSES (1, 5, 10, 15, 20, 25, 30) */}
+                {/* GRAPHIQUE BARRES DU ROI */}
                 <RoiBarChart activeMetrics={activeMetrics} paybackYears={activeMetrics.paybackYears} />
 
                 {/* IMPACT SUR L'ENVIRONNEMENT */}
@@ -1669,7 +1687,6 @@ OPTIONS CHOISIES :
                     </button>
                   </div>
 
-                  {/* Mentions RGPD nettoyées de toute référence à Groupe Roy Énergie */}
                   <div className="flex items-start space-x-3 text-xs text-white/60">
                     <input
                       type="checkbox"
@@ -1698,7 +1715,15 @@ OPTIONS CHOISIES :
                     )}
                   </button>
 
-                  <div className="text-center pt-4 border-t border-white/10">
+                  <div className="text-center pt-4 border-t border-white/10 space-y-3">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="text-xs font-semibold text-white/70 hover:text-white inline-flex items-center space-x-1 bg-white/10 hover:bg-white/20 px-4 py-2 rounded-full transition-colors"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Refaire une simulation</span>
+                    </button>
                     <p className="text-xs text-white/50">
                       © 2026 ENR COURTAGE - Tous droits d'utilisation et de reproduction réservés.
                     </p>
