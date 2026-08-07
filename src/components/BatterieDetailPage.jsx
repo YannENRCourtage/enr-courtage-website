@@ -100,7 +100,7 @@ const BatterieDetailPage = () => {
                 size="lg"
                 className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xl px-12 py-8 shadow-2xl transform hover:scale-105 transition-all duration-300 rounded-full"
               >
-                Découvrir l'offre
+                Vérifier votre éligibilité
               </Button>
             </motion.div>
           </div>
