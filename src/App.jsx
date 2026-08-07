@@ -85,10 +85,19 @@ function MainPage() {
   };
 
   const scrollToContact = () => {
-    if (contactFormRef.current) {
-      contactFormRef.current.scrollIntoView({ behavior: 'smooth' });
+    const contactEl = document.querySelector('#contact-form') || document.querySelector('[data-contact-form]') || contactFormRef.current;
+    if (contactEl) {
+      contactEl.scrollIntoView({ behavior: 'smooth' });
     }
   };
+
+  useEffect(() => {
+    if (window.location.hash === '#contact-form') {
+      setTimeout(() => {
+        scrollToContact();
+      }, 200);
+    }
+  }, []);
 
   const transition = { duration: 0.5 };
 

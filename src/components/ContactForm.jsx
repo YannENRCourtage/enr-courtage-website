@@ -93,7 +93,7 @@ export default function ContactForm() {
   }
 
   return (
-    <section className="py-16 bg-gray-50">
+    <section id="contact-form" className="py-16 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4">
         {/* Titre / Sous-titre */}
         <div className="text-center">

@@ -16,13 +16,13 @@ const BatterieDetailPage = () => {
   };
   
   const scrollToContact = () => {
-    navigate('/');
+    navigate('/#contact-form');
     setTimeout(() => {
-      const contactSection = document.querySelector('#contact-form');
+      const contactSection = document.querySelector('#contact-form') || document.querySelector('[data-contact-form]');
       if (contactSection) {
         contactSection.scrollIntoView({ behavior: 'smooth' });
       }
-    }, 100);
+    }, 150);
   };
 
   const benefits = [
