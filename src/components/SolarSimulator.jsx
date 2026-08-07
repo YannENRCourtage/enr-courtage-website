@@ -86,6 +86,19 @@ function calculateOrientation(edgeCorners, allCorners) {
   return { text: "Nord-Ouest", code: "NO", azimuth: 315 };
 }
 
+// Formatage de l'adresse sur 2 lignes à partir du code postal
+function formatAddressForPdf(addressStr) {
+  if (!addressStr) return { line1: 'Non renseignée', line2: '' };
+  const match = addressStr.match(/\b(\d{5})\b/);
+  if (match) {
+    const cpIndex = addressStr.indexOf(match[1]);
+    const line1 = addressStr.substring(0, cpIndex).trim().replace(/,$/, '');
+    const line2 = addressStr.substring(cpIndex).trim();
+    return { line1, line2 };
+  }
+  return { line1: addressStr, line2: '' };
+}
+
 // Charger jsPDF dynamiquement depuis CDN si pas encore chargé
 function loadJsPDF() {
   return new Promise((resolve, reject) => {
@@ -102,9 +115,9 @@ function loadJsPDF() {
 }
 
 // ==========================================
-// COMPOSANT CARTE LEAFLET AUTONOME
+// COMPOSANT CARTE LEAFLET LIBRE AVEC GEOLOCALISATION INVERSE
 // ==========================================
-function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2 }) {
+function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2, onAddressUpdated }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const layersGroupRef = useRef(null);
@@ -140,20 +153,40 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     };
   }, []);
 
+  // Déplacement libre sans recentrage forcé lors du drag
+  const lastCenterRef = useRef(centerCoords);
   useEffect(() => {
     if (mapRef.current && centerCoords) {
-      mapRef.current.setView([centerCoords.lat, centerCoords.lng], mapRef.current.getZoom() || 19);
+      const dist = Math.hypot(centerCoords.lat - lastCenterRef.current.lat, centerCoords.lng - lastCenterRef.current.lng);
+      if (dist > 0.001) { // Ne recentrer que si l'utilisateur a changé d'adresse via recherche
+        mapRef.current.setView([centerCoords.lat, centerCoords.lng], mapRef.current.getZoom() || 19);
+        lastCenterRef.current = centerCoords;
+      }
     }
   }, [centerCoords]);
 
+  // Étape 2 : Déplacement libre + Geocoding inverse automatique sur le centre de la carte
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    const handleMoveEnd = () => {
+    const handleMoveEnd = async () => {
       if (currentStepRef.current === 2) {
         const c = map.getCenter();
+        lastCenterRef.current = { lat: c.lat, lng: c.lng };
         setCenterCoords({ lat: c.lat, lng: c.lng });
+
+        // Geocoding inverse via API BAN
+        try {
+          const res = await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${c.lng}&lat=${c.lat}`);
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            const newLabel = data.features[0].properties.label;
+            if (onAddressUpdated) onAddressUpdated(newLabel, { lat: c.lat, lng: c.lng });
+          }
+        } catch (err) {
+          console.error("Erreur reverse geocoding:", err);
+        }
       }
     };
 
@@ -161,7 +194,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     return () => {
       map.off('moveend', handleMoveEnd);
     };
-  }, []);
+  }, [onAddressUpdated]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -247,20 +280,19 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
 }
 
 // ==========================================
-// GRAPHIQUE BARRES ROI / AMORTISSEMENT SUR 30 ANS
+// GRAPHIQUE BARRES ROI AVEC AXE DES ABSCISSES CLAIR (1, 5, 10, 15, 20, 25, 30)
 // ==========================================
 function RoiBarChart({ activeMetrics, paybackYears }) {
   const years = Array.from({ length: 30 }, (_, i) => i + 1);
   const cost = activeMetrics.cost;
   const firstYearSavings = activeMetrics.firstYearSavings;
 
-  // Calcul du solde net cumulé par année
   const data = useMemo(() => {
     let currentSavings = firstYearSavings;
     let cumSavings = 0;
     return years.map(y => {
       cumSavings += currentSavings;
-      currentSavings *= 1.035; // +3.5% inflation énergie par an
+      currentSavings *= 1.035;
       const netBalance = Math.round(cumSavings - cost);
       return { year: y, netBalance };
     });
@@ -271,6 +303,8 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
 
   const pbYearFloat = parseFloat(paybackYears) || 5.3;
   const roiLinePct = ((pbYearFloat - 0.5) / 30) * 100;
+
+  const targetYears = [1, 5, 10, 15, 20, 25, 30];
 
   return (
     <div className="bg-[#162238] rounded-2xl p-6 text-white my-8 border border-slate-700 shadow-xl">
@@ -289,10 +323,10 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
         </div>
       </div>
 
-      <div className="relative h-64 w-full pt-6 pb-2">
+      <div className="relative h-60 w-full pt-6 pb-0">
         {/* Ligne verticale pointillée ROI */}
         <div 
-          className="absolute top-0 bottom-8 z-20 flex flex-col items-center pointer-events-none"
+          className="absolute top-0 bottom-2 z-20 flex flex-col items-center pointer-events-none"
           style={{ left: `${roiLinePct}%` }}
         >
           <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded shadow mb-1">
@@ -302,10 +336,10 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
         </div>
 
         {/* Ligne zéro horizontal */}
-        <div className="absolute left-10 right-2 top-[60%] h-px bg-slate-600 z-0"></div>
+        <div className="absolute left-6 right-2 top-[58%] h-px bg-slate-600 z-0"></div>
 
         {/* Barres */}
-        <div className="flex items-end justify-between h-full pl-8 pr-2 relative z-10">
+        <div className="flex items-end justify-between h-full pl-6 pr-2 relative z-10">
           {data.map((d) => {
             const isPositive = d.netBalance >= 0;
             const heightPct = isPositive 
@@ -313,29 +347,37 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
               : Math.min(40, Math.max(10, (Math.abs(d.netBalance) / Math.abs(minVal)) * 35));
 
             return (
-              <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-center">
+              <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
                 {/* Tooltip au survol */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-900 text-white text-[10px] py-1 px-2 rounded border border-slate-700 whitespace-nowrap z-30 pointer-events-none">
                   Année {d.year} : {d.netBalance > 0 ? `+${d.netBalance} €` : `${d.netBalance} €`}
                 </div>
 
-                <div className="w-full flex flex-col items-center justify-end h-full">
-                  <div 
-                    className={`w-[70%] max-w-[14px] rounded-t-sm transition-all duration-300 ${
-                      isPositive 
-                        ? 'bg-[#10b981] group-hover:bg-[#34d399]' 
-                        : 'bg-blue-500 group-hover:bg-blue-400'
-                    }`}
-                    style={{ height: `${heightPct}%` }}
-                  />
-                </div>
-                <span className="text-[9px] text-slate-400 mt-1">{d.year % 5 === 0 || d.year === 1 ? d.year : ''}</span>
+                <div 
+                  className={`w-[75%] max-w-[14px] rounded-t-sm transition-all duration-300 ${
+                    isPositive 
+                      ? 'bg-[#10b981] group-hover:bg-[#34d399]' 
+                      : 'bg-blue-500 group-hover:bg-blue-400'
+                  }`}
+                  style={{ height: `${heightPct}%` }}
+                />
               </div>
             );
           })}
         </div>
       </div>
-      <div className="flex justify-between text-[11px] text-slate-400 mt-2 px-4 border-t border-slate-700/60 pt-3">
+
+      {/* AXE DES ABSCISSES AVEC LES ANNÉES (1, 5, 10, 15, 20, 25, 30) DIRECTEMENT SOUS L'AXE */}
+      <div className="w-full h-px bg-slate-600 mt-2 mb-2"></div>
+      <div className="flex justify-between pl-6 pr-2 text-xs font-bold text-slate-300">
+        {targetYears.map((yr) => (
+          <div key={yr} className="text-center w-6">
+            {yr}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-between text-[11px] text-slate-400 mt-4 px-2 border-t border-slate-700/60 pt-3">
         <span className="flex items-center space-x-1.5">
           <span className="w-3 h-3 rounded bg-blue-500 inline-block"></span>
           <span>Période d'amortissement</span>
@@ -376,21 +418,19 @@ const SolarSimulator = ({ onCompleteLead }) => {
   // Étape 5 : Inclinaison toiture
   const [inclination, setInclination] = useState(30);
 
-  // Étape 6 : Consommation (kWh/an ou €/an) & Véhicules électriques
+  // Étape 6 : Consommation & Véhicules électriques
   const [consumptionKwh, setConsumptionKwh] = useState('');
   const [consumptionEuros, setConsumptionEuros] = useState('');
   const [consumptionError, setConsumptionError] = useState('');
   const [electricVehicles, setElectricVehicles] = useState(0);
 
-  // Étape 6.5 : Écran de transition
+  // Étape 6.5 : Chargement
   const [loadingProgress, setLoadingProgress] = useState(0);
 
   // Étape 7 : Onglet de puissance sélectionné
   const [selectedPowerTab, setSelectedPowerTab] = useState(9);
 
-  // ==========================================
-  // ÉTAPE 7 : FORMULAIRE DE CAPTURE DE LEAD & OPTIONS
-  // ==========================================
+  // Formulaire Lead & Options
   const [leadForm, setLeadForm] = useState({
     nom: '',
     prenom: '',
@@ -399,8 +439,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
     optBatterie: false,
     optBorne: false,
     requestCallback: true,
-    acceptTerms: true,
-    captchaChoice: ''
+    acceptTerms: true
   });
   const [leadFormError, setLeadFormError] = useState('');
   const [isSendingLead, setIsSendingLead] = useState(false);
@@ -433,6 +472,11 @@ const SolarSimulator = ({ onCompleteLead }) => {
     setCoords({ lat, lng });
     setCenterCoords({ lat, lng });
     setSuggestions([]);
+  };
+
+  const handleAddressUpdatedFromMap = (newAddressLabel, newCoords) => {
+    setSelectedAddress(newAddressLabel);
+    setAddressInput(newAddressLabel);
   };
 
   const initRoofCorners = (lat, lng) => {
@@ -637,21 +681,18 @@ const SolarSimulator = ({ onCompleteLead }) => {
 
   const activeMetrics = simulationResults.metrics[selectedPowerTab] || simulationResults.metrics[9];
 
-  // GÉNÉRATION DU PDF SYNTHÉTIQUE PORTRAIT MULTI-PAGES
+  // GÉNÉRATION DU PDF SYNTHÉTIQUE PORTRAIT AVEC ADRESSE SUR 2 LIGNES
   const generatePdfStudy = async () => {
     try {
       const { jsPDF } = await loadJsPDF();
       const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-      // Couleurs de la charte ENR COURTAGE
       const primaryNavy = [15, 40, 71];
       const tealGreen = [15, 155, 142];
-      const goldAccent = [212, 168, 67];
 
       // =========================================================
-      // PAGE 1 : COUVERTURE & RECAPITULATIF PROJET
+      // PAGE 1
       // =========================================================
-      // En-tête bleu marine
       doc.setFillColor(...primaryNavy);
       doc.rect(0, 0, 210, 45, 'F');
 
@@ -665,33 +706,41 @@ const SolarSimulator = ({ onCompleteLead }) => {
       doc.text('ETUDE DE FAISABILITE SOLAIRE & AUTOCONSOMMATION', 15, 28);
       doc.text(`Editee le ${new Date().toLocaleDateString('fr-FR')}`, 15, 35);
 
-      // Bloc Coordonnées Client & Adresse
+      // Bloc Coordonnées Client & Adresse sur 2 Lignes
       doc.setFillColor(248, 250, 252);
-      doc.roundedRect(15, 52, 180, 42, 3, 3, 'F');
+      doc.roundedRect(15, 52, 180, 46, 3, 3, 'F');
       doc.setDrawColor(226, 232, 240);
-      doc.roundedRect(15, 52, 180, 42, 3, 3, 'D');
+      doc.roundedRect(15, 52, 180, 46, 3, 3, 'D');
 
       doc.setTextColor(...primaryNavy);
-      doc.setFontSize(13);
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
-      doc.text('Informations Client & Localisation', 20, 62);
+      doc.text('Informations Client & Localisation', 20, 61);
 
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(50, 50, 50);
-      doc.text(`Nom & Prenom : ${leadForm.prenom} ${leadForm.nom}`, 20, 71);
-      doc.text(`Email : ${leadForm.email}`, 20, 78);
-      doc.text(`Telephone : ${leadForm.phone}`, 20, 85);
-      doc.text(`Adresse du projet : ${selectedAddress || addressInput || 'Non renseignee'}`, 105, 71);
+      doc.text(`Nom & Prenom : ${leadForm.prenom} ${leadForm.nom}`, 20, 70);
+      doc.text(`Email : ${leadForm.email}`, 20, 77);
+      doc.text(`Telephone : ${leadForm.phone}`, 20, 84);
+
+      // Adresse découpée sur 2 lignes à partir du code postal
+      const { line1, line2 } = formatAddressForPdf(selectedAddress || addressInput);
+      doc.text('Adresse du projet :', 105, 70);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...primaryNavy);
+      doc.text(line1, 105, 77);
+      if (line2) {
+        doc.text(line2, 105, 84);
+      }
 
       // Section Caractéristiques Toiture
       doc.setTextColor(...primaryNavy);
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
-      doc.text('1. Caracteristiques de votre Toiture', 15, 107);
+      doc.text('1. Caracteristiques de votre Toiture', 15, 108);
 
-      doc.setFillColor(255, 255, 255);
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'normal');
 
       const toitureData = [
@@ -702,7 +751,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
         ['Vehicules electriques du foyer :', `${electricVehicles} vehicule(s)`]
       ];
 
-      let yPos = 117;
+      let yPos = 116;
       toitureData.forEach(([label, val]) => {
         doc.setFillColor(241, 245, 249);
         doc.rect(15, yPos, 180, 10, 'F');
@@ -715,40 +764,40 @@ const SolarSimulator = ({ onCompleteLead }) => {
         yPos += 12;
       });
 
-      // Preconisation d'installation
+      // Préconisation
       doc.setFillColor(...tealGreen);
       doc.roundedRect(15, 182, 180, 48, 4, 4, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.text(`Preconisation retenue : Installation ${selectedPowerTab} kWc`, 20, 194);
 
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'normal');
       doc.text(`- Nombre de panneaux photovoltaiques : ${activeMetrics.panelsCount} panneaux`, 20, 204);
       doc.text(`- Surface d'occupation necessaire : ${activeMetrics.surfaceOccupied} m2`, 20, 211);
       doc.text(`- Cout estimatif moyen de l'installation : ${activeMetrics.cost} EUR TTC`, 20, 218);
 
-      // Pied de page P1
+      // Pied de page P1 mis à jour sans la mention d'origine
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text('ENR COURTAGE - Courtier en Energies Renouvelables | Page 1 sur 2', 105, 287, { align: 'center' });
+      doc.text('(c) 2026 ENR COURTAGE - Tous droits d\'utilisation et de reproduction reserves. | Page 1 sur 2', 105, 287, { align: 'center' });
 
       // =========================================================
-      // PAGE 2 : RENDEMENT FINANCIER, ECOLOGIE & OPTIONS
+      // PAGE 2
       // =========================================================
       doc.addPage('a4', 'portrait');
 
       doc.setFillColor(...primaryNavy);
       doc.rect(0, 0, 210, 25, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
-      doc.text('ENR COURTAGE - RENDEMENT FINANCIER & IMPAC ECOLOGIQUE', 15, 16);
+      doc.text('ENR COURTAGE - RENDEMENT FINANCIER & IMPACT ECOLOGIQUE', 15, 16);
 
-      // Section 2. Analyse Financière & ROI
+      // Section 2
       doc.setTextColor(...primaryNavy);
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.text('2. Rentabilite Financiere & Economies Estimees', 15, 38);
 
@@ -767,7 +816,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
         doc.setFillColor(248, 250, 252);
         doc.rect(15, yPos, 180, 9, 'F');
         doc.setTextColor(70, 70, 70);
-        doc.setFontSize(9.5);
+        doc.setFontSize(9);
         doc.text(label, 20, yPos + 6);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...tealGreen);
@@ -776,43 +825,40 @@ const SolarSimulator = ({ onCompleteLead }) => {
         yPos += 11;
       });
 
-      // Section 3. Impact Environnemental
+      // Section 3
       doc.setTextColor(...primaryNavy);
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.text('3. Votre Bilan & Impact Environnemental', 15, 132);
 
       doc.setFillColor(236, 253, 245);
       doc.roundedRect(15, 140, 180, 32, 3, 3, 'F');
       doc.setTextColor(6, 95, 70);
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'bold');
       doc.text(`- CO2 evite par an : ${activeMetrics.co2AvoidedKg} kg de CO2`, 20, 150);
       doc.text(`- Equivalent en arbres plantes : ${activeMetrics.treesPlanted} arbres / an`, 20, 158);
       doc.text(`- Alimentation electrique equivalente : ${activeMetrics.foyersEquiv} foyer(s)`, 20, 166);
 
-      // Section 4. Options sélectionnées & Rappel
+      // Section 4
       doc.setTextColor(...primaryNavy);
-      doc.setFontSize(14);
+      doc.setFontSize(13);
       doc.setFont('helvetica', 'bold');
       doc.text('4. Options Choisies & Demande d\'Accompagnement', 15, 187);
 
       doc.setFillColor(241, 245, 249);
       doc.roundedRect(15, 194, 180, 38, 3, 3, 'F');
       doc.setTextColor(50, 50, 50);
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont('helvetica', 'normal');
       doc.text(`- Option Batterie de Stockage : ${leadForm.optBatterie ? 'OUI' : 'NON'}`, 20, 205);
       doc.text(`- Option Borne de Recharge IRVE : ${leadForm.optBorne ? 'OUI' : 'NON'}`, 20, 213);
       doc.text(`- Demande de rappel sous 24h par un charge d'affaires : ${leadForm.requestCallback ? 'OUI' : 'NON'}`, 20, 221);
 
-      // Signature et Pied de page P2
-      doc.setFontSize(9);
-      doc.setTextColor(100, 100, 100);
-      doc.text('Étude generee par le simulateur solaire ENR COURTAGE - www.enr-courtage.fr', 15, 270);
+      // Pied de page P2
       doc.setFontSize(8);
       doc.setTextColor(150, 150, 150);
-      doc.text('ENR COURTAGE - Courtier en Energies Renouvelables | Page 2 sur 2', 105, 287, { align: 'center' });
+      doc.text('(c) 2026 ENR COURTAGE - Tous droits d\'utilisation et de reproduction reserves. | Page 2 sur 2', 105, 287, { align: 'center' });
 
       return doc;
     } catch (err) {
@@ -821,7 +867,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
     }
   };
 
-  // SOUMISSION DU FORMULAIRE DE LEAD & ENVOI MAIL + PDF
   const handleLeadSubmit = async (e) => {
     e.preventDefault();
     if (!leadForm.nom.trim() || !leadForm.prenom.trim() || !leadForm.email.trim() || !leadForm.phone.trim()) {
@@ -837,16 +882,11 @@ const SolarSimulator = ({ onCompleteLead }) => {
     setIsSendingLead(true);
 
     try {
-      // 1. Générer le document PDF multi-pages
       const pdfDoc = await generatePdfStudy();
-      let pdfBase64 = '';
       if (pdfDoc) {
-        pdfBase64 = pdfDoc.output('datauristring');
-        // Téléchargement direct pour l'utilisateur
         pdfDoc.save(`Etude_Solaire_${leadForm.nom}_${selectedPowerTab}kWc.pdf`);
       }
 
-      // 2. Envoi via Formspree vers yannbarberis@msn.com
       const messageDetail = `
 NOUVELLE DEMANDE D'ETUDE SOLAIRE COMPLETE ENR COURTAGE
 
@@ -1037,6 +1077,7 @@ OPTIONS CHOISIES :
                 roofCorners={roofCorners}
                 setRoofCorners={setRoofCorners}
                 setSurfaceM2={setSurfaceM2}
+                onAddressUpdated={handleAddressUpdatedFromMap}
               />
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -1325,7 +1366,7 @@ OPTIONS CHOISIES :
             </motion.div>
           )}
 
-          {/* ÉTAPE 7 : RÉSULTATS & CAPTURE DE LEAD AVEC ENVOI MAIL / PDF */}
+          {/* ÉTAPE 7 */}
           {step === 7 && (
             <motion.div key="step7" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
 
@@ -1475,7 +1516,7 @@ OPTIONS CHOISIES :
                   </p>
                 </div>
 
-                {/* GRAPHIQUE BARRES DU ROI & PASSAGE DE L'AMORTISSEMENT */}
+                {/* GRAPHIQUE BARRES DU ROI AVEC AXE DES ABSCISSES (1, 5, 10, 15, 20, 25, 30) */}
                 <RoiBarChart activeMetrics={activeMetrics} paybackYears={activeMetrics.paybackYears} />
 
                 {/* IMPACT SUR L'ENVIRONNEMENT */}
@@ -1502,9 +1543,7 @@ OPTIONS CHOISIES :
 
               </div>
 
-              {/* ========================================================= */}
-              {/* FORMULAIRE DE CAPTURE DE LEAD & OPTIONS FINALES            */}
-              {/* ========================================================= */}
+              {/* FORMULAIRE DE CAPTURE DE LEAD & OPTIONS FINALES */}
               <div id="formulaire-etude-finale" className="bg-[#0f2847] text-white rounded-3xl p-6 md:p-10 shadow-2xl border border-blue-900/40 mt-12">
                 <div className="text-center max-w-2xl mx-auto mb-8">
                   <h3 className="text-2xl md:text-3xl font-extrabold mb-3">Recevez votre étude complète</h3>
@@ -1515,7 +1554,6 @@ OPTIONS CHOISIES :
 
                 <form onSubmit={handleLeadSubmit} className="space-y-6 max-w-2xl mx-auto">
 
-                  {/* Message d'erreur formulaire */}
                   {leadFormError && (
                     <div className="bg-red-500/20 border border-red-400 text-red-100 p-3 rounded-xl text-xs flex items-center space-x-2">
                       <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -1523,7 +1561,6 @@ OPTIONS CHOISIES :
                     </div>
                   )}
 
-                  {/* Champs Nom / Prénom / Email / Téléphone */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">NOM *</label>
@@ -1574,11 +1611,10 @@ OPTIONS CHOISIES :
                     </div>
                   </div>
 
-                  {/* SÉLECTION DES OPTIONS (Batterie & Borne EV) */}
+                  {/* SÉLECTION DES OPTIONS */}
                   <div className="pt-4">
                     <h4 className="text-center text-sm font-bold uppercase tracking-wider text-white/90 mb-4">Choisissez vos options</h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* Option Batterie */}
                       <button
                         type="button"
                         onClick={() => setLeadForm(prev => ({ ...prev, optBatterie: !prev.optBatterie }))}
@@ -1595,7 +1631,6 @@ OPTIONS CHOISIES :
                         {leadForm.optBatterie && <span className="text-[10px] bg-[#0f9b8e] text-white px-2 py-0.5 rounded-full font-bold">Sélectionné</span>}
                       </button>
 
-                      {/* Option Borne de recharge */}
                       <button
                         type="button"
                         onClick={() => setLeadForm(prev => ({ ...prev, optBorne: !prev.optBorne }))}
@@ -1614,7 +1649,6 @@ OPTIONS CHOISIES :
                     </div>
                   </div>
 
-                  {/* Option Démarrez votre projet / Rappel chargé d'affaires */}
                   <div className="pt-2">
                     <button
                       type="button"
@@ -1635,7 +1669,7 @@ OPTIONS CHOISIES :
                     </button>
                   </div>
 
-                  {/* Checkbox consentement RGPD */}
+                  {/* Mentions RGPD nettoyées de toute référence à Groupe Roy Énergie */}
                   <div className="flex items-start space-x-3 text-xs text-white/60">
                     <input
                       type="checkbox"
@@ -1645,11 +1679,10 @@ OPTIONS CHOISIES :
                       className="mt-0.5 rounded border-white/20 text-[#0f9b8e] focus:ring-[#0f9b8e]"
                     />
                     <label htmlFor="terms-check" className="cursor-pointer">
-                      En soumettant ce formulaire, j'accepte que les informations saisies soient exploitées par Groupe Roy Énergie / ENR Courtage dans le cadre de la demande d'information et de la relation commerciale qui peut en découler.
+                      En soumettant ce formulaire, j'accepte que les informations saisies soient exploitées par ENR Courtage dans le cadre de la demande d'information et de la relation commerciale qui peut en découler.
                     </label>
                   </div>
 
-                  {/* Bouton de soumission avec envoi par mail à yannbarberis@msn.com et génération du PDF */}
                   <button
                     type="submit"
                     disabled={isSendingLead}
@@ -1665,15 +1698,10 @@ OPTIONS CHOISIES :
                     )}
                   </button>
 
-                  <div className="text-center pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setStep(1)}
-                      className="text-xs text-white/50 hover:text-white inline-flex items-center space-x-1"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Recommencer une nouvelle simulation</span>
-                    </button>
+                  <div className="text-center pt-4 border-t border-white/10">
+                    <p className="text-xs text-white/50">
+                      © 2026 ENR COURTAGE - Tous droits d'utilisation et de reproduction réservés.
+                    </p>
                   </div>
 
                 </form>
