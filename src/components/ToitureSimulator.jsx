@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
   Sun, Zap, Leaf, Home, Award, Info, ShieldCheck, Sparkles, FileText,
-  RotateCcw, AlertCircle, PhoneCall, Check, Lock, Send, Building, DollarSign, TrendingUp
+  RotateCcw, AlertCircle, PhoneCall, Check, Lock, Send, Building, DollarSign, TrendingUp, Clock, Wallet
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -87,28 +87,32 @@ function loadJsPDF() {
 // ==========================================
 // COMPOSANT GRAPHIQUE BARRES DES REVENUS CUMULÉS SUR 30 ANS
 // ==========================================
-function CumulativeRevenuesBarChart({ annualRevenueEuros }) {
+function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh, paybackYears, installationCostHT }) {
   const years = Array.from({ length: 30 }, (_, i) => i + 1);
 
   const data = useMemo(() => {
-    let currentRevenue = annualRevenueEuros;
+    let currentProd = annualProductionKwh;
+    let currentTariff = tariffPerKwh;
     let cumRevenue = 0;
     return years.map(y => {
-      cumRevenue += Math.round(currentRevenue);
-      currentRevenue *= 1.01; // légère indexation tarifaire 1%/an
+      let revenue = currentProd * currentTariff;
+      cumRevenue += Math.round(revenue);
+      currentProd *= 0.99; // perte de rendement 1%/an
+      currentTariff *= 1.02; // réindexation 2%/an
       return { year: y, cumRevenue };
     });
-  }, [annualRevenueEuros]);
+  }, [annualProductionKwh, tariffPerKwh]);
 
-  const cum10 = useMemo(() => (data[9]?.cumRevenue || annualRevenueEuros * 10).toLocaleString('fr-FR'), [data, annualRevenueEuros]);
-  const cum20 = useMemo(() => (data[19]?.cumRevenue || annualRevenueEuros * 20).toLocaleString('fr-FR'), [data, annualRevenueEuros]);
-  const cum30 = useMemo(() => (data[29]?.cumRevenue || annualRevenueEuros * 30).toLocaleString('fr-FR'), [data, annualRevenueEuros]);
+  const cum10 = useMemo(() => (data[9]?.cumRevenue || 0).toLocaleString('fr-FR'), [data]);
+  const cum20 = useMemo(() => (data[19]?.cumRevenue || 0).toLocaleString('fr-FR'), [data]);
+  const cum30 = useMemo(() => (data[29]?.cumRevenue || 0).toLocaleString('fr-FR'), [data]);
 
   const maxVal = Math.max(...data.map(d => d.cumRevenue), 1000);
   const targetYears = [1, 5, 10, 15, 20, 25, 30];
+  const pbYearFloat = parseFloat(paybackYears) || 0;
 
   return (
-    <div className="bg-[#162238] rounded-3xl p-6 sm:p-8 text-white my-10 border border-slate-700 shadow-2xl">
+    <div className="bg-[#162238] rounded-3xl p-6 sm:p-8 text-white my-10 border border-slate-700 shadow-2xl relative overflow-hidden">
       {/* Header du Graphique */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div>
@@ -142,9 +146,22 @@ function CumulativeRevenuesBarChart({ annualRevenueEuros }) {
       <div className="relative h-64 w-full pt-6 pb-0">
         <div className="absolute left-6 right-2 bottom-0 h-px bg-slate-600 z-0"></div>
 
+        {/* Ligne d'amortissement (ROI) */}
+        {pbYearFloat > 0 && pbYearFloat <= 30 && (
+          <div 
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-[#ef4444] z-20 pointer-events-none"
+            style={{ left: `calc(1.5rem + (100% - 2rem) * ${pbYearFloat / 30})` }}
+          >
+            <div className="absolute -top-6 -translate-x-1/2 bg-[#ef4444] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
+              Amorti en {paybackYears} ans
+            </div>
+          </div>
+        )}
+
         <div className="flex items-end justify-between h-full pl-6 pr-2 relative z-10">
           {data.map((d) => {
-            const heightPct = Math.min(100, Math.max(8, (d.cumRevenue / maxVal) * 92));
+            const heightPct = Math.min(100, Math.max(1, (d.cumRevenue / maxVal) * 100));
+            const isAmortized = pbYearFloat > 0 && d.year >= pbYearFloat;
 
             return (
               <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
@@ -154,7 +171,7 @@ function CumulativeRevenuesBarChart({ annualRevenueEuros }) {
                 </div>
 
                 <div 
-                  className="w-[75%] max-w-[14px] rounded-t-md transition-all duration-300 bg-[#10b981] group-hover:bg-[#34d399] group-hover:scale-110"
+                  className={`w-[75%] max-w-[14px] rounded-t-md transition-all duration-300 group-hover:scale-110 ${isAmortized ? 'bg-[#10b981] group-hover:bg-[#34d399]' : 'bg-[#3b82f6] group-hover:bg-[#60a5fa]'}`}
                   style={{ height: `${heightPct}%` }}
                 />
               </div>
@@ -173,10 +190,14 @@ function CumulativeRevenuesBarChart({ annualRevenueEuros }) {
         ))}
       </div>
 
-      <div className="flex justify-center text-xs text-slate-400 mt-5 border-t border-slate-700/60 pt-3">
+      <div className="flex justify-center gap-6 text-xs text-slate-400 mt-5 border-t border-slate-700/60 pt-3 flex-wrap">
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#3b82f6] inline-block"></span>
+          <span>Amortissement en cours</span>
+        </span>
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 rounded bg-[#10b981] inline-block"></span>
-          <span>Revenus solaires cumulés (€)</span>
+          <span>Bénéfices nets (Post-ROI)</span>
         </span>
       </div>
     </div>
@@ -480,6 +501,21 @@ export default function ToitureSimulator() {
     return Math.round(annualProductionKwh * tariffPerKwh);
   }, [annualProductionKwh, tariffPerKwh]);
 
+  const installationCostHT = useMemo(() => {
+    const wC = installableKwc * 1000;
+    if (installableKwc <= 36) return wC * 1.05;
+    if (installableKwc <= 100) return wC * 0.98;
+    if (installableKwc <= 250) return wC * 0.92;
+    if (installableKwc <= 500) return wC * 0.86;
+    if (installableKwc <= 1000) return wC * 0.79;
+    return wC * 0.76;
+  }, [installableKwc]);
+
+  const paybackYears = useMemo(() => {
+    if (annualRevenueEuros === 0) return 0;
+    return (installationCostHT / annualRevenueEuros).toFixed(1);
+  }, [installationCostHT, annualRevenueEuros]);
+
   const foyersMoyens = useMemo(() => {
     return Math.round((annualProductionKwh / 4700) * 10) / 10;
   }, [annualProductionKwh]);
@@ -522,6 +558,8 @@ export default function ToitureSimulator() {
         Puissance_Installable: `${installableKwc} kWc`,
         Production_Annuelle: `${annualProductionKwh.toLocaleString('fr-FR')} kWh`,
         Revenus_Annuels_Estimes: `${annualRevenueEuros.toLocaleString('fr-FR')} €/an`,
+        Cout_Installation_HT: `${Math.round(installationCostHT).toLocaleString('fr-FR')} €`,
+        Amortissement: `${paybackYears} ans`,
         Commentaires: leadForm.comments || 'Aucun'
       };
 
@@ -596,26 +634,48 @@ export default function ToitureSimulator() {
         doc.setTextColor(217, 119, 6);
         doc.text(`${annualRevenueEuros.toLocaleString('fr-FR')} €/an`, 142, 102);
 
+        doc.setFillColor(243, 232, 255);
+        doc.setDrawColor(168, 85, 247);
+        doc.roundedRect(15, 123, 85, 32, 3, 3, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(15, 40, 71);
+        doc.text("COÛT D'INSTALLATION (EST. HT)", 18, 131);
+        doc.setFontSize(16);
+        doc.setTextColor(168, 85, 247);
+        doc.text(`${Math.round(installationCostHT).toLocaleString('fr-FR')} €`, 18, 146);
+
+        doc.setFillColor(254, 226, 226);
+        doc.setDrawColor(239, 68, 68);
+        doc.roundedRect(110, 123, 85, 32, 3, 3, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(15, 40, 71);
+        doc.text("RETOUR SUR INVESTISSEMENT", 113, 131);
+        doc.setFontSize(16);
+        doc.setTextColor(239, 68, 68);
+        doc.text(`${paybackYears} ans`, 113, 146);
+
         doc.setFillColor(248, 250, 252);
-        doc.roundedRect(15, 123, 180, 32, 3, 3, 'F');
+        doc.roundedRect(15, 163, 180, 32, 3, 3, 'F');
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.setTextColor(15, 40, 71);
-        doc.text("ÉQUIVALENT ANNUEL EN FRANCE", 22, 133);
+        doc.text("ÉQUIVALENT ANNUEL EN FRANCE", 22, 173);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
-        doc.text(`• Foyers moyens alimentés : ${foyersMoyens} foyers`, 22, 142);
-        doc.text(`• Émissions de CO2 évitées : ${co2TonnesEvitees.toLocaleString('fr-FR')} tonnes / an`, 22, 148);
+        doc.text(`• Foyers moyens alimentés : ${foyersMoyens} foyers`, 22, 182);
+        doc.text(`• Émissions de CO2 évitées : ${co2TonnesEvitees.toLocaleString('fr-FR')} tonnes / an`, 22, 188);
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
-        doc.text("INFORMATIONS DU DEMANDEUR", 15, 168);
+        doc.text("INFORMATIONS DU DEMANDEUR", 15, 208);
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(10);
-        doc.text(`Demandeur : ${leadForm.firstName} ${leadForm.lastName}`, 15, 176);
-        doc.text(`Email : ${leadForm.email}`, 15, 182);
-        doc.text(`Téléphone : ${leadForm.phone}`, 15, 188);
-        doc.text(`Profil : ${leadForm.userType}`, 15, 194);
+        doc.text(`Demandeur : ${leadForm.firstName} ${leadForm.lastName}`, 15, 216);
+        doc.text(`Email : ${leadForm.email}`, 15, 222);
+        doc.text(`Téléphone : ${leadForm.phone}`, 15, 228);
+        doc.text(`Profil : ${leadForm.userType}`, 15, 234);
 
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
@@ -893,32 +953,50 @@ export default function ToitureSimulator() {
               <span className="text-xs uppercase tracking-widest text-[#84cc16] font-bold block mb-1">RÉSULTATS DE L'ÉTUDE</span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847] mb-8">Potentiel photovoltaïque de votre toiture</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
                 {/* Puissance installable */}
-                <div className="bg-emerald-50/60 p-6 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 bg-[#84cc16] text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <Zap className="w-6 h-6" />
+                <div className="bg-emerald-50/60 p-4 sm:p-6 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#84cc16] text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Puissance installable</span>
-                  <span className="text-3xl font-extrabold text-[#84cc16]">{installableKwc} kWc</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Puissance installable</span>
+                  <span className="text-xl sm:text-3xl font-extrabold text-[#84cc16]">{installableKwc} kWc</span>
                 </div>
 
                 {/* Production potentielle annuelle */}
-                <div className="bg-blue-50/60 p-6 rounded-2xl border border-blue-100 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <Sun className="w-6 h-6" />
+                <div className="bg-blue-50/60 p-4 sm:p-6 rounded-2xl border border-blue-100 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Sun className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Production potentielle annuelle</span>
-                  <span className="text-3xl font-extrabold text-blue-700">{annualProductionKwh.toLocaleString('fr-FR')} kWh</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Production annuelle</span>
+                  <span className="text-xl sm:text-3xl font-extrabold text-blue-700">{annualProductionKwh.toLocaleString('fr-FR')} kWh</span>
                 </div>
 
                 {/* Revenus potentiels annuels */}
-                <div className="bg-amber-50/60 p-6 rounded-2xl border border-amber-100 flex flex-col items-center justify-center">
-                  <div className="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <DollarSign className="w-6 h-6" />
+                <div className="bg-amber-50/60 p-4 sm:p-6 rounded-2xl border border-amber-100 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
-                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Revenus potentiels annuels</span>
-                  <span className="text-3xl font-extrabold text-amber-600">{annualRevenueEuros.toLocaleString('fr-FR')} €</span>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Revenus 1ère année</span>
+                  <span className="text-xl sm:text-3xl font-extrabold text-amber-600">{annualRevenueEuros.toLocaleString('fr-FR')} €</span>
+                </div>
+
+                {/* Coût d'installation HT */}
+                <div className="bg-purple-50/60 p-4 sm:p-6 rounded-2xl border border-purple-100 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Coût (est. HT)</span>
+                  <span className="text-xl sm:text-3xl font-extrabold text-purple-700">{Math.round(installationCostHT).toLocaleString('fr-FR')} €</span>
+                </div>
+
+                {/* Retour sur Investissement */}
+                <div className="bg-red-50/60 p-4 sm:p-6 rounded-2xl border border-red-100 flex flex-col items-center justify-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </div>
+                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Amortissement</span>
+                  <span className="text-xl sm:text-3xl font-extrabold text-red-600">{paybackYears} ans</span>
                 </div>
               </div>
 
@@ -954,7 +1032,12 @@ export default function ToitureSimulator() {
               </div>
 
               {/* GRAPHIQUE DES REVENUS CUMULÉS SUR 30 ANS (MÊME DESIGN SANS MENTION D'AMORTISSEMENT) */}
-              <CumulativeRevenuesBarChart annualRevenueEuros={annualRevenueEuros} />
+              <CumulativeRevenuesBarChart 
+                annualProductionKwh={annualProductionKwh} 
+                tariffPerKwh={tariffPerKwh}
+                paybackYears={paybackYears}
+                installationCostHT={installationCostHT}
+              />
 
               {/* Formulaire Lead pour être recontacté */}
               {!submitSuccess ? (
