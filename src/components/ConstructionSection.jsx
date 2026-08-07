@@ -55,10 +55,10 @@ const ConstructionSection = () => {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h1 id="construction-title" className="text-4xl font-bold text-gray-900 mb-6">
+          <h1 id="construction-title" className="text-4xl md:text-5xl font-extrabold text-[#0f2847] mb-6 tracking-tight">
             Bâtiments & Ombrières <span className="enr-gradient-text-gold">tiers financés</span>
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
             Obtenez un bâtiment neuf ou une ombrière photovoltaïque 100% gratuit grâce au tiers-financement.
           </p>
         </motion.div>
@@ -71,10 +71,10 @@ const ConstructionSection = () => {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="space-y-4"
           >
-            <h2 className="text-2xl font-semibold text-gray-900">
+            <h2 className="text-3xl font-bold text-[#0f2847] mb-4">
               Une solution innovante pour les professionnels
             </h2>
-            <p className="text-gray-600 leading-relaxed m-0">
+            <p className="text-gray-600 leading-relaxed text-base m-0">
               Un investisseur finance la construction de votre bâtiment en échange de l'exploitation de la toiture photovoltaïque. Vous disposez d'un bâtiment neuf adapté à vos besoins professionnels, sans aucun investissement ni endettement.
             </p>
             <div className="space-y-3 pt-0">
