@@ -195,10 +195,11 @@ export default function IrveSimulator() {
       </div>
 
       <div className="flex flex-col lg:flex-row p-6 gap-8">
-        {/* Left Panel: Élargi à 44% de largeur pour offrir un champ Modèle plus large et une note sur 2 lignes */}
+        {/* Left Panel */}
         <div className="w-full lg:w-[44%] flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
+          {/* Répartition sur 12 colonnes : Marque (col-span-4 / 33%) et Modèle (col-span-8 / 66%) */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+            <div className="sm:col-span-4">
               <label className="block text-xs font-semibold text-gray-700 mb-1">Marque</label>
               <div className="relative">
                 <select
@@ -217,7 +218,7 @@ export default function IrveSimulator() {
                 </div>
               </div>
             </div>
-            <div>
+            <div className="sm:col-span-8">
               <label className="block text-xs font-semibold text-gray-700 mb-1">Modèle</label>
               <div className="relative">
                 <select
@@ -296,13 +297,12 @@ export default function IrveSimulator() {
             </motion.div>
           )}
 
-          {/* Phrase explicative formatée sur 2 lignes */}
           <p className="text-xs text-gray-400 leading-relaxed italic">
             * Les données présentées peuvent varier suivant le modèle ou les options. La puissance de charge acceptée par votre véhicule est plafonnée à {acPower} kW.
           </p>
         </div>
 
-        {/* Right Panel: Chart ajusté à 56% */}
+        {/* Right Panel: Chart */}
         <div className="w-full lg:w-[56%] flex flex-col">
           <h3 className="text-base font-bold text-[#0f2847] mb-4 border-b border-gray-100 pb-2">
             Comparatif des temps de recharge de 0 à 100%
