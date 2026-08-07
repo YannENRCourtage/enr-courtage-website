@@ -34,6 +34,7 @@ const Footer = ({ setActiveTab }) => {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}>
             <span className="text-sm font-semibold mb-5 block uppercase tracking-wider text-white/80">Nos Solutions</span>
             <ul className="space-y-3 text-gray-400">
+              <li><button onClick={() => handleNavClick('toiture')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Toiture photovoltaïque</button></li>
               <li><button onClick={() => handleNavClick('batterie')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Batterie de soutien réseau</button></li>
               <li><button onClick={() => handleNavClick('irve')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Borne de recharge IRVE</button></li>
               <li><button onClick={() => handleNavClick('construction')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Bâtiments & Ombrières</button></li>

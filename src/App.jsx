@@ -16,6 +16,7 @@ import { Toaster } from '@/components/ui/toaster';
 import EligibilitySimulator from '@/components/EligibilitySimulator';
 
 import IrveSection from '@/components/IrveSection';
+import ToiturePhotovoltaiqueSection from '@/components/ToiturePhotovoltaiqueSection';
 
 
 const videos = ['/1.mp4', '/2.mp4'];
@@ -93,6 +94,16 @@ function MainPage() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'toiture':
+        return (
+          <motion.div key="toiture" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
+            <div className="pt-28">
+              <ToiturePhotovoltaiqueSection />
+              <TestimonialsCarousel />
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
+            </div>
+          </motion.div>
+        );
       case 'autoconsommation':
         return (
           <motion.div key="autoconsommation" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>

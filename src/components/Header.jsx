@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown } from 'lucide-react';
+import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
@@ -10,6 +10,12 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
   const navigate = useNavigate();
 
   const solutions = [
+    { 
+      id: 'toiture', 
+      label: 'Toiture photovoltaïque', 
+      icon: <Sun className="h-5 w-5" />,
+      color: 'hover:bg-lime-50 hover:text-lime-700'
+    },
     { 
       id: 'batterie', 
       label: 'Batterie de soutien réseau', 
@@ -103,7 +109,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
               >
                 <button
                   className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    ['construction', 'autoconsommation', 'batterie', 'irve'].includes(activeTab)
+                    ['construction', 'autoconsommation', 'batterie', 'irve', 'toiture'].includes(activeTab)
                       ? 'text-[#0f2847] bg-gray-100'
                       : 'text-gray-600 hover:text-[#0f2847] hover:bg-gray-50'
                   }`}
