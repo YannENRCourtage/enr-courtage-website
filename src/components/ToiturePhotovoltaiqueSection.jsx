@@ -53,17 +53,17 @@ const ToiturePhotovoltaiqueSection = () => {
     <div className="bg-white">
       {/* Hero Section avec vidéo "4.mp4" sous-imposée */}
       <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="toiture-title">
-        {/* Vidéo 4.mp4 en arrière-plan avec sous-imposition (overlay) */}
+        {/* Vidéo 4.mp4 en arrière-plan avec sous-imposition légère */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="w-full h-full object-cover opacity-40 scale-105"
+            className="w-full h-full object-cover opacity-65 scale-105"
             src="/4.mp4"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/85 via-[#0f2847]/75 to-[#0f2847]/95" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto container-padding">
@@ -74,7 +74,7 @@ const ToiturePhotovoltaiqueSection = () => {
             className="text-center mb-12"
           >
             <h1 id="toiture-title" className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
-              Toiture photovoltaïque
+              Toiture <span className="enr-gradient-text-gold">photovoltaïque</span>
             </h1>
             <p className="text-lg text-gray-200 max-w-3xl mx-auto font-light leading-relaxed">
               En tant que propriétaire d'un bâtiment (industriel, agricole, commercial, copropriété ou particulier), 

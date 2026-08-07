@@ -61,7 +61,7 @@ const IrveSection = () => {
             className="text-center mb-12"
           >
             <h2 id="irve-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
-              Bornes de recharge IRVE
+              Bornes de <span className="enr-gradient-text-gold">recharge IRVE</span>
             </h2>
             <p className="text-lg text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
               Déployez des infrastructures de recharge pour véhicules électriques (IRVE) adaptées à vos besoins, 

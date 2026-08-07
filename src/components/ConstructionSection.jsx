@@ -56,7 +56,7 @@ const ConstructionSection = () => {
           className="text-center mb-16"
         >
           <h1 id="construction-title" className="text-4xl font-bold text-gray-900 mb-6">
-            Bâtiments & Ombrières
+            Bâtiments & Ombrières <span className="enr-gradient-text-gold">tiers financés</span>
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Obtenez un bâtiment neuf ou une ombrière photovoltaïque 100% gratuit grâce au tiers-financement.
