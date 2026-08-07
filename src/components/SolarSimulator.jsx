@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
-  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText, Plus, Minus
+  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText, MousePointerClick, RotateCcw
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,14 +18,16 @@ L.Icon.Default.mergeOptions({
   shadowSize: [41, 41]
 });
 
-// Icône de poignée de coin personnalisée avec zone tactile élargie (32px) pour déplacement facile
-const createHandleIcon = () => new L.DivIcon({
+// Icône de poignée de coin avec large zone tactile (36px) pour déplacement ultra-facile
+const createHandleIcon = (label) => new L.DivIcon({
   className: 'custom-handle-icon',
-  html: `<div style="display: flex; items-center: center; justify-content: center; width: 32px; height: 32px; cursor: grab;">
-          <div style="background-color: #10b981; border: 3px solid #ffffff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.6); transition: transform 0.1s ease;"></div>
+  html: `<div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; cursor: grab;">
+          <div style="background-color: #10b981; border: 3px solid #ffffff; width: 24px; height: 24px; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;">
+            ${label || ''}
+          </div>
          </div>`,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16]
+  iconSize: [36, 36],
+  iconAnchor: [18, 18]
 });
 
 // Calcul géodésique de la surface d'un quadrilatère (en m²)
@@ -50,28 +52,23 @@ function calculatePolygonArea(corners) {
   return Math.round(area);
 }
 
-// Calcul exact de l'orientation de la PENTE (le trait rouge est le Haut de la pente / Faîtage)
-// La pente descend du milieu du faîtage M vers le centre de la toiture / bas du toit
+// Calcul exact de l'orientation de la PENTE (faîtage = trait rouge)
 function calculateOrientation(edgeCorners, allCorners) {
   if (!edgeCorners || edgeCorners.length < 2 || !allCorners || allCorners.length < 3) {
     return { text: "Sud-Ouest", code: "SO", azimuth: 225 };
   }
   
   const [p1, p2] = edgeCorners;
-  // Milieu du faîtage (haut de la pente)
   const midLat = (p1.lat + p2.lat) / 2;
   const midLng = (p1.lng + p2.lng) / 2;
 
-  // Centre (barycentre) du pan de toiture
   const centerLat = allCorners.reduce((sum, c) => sum + c.lat, 0) / allCorners.length;
   const centerLng = allCorners.reduce((sum, c) => sum + c.lng, 0) / allCorners.length;
 
   const avgLat = centerLat * (Math.PI / 180);
-  // Vecteur allant du faîtage vers le centre/bas de la pente
   const dx = (centerLng - midLng) * Math.cos(avgLat);
   const dy = centerLat - midLat;
   
-  // Angle en degrés depuis le Nord (0° Nord, 90° Est, 180° Sud, 270° Ouest)
   let angle = Math.atan2(dx, dy) * (180 / Math.PI);
   if (angle < 0) angle += 360;
 
@@ -86,14 +83,16 @@ function calculateOrientation(edgeCorners, allCorners) {
 }
 
 // ==========================================
-// COMPOSANT CARTE LEAFLET AUTONOME ET STRUCTURÉ
+// COMPOSANT CARTE LEAFLET ULTRA-FLUIDE
 // ==========================================
-function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2 }) {
+function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2, isClickMode, setIsClickMode }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const layersGroupRef = useRef(null);
+  const currentStepRef = useRef(step);
+  currentStepRef.current = step;
 
-  // Initialisation unique de la carte Leaflet avec maxNativeZoom: 19 et maxZoom: 22 (évite les tuiles grisées)
+  // Initialisation de la carte Leaflet
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -106,7 +105,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         attributionControl: false
       });
 
-      // Tuiles ESRI Satellite avec maxNativeZoom: 19 pour autoriser le zoom extrême sans "Map data not yet available"
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         maxNativeZoom: 19,
         maxZoom: 22
@@ -124,14 +122,32 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     };
   }, []);
 
-  // Recentre la carte lors du changement de coordonnées
+  // Recentre la carte lors de l'initialisation
   useEffect(() => {
     if (mapRef.current && centerCoords) {
       mapRef.current.setView([centerCoords.lat, centerCoords.lng], mapRef.current.getZoom() || 19);
     }
   }, [centerCoords]);
 
-  // Rendu interactif selon l'étape (2, 3 ou 4)
+  // Événements de la carte (Étape 2 / Étape 3 Mode Clic)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const handleMoveEnd = () => {
+      if (currentStepRef.current === 2) {
+        const c = map.getCenter();
+        setCenterCoords({ lat: c.lat, lng: c.lng });
+      }
+    };
+
+    map.on('moveend', handleMoveEnd);
+    return () => {
+      map.off('moveend', handleMoveEnd);
+    };
+  }, []);
+
+  // GESTION PERSISTANTE DES COINS POUR UN DRAG&DROP CONTINU ET FLUIDE SANS INTERRUPTIONS
   useEffect(() => {
     const map = mapRef.current;
     const group = layersGroupRef.current;
@@ -139,55 +155,50 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
 
     group.clearLayers();
 
-    if (step === 2) {
-      const handleMoveEnd = () => {
-        const center = map.getCenter();
-        setCenterCoords({ lat: center.lat, lng: center.lng });
-      };
-      map.on('moveend', handleMoveEnd);
-      return () => {
-        map.off('moveend', handleMoveEnd);
-      };
-    }
-
     if (step === 3 && roofCorners && roofCorners.length === 4) {
-      // Polygon vert fluo translucide
-      L.polygon(roofCorners.map(c => [c.lat, c.lng]), {
+      // Polygon visuel
+      const polygon = L.polygon(roofCorners.map(c => [c.lat, c.lng]), {
         color: '#10b981',
         fillColor: '#10b981',
         fillOpacity: 0.35,
         weight: 3
       }).addTo(group);
 
-      // Poignées déplaçables ultra-réactives
+      const markers = [];
+
       roofCorners.forEach((corner, idx) => {
         const marker = L.marker([corner.lat, corner.lng], {
           draggable: true,
           autoPan: true,
-          icon: createHandleIcon()
+          icon: createHandleIcon(idx + 1)
         }).addTo(group);
 
-        const updatePosition = (latLng) => {
-          setRoofCorners(prev => {
-            const next = [...prev];
-            next[idx] = { lat: latLng.lat, lng: latLng.lng };
-            const area = calculatePolygonArea(next);
-            if (area > 0) setSurfaceM2(area);
-            return next;
-          });
-        };
+        markers.push(marker);
 
-        marker.on('drag', (e) => {
-          updatePosition(e.target.getLatLng());
+        // Pendant le survol/déplacement : Mettre à jour le polygone DIRECTEMENT dans le DOM Leaflet
+        // sans déclencher de re-render React qui détruirait le marqueur en cours de drag
+        marker.on('drag', () => {
+          const newPositions = markers.map(m => m.getLatLng());
+          polygon.setLatLngs(newPositions);
+          
+          // Mise à jour de la surface en direct
+          const newCorners = newPositions.map(l => ({ lat: l.lat, lng: l.lng }));
+          const area = calculatePolygonArea(newCorners);
+          if (area > 0) setSurfaceM2(area);
         });
-        marker.on('dragend', (e) => {
-          updatePosition(e.target.getLatLng());
+
+        // À la fin du déplacement : synchroniser avec l'état React
+        marker.on('dragend', () => {
+          const finalPositions = markers.map(m => m.getLatLng());
+          const newCorners = finalPositions.map(l => ({ lat: l.lat, lng: l.lng }));
+          setRoofCorners(newCorners);
+          const area = calculatePolygonArea(newCorners);
+          if (area > 0) setSurfaceM2(area);
         });
       });
     }
 
     if (step === 4 && roofCorners && roofCorners.length === 4) {
-      // Base Polygon
       L.polygon(roofCorners.map(c => [c.lat, c.lng]), {
         color: '#10b981',
         fillColor: '#10b981',
@@ -195,7 +206,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         weight: 2
       }).addTo(group);
 
-      // 4 arêtes autonomes cliquables
       roofCorners.forEach((corner, i) => {
         const nextCorner = roofCorners[(i + 1) % roofCorners.length];
         const isSelected = selectedEdgeIndex === i;
@@ -211,13 +221,13 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         });
       });
     }
-  }, [step, roofCorners, selectedEdgeIndex]);
+  }, [step, selectedEdgeIndex]);
 
   return (
     <div className="relative w-full h-[380px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner mb-6 z-10">
       <div ref={containerRef} className="w-full h-full" />
       
-      {/* Marqueur fixe vert au centre (Étape 2 uniquement) */}
+      {/* Marqueur fixe vert au centre (Étape 2) */}
       {step === 2 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-[1000] pointer-events-none drop-shadow-lg">
           <div className="w-8 h-8 rounded-full bg-[#10b981] border-4 border-white shadow-xl flex items-center justify-center animate-bounce">
@@ -297,43 +307,38 @@ const SolarSimulator = ({ onCompleteLead }) => {
     setSuggestions([]);
   };
 
+  const initRoofCorners = (lat, lng) => {
+    const deltaLat = 0.00005;
+    const deltaLng = 0.00007;
+    const corners = [
+      { lat: lat + deltaLat, lng: lng - deltaLng },
+      { lat: lat + deltaLat, lng: lng + deltaLng },
+      { lat: lat - deltaLat, lng: lng + deltaLng },
+      { lat: lat - deltaLat, lng: lng - deltaLng }
+    ];
+    setRoofCorners(corners);
+    setSurfaceM2(calculatePolygonArea(corners) || 49);
+    return corners;
+  };
+
   const handleStartFromStep1 = () => {
     if (!selectedAddress && addressInput) {
       setSelectedAddress(addressInput);
     }
-    const lat = centerCoords.lat;
-    const lng = centerCoords.lng;
-    const deltaLat = 0.00005;
-    const deltaLng = 0.00007;
-    const corners = [
-      { lat: lat + deltaLat, lng: lng - deltaLng },
-      { lat: lat + deltaLat, lng: lng + deltaLng },
-      { lat: lat - deltaLat, lng: lng + deltaLng },
-      { lat: lat - deltaLat, lng: lng - deltaLng }
-    ];
-    setRoofCorners(corners);
-    setSurfaceM2(calculatePolygonArea(corners) || 49);
+    initRoofCorners(centerCoords.lat, centerCoords.lng);
     setStep(2);
   };
 
   const handleValidateStep2 = () => {
-    const lat = centerCoords.lat;
-    const lng = centerCoords.lng;
-    const deltaLat = 0.00005;
-    const deltaLng = 0.00007;
-    const corners = [
-      { lat: lat + deltaLat, lng: lng - deltaLng },
-      { lat: lat + deltaLat, lng: lng + deltaLng },
-      { lat: lat - deltaLat, lng: lng + deltaLng },
-      { lat: lat - deltaLat, lng: lng - deltaLng }
-    ];
-    setRoofCorners(corners);
-    setSurfaceM2(calculatePolygonArea(corners) || 49);
+    initRoofCorners(centerCoords.lat, centerCoords.lng);
     setStep(3);
   };
 
+  const handleResetRoofCorners = () => {
+    initRoofCorners(centerCoords.lat, centerCoords.lng);
+  };
+
   const handleValidateStep3 = () => {
-    // Calcul initial d'orientation lors du passage à l'étape 4
     if (roofCorners.length === 4) {
       const p1 = roofCorners[0];
       const p2 = roofCorners[1];
@@ -636,7 +641,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
                 <Info className="w-5 h-5 text-[#0f9b8e]" />
               </h3>
               <p className="text-gray-500 text-sm mb-4">
-                Déplacez les 4 coins vert fluo du pan de votre toiture pouvant accueillir des panneaux photovoltaïques
+                Déplacez les 4 coins vert fluo (1, 2, 3, 4) du pan de votre toiture pouvant accueillir des panneaux photovoltaïques
               </p>
 
               <SatelliteMap
@@ -647,6 +652,16 @@ const SolarSimulator = ({ onCompleteLead }) => {
                 setRoofCorners={setRoofCorners}
                 setSurfaceM2={setSurfaceM2}
               />
+
+              <div className="flex items-center justify-center space-x-4 mb-4">
+                <button
+                  onClick={handleResetRoofCorners}
+                  className="text-xs text-gray-500 hover:text-gray-800 flex items-center space-x-1 bg-gray-100 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Réinitialiser le rectangle</span>
+                </button>
+              </div>
 
               <div className="bg-cyan-50/60 border border-cyan-200 rounded-2xl p-4 mb-6 max-w-md mx-auto">
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Nous estimons la surface de toiture à :</p>
@@ -692,11 +707,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
                 onSelectEdge={handleSelectEdge}
                 setSurfaceM2={setSurfaceM2}
               />
-
-              {/* Explication explicite demandée sous la carte */}
-              <p className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200 max-w-md mx-auto mb-4">
-                Le trait rouge représente le <strong>haut de la pente (faîtage)</strong>. La pente descend du trait rouge vers le bas du toit.
-              </p>
 
               <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 mb-6 max-w-md mx-auto">
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Votre toiture est exposée :</p>
