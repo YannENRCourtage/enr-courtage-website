@@ -65,28 +65,32 @@ const BatterieSection = ({ scrollToContact }) => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section */}
-      <section className="relative py-20 bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 overflow-hidden" aria-labelledby="batterie-hero-title">
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.2) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.15) 0%, transparent 50%)'
-          }}></div>
+      {/* Hero Section avec vidéo "8.mp4" sous-imposée */}
+      <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="batterie-hero-title">
+        {/* Vidéo 8.mp4 en arrière-plan avec sous-imposition légère */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-65 scale-105"
+            src="/8.mp4"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
         </div>
-        
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+        <div className="relative z-10 max-w-7xl mx-auto container-padding">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center"
+            className="text-center mb-12"
           >
-            <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-full mb-6">
-              <Battery className="h-16 w-16 text-yellow-400" />
-            </div>
-            <h1 id="batterie-hero-title" className="text-4xl md:text-6xl font-bold text-white mb-6">
-              Batterie de soutien réseau
+            <h1 id="batterie-hero-title" className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
+              Batterie de <span className="enr-gradient-text-gold">soutien réseau</span>
             </h1>
-            <p className="text-xl md:text-2xl text-blue-100 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-lg text-gray-200 max-w-3xl mx-auto font-light leading-relaxed">
               Une solution innovante pour renforcer la stabilité du réseau électrique français
             </p>
           </motion.div>

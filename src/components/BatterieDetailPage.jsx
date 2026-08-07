@@ -67,31 +67,32 @@ const BatterieDetailPage = () => {
       />
 
       <main role="main" className="pt-16 md:pt-20">
-        <section className="relative h-screen flex items-center justify-center overflow-hidden bg-gray-900" aria-labelledby="hero-title">
-          <div className="absolute inset-0 z-0">
-            <img 
-              src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/a22fcacd34af43c09cf87f32f53a99fc.jpg" 
-              alt="Batterie avec panneaux solaires sur bâtiment agricole"
-              className="w-full h-full object-cover"
-              loading="eager"
-              decoding="async"
+        {/* Hero Section avec vidéo "8.mp4" sous-imposée */}
+        <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="hero-title">
+          {/* Vidéo 8.mp4 en arrière-plan avec sous-imposition légère */}
+          <div className="absolute inset-0 z-0 overflow-hidden">
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="w-full h-full object-cover opacity-65 scale-105"
+              src="/8.mp4"
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/90 via-teal-800/85 to-blue-800/90"></div>
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
           </div>
-          
-          <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+
+          <div className="relative z-10 max-w-7xl mx-auto container-padding text-center">
             <motion.div
-              initial={{ opacity: 0, y: 50 }}
+              initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
+              className="text-center mb-12"
             >
-              <div className="inline-flex items-center justify-center p-6 bg-white/10 backdrop-blur-sm rounded-full mb-8">
-                <Battery className="h-24 w-24 text-yellow-400" />
-              </div>
-              <h1 id="hero-title" className="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">
-                Batterie de soutien réseau
+              <h1 id="hero-title" className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
+                Batterie de <span className="enr-gradient-text-gold">soutien réseau</span>
               </h1>
-              <p className="text-3xl md:text-4xl text-yellow-300 font-bold mb-8">
+              <p className="text-lg text-gray-200 max-w-3xl mx-auto font-light leading-relaxed mb-8">
                 Percevez une rente annuelle sans rien faire
               </p>
               <Button 
@@ -101,17 +102,6 @@ const BatterieDetailPage = () => {
               >
                 Découvrir l'offre
               </Button>
-            </motion.div>
-          </div>
-
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-10">
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-              </svg>
             </motion.div>
           </div>
         </section>
