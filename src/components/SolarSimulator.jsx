@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
-  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText, MousePointerClick, RotateCcw
+  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText, MousePointerClick, RotateCcw, AlertCircle
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,7 +18,7 @@ L.Icon.Default.mergeOptions({
   shadowSize: [41, 41]
 });
 
-// Icône de poignée de coin avec large zone tactile (36px) pour déplacement ultra-facile
+// Icône de poignée de coin avec zone tactile (36px)
 const createHandleIcon = (label) => new L.DivIcon({
   className: 'custom-handle-icon',
   html: `<div style="display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; cursor: grab;">
@@ -85,14 +85,13 @@ function calculateOrientation(edgeCorners, allCorners) {
 // ==========================================
 // COMPOSANT CARTE LEAFLET ULTRA-FLUIDE
 // ==========================================
-function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2, isClickMode, setIsClickMode }) {
+function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
   const layersGroupRef = useRef(null);
   const currentStepRef = useRef(step);
   currentStepRef.current = step;
 
-  // Initialisation de la carte Leaflet
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -122,14 +121,12 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     };
   }, []);
 
-  // Recentre la carte lors de l'initialisation
   useEffect(() => {
     if (mapRef.current && centerCoords) {
       mapRef.current.setView([centerCoords.lat, centerCoords.lng], mapRef.current.getZoom() || 19);
     }
   }, [centerCoords]);
 
-  // Événements de la carte (Étape 2 / Étape 3 Mode Clic)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -147,7 +144,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     };
   }, []);
 
-  // GESTION PERSISTANTE DES COINS POUR UN DRAG&DROP CONTINU ET FLUIDE SANS INTERRUPTIONS
+  // GESTION PERSISTANTE DES COINS POUR UN DRAG&DROP CONTINU
   useEffect(() => {
     const map = mapRef.current;
     const group = layersGroupRef.current;
@@ -156,7 +153,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     group.clearLayers();
 
     if (step === 3 && roofCorners && roofCorners.length === 4) {
-      // Polygon visuel
       const polygon = L.polygon(roofCorners.map(c => [c.lat, c.lng]), {
         color: '#10b981',
         fillColor: '#10b981',
@@ -175,19 +171,15 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
 
         markers.push(marker);
 
-        // Pendant le survol/déplacement : Mettre à jour le polygone DIRECTEMENT dans le DOM Leaflet
-        // sans déclencher de re-render React qui détruirait le marqueur en cours de drag
         marker.on('drag', () => {
           const newPositions = markers.map(m => m.getLatLng());
           polygon.setLatLngs(newPositions);
           
-          // Mise à jour de la surface en direct
           const newCorners = newPositions.map(l => ({ lat: l.lat, lng: l.lng }));
           const area = calculatePolygonArea(newCorners);
           if (area > 0) setSurfaceM2(area);
         });
 
-        // À la fin du déplacement : synchroniser avec l'état React
         marker.on('dragend', () => {
           const finalPositions = markers.map(m => m.getLatLng());
           const newCorners = finalPositions.map(l => ({ lat: l.lat, lng: l.lng }));
@@ -227,11 +219,10 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     <div className="relative w-full h-[380px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner mb-6 z-10">
       <div ref={containerRef} className="w-full h-full" />
       
-      {/* Marqueur fixe vert au centre (Étape 2) */}
       {step === 2 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-[1000] pointer-events-none drop-shadow-lg">
           <div className="w-8 h-8 rounded-full bg-[#10b981] border-4 border-white shadow-xl flex items-center justify-center animate-bounce">
-            <div className="w-2 h-2 rounded-full bg-white"></div>
+            <div className="w-2 h-2 rounded-full bg-[#10b981]"></div>
           </div>
         </div>
       )}
@@ -266,9 +257,10 @@ const SolarSimulator = ({ onCompleteLead }) => {
   const [inclination, setInclination] = useState(30);
 
   // Étape 6 : Consommation (kWh/an ou €/an) & Véhicules électriques
-  const [consumptionType, setConsumptionType] = useState('kwh');
-  const [consumptionKwh, setConsumptionKwh] = useState(6000);
-  const [consumptionEuros, setConsumptionEuros] = useState(1500);
+  // Par défaut vide avec placeholders et validation obligatoire
+  const [consumptionKwh, setConsumptionKwh] = useState('');
+  const [consumptionEuros, setConsumptionEuros] = useState('');
+  const [consumptionError, setConsumptionError] = useState('');
   const [electricVehicles, setElectricVehicles] = useState(0);
 
   // Étape 6.5 : Écran de transition / chargement
@@ -364,6 +356,15 @@ const SolarSimulator = ({ onCompleteLead }) => {
   };
 
   const handleValidateStep6 = () => {
+    const kwhNum = parseFloat(consumptionKwh);
+    const eurNum = parseFloat(consumptionEuros);
+
+    if ((!kwhNum || kwhNum <= 0) && (!eurNum || eurNum <= 0)) {
+      setConsumptionError("La saisie de votre consommation est obligatoire.");
+      return;
+    }
+
+    setConsumptionError('');
     setStep(6.5);
     setLoadingProgress(0);
   };
@@ -385,26 +386,41 @@ const SolarSimulator = ({ onCompleteLead }) => {
   }, [step]);
 
   const handleKwhChange = (val) => {
+    setConsumptionError('');
+    if (val === '') {
+      setConsumptionKwh('');
+      setConsumptionEuros('');
+      return;
+    }
     const kwh = parseFloat(val) || 0;
-    setConsumptionKwh(kwh);
-    setConsumptionEuros(Math.round(kwh * 0.25));
+    setConsumptionKwh(val);
+    setConsumptionEuros(Math.round(kwh * 0.25).toString());
   };
 
   const handleEurosChange = (val) => {
+    setConsumptionError('');
+    if (val === '') {
+      setConsumptionEuros('');
+      setConsumptionKwh('');
+      return;
+    }
     const euros = parseFloat(val) || 0;
-    setConsumptionEuros(euros);
-    setConsumptionKwh(Math.round(euros / 0.25));
+    setConsumptionEuros(val);
+    setConsumptionKwh(Math.round(euros / 0.25).toString());
   };
 
   // CALCULS PHOTOVOLTAÏQUES ÉTAPE 7
   const simulationResults = useMemo(() => {
+    const kwhVal = parseFloat(consumptionKwh) || 6000;
+    const eurVal = parseFloat(consumptionEuros) || 1500;
+
     const exploitableSurface = Math.max(15, surfaceM2);
     const installablePanels = Math.floor(exploitableSurface / 2);
     const installablePowerWatts = installablePanels * 480;
 
     let recommendedPower = 3;
-    if (consumptionKwh > 7500 || exploitableSurface > 40) recommendedPower = 9;
-    else if (consumptionKwh > 4000 || exploitableSurface > 25) recommendedPower = 6;
+    if (kwhVal > 7500 || exploitableSurface > 40) recommendedPower = 9;
+    else if (kwhVal > 4000 || exploitableSurface > 25) recommendedPower = 6;
 
     let orientFactor = 0.95;
     if (orientation.code === 'S') orientFactor = 1.0;
@@ -444,7 +460,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
       const costMap = { 3: 5999, 6: 8999, 9: 11499 };
       const cost = costMap[kWc];
       const paybackYears = (cost / firstYearSavings).toFixed(1);
-      const billSavingsPct = Math.min(100, Math.round((firstYearSavings / (consumptionEuros || 1500)) * 100));
+      const billSavingsPct = Math.min(100, Math.round((firstYearSavings / (eurVal || 1500)) * 100));
 
       const co2AvoidedKg = Math.round(annualProdKwh * 0.5);
       const treesPlanted = Math.round(co2AvoidedKg / 350);
@@ -490,7 +506,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
         surfaceM2,
         orientation: orientation.text,
         inclination,
-        consumptionKwh,
+        consumptionKwh: consumptionKwh || 6000,
         electricVehicles,
         selectedPower: selectedPowerTab,
         savingsFirstYear: simulationResults.metrics[selectedPowerTab].firstYearSavings
@@ -502,6 +518,9 @@ const SolarSimulator = ({ onCompleteLead }) => {
   };
 
   const activeMetrics = simulationResults.metrics[selectedPowerTab] || simulationResults.metrics[9];
+
+  // Calcul dynamique de la hauteur du toit dans le SVG selon l'inclinaison sélectionnée (0°, 15°, 30°, 45°)
+  const roofPeakY = inclination === 0 ? 80 : inclination === 15 ? 55 : inclination === 30 ? 35 : 15;
 
   return (
     <div id="simulateur-solaire" className="w-full max-w-5xl mx-auto my-8 bg-white rounded-3xl shadow-[0_20px_60px_rgba(15,40,71,0.08)] border border-gray-100 overflow-hidden font-sans">
@@ -731,18 +750,25 @@ const SolarSimulator = ({ onCompleteLead }) => {
             </motion.div>
           )}
 
-          {/* ÉTAPE 5 */}
+          {/* ÉTAPE 5 : INCLINAISON DE LA TOITURE AVEC DESSIN DYNAMIQUE ET RETOUR À LA LIGNE */}
           {step === 5 && (
             <motion.div key="step5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="text-center max-w-xl mx-auto py-4">
               <h3 className="text-2xl font-bold text-[#0f2847] mb-6">
                 Quelle est l'inclinaison de votre toiture ?
               </h3>
 
+              {/* Visuel SVG dynamique dont la pente s'ajuste selon l'angle sélectionné (0°, 15°, 30°, 45°) */}
               <div className="w-full h-32 mb-8 flex items-center justify-center">
-                <svg className="w-64 h-32 text-[#0f9b8e]" viewBox="0 0 200 100" fill="none" stroke="currentColor" strokeWidth="3">
-                  <path d="M 20 80 L 100 20 L 180 80" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M 30 72.5 L 90 27.5 L 90 72.5 Z" fill="#0f9b8e" fillOpacity="0.15" strokeDasharray="3 3" />
-                  <line x1="20" y1="80" x2="180" y2="80" stroke="#cbd5e1" strokeWidth="2" />
+                <svg className="w-64 h-32 text-[#0f9b8e] transition-all duration-300" viewBox="0 0 200 100" fill="none" stroke="currentColor" strokeWidth="3">
+                  {inclination === 0 ? (
+                    <line x1="20" y1="80" x2="180" y2="80" stroke="#0f9b8e" strokeWidth="5" strokeLinecap="round" />
+                  ) : (
+                    <>
+                      <path d={`M 20 80 L 100 ${roofPeakY} L 180 80`} strokeLinecap="round" strokeLinejoin="round" className="transition-all duration-300" />
+                      <path d={`M 30 75 L 100 ${roofPeakY + 5} L 100 75 Z`} fill="#0f9b8e" fillOpacity="0.15" strokeDasharray="3 3" className="transition-all duration-300" />
+                      <line x1="20" y1="80" x2="180" y2="80" stroke="#cbd5e1" strokeWidth="2" />
+                    </>
+                  )}
                 </svg>
               </div>
 
@@ -762,8 +788,9 @@ const SolarSimulator = ({ onCompleteLead }) => {
                 ))}
               </div>
 
-              <p className="text-xs text-gray-500 mb-8 bg-gray-50 p-3 rounded-lg border border-gray-100">
-                Si vous ne connaissez pas l'inclinaison exacte de votre toiture, choisissez <strong>30°</strong>. Il s'agit de la construction la plus courante en France.
+              <p className="text-xs text-gray-500 mb-8 bg-gray-50 p-3 rounded-lg border border-gray-100 leading-relaxed">
+                Si vous ne connaissez pas l'inclinaison exacte de votre toiture, choisissez 30°.<br />
+                Il s'agit de la construction la plus courante en France.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -784,14 +811,14 @@ const SolarSimulator = ({ onCompleteLead }) => {
             </motion.div>
           )}
 
-          {/* ÉTAPE 6 */}
+          {/* ÉTAPE 6 : CONSOMMATION ÉLECTRIQUE (CHAMPS VIDES AVEC PLACEHOLDERS ET VALIDATION OBLIGATOIRE) */}
           {step === 6 && (
             <motion.div key="step6" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="text-center max-w-xl mx-auto py-4">
               <h3 className="text-2xl font-bold text-[#0f2847] mb-6">
                 Quelle est votre consommation d'électricité ?
               </h3>
 
-              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-8 space-y-6">
+              <div className="bg-gray-50 p-6 rounded-2xl border border-gray-200 mb-6 space-y-6">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Je connais ma consommation en kWh :
@@ -801,7 +828,8 @@ const SolarSimulator = ({ onCompleteLead }) => {
                       type="number"
                       value={consumptionKwh}
                       onChange={(e) => handleKwhChange(e.target.value)}
-                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-gray-800"
+                      placeholder="6000"
+                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-gray-800 placeholder-gray-300"
                     />
                     <span className="bg-[#0f9b8e] text-white font-bold px-4 py-3 text-sm">
                       kWh / an
@@ -824,7 +852,8 @@ const SolarSimulator = ({ onCompleteLead }) => {
                       type="number"
                       value={consumptionEuros}
                       onChange={(e) => handleEurosChange(e.target.value)}
-                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-gray-800"
+                      placeholder="1500"
+                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-gray-800 placeholder-gray-300"
                     />
                     <span className="bg-[#0f9b8e] text-white font-bold px-4 py-3 text-sm">
                       € / an
@@ -832,6 +861,14 @@ const SolarSimulator = ({ onCompleteLead }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Affichage du message d'erreur si la saisie est vide */}
+              {consumptionError && (
+                <div className="mb-6 flex items-center justify-center space-x-2 text-red-600 bg-red-50 p-3 rounded-xl border border-red-200 text-xs font-semibold">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  <span>{consumptionError}</span>
+                </div>
+              )}
 
               <div className="mb-8">
                 <h4 className="text-base font-bold text-[#0f2847] mb-4">
