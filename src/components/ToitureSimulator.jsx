@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
   Sun, Zap, Leaf, Home, Award, Info, ShieldCheck, Sparkles, FileText,
-  RotateCcw, AlertCircle, PhoneCall, Check, Lock, Send, Building, DollarSign
+  RotateCcw, AlertCircle, PhoneCall, Check, Lock, Send, Building, DollarSign, TrendingUp
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -82,6 +82,105 @@ function loadJsPDF() {
     script.onerror = (err) => reject(err);
     document.body.appendChild(script);
   });
+}
+
+// ==========================================
+// COMPOSANT GRAPHIQUE BARRES DES REVENUS CUMULÉS SUR 30 ANS
+// ==========================================
+function CumulativeRevenuesBarChart({ annualRevenueEuros }) {
+  const years = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  const data = useMemo(() => {
+    let currentRevenue = annualRevenueEuros;
+    let cumRevenue = 0;
+    return years.map(y => {
+      cumRevenue += Math.round(currentRevenue);
+      currentRevenue *= 1.01; // légère indexation tarifaire 1%/an
+      return { year: y, cumRevenue };
+    });
+  }, [annualRevenueEuros]);
+
+  const cum10 = useMemo(() => (data[9]?.cumRevenue || annualRevenueEuros * 10).toLocaleString('fr-FR'), [data, annualRevenueEuros]);
+  const cum20 = useMemo(() => (data[19]?.cumRevenue || annualRevenueEuros * 20).toLocaleString('fr-FR'), [data, annualRevenueEuros]);
+  const cum30 = useMemo(() => (data[29]?.cumRevenue || annualRevenueEuros * 30).toLocaleString('fr-FR'), [data, annualRevenueEuros]);
+
+  const maxVal = Math.max(...data.map(d => d.cumRevenue), 1000);
+  const targetYears = [1, 5, 10, 15, 20, 25, 30];
+
+  return (
+    <div className="bg-[#162238] rounded-3xl p-6 sm:p-8 text-white my-10 border border-slate-700 shadow-2xl">
+      {/* Header du Graphique */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div>
+          <h4 className="text-xl font-bold text-white flex items-center gap-2.5">
+            <TrendingUp className="w-6 h-6 text-[#84cc16]" />
+            <span>Revenus cumulés de la revente d'électricité</span>
+          </h4>
+          <p className="text-xs sm:text-sm text-slate-300 mt-1">
+            Projection sur 30 ans du chiffre d'affaires cumulé généré par votre centrale photovoltaïque
+          </p>
+        </div>
+      </div>
+
+      {/* Cartes Métriques (10 ans, 20 ans, 30 ans) */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-8 text-center">
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
+          <p className="text-xs text-slate-400 mb-1">sur 10 ans</p>
+          <p className="text-base sm:text-2xl font-extrabold text-[#84cc16]">{cum10} €</p>
+        </div>
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
+          <p className="text-xs text-slate-400 mb-1">sur 20 ans</p>
+          <p className="text-base sm:text-2xl font-extrabold text-[#84cc16]">{cum20} €</p>
+        </div>
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
+          <p className="text-xs text-slate-400 mb-1">sur 30 ans</p>
+          <p className="text-base sm:text-2xl font-extrabold text-[#84cc16]">{cum30} €</p>
+        </div>
+      </div>
+
+      {/* Graphique de Barres en Histogramme */}
+      <div className="relative h-64 w-full pt-6 pb-0">
+        <div className="absolute left-6 right-2 bottom-0 h-px bg-slate-600 z-0"></div>
+
+        <div className="flex items-end justify-between h-full pl-6 pr-2 relative z-10">
+          {data.map((d) => {
+            const heightPct = Math.min(100, Math.max(8, (d.cumRevenue / maxVal) * 92));
+
+            return (
+              <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
+                {/* Tooltip au survol */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-9 bg-slate-900 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg border border-slate-700 whitespace-nowrap z-30 pointer-events-none shadow-xl">
+                  Année {d.year} : +{d.cumRevenue.toLocaleString('fr-FR')} €
+                </div>
+
+                <div 
+                  className="w-[75%] max-w-[14px] rounded-t-md transition-all duration-300 bg-[#10b981] group-hover:bg-[#34d399] group-hover:scale-110"
+                  style={{ height: `${heightPct}%` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Axe des ordonnées / Repères d'Années */}
+      <div className="w-full h-px bg-slate-600 mt-2 mb-2"></div>
+      <div className="flex justify-between pl-6 pr-2 text-xs font-bold text-slate-300">
+        {targetYears.map((yr) => (
+          <div key={yr} className="text-center w-6">
+            {yr}
+          </div>
+        ))}
+      </div>
+
+      <div className="flex justify-center text-xs text-slate-400 mt-5 border-t border-slate-700/60 pt-3">
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#10b981] inline-block"></span>
+          <span>Revenus solaires cumulés (€)</span>
+        </span>
+      </div>
+    </div>
+  );
 }
 
 // ==========================================
@@ -171,7 +270,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     group.clearLayers();
 
     if (step === 2) {
-      // Marqueur central vert
+      // Marqueur central vert déplaçable
       const centerMarkerIcon = new L.DivIcon({
         className: 'custom-center-marker',
         html: `<div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; cursor: grab;">
@@ -253,11 +352,11 @@ export default function ToitureSimulator() {
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState('');
-  const [centerCoords, setCenterCoords] = useState({ lat: 48.8785, lng: 2.3168 }); // Paris par défaut
+  const [centerCoords, setCenterCoords] = useState({ lat: 48.8785, lng: 2.3168 });
   
   // Coins du rectangle de la toiture
   const [roofCorners, setRoofCorners] = useState([]);
-  const [surfaceM2, setSurfaceM2] = useState(500); // 500m² par défaut
+  const [surfaceM2, setSurfaceM2] = useState(500);
   
   // État du calcul animé (Étape 3.5)
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -268,7 +367,7 @@ export default function ToitureSimulator() {
     firstName: '',
     email: '',
     phone: '',
-    userType: 'proprietaire', // proprietaire, entreprise, agriculteur
+    userType: 'proprietaire',
     comments: '',
     rgpd: false
   });
@@ -288,7 +387,7 @@ export default function ToitureSimulator() {
           if (data && data.features) {
             setSuggestions(data.features.map(f => ({
               label: f.properties.label,
-              coordinates: f.geometry.coordinates // [lng, lat]
+              coordinates: f.geometry.coordinates
             })));
           }
         })
@@ -313,13 +412,13 @@ export default function ToitureSimulator() {
 
   // Initialiser les 4 coins de la toiture autour des coordonnées centrales
   const handleValidateLocation = () => {
-    const dLat = 0.00015; // ~15m
-    const dLng = 0.00025; // ~20m
+    const dLat = 0.00015;
+    const dLng = 0.00025;
     const corners = [
-      { lat: centerCoords.lat + dLat, lng: centerCoords.lng - dLng }, // 1: Nord-Ouest
-      { lat: centerCoords.lat + dLat, lng: centerCoords.lng + dLng }, // 2: Nord-Est
-      { lat: centerCoords.lat - dLat, lng: centerCoords.lng + dLng }, // 3: Sud-Est
-      { lat: centerCoords.lat - dLat, lng: centerCoords.lng - dLng }  // 4: Sud-Ouest
+      { lat: centerCoords.lat + dLat, lng: centerCoords.lng - dLng },
+      { lat: centerCoords.lat + dLat, lng: centerCoords.lng + dLng },
+      { lat: centerCoords.lat - dLat, lng: centerCoords.lng + dLng },
+      { lat: centerCoords.lat - dLat, lng: centerCoords.lng - dLng }
     ];
     setRoofCorners(corners);
     const area = calculatePolygonArea(corners);
@@ -327,13 +426,11 @@ export default function ToitureSimulator() {
     setStep(3);
   };
 
-  // Valider la sélection de la toiture -> Lance l'animation de calcul (Étape 3.5)
   const handleValidateCorners = () => {
     setStep(3.5);
     setLoadingProgress(0);
   };
 
-  // Effet d'animation de chargement de l'étape 3.5
   useEffect(() => {
     if (step === 3.5) {
       const interval = setInterval(() => {
@@ -350,7 +447,6 @@ export default function ToitureSimulator() {
     }
   }, [step]);
 
-  // Réinitialiser la simulation
   const handleRestart = () => {
     setStep(1);
     setSearchQuery('');
@@ -361,35 +457,29 @@ export default function ToitureSimulator() {
   // ==========================================
   // CALCULS PHOTOVOLTAÏQUES (REVENTE TOTAL)
   // ==========================================
-  // Densité standard : ~6 m² par kWc (soit ~0.165 kWc par m²)
   const rawKwc = useMemo(() => {
     return Math.round((surfaceM2 / 6) * 10) / 10;
   }, [surfaceM2]);
 
-  // Plafonnement tarifaire conventionné à 500 kWc pour les revenus affichés
   const installableKwc = useMemo(() => {
     return Math.min(rawKwc, 500);
   }, [rawKwc]);
 
-  // Production potentielle annuelle (kWh) -> ~1150 kWh / kWc en France
   const annualProductionKwh = useMemo(() => {
     return Math.round(installableKwc * 1150);
   }, [installableKwc]);
 
-  // Tarif de rachat EDF OA Revente Totale (~0.075 € à 0.12 € / kWh selon puissance)
   const tariffPerKwh = useMemo(() => {
     if (installableKwc <= 9) return 0.130;
     if (installableKwc <= 36) return 0.115;
     if (installableKwc <= 100) return 0.098;
-    return 0.085; // >100kWc
+    return 0.085;
   }, [installableKwc]);
 
-  // Revenus potentiels annuels (€)
   const annualRevenueEuros = useMemo(() => {
     return Math.round(annualProductionKwh * tariffPerKwh);
   }, [annualProductionKwh, tariffPerKwh]);
 
-  // Équivalents annuels
   const foyersMoyens = useMemo(() => {
     return Math.round((annualProductionKwh / 4700) * 10) / 10;
   }, [annualProductionKwh]);
@@ -447,8 +537,7 @@ export default function ToitureSimulator() {
         const { jsPDF } = jspdfModule;
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-        // Page 1: Synthèse du Projet
-        doc.setFillColor(15, 40, 71); // #0f2847
+        doc.setFillColor(15, 40, 71);
         doc.rect(0, 0, 210, 38, 'F');
 
         doc.setTextColor(255, 255, 255);
@@ -459,11 +548,9 @@ export default function ToitureSimulator() {
         doc.setFont('helvetica', 'normal');
         doc.text("Étude de Rentabilité - Toiture Photovoltaïque (Revente d'Électricité)", 15, 26);
 
-        // Header Date
         doc.setFontSize(9);
         doc.text(`Date : ${new Date().toLocaleDateString('fr-FR')}`, 150, 18);
 
-        // Adresse du Projet
         const addrFormatted = formatAddressForPdf(selectedAddress || searchQuery);
         doc.setFillColor(245, 247, 250);
         doc.roundedRect(15, 45, 180, 28, 3, 3, 'F');
@@ -476,9 +563,7 @@ export default function ToitureSimulator() {
         doc.text(addrFormatted.line1, 22, 61);
         if (addrFormatted.line2) doc.text(addrFormatted.line2, 22, 67);
 
-        // Cartes Métriques Clés
-        // Card 1: Puissance
-        doc.setFillColor(236, 253, 245); // Light green
+        doc.setFillColor(236, 253, 245);
         doc.setDrawColor(16, 185, 129);
         doc.roundedRect(15, 80, 56, 35, 3, 3, 'FD');
         doc.setFont('helvetica', 'bold');
@@ -489,8 +574,7 @@ export default function ToitureSimulator() {
         doc.setTextColor(16, 185, 129);
         doc.text(`${installableKwc} kWc`, 18, 102);
 
-        // Card 2: Production
-        doc.setFillColor(239, 246, 255); // Light blue
+        doc.setFillColor(239, 246, 255);
         doc.setDrawColor(59, 130, 246);
         doc.roundedRect(77, 80, 56, 35, 3, 3, 'FD');
         doc.setFont('helvetica', 'bold');
@@ -501,8 +585,7 @@ export default function ToitureSimulator() {
         doc.setTextColor(37, 99, 235);
         doc.text(`${annualProductionKwh.toLocaleString('fr-FR')} kWh`, 80, 102);
 
-        // Card 3: Revenus
-        doc.setFillColor(254, 243, 199); // Light amber
+        doc.setFillColor(254, 243, 199);
         doc.setDrawColor(217, 119, 6);
         doc.roundedRect(139, 80, 56, 35, 3, 3, 'FD');
         doc.setFont('helvetica', 'bold');
@@ -513,7 +596,6 @@ export default function ToitureSimulator() {
         doc.setTextColor(217, 119, 6);
         doc.text(`${annualRevenueEuros.toLocaleString('fr-FR')} €/an`, 142, 102);
 
-        // Impact Environnemental & Équivalence
         doc.setFillColor(248, 250, 252);
         doc.roundedRect(15, 123, 180, 32, 3, 3, 'F');
         doc.setFont('helvetica', 'bold');
@@ -525,7 +607,6 @@ export default function ToitureSimulator() {
         doc.text(`• Foyers moyens alimentés : ${foyersMoyens} foyers`, 22, 142);
         doc.text(`• Émissions de CO2 évitées : ${co2TonnesEvitees.toLocaleString('fr-FR')} tonnes / an`, 22, 148);
 
-        // Coordonnées du Client
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(11);
         doc.text("INFORMATIONS DU DEMANDEUR", 15, 168);
@@ -536,7 +617,6 @@ export default function ToitureSimulator() {
         doc.text(`Téléphone : ${leadForm.phone}`, 15, 188);
         doc.text(`Profil : ${leadForm.userType}`, 15, 194);
 
-        // Footer Legal
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.text("© 2026 ENR COURTAGE - Tous droits d'utilisation et de reproduction réservés.", 15, 280);
@@ -607,9 +687,7 @@ export default function ToitureSimulator() {
 
       {/* Corps du Simulateur */}
       <div className="p-6 md:p-8">
-        {/* ==========================================
-            ÉTAPE 1 : SAISIE DE L'ADRESSE POSTALE
-           ========================================== */}
+        {/* ÉTAPE 1 : SAISIE DE L'ADRESSE POSTALE */}
         {step === 1 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -635,7 +713,6 @@ export default function ToitureSimulator() {
                 <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               </div>
 
-              {/* Suggestions BAN */}
               {suggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-2xl mt-2 shadow-2xl z-50 overflow-hidden divide-y divide-gray-50 text-left">
                   {suggestions.map((sugg, idx) => (
@@ -669,9 +746,7 @@ export default function ToitureSimulator() {
           </motion.div>
         )}
 
-        {/* ==========================================
-            ÉTAPE 2 : LOCALISATION SUR LA CARTE SATELLITE
-           ========================================== */}
+        {/* ÉTAPE 2 : LOCALISATION SUR LA CARTE SATELLITE */}
         {step === 2 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
@@ -715,9 +790,7 @@ export default function ToitureSimulator() {
           </motion.div>
         )}
 
-        {/* ==========================================
-            ÉTAPE 3 : SÉLECTION DES 4 COINS DE LA TOITURE
-           ========================================== */}
+        {/* ÉTAPE 3 : SÉLECTION DES 4 COINS DE LA TOITURE */}
         {step === 3 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.98 }}
@@ -769,9 +842,7 @@ export default function ToitureSimulator() {
           </motion.div>
         )}
 
-        {/* ==========================================
-            ÉTAPE 3.5 : ANIMATION DE CALCUL DES REVENUS
-           ========================================== */}
+        {/* ÉTAPE 3.5 : ANIMATION DE CALCUL DES REVENUS */}
         {step === 3.5 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -794,9 +865,7 @@ export default function ToitureSimulator() {
           </motion.div>
         )}
 
-        {/* ==========================================
-            ÉTAPE 4 : RÉSULTATS DE L'ÉTUDE DE TOITURE
-           ========================================== */}
+        {/* ÉTAPE 4 : RÉSULTATS DE L'ÉTUDE DE TOITURE */}
         {step === 4 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -819,7 +888,7 @@ export default function ToitureSimulator() {
               </button>
             </div>
 
-            {/* Carte Principale des Résultats (Identique visuellement à la maquette Groupe Roy / ENR COURTAGE) */}
+            {/* Carte Principale des Résultats */}
             <div className="bg-white rounded-3xl p-6 sm:p-10 border-2 border-[#84cc16] shadow-xl text-center relative overflow-hidden">
               <span className="text-xs uppercase tracking-widest text-[#84cc16] font-bold block mb-1">RÉSULTATS DE L'ÉTUDE</span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847] mb-8">Potentiel photovoltaïque de votre toiture</h3>
@@ -884,9 +953,12 @@ export default function ToitureSimulator() {
                 </div>
               </div>
 
+              {/* GRAPHIQUE DES REVENUS CUMULÉS SUR 30 ANS (MÊME DESIGN SANS MENTION D'AMORTISSEMENT) */}
+              <CumulativeRevenuesBarChart annualRevenueEuros={annualRevenueEuros} />
+
               {/* Formulaire Lead pour être recontacté */}
               {!submitSuccess ? (
-                <form onSubmit={handleSubmitLead} className="bg-gray-50/80 p-6 sm:p-8 rounded-2xl border border-gray-200 text-left max-w-2xl mx-auto">
+                <form onSubmit={handleSubmitLead} className="bg-gray-50/80 p-6 sm:p-8 rounded-2xl border border-gray-200 text-left max-w-2xl mx-auto mt-10">
                   <h4 className="text-lg font-bold text-[#0f2847] mb-2 text-center">Contactez un expert pour valoriser votre toiture</h4>
                   <p className="text-xs text-gray-500 mb-6 text-center">Recevez votre étude de faisabilité technique & financière détaillée sous 24h.</p>
 
@@ -984,7 +1056,7 @@ export default function ToitureSimulator() {
                   </button>
                 </form>
               ) : (
-                <div className="bg-emerald-50 border border-emerald-200 p-8 rounded-2xl max-w-xl mx-auto text-center">
+                <div className="bg-emerald-50 border border-emerald-200 p-8 rounded-2xl max-w-xl mx-auto text-center mt-10">
                   <CheckCircle2 className="w-12 h-12 text-[#84cc16] mx-auto mb-3" />
                   <h4 className="text-xl font-bold text-[#0f2847] mb-2">Demande transmise avec succès !</h4>
                   <p className="text-xs text-gray-600 mb-4">

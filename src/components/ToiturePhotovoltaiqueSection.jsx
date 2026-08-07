@@ -51,7 +51,7 @@ const ToiturePhotovoltaiqueSection = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section */}
+      {/* Hero Section sans les mots "Notre solution" */}
       <section className="pt-20 md:pt-28 pb-10 md:pb-14 bg-white" aria-labelledby="toiture-title">
         <div className="max-w-7xl mx-auto container-padding">
           <motion.div 
@@ -79,8 +79,8 @@ const ToiturePhotovoltaiqueSection = () => {
             <ToitureSimulator />
           </motion.div>
 
-          {/* SECTION EXPLICATIVE REVENTE D'ÉLECTRICITÉ */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          {/* SECTION EXPLICATIVE REVENTE D'ÉLECTRICITÉ (AVEC L'IMAGE DE TOITURE SUR PROFILÉ À GAUCHE) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} 
               whileInView={{ opacity: 1, x: 0 }} 
@@ -88,8 +88,8 @@ const ToiturePhotovoltaiqueSection = () => {
               transition={{ duration: 0.8 }}
             >
               <img
-                className="w-full h-[460px] object-cover rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)]"
-                alt="Centrale solaire photovoltaïque sur toiture"
+                className="w-full h-[450px] object-cover rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.1)] border border-gray-100"
+                alt="Panneaux photovoltaïques sur toiture métallique"
                 src="/toiture-photo.png"
                 width="1200" height="600" loading="lazy" decoding="async"
               />
@@ -131,9 +131,9 @@ const ToiturePhotovoltaiqueSection = () => {
         </div>
       </section>
 
-      {/* Avantages Section */}
+      {/* Avantages Section - Élargie pour garantir un titre sur une seule ligne */}
       <section className="section-padding bg-gray-50 border-y border-gray-100">
-        <div className="max-w-7xl mx-auto container-padding">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
             whileInView={{ opacity: 1, y: 0 }} 
@@ -149,7 +149,7 @@ const ToiturePhotovoltaiqueSection = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
             {advantages.map((advantage, index) => (
               <motion.div
                 key={index}
@@ -159,16 +159,18 @@ const ToiturePhotovoltaiqueSection = () => {
                 whileInView="visible"
                 viewport={{ once: true }}
               >
-                <div className="bg-white rounded-2xl p-5 sm:p-6 h-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-gray-100 flex flex-col justify-between">
+                <div className="bg-white rounded-2xl px-4 py-6 h-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-300 group border border-gray-100 flex flex-col justify-between">
                   <div>
                     <div 
-                      className="w-13 h-13 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
+                      className="w-12 h-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110"
                       style={{ backgroundColor: advantage.accent + '15', color: advantage.accent }}
                     >
                       {advantage.icon}
                     </div>
-                    <h3 className="text-sm sm:text-base font-extrabold text-[#0f2847] mb-2.5 whitespace-nowrap tracking-tight">{advantage.title}</h3>
-                    <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">{advantage.description}</p>
+                    <h3 className="text-xs sm:text-sm lg:text-[14px] font-extrabold text-[#0f2847] mb-3 whitespace-nowrap tracking-tight leading-snug">
+                      {advantage.title}
+                    </h3>
+                    <p className="text-gray-500 text-xs leading-relaxed">{advantage.description}</p>
                   </div>
                 </div>
               </motion.div>
