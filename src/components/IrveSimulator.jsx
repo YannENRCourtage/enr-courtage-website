@@ -188,16 +188,16 @@ export default function IrveSimulator() {
 
   return (
     <div className="w-full max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-      {/* Header sans symbole à gauche */}
+      {/* Header */}
       <div className="bg-[#0f2847] px-6 py-4 text-white">
         <h2 className="text-xl md:text-2xl font-bold m-0">Votre véhicule électrique</h2>
         <p className="text-blue-100 text-xs md:text-sm mt-0.5">Simulez le temps de recharge de votre véhicule</p>
       </div>
 
-      <div className="flex flex-col lg:flex-row p-6 gap-6">
-        {/* Left Panel: Selection & Info */}
-        <div className="w-full lg:w-1/3 flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+      <div className="flex flex-col lg:flex-row p-6 gap-8">
+        {/* Left Panel: Élargi à 44% de largeur pour offrir un champ Modèle plus large et une note sur 2 lignes */}
+        <div className="w-full lg:w-[44%] flex flex-col gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Marque</label>
               <div className="relative">
@@ -248,7 +248,6 @@ export default function IrveSimulator() {
               transition={{ duration: 0.3 }}
               className="bg-gray-50 rounded-xl p-4 border border-gray-100"
             >
-              {/* Ligne Logo de la marque ET type de prise sur la même ligne */}
               <div className="flex items-center justify-between mb-3">
                 <div className="w-24 h-12 bg-white rounded-lg flex items-center justify-center shadow-inner overflow-hidden border border-gray-100 p-1">
                   {logoUrl && !logoError ? (
@@ -297,13 +296,14 @@ export default function IrveSimulator() {
             </motion.div>
           )}
 
-          <p className="text-[11px] text-gray-400 text-justify italic">
+          {/* Phrase explicative formatée sur 2 lignes */}
+          <p className="text-xs text-gray-400 leading-relaxed italic">
             * Les données présentées peuvent varier suivant le modèle ou les options. La puissance de charge acceptée par votre véhicule est plafonnée à {acPower} kW.
           </p>
         </div>
 
-        {/* Right Panel: Chart */}
-        <div className="w-full lg:w-2/3 flex flex-col">
+        {/* Right Panel: Chart ajusté à 56% */}
+        <div className="w-full lg:w-[56%] flex flex-col">
           <h3 className="text-base font-bold text-[#0f2847] mb-4 border-b border-gray-100 pb-2">
             Comparatif des temps de recharge de 0 à 100%
           </h3>
