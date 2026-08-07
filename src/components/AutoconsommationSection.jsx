@@ -51,19 +51,32 @@ const AutoconsommationSection = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section */}
-      <section className="section-padding bg-white" aria-labelledby="acc-title">
-        <div className="max-w-7xl mx-auto container-padding">
+      {/* Hero Section avec vidéo "5.mp4" sous-imposée */}
+      <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="acc-title">
+        {/* Vidéo 5.mp4 en arrière-plan avec sous-imposition (overlay) */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-40 scale-105"
+            src="/5.mp4"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/85 via-[#0f2847]/75 to-[#0f2847]/95" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto container-padding">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.8 }} 
             className="text-center mb-12"
           >
-            <h2 id="acc-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
+            <h1 id="acc-title" className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
               Autoconsommation
-            </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
+            </h1>
+            <p className="text-lg text-gray-200 max-w-2xl mx-auto font-light leading-relaxed">
               Produisez votre propre électricité grâce à une centrale solaire photovoltaïque installée sur votre site. 
               Réduisez votre facture énergétique sans investissement initial grâce à notre formule en abonnement.
             </p>
@@ -74,11 +87,15 @@ const AutoconsommationSection = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mb-20"
           >
             <SolarSimulator />
           </motion.div>
+        </div>
+      </section>
 
+      {/* SECTION EXPLICATIVE AUTOCONSOMMATION */}
+      <section className="py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto container-padding">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} 
