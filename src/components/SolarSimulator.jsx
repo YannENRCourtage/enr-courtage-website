@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
-  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText, MousePointerClick, RotateCcw, AlertCircle
+  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText,
+  RotateCcw, AlertCircle, BatteryCharging, Car, PhoneCall, Check, Lock, Send
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useToast } from './ui/use-toast';
+
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb";
 
 // Fix icône Leaflet par défaut
 delete L.Icon.Default.prototype._getIconUrl;
@@ -33,7 +37,7 @@ const createHandleIcon = (label) => new L.DivIcon({
 // Calcul géodésique de la surface d'un quadrilatère (en m²)
 function calculatePolygonArea(corners) {
   if (!corners || corners.length < 3) return 0;
-  const R = 6378137; // Rayon de la Terre en mètres
+  const R = 6378137;
   const avgLat = (corners.reduce((acc, c) => acc + c.lat, 0) / corners.length) * (Math.PI / 180);
   const cosLat = Math.cos(avgLat);
 
@@ -52,7 +56,7 @@ function calculatePolygonArea(corners) {
   return Math.round(area);
 }
 
-// Calcul exact de l'orientation de la PENTE (faîtage = trait rouge)
+// Calcul de l'orientation (trait rouge = faîtage / haut de pente)
 function calculateOrientation(edgeCorners, allCorners) {
   if (!edgeCorners || edgeCorners.length < 2 || !allCorners || allCorners.length < 3) {
     return { text: "Sud-Ouest", code: "SO", azimuth: 225 };
@@ -82,8 +86,23 @@ function calculateOrientation(edgeCorners, allCorners) {
   return { text: "Nord-Ouest", code: "NO", azimuth: 315 };
 }
 
+// Charger jsPDF dynamiquement depuis CDN si pas encore chargé
+function loadJsPDF() {
+  return new Promise((resolve, reject) => {
+    if (window.jspdf) {
+      resolve(window.jspdf);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => resolve(window.jspdf);
+    script.onerror = (err) => reject(err);
+    document.body.appendChild(script);
+  });
+}
+
 // ==========================================
-// COMPOSANT CARTE LEAFLET ULTRA-FLUIDE
+// COMPOSANT CARTE LEAFLET AUTONOME
 // ==========================================
 function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoofCorners, selectedEdgeIndex, onSelectEdge, setSurfaceM2 }) {
   const containerRef = useRef(null);
@@ -144,7 +163,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     };
   }, []);
 
-  // GESTION PERSISTANTE DES COINS POUR UN DRAG&DROP CONTINU
   useEffect(() => {
     const map = mapRef.current;
     const group = layersGroupRef.current;
@@ -174,7 +192,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         marker.on('drag', () => {
           const newPositions = markers.map(m => m.getLatLng());
           polygon.setLatLngs(newPositions);
-          
           const newCorners = newPositions.map(l => ({ lat: l.lat, lng: l.lng }));
           const area = calculatePolygonArea(newCorners);
           if (area > 0) setSurfaceM2(area);
@@ -218,7 +235,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
   return (
     <div className="relative w-full h-[380px] rounded-2xl overflow-hidden border border-gray-200 shadow-inner mb-6 z-10">
       <div ref={containerRef} className="w-full h-full" />
-      
       {step === 2 && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-full z-[1000] pointer-events-none drop-shadow-lg">
           <div className="w-8 h-8 rounded-full bg-[#10b981] border-4 border-white shadow-xl flex items-center justify-center animate-bounce">
@@ -231,9 +247,113 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
 }
 
 // ==========================================
+// GRAPHIQUE BARRES ROI / AMORTISSEMENT SUR 30 ANS
+// ==========================================
+function RoiBarChart({ activeMetrics, paybackYears }) {
+  const years = Array.from({ length: 30 }, (_, i) => i + 1);
+  const cost = activeMetrics.cost;
+  const firstYearSavings = activeMetrics.firstYearSavings;
+
+  // Calcul du solde net cumulé par année
+  const data = useMemo(() => {
+    let currentSavings = firstYearSavings;
+    let cumSavings = 0;
+    return years.map(y => {
+      cumSavings += currentSavings;
+      currentSavings *= 1.035; // +3.5% inflation énergie par an
+      const netBalance = Math.round(cumSavings - cost);
+      return { year: y, netBalance };
+    });
+  }, [cost, firstYearSavings]);
+
+  const maxVal = Math.max(...data.map(d => d.netBalance), 25000);
+  const minVal = Math.min(...data.map(d => d.netBalance), -cost);
+
+  const pbYearFloat = parseFloat(paybackYears) || 5.3;
+  const roiLinePct = ((pbYearFloat - 0.5) / 30) * 100;
+
+  return (
+    <div className="bg-[#162238] rounded-2xl p-6 text-white my-8 border border-slate-700 shadow-xl">
+      <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+        <div>
+          <h4 className="text-lg font-bold text-white flex items-center space-x-2">
+            <Zap className="w-5 h-5 text-[#0f9b8e]" />
+            <span>Économies cumulées & Passage à l'amortissement (ROI)</span>
+          </h4>
+          <p className="text-xs text-slate-400 mt-1">
+            Projection sur 30 ans du solde net généré par votre installation photovoltaïque
+          </p>
+        </div>
+        <div className="mt-2 sm:mt-0 px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded-full text-xs font-bold">
+          Amorti en {paybackYears} ans
+        </div>
+      </div>
+
+      <div className="relative h-64 w-full pt-6 pb-2">
+        {/* Ligne verticale pointillée ROI */}
+        <div 
+          className="absolute top-0 bottom-8 z-20 flex flex-col items-center pointer-events-none"
+          style={{ left: `${roiLinePct}%` }}
+        >
+          <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded shadow mb-1">
+            ROI ({paybackYears} ans)
+          </span>
+          <div className="w-px h-full border-r-2 border-dashed border-blue-400"></div>
+        </div>
+
+        {/* Ligne zéro horizontal */}
+        <div className="absolute left-10 right-2 top-[60%] h-px bg-slate-600 z-0"></div>
+
+        {/* Barres */}
+        <div className="flex items-end justify-between h-full pl-8 pr-2 relative z-10">
+          {data.map((d) => {
+            const isPositive = d.netBalance >= 0;
+            const heightPct = isPositive 
+              ? Math.min(100, Math.max(8, (d.netBalance / maxVal) * 55))
+              : Math.min(40, Math.max(10, (Math.abs(d.netBalance) / Math.abs(minVal)) * 35));
+
+            return (
+              <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-center">
+                {/* Tooltip au survol */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-900 text-white text-[10px] py-1 px-2 rounded border border-slate-700 whitespace-nowrap z-30 pointer-events-none">
+                  Année {d.year} : {d.netBalance > 0 ? `+${d.netBalance} €` : `${d.netBalance} €`}
+                </div>
+
+                <div className="w-full flex flex-col items-center justify-end h-full">
+                  <div 
+                    className={`w-[70%] max-w-[14px] rounded-t-sm transition-all duration-300 ${
+                      isPositive 
+                        ? 'bg-[#10b981] group-hover:bg-[#34d399]' 
+                        : 'bg-blue-500 group-hover:bg-blue-400'
+                    }`}
+                    style={{ height: `${heightPct}%` }}
+                  />
+                </div>
+                <span className="text-[9px] text-slate-400 mt-1">{d.year % 5 === 0 || d.year === 1 ? d.year : ''}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+      <div className="flex justify-between text-[11px] text-slate-400 mt-2 px-4 border-t border-slate-700/60 pt-3">
+        <span className="flex items-center space-x-1.5">
+          <span className="w-3 h-3 rounded bg-blue-500 inline-block"></span>
+          <span>Période d'amortissement</span>
+        </span>
+        <span className="flex items-center space-x-1.5">
+          <span className="w-3 h-3 rounded bg-[#10b981] inline-block"></span>
+          <span>Bénéfice net généré</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
 // COMPOSANT PRINCIPAL SIMULATEUR SOLAIRE
 // ==========================================
 const SolarSimulator = ({ onCompleteLead }) => {
+  const { toast } = useToast();
   const [step, setStep] = useState(1);
 
   // Étape 1 : Adresse & Coordonnées
@@ -249,25 +369,41 @@ const SolarSimulator = ({ onCompleteLead }) => {
   const [roofCorners, setRoofCorners] = useState([]);
   const [surfaceM2, setSurfaceM2] = useState(49);
 
-  // Étape 4 : Orientation toiture (sélection arête haute)
+  // Étape 4 : Orientation toiture
   const [selectedEdgeIndex, setSelectedEdgeIndex] = useState(0);
   const [orientation, setOrientation] = useState({ text: "Sud-Ouest", code: "SO" });
 
-  // Étape 5 : Inclinaison toiture (0, 15, 30, 45)
+  // Étape 5 : Inclinaison toiture
   const [inclination, setInclination] = useState(30);
 
   // Étape 6 : Consommation (kWh/an ou €/an) & Véhicules électriques
-  // Par défaut vide avec placeholders et validation obligatoire
   const [consumptionKwh, setConsumptionKwh] = useState('');
   const [consumptionEuros, setConsumptionEuros] = useState('');
   const [consumptionError, setConsumptionError] = useState('');
   const [electricVehicles, setElectricVehicles] = useState(0);
 
-  // Étape 6.5 : Écran de transition / chargement
+  // Étape 6.5 : Écran de transition
   const [loadingProgress, setLoadingProgress] = useState(0);
 
-  // Étape 7 : Onglet de puissance sélectionné (3, 6, 9 kWc)
+  // Étape 7 : Onglet de puissance sélectionné
   const [selectedPowerTab, setSelectedPowerTab] = useState(9);
+
+  // ==========================================
+  // ÉTAPE 7 : FORMULAIRE DE CAPTURE DE LEAD & OPTIONS
+  // ==========================================
+  const [leadForm, setLeadForm] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    phone: '',
+    optBatterie: false,
+    optBorne: false,
+    requestCallback: true,
+    acceptTerms: true,
+    captchaChoice: ''
+  });
+  const [leadFormError, setLeadFormError] = useState('');
+  const [isSendingLead, setIsSendingLead] = useState(false);
 
   // Autocomplétion API BAN / Adresse Gouv
   useEffect(() => {
@@ -499,27 +635,296 @@ const SolarSimulator = ({ onCompleteLead }) => {
     };
   }, [surfaceM2, orientation, inclination, consumptionKwh, consumptionEuros, electricVehicles]);
 
-  const handleRequestFullStudy = () => {
-    if (onCompleteLead) {
-      onCompleteLead({
-        address: selectedAddress || addressInput,
-        surfaceM2,
-        orientation: orientation.text,
-        inclination,
-        consumptionKwh: consumptionKwh || 6000,
-        electricVehicles,
-        selectedPower: selectedPowerTab,
-        savingsFirstYear: simulationResults.metrics[selectedPowerTab].firstYearSavings
+  const activeMetrics = simulationResults.metrics[selectedPowerTab] || simulationResults.metrics[9];
+
+  // GÉNÉRATION DU PDF SYNTHÉTIQUE PORTRAIT MULTI-PAGES
+  const generatePdfStudy = async () => {
+    try {
+      const { jsPDF } = await loadJsPDF();
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+      // Couleurs de la charte ENR COURTAGE
+      const primaryNavy = [15, 40, 71];
+      const tealGreen = [15, 155, 142];
+      const goldAccent = [212, 168, 67];
+
+      // =========================================================
+      // PAGE 1 : COUVERTURE & RECAPITULATIF PROJET
+      // =========================================================
+      // En-tête bleu marine
+      doc.setFillColor(...primaryNavy);
+      doc.rect(0, 0, 210, 45, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ENR COURTAGE', 15, 20);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('ETUDE DE FAISABILITE SOLAIRE & AUTOCONSOMMATION', 15, 28);
+      doc.text(`Editee le ${new Date().toLocaleDateString('fr-FR')}`, 15, 35);
+
+      // Bloc Coordonnées Client & Adresse
+      doc.setFillColor(248, 250, 252);
+      doc.roundedRect(15, 52, 180, 42, 3, 3, 'F');
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(15, 52, 180, 42, 3, 3, 'D');
+
+      doc.setTextColor(...primaryNavy);
+      doc.setFontSize(13);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Informations Client & Localisation', 20, 62);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      doc.text(`Nom & Prenom : ${leadForm.prenom} ${leadForm.nom}`, 20, 71);
+      doc.text(`Email : ${leadForm.email}`, 20, 78);
+      doc.text(`Telephone : ${leadForm.phone}`, 20, 85);
+      doc.text(`Adresse du projet : ${selectedAddress || addressInput || 'Non renseignee'}`, 105, 71);
+
+      // Section Caractéristiques Toiture
+      doc.setTextColor(...primaryNavy);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('1. Caracteristiques de votre Toiture', 15, 107);
+
+      doc.setFillColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+
+      const toitureData = [
+        ['Surface de toiture mesuree :', `${simulationResults.exploitableSurface} m2`],
+        ['Orientation du pan de toit :', orientation.text],
+        ['Inclinaison retenue :', `${inclination} degres`],
+        ['Consommation annuelle declaree :', `${consumptionKwh || 6000} kWh/an (${consumptionEuros || 1500} EUR/an)`],
+        ['Vehicules electriques du foyer :', `${electricVehicles} vehicule(s)`]
+      ];
+
+      let yPos = 117;
+      toitureData.forEach(([label, val]) => {
+        doc.setFillColor(241, 245, 249);
+        doc.rect(15, yPos, 180, 10, 'F');
+        doc.setTextColor(70, 70, 70);
+        doc.text(label, 20, yPos + 6.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...primaryNavy);
+        doc.text(val, 130, yPos + 6.5);
+        doc.setFont('helvetica', 'normal');
+        yPos += 12;
       });
-    } else {
-      const contactForm = document.querySelector('[data-contact-form]');
-      if (contactForm) contactForm.scrollIntoView({ behavior: 'smooth' });
+
+      // Preconisation d'installation
+      doc.setFillColor(...tealGreen);
+      doc.roundedRect(15, 182, 180, 48, 4, 4, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Preconisation retenue : Installation ${selectedPowerTab} kWc`, 20, 194);
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`- Nombre de panneaux photovoltaiques : ${activeMetrics.panelsCount} panneaux`, 20, 204);
+      doc.text(`- Surface d'occupation necessaire : ${activeMetrics.surfaceOccupied} m2`, 20, 211);
+      doc.text(`- Cout estimatif moyen de l'installation : ${activeMetrics.cost} EUR TTC`, 20, 218);
+
+      // Pied de page P1
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('ENR COURTAGE - Courtier en Energies Renouvelables | Page 1 sur 2', 105, 287, { align: 'center' });
+
+      // =========================================================
+      // PAGE 2 : RENDEMENT FINANCIER, ECOLOGIE & OPTIONS
+      // =========================================================
+      doc.addPage('a4', 'portrait');
+
+      doc.setFillColor(...primaryNavy);
+      doc.rect(0, 0, 210, 25, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ENR COURTAGE - RENDEMENT FINANCIER & IMPAC ECOLOGIQUE', 15, 16);
+
+      // Section 2. Analyse Financière & ROI
+      doc.setTextColor(...primaryNavy);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('2. Rentabilite Financiere & Economies Estimees', 15, 38);
+
+      const finData = [
+        ['Economies generees des la 1ere annee :', `${activeMetrics.firstYearSavings} EUR / an`],
+        ['Production photovoltaique annuelle :', `${activeMetrics.annualProdKwh} kWh / an`],
+        ['Taux d\'autoconsommation estime :', `${activeMetrics.autoRatePct} %`],
+        ['Economies cumulees sur 10 ans :', `${activeMetrics.cum10} EUR`],
+        ['Economies cumulees sur 20 ans :', `${activeMetrics.cum20} EUR`],
+        ['Economies cumulees sur 30 ans :', `${activeMetrics.cum30} EUR`],
+        ['Temps d\'amortissement de la centrale (ROI) :', `${activeMetrics.paybackYears} ans`]
+      ];
+
+      yPos = 46;
+      finData.forEach(([label, val]) => {
+        doc.setFillColor(248, 250, 252);
+        doc.rect(15, yPos, 180, 9, 'F');
+        doc.setTextColor(70, 70, 70);
+        doc.setFontSize(9.5);
+        doc.text(label, 20, yPos + 6);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...tealGreen);
+        doc.text(val, 135, yPos + 6);
+        doc.setFont('helvetica', 'normal');
+        yPos += 11;
+      });
+
+      // Section 3. Impact Environnemental
+      doc.setTextColor(...primaryNavy);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('3. Votre Bilan & Impact Environnemental', 15, 132);
+
+      doc.setFillColor(236, 253, 245);
+      doc.roundedRect(15, 140, 180, 32, 3, 3, 'F');
+      doc.setTextColor(6, 95, 70);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`- CO2 evite par an : ${activeMetrics.co2AvoidedKg} kg de CO2`, 20, 150);
+      doc.text(`- Equivalent en arbres plantes : ${activeMetrics.treesPlanted} arbres / an`, 20, 158);
+      doc.text(`- Alimentation electrique equivalente : ${activeMetrics.foyersEquiv} foyer(s)`, 20, 166);
+
+      // Section 4. Options sélectionnées & Rappel
+      doc.setTextColor(...primaryNavy);
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('4. Options Choisies & Demande d\'Accompagnement', 15, 187);
+
+      doc.setFillColor(241, 245, 249);
+      doc.roundedRect(15, 194, 180, 38, 3, 3, 'F');
+      doc.setTextColor(50, 50, 50);
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`- Option Batterie de Stockage : ${leadForm.optBatterie ? 'OUI' : 'NON'}`, 20, 205);
+      doc.text(`- Option Borne de Recharge IRVE : ${leadForm.optBorne ? 'OUI' : 'NON'}`, 20, 213);
+      doc.text(`- Demande de rappel sous 24h par un charge d'affaires : ${leadForm.requestCallback ? 'OUI' : 'NON'}`, 20, 221);
+
+      // Signature et Pied de page P2
+      doc.setFontSize(9);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Étude generee par le simulateur solaire ENR COURTAGE - www.enr-courtage.fr', 15, 270);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text('ENR COURTAGE - Courtier en Energies Renouvelables | Page 2 sur 2', 105, 287, { align: 'center' });
+
+      return doc;
+    } catch (err) {
+      console.error("Erreur génération PDF:", err);
+      return null;
     }
   };
 
-  const activeMetrics = simulationResults.metrics[selectedPowerTab] || simulationResults.metrics[9];
+  // SOUMISSION DU FORMULAIRE DE LEAD & ENVOI MAIL + PDF
+  const handleLeadSubmit = async (e) => {
+    e.preventDefault();
+    if (!leadForm.nom.trim() || !leadForm.prenom.trim() || !leadForm.email.trim() || !leadForm.phone.trim()) {
+      setLeadFormError("Veuillez remplir tous les champs obligatoires (*).");
+      return;
+    }
+    if (!leadForm.acceptTerms) {
+      setLeadFormError("Veuillez accepter la politique de confidentialité.");
+      return;
+    }
 
-  // Calcul dynamique de la hauteur du toit dans le SVG selon l'inclinaison sélectionnée (0°, 15°, 30°, 45°)
+    setLeadFormError('');
+    setIsSendingLead(true);
+
+    try {
+      // 1. Générer le document PDF multi-pages
+      const pdfDoc = await generatePdfStudy();
+      let pdfBase64 = '';
+      if (pdfDoc) {
+        pdfBase64 = pdfDoc.output('datauristring');
+        // Téléchargement direct pour l'utilisateur
+        pdfDoc.save(`Etude_Solaire_${leadForm.nom}_${selectedPowerTab}kWc.pdf`);
+      }
+
+      // 2. Envoi via Formspree vers yannbarberis@msn.com
+      const messageDetail = `
+NOUVELLE DEMANDE D'ETUDE SOLAIRE COMPLETE ENR COURTAGE
+
+CLIENT :
+- Nom : ${leadForm.nom}
+- Prénom : ${leadForm.prenom}
+- Email : ${leadForm.email}
+- Téléphone : ${leadForm.phone}
+- Adresse du projet : ${selectedAddress || addressInput || 'Non renseignée'}
+
+CARACTÉRISTIQUES TOITURE :
+- Surface exploitable : ${simulationResults.exploitableSurface} m²
+- Orientation : ${orientation.text}
+- Inclinaison : ${inclination}°
+- Consommation annuelle : ${consumptionKwh || 6000} kWh/an (${consumptionEuros || 1500} €/an)
+- Véhicules électriques : ${electricVehicles}
+
+PROPOSITION & RENDEMENT :
+- Puissance retenue : ${selectedPowerTab} kWc
+- Nombre de panneaux : ${activeMetrics.panelsCount}
+- Surface occupée : ${activeMetrics.surfaceOccupied} m²
+- Économies dès l'an 1 : ${activeMetrics.firstYearSavings} €/an
+- Temps d'amortissement (ROI) : ${activeMetrics.paybackYears} ans
+- Cumul sur 10 ans : ${activeMetrics.cum10} €
+- Cumul sur 20 ans : ${activeMetrics.cum20} €
+- Cumul sur 30 ans : ${activeMetrics.cum30} €
+- CO2 évité : ${activeMetrics.co2AvoidedKg} kg/an
+
+OPTIONS CHOISIES :
+- Batterie de stockage : ${leadForm.optBatterie ? 'OUI' : 'NON'}
+- Borne de recharge : ${leadForm.optBorne ? 'OUI' : 'NON'}
+- Demande de rappel sous 24h par chargé d'affaires : ${leadForm.requestCallback ? 'OUI' : 'NON'}
+`;
+
+      const fd = new FormData();
+      fd.append("nom", leadForm.nom);
+      fd.append("prenom", leadForm.prenom);
+      fd.append("email", leadForm.email);
+      fd.append("phone", leadForm.phone);
+      fd.append("adresse", selectedAddress || addressInput);
+      fd.append("puissance_kWc", selectedPowerTab);
+      fd.append("economies_an1", `${activeMetrics.firstYearSavings} €`);
+      fd.append("amortissement", `${activeMetrics.paybackYears} ans`);
+      fd.append("option_batterie", leadForm.optBatterie ? "Oui" : "Non");
+      fd.append("option_borne", leadForm.optBorne ? "Oui" : "Non");
+      fd.append("rappel_24h", leadForm.requestCallback ? "Oui" : "Non");
+      fd.append("message", messageDetail);
+      fd.append("_subject", `Nouvelle étude solaire personnalisée - ${leadForm.prenom} ${leadForm.nom} (${selectedPowerTab} kWc)`);
+
+      const res = await fetch(FORMSPREE_ENDPOINT, {
+        method: "POST",
+        body: fd,
+        headers: { Accept: "application/json" }
+      });
+
+      if (!res.ok) {
+        throw new Error("Erreur lors de l'envoi du message. Veuillez réessayer.");
+      }
+
+      toast({
+        title: "Étude solaire envoyée avec succès !",
+        description: "Votre étude complète en PDF a été téléchargée et transmise à nos conseillers ENR COURTAGE.",
+        className: "bg-white text-[#0f2847] border border-[#0f9b8e]"
+      });
+
+    } catch (err) {
+      console.error(err);
+      toast({
+        variant: "destructive",
+        title: "Envoi de la demande",
+        description: err.message || "Veuillez réessayer plus tard.",
+        className: "bg-white text-gray-900 border border-red-400"
+      });
+    } finally {
+      setIsSendingLead(false);
+    }
+  };
+
   const roofPeakY = inclination === 0 ? 80 : inclination === 15 ? 55 : inclination === 30 ? 35 : 15;
 
   return (
@@ -750,14 +1155,13 @@ const SolarSimulator = ({ onCompleteLead }) => {
             </motion.div>
           )}
 
-          {/* ÉTAPE 5 : INCLINAISON DE LA TOITURE AVEC DESSIN DYNAMIQUE ET RETOUR À LA LIGNE */}
+          {/* ÉTAPE 5 */}
           {step === 5 && (
             <motion.div key="step5" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="text-center max-w-xl mx-auto py-4">
               <h3 className="text-2xl font-bold text-[#0f2847] mb-6">
                 Quelle est l'inclinaison de votre toiture ?
               </h3>
 
-              {/* Visuel SVG dynamique dont la pente s'ajuste selon l'angle sélectionné (0°, 15°, 30°, 45°) */}
               <div className="w-full h-32 mb-8 flex items-center justify-center">
                 <svg className="w-64 h-32 text-[#0f9b8e] transition-all duration-300" viewBox="0 0 200 100" fill="none" stroke="currentColor" strokeWidth="3">
                   {inclination === 0 ? (
@@ -811,7 +1215,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
             </motion.div>
           )}
 
-          {/* ÉTAPE 6 : CONSOMMATION ÉLECTRIQUE (CHAMPS VIDES AVEC PLACEHOLDERS ET VALIDATION OBLIGATOIRE) */}
+          {/* ÉTAPE 6 */}
           {step === 6 && (
             <motion.div key="step6" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -15 }} className="text-center max-w-xl mx-auto py-4">
               <h3 className="text-2xl font-bold text-[#0f2847] mb-6">
@@ -862,7 +1266,6 @@ const SolarSimulator = ({ onCompleteLead }) => {
                 </div>
               </div>
 
-              {/* Affichage du message d'erreur si la saisie est vide */}
               {consumptionError && (
                 <div className="mb-6 flex items-center justify-center space-x-2 text-red-600 bg-red-50 p-3 rounded-xl border border-red-200 text-xs font-semibold">
                   <AlertCircle className="w-4 h-4 flex-shrink-0" />
@@ -922,7 +1325,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
             </motion.div>
           )}
 
-          {/* ÉTAPE 7 */}
+          {/* ÉTAPE 7 : RÉSULTATS & CAPTURE DE LEAD AVEC ENVOI MAIL / PDF */}
           {step === 7 && (
             <motion.div key="step7" initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-10">
 
@@ -995,6 +1398,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
               {/* Détails économies */}
               <div className="bg-white border border-gray-200 rounded-2xl p-6 md:p-8 space-y-8">
                 <div className="text-center">
+                  <h3 className="text-2xl font-extrabold text-[#0f2847] mb-1">Économies estimées</h3>
                   <span className="text-xs font-semibold text-gray-400 uppercase">
                     Données calculées selon les tarifs d'électricité en vigueur
                   </span>
@@ -1049,6 +1453,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
                   </div>
                 </div>
 
+                {/* PROJECTION ÉCONOMIES CUMULÉES SUR 10, 20, 30 ANS */}
                 <div className="pt-6 border-t border-gray-100 text-center">
                   <h4 className="text-lg font-bold text-[#0f2847] mb-6">Économies cumulées</h4>
                   <div className="grid grid-cols-3 gap-4 mb-4">
@@ -1070,6 +1475,10 @@ const SolarSimulator = ({ onCompleteLead }) => {
                   </p>
                 </div>
 
+                {/* GRAPHIQUE BARRES DU ROI & PASSAGE DE L'AMORTISSEMENT */}
+                <RoiBarChart activeMetrics={activeMetrics} paybackYears={activeMetrics.paybackYears} />
+
+                {/* IMPACT SUR L'ENVIRONNEMENT */}
                 <div className="pt-6 border-t border-gray-100 text-center">
                   <h4 className="text-lg font-bold text-[#0f2847] mb-6 flex items-center justify-center space-x-2">
                     <Leaf className="w-5 h-5 text-emerald-500" />
@@ -1093,21 +1502,181 @@ const SolarSimulator = ({ onCompleteLead }) => {
 
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-                <button
-                  onClick={handleRequestFullStudy}
-                  className="w-full sm:w-auto px-8 py-4 bg-[#0f9b8e] hover:bg-[#0c8277] text-white font-bold rounded-xl shadow-xl shadow-[#0f9b8e]/20 transition-all text-base flex items-center justify-center space-x-2"
-                >
-                  <FileText className="w-5 h-5" />
-                  <span>Recevoir votre étude complète</span>
-                </button>
-                <button
-                  onClick={() => setStep(1)}
-                  className="text-gray-500 hover:text-gray-800 text-sm font-medium flex items-center space-x-1 py-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  <span>Recommencer la simulation</span>
-                </button>
+              {/* ========================================================= */}
+              {/* FORMULAIRE DE CAPTURE DE LEAD & OPTIONS FINALES            */}
+              {/* ========================================================= */}
+              <div id="formulaire-etude-finale" className="bg-[#0f2847] text-white rounded-3xl p-6 md:p-10 shadow-2xl border border-blue-900/40 mt-12">
+                <div className="text-center max-w-2xl mx-auto mb-8">
+                  <h3 className="text-2xl md:text-3xl font-extrabold mb-3">Recevez votre étude complète</h3>
+                  <p className="text-white/70 text-sm leading-relaxed">
+                    Remplissez le formulaire ci-dessous pour recevoir le récapitulatif de votre simulation solaire et toutes les informations dont vous avez besoin pour passer au photovoltaïque !
+                  </p>
+                </div>
+
+                <form onSubmit={handleLeadSubmit} className="space-y-6 max-w-2xl mx-auto">
+
+                  {/* Message d'erreur formulaire */}
+                  {leadFormError && (
+                    <div className="bg-red-500/20 border border-red-400 text-red-100 p-3 rounded-xl text-xs flex items-center space-x-2">
+                      <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                      <span>{leadFormError}</span>
+                    </div>
+                  )}
+
+                  {/* Champs Nom / Prénom / Email / Téléphone */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">NOM *</label>
+                      <input
+                        type="text"
+                        required
+                        value={leadForm.nom}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, nom: e.target.value }))}
+                        placeholder="Votre nom"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">PRÉNOM *</label>
+                      <input
+                        type="text"
+                        required
+                        value={leadForm.prenom}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, prenom: e.target.value }))}
+                        placeholder="Votre prénom"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">ADRESSE MAIL *</label>
+                      <input
+                        type="email"
+                        required
+                        value={leadForm.email}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
+                        placeholder="votre@email.com"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">TÉLÉPHONE *</label>
+                      <input
+                        type="tel"
+                        required
+                        value={leadForm.phone}
+                        onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
+                        placeholder="06 12 34 56 78"
+                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* SÉLECTION DES OPTIONS (Batterie & Borne EV) */}
+                  <div className="pt-4">
+                    <h4 className="text-center text-sm font-bold uppercase tracking-wider text-white/90 mb-4">Choisissez vos options</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Option Batterie */}
+                      <button
+                        type="button"
+                        onClick={() => setLeadForm(prev => ({ ...prev, optBatterie: !prev.optBatterie }))}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center justify-center text-center space-y-3 ${
+                          leadForm.optBatterie 
+                            ? 'border-[#0f9b8e] bg-[#0f9b8e]/20 text-white ring-2 ring-[#0f9b8e]/50' 
+                            : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${leadForm.optBatterie ? 'bg-[#0f9b8e] text-white' : 'bg-white/10 text-white/50'}`}>
+                          <BatteryCharging className="w-6 h-6" />
+                        </div>
+                        <span className="font-bold text-sm">Batterie de stockage</span>
+                        {leadForm.optBatterie && <span className="text-[10px] bg-[#0f9b8e] text-white px-2 py-0.5 rounded-full font-bold">Sélectionné</span>}
+                      </button>
+
+                      {/* Option Borne de recharge */}
+                      <button
+                        type="button"
+                        onClick={() => setLeadForm(prev => ({ ...prev, optBorne: !prev.optBorne }))}
+                        className={`p-5 rounded-2xl border-2 transition-all flex flex-col items-center justify-center text-center space-y-3 ${
+                          leadForm.optBorne 
+                            ? 'border-[#0f9b8e] bg-[#0f9b8e]/20 text-white ring-2 ring-[#0f9b8e]/50' 
+                            : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30'
+                        }`}
+                      >
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center ${leadForm.optBorne ? 'bg-[#0f9b8e] text-white' : 'bg-white/10 text-white/50'}`}>
+                          <Car className="w-6 h-6" />
+                        </div>
+                        <span className="font-bold text-sm">Borne de recharge</span>
+                        {leadForm.optBorne && <span className="text-[10px] bg-[#0f9b8e] text-white px-2 py-0.5 rounded-full font-bold">Sélectionné</span>}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Option Démarrez votre projet / Rappel chargé d'affaires */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setLeadForm(prev => ({ ...prev, requestCallback: !prev.requestCallback }))}
+                      className={`w-full p-5 rounded-2xl border-2 transition-all flex items-center space-x-4 text-left ${
+                        leadForm.requestCallback
+                          ? 'border-[#0f9b8e] bg-[#0f9b8e]/20 text-white'
+                          : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${leadForm.requestCallback ? 'border-[#0f9b8e] bg-[#0f9b8e]' : 'border-white/40'}`}>
+                        {leadForm.requestCallback && <Check className="w-4 h-4 text-white" />}
+                      </div>
+                      <div className="text-xs sm:text-sm">
+                        <strong className="block text-white text-base mb-1">Démarrez votre projet photovoltaïque dès maintenant</strong>
+                        <span>Je souhaite être rappelé(e) par un(e) chargé(e) d'affaires sous 24h afin d'étudier mon projet photovoltaïque</span>
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Checkbox consentement RGPD */}
+                  <div className="flex items-start space-x-3 text-xs text-white/60">
+                    <input
+                      type="checkbox"
+                      id="terms-check"
+                      checked={leadForm.acceptTerms}
+                      onChange={(e) => setLeadForm(prev => ({ ...prev, acceptTerms: e.target.checked }))}
+                      className="mt-0.5 rounded border-white/20 text-[#0f9b8e] focus:ring-[#0f9b8e]"
+                    />
+                    <label htmlFor="terms-check" className="cursor-pointer">
+                      En soumettant ce formulaire, j'accepte que les informations saisies soient exploitées par Groupe Roy Énergie / ENR Courtage dans le cadre de la demande d'information et de la relation commerciale qui peut en découler.
+                    </label>
+                  </div>
+
+                  {/* Bouton de soumission avec envoi par mail à yannbarberis@msn.com et génération du PDF */}
+                  <button
+                    type="submit"
+                    disabled={isSendingLead}
+                    className="w-full py-4 bg-[#0f9b8e] hover:bg-[#0c8277] text-white font-extrabold rounded-2xl shadow-xl shadow-[#0f9b8e]/30 transition-all text-lg flex items-center justify-center space-x-3 disabled:opacity-50"
+                  >
+                    {isSendingLead ? (
+                      <span>Envoi de l'étude et du PDF en cours...</span>
+                    ) : (
+                      <>
+                        <Send className="w-5 h-5" />
+                        <span>Recevoir l'étude complète de votre projet</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="text-xs text-white/50 hover:text-white inline-flex items-center space-x-1"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Recommencer une nouvelle simulation</span>
+                    </button>
+                  </div>
+
+                </form>
               </div>
 
             </motion.div>
