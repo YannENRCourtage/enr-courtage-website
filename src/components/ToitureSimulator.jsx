@@ -570,6 +570,10 @@ export default function ToitureSimulator() {
     return Math.round((surfaceM2 / 6) * 10) / 10;
   }, [surfaceM2]);
 
+  const installableKwc = useMemo(() => {
+    return Math.min(rawKwc, 500);
+  }, [rawKwc]);
+
   const productibleRatio = useMemo(() => {
     return getProductibleFactor(selectedAddress || searchQuery);
   }, [selectedAddress, searchQuery]);
