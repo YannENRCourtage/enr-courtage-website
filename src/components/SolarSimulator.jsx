@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
-  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText
+  Sun, Zap, Leaf, Home, Award, ChevronRight, Info, ShieldCheck, Sparkles, FileText, Plus, Minus
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -18,12 +18,14 @@ L.Icon.Default.mergeOptions({
   shadowSize: [41, 41]
 });
 
-// Icône de poignée de coin personnalisée
+// Icône de poignée de coin personnalisée avec zone tactile élargie (32px) pour déplacement facile
 const createHandleIcon = () => new L.DivIcon({
   className: 'custom-handle-icon',
-  html: `<div style="background-color: #10b981; border: 2px solid white; width: 18px; height: 18px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.5); cursor: grab;"></div>`,
-  iconSize: [18, 18],
-  iconAnchor: [9, 9]
+  html: `<div style="display: flex; items-center: center; justify-content: center; width: 32px; height: 32px; cursor: grab;">
+          <div style="background-color: #10b981; border: 3px solid #ffffff; width: 22px; height: 22px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.6); transition: transform 0.1s ease;"></div>
+         </div>`,
+  iconSize: [32, 32],
+  iconAnchor: [16, 16]
 });
 
 // Calcul géodésique de la surface d'un quadrilatère (en m²)
@@ -48,16 +50,29 @@ function calculatePolygonArea(corners) {
   return Math.round(area);
 }
 
-// Calcul de l'orientation selon l'arête la plus haute choisie
-function calculateOrientation(edgeCorners) {
-  if (!edgeCorners || edgeCorners.length < 2) return { text: "Sud-Ouest", code: "SO", azimuth: 225 };
+// Calcul exact de l'orientation de la PENTE (le trait rouge est le Haut de la pente / Faîtage)
+// La pente descend du milieu du faîtage M vers le centre de la toiture / bas du toit
+function calculateOrientation(edgeCorners, allCorners) {
+  if (!edgeCorners || edgeCorners.length < 2 || !allCorners || allCorners.length < 3) {
+    return { text: "Sud-Ouest", code: "SO", azimuth: 225 };
+  }
   
   const [p1, p2] = edgeCorners;
-  const avgLat = ((p1.lat + p2.lat) / 2) * (Math.PI / 180);
-  const dx = (p2.lng - p1.lng) * Math.cos(avgLat);
-  const dy = p2.lat - p1.lat;
+  // Milieu du faîtage (haut de la pente)
+  const midLat = (p1.lat + p2.lat) / 2;
+  const midLng = (p1.lng + p2.lng) / 2;
+
+  // Centre (barycentre) du pan de toiture
+  const centerLat = allCorners.reduce((sum, c) => sum + c.lat, 0) / allCorners.length;
+  const centerLng = allCorners.reduce((sum, c) => sum + c.lng, 0) / allCorners.length;
+
+  const avgLat = centerLat * (Math.PI / 180);
+  // Vecteur allant du faîtage vers le centre/bas de la pente
+  const dx = (centerLng - midLng) * Math.cos(avgLat);
+  const dy = centerLat - midLat;
   
-  let angle = Math.atan2(dx, -dy) * (180 / Math.PI);
+  // Angle en degrés depuis le Nord (0° Nord, 90° Est, 180° Sud, 270° Ouest)
+  let angle = Math.atan2(dx, dy) * (180 / Math.PI);
   if (angle < 0) angle += 360;
 
   if (angle >= 337.5 || angle < 22.5) return { text: "Nord", code: "N", azimuth: 0 };
@@ -78,7 +93,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
   const mapRef = useRef(null);
   const layersGroupRef = useRef(null);
 
-  // Initialisation unique de la carte Leaflet
+  // Initialisation unique de la carte Leaflet avec maxNativeZoom: 19 et maxZoom: 22 (évite les tuiles grisées)
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -86,12 +101,15 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
       const map = L.map(containerRef.current, {
         center: [centerCoords.lat, centerCoords.lng],
         zoom: 19,
+        maxZoom: 22,
         zoomControl: true,
         attributionControl: false
       });
 
+      // Tuiles ESRI Satellite avec maxNativeZoom: 19 pour autoriser le zoom extrême sans "Map data not yet available"
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 20
+        maxNativeZoom: 19,
+        maxZoom: 22
       }).addTo(map);
 
       layersGroupRef.current = L.layerGroup().addTo(map);
@@ -109,7 +127,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
   // Recentre la carte lors du changement de coordonnées
   useEffect(() => {
     if (mapRef.current && centerCoords) {
-      mapRef.current.setView([centerCoords.lat, centerCoords.lng], 19);
+      mapRef.current.setView([centerCoords.lat, centerCoords.lng], mapRef.current.getZoom() || 19);
     }
   }, [centerCoords]);
 
@@ -122,7 +140,6 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     group.clearLayers();
 
     if (step === 2) {
-      // Gestion du glissement de la carte à l'étape 2
       const handleMoveEnd = () => {
         const center = map.getCenter();
         setCenterCoords({ lat: center.lat, lng: center.lng });
@@ -134,23 +151,23 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
     }
 
     if (step === 3 && roofCorners && roofCorners.length === 4) {
-      // Polygon vert
-      const poly = L.polygon(roofCorners.map(c => [c.lat, c.lng]), {
+      // Polygon vert fluo translucide
+      L.polygon(roofCorners.map(c => [c.lat, c.lng]), {
         color: '#10b981',
         fillColor: '#10b981',
         fillOpacity: 0.35,
         weight: 3
       }).addTo(group);
 
-      // Poignées déplaçables
+      // Poignées déplaçables ultra-réactives
       roofCorners.forEach((corner, idx) => {
         const marker = L.marker([corner.lat, corner.lng], {
           draggable: true,
+          autoPan: true,
           icon: createHandleIcon()
         }).addTo(group);
 
-        marker.on('drag', (e) => {
-          const latLng = e.target.getLatLng();
+        const updatePosition = (latLng) => {
           setRoofCorners(prev => {
             const next = [...prev];
             next[idx] = { lat: latLng.lat, lng: latLng.lng };
@@ -158,6 +175,13 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
             if (area > 0) setSurfaceM2(area);
             return next;
           });
+        };
+
+        marker.on('drag', (e) => {
+          updatePosition(e.target.getLatLng());
+        });
+        marker.on('dragend', (e) => {
+          updatePosition(e.target.getLatLng());
         });
       });
     }
@@ -171,14 +195,14 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         weight: 2
       }).addTo(group);
 
-      // 4 arêtes autonomes avec événements de clic
+      // 4 arêtes autonomes cliquables
       roofCorners.forEach((corner, i) => {
         const nextCorner = roofCorners[(i + 1) % roofCorners.length];
         const isSelected = selectedEdgeIndex === i;
 
         const line = L.polyline([[corner.lat, corner.lng], [nextCorner.lat, nextCorner.lng]], {
           color: isSelected ? '#ef4444' : '#10b981',
-          weight: isSelected ? 7 : 4,
+          weight: isSelected ? 8 : 4,
           opacity: 1
         }).addTo(group);
 
@@ -309,6 +333,12 @@ const SolarSimulator = ({ onCompleteLead }) => {
   };
 
   const handleValidateStep3 = () => {
+    // Calcul initial d'orientation lors du passage à l'étape 4
+    if (roofCorners.length === 4) {
+      const p1 = roofCorners[0];
+      const p2 = roofCorners[1];
+      setOrientation(calculateOrientation([p1, p2], roofCorners));
+    }
     setStep(4);
   };
 
@@ -316,7 +346,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
     setSelectedEdgeIndex(index);
     const p1 = roofCorners[index];
     const p2 = roofCorners[(index + 1) % roofCorners.length];
-    const orient = calculateOrientation([p1, p2]);
+    const orient = calculateOrientation([p1, p2], roofCorners);
     setOrientation(orient);
   };
 
@@ -662,6 +692,11 @@ const SolarSimulator = ({ onCompleteLead }) => {
                 onSelectEdge={handleSelectEdge}
                 setSurfaceM2={setSurfaceM2}
               />
+
+              {/* Explication explicite demandée sous la carte */}
+              <p className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200 max-w-md mx-auto mb-4">
+                Le trait rouge représente le <strong>haut de la pente (faîtage)</strong>. La pente descend du trait rouge vers le bas du toit.
+              </p>
 
               <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 mb-6 max-w-md mx-auto">
                 <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Votre toiture est exposée :</p>
