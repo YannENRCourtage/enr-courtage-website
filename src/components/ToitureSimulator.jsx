@@ -223,6 +223,7 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
         zoom: 19,
         maxZoom: 22,
         zoomControl: true,
+        doubleClickZoom: false,
         attributionControl: false
       });
 
@@ -299,9 +300,11 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
 
     map.on('moveend', handleMoveEnd);
     map.on('click', handleMapClick);
+    map.on('dblclick', handleMapClick);
     return () => {
       map.off('moveend', handleMoveEnd);
       map.off('click', handleMapClick);
+      map.off('dblclick', handleMapClick);
     };
   }, [onAddressUpdated]);
 

@@ -1558,9 +1558,6 @@ OPTIONS CHOISIES :
                       <p className="text-lg md:text-xl font-extrabold text-[#0f9b8e]">{activeMetrics.cum30} €</p>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 bg-amber-50 inline-block px-4 py-2 rounded-full text-amber-800 border border-amber-200">
-                    Rappel : Vous amortissez votre centrale photovoltaïque au bout de <strong>{activeMetrics.paybackYears} ans</strong>
-                  </p>
                 </div>
 
                 {/* GRAPHIQUE BARRES DU ROI */}
