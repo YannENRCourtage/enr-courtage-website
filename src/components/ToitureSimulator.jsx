@@ -277,9 +277,31 @@ function SatelliteMap({ step, centerCoords, setCenterCoords, roofCorners, setRoo
       }
     };
 
+    const handleMapClick = async (e) => {
+      if (currentStepRef.current === 2) {
+        const { lat, lng } = e.latlng;
+        lastCenterRef.current = { lat, lng };
+        setCenterCoords({ lat, lng });
+        map.panTo([lat, lng]);
+
+        try {
+          const res = await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${lng}&lat=${lat}`);
+          const data = await res.json();
+          if (data && data.features && data.features.length > 0) {
+            const newLabel = data.features[0].properties.label;
+            if (onAddressUpdated) onAddressUpdated(newLabel, { lat, lng });
+          }
+        } catch (err) {
+          console.error("Erreur reverse geocoding:", err);
+        }
+      }
+    };
+
     map.on('moveend', handleMoveEnd);
+    map.on('click', handleMapClick);
     return () => {
       map.off('moveend', handleMoveEnd);
+      map.off('click', handleMapClick);
     };
   }, [onAddressUpdated]);
 
@@ -516,12 +538,16 @@ export default function ToitureSimulator() {
     return (installationCostHT / annualRevenueEuros).toFixed(1);
   }, [installationCostHT, annualRevenueEuros]);
 
-  const foyersMoyens = useMemo(() => {
-    return Math.round((annualProductionKwh / 4700) * 10) / 10;
+  const co2AvoidedTonnes = useMemo(() => {
+    return ((annualProductionKwh * 0.5) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
   }, [annualProductionKwh]);
 
-  const co2TonnesEvitees = useMemo(() => {
-    return Math.round((annualProductionKwh * 0.032 / 1000) * 10) / 10;
+  const treesPlanted = useMemo(() => {
+    return Math.round((annualProductionKwh * 0.5) / 350).toLocaleString('fr-FR');
+  }, [annualProductionKwh]);
+
+  const foyersEquiv = useMemo(() => {
+    return (annualProductionKwh / 4500).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
   }, [annualProductionKwh]);
 
   // Soumission du formulaire Lead (Formspree + PDF)
@@ -706,9 +732,9 @@ export default function ToitureSimulator() {
   return (
     <div className="w-full max-w-6xl mx-auto bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
       {/* Header du Simulateur */}
-      <div className="bg-[#0f2847] px-6 py-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#0f2847] to-[#163a5f] px-6 py-6 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs uppercase tracking-widest text-[#84cc16] font-bold">Simulateur de rentabilité</span>
+          <span className="text-xs uppercase tracking-widest text-[#0f9b8e] font-bold">Simulateur de rentabilité</span>
           <h2 className="text-2xl font-bold text-white mt-1">Valorisez votre toiture photovoltaïque</h2>
           <p className="text-gray-300 text-xs sm:text-sm mt-1">Estimez la puissance installable et les revenus générés par la revente d'électricité</p>
         </div>
@@ -728,17 +754,17 @@ export default function ToitureSimulator() {
         <div className="bg-gray-50 border-b border-gray-100 px-6 py-3">
           <div className="flex items-center justify-between max-w-2xl mx-auto text-xs font-semibold text-gray-500">
             <div className={`flex items-center gap-2 ${step >= 1 ? 'text-[#0f2847] font-bold' : ''}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 1 ? 'bg-[#84cc16] text-white' : 'bg-gray-200 text-gray-600'}`}>1</span>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 1 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>1</span>
               <span>Adresse</span>
             </div>
             <div className="h-0.5 w-12 bg-gray-200" />
             <div className={`flex items-center gap-2 ${step >= 2 ? 'text-[#0f2847] font-bold' : ''}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? 'bg-[#84cc16] text-white' : 'bg-gray-200 text-gray-600'}`}>2</span>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>2</span>
               <span>Emplacement</span>
             </div>
             <div className="h-0.5 w-12 bg-gray-200" />
             <div className={`flex items-center gap-2 ${step >= 3 ? 'text-[#0f2847] font-bold' : ''}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 3 ? 'bg-[#84cc16] text-white' : 'bg-gray-200 text-gray-600'}`}>3</span>
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 3 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>3</span>
               <span>Toiture</span>
             </div>
           </div>
@@ -949,54 +975,58 @@ export default function ToitureSimulator() {
             </div>
 
             {/* Carte Principale des Résultats */}
-            <div className="bg-white rounded-3xl p-6 sm:p-10 border-2 border-[#84cc16] shadow-xl text-center relative overflow-hidden">
-              <span className="text-xs uppercase tracking-widest text-[#84cc16] font-bold block mb-1">RÉSULTATS DE L'ÉTUDE</span>
+            <div className="bg-white rounded-3xl p-6 sm:p-10 border-2 border-[#0f9b8e]/30 shadow-xl text-center relative overflow-hidden">
+              <span className="text-xs uppercase tracking-widest text-[#0f9b8e] font-bold block mb-1">RÉSULTATS DE L'ÉTUDE</span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847] mb-8">Potentiel photovoltaïque de votre toiture</h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
+              {/* Ligne 1 : 3 métriques principales */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {/* Puissance installable */}
-                <div className="bg-emerald-50/60 p-4 sm:p-6 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#84cc16] text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <Zap className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="bg-emerald-50/60 p-6 rounded-2xl border border-emerald-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-[#0f9b8e] text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Zap className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Puissance installable</span>
-                  <span className="text-xl sm:text-3xl font-extrabold text-[#84cc16]">{installableKwc} kWc</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Puissance installable</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{installableKwc} kWc</span>
                 </div>
 
                 {/* Production potentielle annuelle */}
-                <div className="bg-blue-50/60 p-4 sm:p-6 rounded-2xl border border-blue-100 flex flex-col items-center justify-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <Sun className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="bg-blue-50/60 p-6 rounded-2xl border border-blue-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Sun className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Production annuelle</span>
-                  <span className="text-xl sm:text-3xl font-extrabold text-blue-700">{annualProductionKwh.toLocaleString('fr-FR')} kWh</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Production annuelle</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{annualProductionKwh.toLocaleString('fr-FR')} kWh</span>
                 </div>
 
                 {/* Revenus potentiels annuels */}
-                <div className="bg-amber-50/60 p-4 sm:p-6 rounded-2xl border border-amber-100 flex flex-col items-center justify-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-500 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="bg-amber-50/60 p-6 rounded-2xl border border-amber-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-amber-500 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <DollarSign className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Revenus 1ère année</span>
-                  <span className="text-xl sm:text-3xl font-extrabold text-amber-600">{annualRevenueEuros.toLocaleString('fr-FR')} €</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Revenus 1ère année</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{annualRevenueEuros.toLocaleString('fr-FR')} €</span>
                 </div>
+              </div>
 
+              {/* Ligne 2 : Coût Estimatif et Amortissement */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto mb-8">
                 {/* Coût d'installation HT */}
-                <div className="bg-purple-50/60 p-4 sm:p-6 rounded-2xl border border-purple-100 flex flex-col items-center justify-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="bg-purple-50/60 p-6 rounded-2xl border border-purple-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-purple-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Wallet className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Coût (est. HT)</span>
-                  <span className="text-xl sm:text-3xl font-extrabold text-purple-700">{Math.round(installationCostHT).toLocaleString('fr-FR')} €</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Coût (est. HT)</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{Math.round(installationCostHT).toLocaleString('fr-FR')} €</span>
                 </div>
 
                 {/* Retour sur Investissement */}
-                <div className="bg-red-50/60 p-4 sm:p-6 rounded-2xl border border-red-100 flex flex-col items-center justify-center">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
-                    <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+                <div className="bg-red-50/60 p-6 rounded-2xl border border-red-100 flex flex-col items-center justify-center text-center">
+                  <div className="w-12 h-12 bg-red-600 text-white rounded-full flex items-center justify-center mb-3 shadow-md">
+                    <Clock className="w-6 h-6" />
                   </div>
-                  <span className="text-[10px] sm:text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1 text-center">Amortissement</span>
-                  <span className="text-xl sm:text-3xl font-extrabold text-red-600">{paybackYears} ans</span>
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Amortissement</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{paybackYears} ans</span>
                 </div>
               </div>
 
@@ -1005,39 +1035,35 @@ export default function ToitureSimulator() {
                 La production et les revenus affichés sont limités à 500 kWc, conformément aux tarifs conventionnés.
               </p>
 
-              {/* Section Équivalents Annuels */}
-              <div className="mb-10">
-                <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wider mb-6">Soit l'équivalent annuel en France de...</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-xl mx-auto">
-                  <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-left">
-                    <div className="w-12 h-12 bg-[#0f2847] text-white rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Home className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <span className="text-2xl font-extrabold text-[#0f2847] block leading-none">{foyersMoyens}</span>
-                      <span className="text-xs text-gray-500 font-medium">Foyers moyens alimentés</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-4 bg-gray-50 p-4 rounded-2xl border border-gray-100 text-left">
-                    <div className="w-12 h-12 bg-[#0f2847] text-white rounded-xl flex items-center justify-center flex-shrink-0">
-                      <Leaf className="w-6 h-6 text-emerald-400" />
-                    </div>
-                    <div>
-                      <span className="text-2xl font-extrabold text-[#0f2847] block leading-none">{co2TonnesEvitees.toLocaleString('fr-FR')}</span>
-                      <span className="text-xs text-gray-500 font-medium">Tonnes d'émissions de CO₂ évitées</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* GRAPHIQUE DES REVENUS CUMULÉS SUR 30 ANS (MÊME DESIGN SANS MENTION D'AMORTISSEMENT) */}
+              {/* GRAPHIQUE DES REVENUS CUMULÉS SUR 30 ANS */}
               <CumulativeRevenuesBarChart 
                 annualProductionKwh={annualProductionKwh} 
                 tariffPerKwh={tariffPerKwh}
                 paybackYears={paybackYears}
                 installationCostHT={installationCostHT}
               />
+
+              {/* IMPACT SUR L'ENVIRONNEMENT (Format Autoconsommation) */}
+              <div className="pt-8 mt-10 border-t border-gray-100 text-center">
+                <h4 className="text-lg font-bold text-[#0f2847] mb-6 flex items-center justify-center gap-2">
+                  <Leaf className="w-5 h-5 text-emerald-500" />
+                  <span>Votre impact sur l'environnement</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                    <p className="text-2xl font-black text-emerald-600">{co2AvoidedTonnes} tonnes</p>
+                    <p className="text-xs text-gray-600 mt-1">de CO₂ évitées par an</p>
+                  </div>
+                  <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                    <p className="text-2xl font-black text-emerald-600">{treesPlanted}</p>
+                    <p className="text-xs text-gray-600 mt-1">arbres plantés par an</p>
+                  </div>
+                  <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                    <p className="text-2xl font-black text-emerald-600">{foyersEquiv}</p>
+                    <p className="text-xs text-gray-600 mt-1">foyer(s) alimenté(s) en électricité</p>
+                  </div>
+                </div>
+              </div>
 
               {/* Formulaire Lead pour être recontacté */}
               {!submitSuccess ? (
