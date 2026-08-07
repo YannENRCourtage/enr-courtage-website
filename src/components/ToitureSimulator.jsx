@@ -69,6 +69,69 @@ function formatAddressForPdf(addressStr) {
   return { line1: addressStr, line2: '' };
 }
 
+// Détermination du productible solaire (kWh/kWc) selon la région / département
+function getProductibleFactor(addressStr) {
+  if (!addressStr) return 1150;
+  
+  const match = addressStr.match(/\b(\d{5})\b/);
+  const dept = match ? match[1].substring(0, 2) : null;
+  const fullCp = match ? match[1] : '';
+
+  // 1. PACA & Corse -> 1200 kWh/kWc
+  if (['04', '05', '06', '13', '83', '84', '20', '2A', '2B'].includes(dept) || fullCp.startsWith('20')) {
+    return 1200;
+  }
+
+  // 2. Occitanie, Nouvelle-Aquitaine, Rhône-Alpes -> 1150 kWh/kWc
+  const group1150 = [
+    '09', '11', '12', '30', '31', '32', '34', '46', '48', '65', '66', '81', '82', // Occitanie
+    '16', '17', '19', '23', '24', '33', '40', '47', '64', '79', '86', '87', // Nouvelle-Aquitaine
+    '01', '03', '07', '15', '26', '38', '42', '43', '63', '69', '73', '74'  // Auvergne-Rhône-Alpes
+  ];
+  if (group1150.includes(dept)) {
+    return 1150;
+  }
+
+  // 3. Bretagne, Pays de la Loire, Centre Val de Loire, Bourgogne Franche Comté -> 1100 kWh/kWc
+  const group1100 = [
+    '22', '29', '35', '56', // Bretagne
+    '44', '49', '53', '72', '85', // Pays de la Loire
+    '18', '28', '36', '37', '41', '45', // Centre Val de Loire
+    '21', '25', '39', '58', '70', '71', '89', '90' // Bourgogne Franche Comté
+  ];
+  if (group1100.includes(dept)) {
+    return 1100;
+  }
+
+  // 4. Normandie, Paris / Île de France, Grand Est, Hauts de France -> 1050 kWh/kWc
+  const group1050 = [
+    '14', '27', '50', '61', '76', // Normandie
+    '75', '77', '78', '91', '92', '93', '94', '95', // Île-de-France / Paris
+    '08', '10', '51', '52', '54', '55', '57', '67', '68', '88', // Grand Est
+    '02', '59', '60', '62', '80'  // Hauts-de-France
+  ];
+  if (group1050.includes(dept)) {
+    return 1050;
+  }
+
+  // Fallback textuel sur le nom de région s'il n'y a pas de code postal à 5 chiffres
+  const normStr = addressStr.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (normStr.includes("provence") || normStr.includes("cote d'azur") || normStr.includes("paca") || normStr.includes("corse")) {
+    return 1200;
+  }
+  if (normStr.includes("occitanie") || normStr.includes("aquitaine") || normStr.includes("rhone") || normStr.includes("alpes") || normStr.includes("auvergne")) {
+    return 1150;
+  }
+  if (normStr.includes("bretagne") || normStr.includes("loire") || normStr.includes("centre") || normStr.includes("bourgogne") || normStr.includes("franche comte")) {
+    return 1100;
+  }
+  if (normStr.includes("normandie") || normStr.includes("paris") || normStr.includes("ile-de-france") || normStr.includes("grand est") || normStr.includes("hauts-de-france")) {
+    return 1050;
+  }
+
+  return 1150;
+}
+
 // Charger jsPDF dynamiquement depuis CDN si pas encore chargé
 function loadJsPDF() {
   return new Promise((resolve, reject) => {
@@ -507,13 +570,13 @@ export default function ToitureSimulator() {
     return Math.round((surfaceM2 / 6) * 10) / 10;
   }, [surfaceM2]);
 
-  const installableKwc = useMemo(() => {
-    return Math.min(rawKwc, 500);
-  }, [rawKwc]);
+  const productibleRatio = useMemo(() => {
+    return getProductibleFactor(selectedAddress || searchQuery);
+  }, [selectedAddress, searchQuery]);
 
   const annualProductionKwh = useMemo(() => {
-    return Math.round(installableKwc * 1150);
-  }, [installableKwc]);
+    return Math.round(installableKwc * productibleRatio);
+  }, [installableKwc, productibleRatio]);
 
   const tariffPerKwh = useMemo(() => {
     if (installableKwc <= 9) return 0.130;
