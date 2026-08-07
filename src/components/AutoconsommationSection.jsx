@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Sun, BatteryCharging, TrendingDown, Shield, ArrowRight, CheckCircle2 } from 'lucide-react';
+import SolarSimulator from '@/components/SolarSimulator';
 
 const AutoconsommationSection = () => {
   const advantages = [
@@ -57,7 +58,7 @@ const AutoconsommationSection = () => {
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.8 }} 
-            className="text-center mb-20"
+            className="text-center mb-12"
           >
             <p className="text-sm uppercase tracking-[0.2em] text-[#d4a843] font-semibold mb-4">Notre solution</p>
             <h2 id="acc-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
@@ -67,6 +68,16 @@ const AutoconsommationSection = () => {
               Produisez votre propre électricité grâce à une centrale solaire photovoltaïque installée sur votre site. 
               Réduisez votre facture énergétique sans investissement initial grâce à notre formule en abonnement.
             </p>
+          </motion.div>
+
+          {/* SIMULATEUR SOLAIRE ETAPE PAR ETAPE */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mb-20"
+          >
+            <SolarSimulator />
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
