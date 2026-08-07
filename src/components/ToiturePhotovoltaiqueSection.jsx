@@ -51,19 +51,32 @@ const ToiturePhotovoltaiqueSection = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section sans les mots "Notre solution" */}
-      <section className="pt-20 md:pt-28 pb-10 md:pb-14 bg-white" aria-labelledby="toiture-title">
-        <div className="max-w-7xl mx-auto container-padding">
+      {/* Hero Section avec vidéo "4.mp4" sous-imposée */}
+      <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="toiture-title">
+        {/* Vidéo 4.mp4 en arrière-plan avec sous-imposition (overlay) */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-40 scale-105"
+            src="/4.mp4"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/85 via-[#0f2847]/75 to-[#0f2847]/95" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto container-padding">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.8 }} 
             className="text-center mb-12"
           >
-            <h1 id="toiture-title" className="text-4xl md:text-5xl font-extrabold text-[#0f2847] mb-6 tracking-tight">
+            <h1 id="toiture-title" className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
               Toiture photovoltaïque
             </h1>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto font-light leading-relaxed">
+            <p className="text-lg text-gray-200 max-w-3xl mx-auto font-light leading-relaxed">
               En tant que propriétaire d'un bâtiment (industriel, agricole, commercial, copropriété ou particulier), 
               investissez dans une centrale solaire photovoltaïque en revente totale pour transformer votre toiture en une source de revenus réguliers et garantis.
             </p>
@@ -74,12 +87,15 @@ const ToiturePhotovoltaiqueSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mb-20"
           >
             <ToitureSimulator />
           </motion.div>
+        </div>
+      </section>
 
-          {/* SECTION EXPLICATIVE REVENTE D'ÉLECTRICITÉ (AVEC L'IMAGE DE TOITURE SUR PROFILÉ À GAUCHE) */}
+      {/* SECTION EXPLICATIVE REVENTE D'ÉLECTRICITÉ */}
+      <section className="py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto container-padding">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} 
