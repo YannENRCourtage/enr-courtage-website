@@ -51,19 +51,32 @@ const IrveSection = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section */}
-      <section className="pt-20 md:pt-28 pb-10 md:pb-14 bg-white" aria-labelledby="irve-title">
-        <div className="max-w-7xl mx-auto container-padding">
+      {/* Hero Section avec vidéo "7.mp4" sous-imposée */}
+      <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="irve-title">
+        {/* Vidéo 7.mp4 en arrière-plan avec sous-imposition légère */}
+        <div className="absolute inset-0 z-0 overflow-hidden">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover opacity-65 scale-105"
+            src="/7.mp4"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto container-padding">
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.8 }} 
             className="text-center mb-12"
           >
-            <h2 id="irve-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
+            <h1 id="irve-title" className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
               Bornes de <span className="enr-gradient-text-gold">recharge IRVE</span>
-            </h2>
-            <p className="text-lg text-gray-500 max-w-2xl mx-auto font-light leading-relaxed">
+            </h1>
+            <p className="text-lg text-gray-200 max-w-3xl mx-auto font-light leading-relaxed">
               Déployez des infrastructures de recharge pour véhicules électriques (IRVE) adaptées à vos besoins, 
               avec ou sans investissement initial grâce à nos offres d'abonnement.
             </p>
@@ -74,12 +87,15 @@ const IrveSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="mb-16"
           >
             <IrveSimulator />
           </motion.div>
+        </div>
+      </section>
 
-          {/* SECTION DESCRIPTIVE AVEC IMAGE ET 7.4KW À 22KW */}
+      {/* SECTION DESCRIPTIVE AVEC IMAGE ET 7.4KW À 22KW */}
+      <section className="py-16 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto container-padding">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} 
@@ -103,17 +119,17 @@ const IrveSection = () => {
               className="space-y-8"
             >
               <div>
-                <h3 className="text-2xl font-bold text-[#0f2847] mb-4">
+                <h2 className="text-3xl font-bold text-[#0f2847] mb-4">
                   De 7.4kW à 22kW : la solution idéale pour votre site
-                </h3>
-                <p className="text-gray-500 leading-relaxed text-base">
+                </h2>
+                <p className="text-gray-600 leading-relaxed text-base">
                   Que vous souhaitiez équiper le parking de votre entreprise, un commerce, ou une copropriété, 
                   nous vous conseillons sur le meilleur investissement possible. Nous analysons l'utilisation prévue 
                   (charge lente quotidienne ou charge plus rapide) pour dimensionner parfaitement votre installation.
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 leading-relaxed text-base">
+                <p className="text-gray-600 leading-relaxed text-base">
                   Nous gérons l'intégralité de votre projet : de l'étude de faisabilité électrique à l'installation 
                   par nos techniciens qualifiés, en passant par la maintenance et l'assistance utilisateur.
                 </p>
