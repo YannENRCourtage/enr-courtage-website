@@ -58,7 +58,7 @@ const IrveSection = () => {
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
             transition={{ duration: 0.8 }} 
-            className="text-center mb-20"
+            className="text-center mb-12"
           >
             <p className="text-sm uppercase tracking-[0.2em] text-[#d4a843] font-semibold mb-4">Notre solution</p>
             <h2 id="irve-title" className="text-4xl md:text-5xl font-bold text-[#0f2847] mb-6 tracking-tight">
@@ -70,11 +70,23 @@ const IrveSection = () => {
             </p>
           </motion.div>
 
+          {/* SIMULATEUR IRVE POSITIONNÉ EN HAUT DE PAGE */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="mb-16"
+          >
+            <IrveSimulator />
+          </motion.div>
+
+          {/* SECTION DESCRIPTIVE AVEC IMAGE ET 7.4KW À 22KW */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <motion.div 
               initial={{ opacity: 0, x: -30 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              transition={{ duration: 0.8, delay: 0.2 }}
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
             >
               <img
                 className="w-full h-[450px] object-cover rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.1)]"
@@ -86,8 +98,9 @@ const IrveSection = () => {
 
             <motion.div 
               initial={{ opacity: 0, x: 30 }} 
-              animate={{ opacity: 1, x: 0 }} 
-              transition={{ duration: 0.8, delay: 0.4 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }} 
               className="space-y-8"
             >
               <div>
@@ -117,20 +130,6 @@ const IrveSection = () => {
               </div>
             </motion.div>
           </div>
-        </div>
-      </section>
-
-      {/* Simulateur IRVE */}
-      <section className="pb-20 pt-4 bg-white" aria-labelledby="irve-simulator">
-        <div className="max-w-7xl mx-auto container-padding">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.8 }}
-          >
-            <IrveSimulator />
-          </motion.div>
         </div>
       </section>
 
@@ -210,7 +209,7 @@ const IrveSection = () => {
 
             <motion.div 
               initial={{ opacity: 0, y: 30 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
+              whileInView={{ opacity: 1, x: 0 }} 
               viewport={{ once: true }} 
               transition={{ duration: 0.8, delay: 0.2 }}
             >
