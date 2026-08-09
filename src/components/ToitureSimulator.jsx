@@ -583,7 +583,8 @@ export default function ToitureSimulator() {
   }, [installableKwc, productibleRatio]);
 
   const tariffPerKwh = useMemo(() => {
-    if (installableKwc < 100) return 0;
+    if (installableKwc <= 9) return 0;
+    if (installableKwc < 100) return 0.011; // 1,1 c€/kWh HT
     if (installableKwc <= 250) return 0.098;
     return 0.085;
   }, [installableKwc]);
@@ -603,9 +604,9 @@ export default function ToitureSimulator() {
   }, [installableKwc]);
 
   const paybackYears = useMemo(() => {
-    if (annualRevenueEuros === 0 || installableKwc < 100) return "N/A";
+    if (annualRevenueEuros === 0 || !isFinite(installationCostHT / annualRevenueEuros)) return "N/A";
     return (installationCostHT / annualRevenueEuros).toFixed(1);
-  }, [installationCostHT, annualRevenueEuros, installableKwc]);
+  }, [installationCostHT, annualRevenueEuros]);
 
   const co2AvoidedTonnes = useMemo(() => {
     return ((annualProductionKwh * 0.5) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
@@ -1064,7 +1065,11 @@ export default function ToitureSimulator() {
                       Puissance installable inférieure à 100 kWc ({installableKwc} kWc)
                     </p>
                     <p className="text-xs text-red-800 mt-1 leading-relaxed">
-                      En revente totale d'électricité photovoltaïque sur toiture, le tarif d'obligation d'achat garanti (EDF OA) ne s'applique qu'aux centrales d'au moins 100 kWc. En dessous de ce seuil, le tarif de rachat est à 0 € et votre projet de revente n'est pas rentable.
+                      {installableKwc <= 9 ? (
+                        "En revente totale d'électricité sur toiture, les installations ≤ 9 kWc ne sont pas éligibles au rachat (tarif à 0 € et revenus à 0 €)."
+                      ) : (
+                        `En revente totale d'électricité sur toiture de 9 à 100 kWc, le tarif de rachat est très faible (1,1 c€/kWh HT). Vos revenus estimés sont de seulement ${annualRevenueEuros.toLocaleString('fr-FR')} €/an et le projet n'est pas rentable. L'autoconsommation est fortement recommandée.`
+                      )}
                     </p>
                   </div>
                 </div>

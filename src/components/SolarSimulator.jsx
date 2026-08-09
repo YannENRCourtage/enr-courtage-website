@@ -349,12 +349,12 @@ function RoiBarChart({ activeMetrics, paybackYears }) {
         </div>
       </div>
 
-      <div className="relative h-60 w-full pt-6 pb-0">
+      <div className="relative h-60 w-full pt-8 pb-0">
         <div 
-          className="absolute top-0 bottom-2 z-20 flex flex-col items-center pointer-events-none"
+          className="absolute top-8 bottom-2 z-20 flex flex-col items-center pointer-events-none"
           style={{ left: `${roiLinePct}%` }}
         >
-          <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded shadow mb-1">
+          <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded shadow mt-1">
             ROI ({paybackYears} ans)
           </span>
           <div className="w-px h-full border-r-2 border-dashed border-blue-400"></div>
