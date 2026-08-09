@@ -1000,21 +1000,21 @@ OPTIONS CHOISIES :
       
       {/* BARRE DE PROGRESSION EN TÊTE */}
       {step < 7 && (
-        <div className="bg-gradient-to-r from-[#0f2847] to-[#163a5f] p-6 text-white text-center relative">
-          <div className="flex items-center justify-center space-x-6 text-xs md:text-sm font-medium">
-            <div className={`flex items-center space-x-2 ${step <= 5 ? 'opacity-100 font-bold text-[#d4a843]' : 'opacity-60'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center border-2 ${step <= 5 ? 'border-[#d4a843] bg-[#d4a843]/20' : 'border-white/40'}`}>1</span>
-              <span>Votre toiture</span>
+        <div className="bg-gradient-to-r from-[#0f2847] to-[#163a5f] p-3 px-2 sm:p-6 text-white text-center relative overflow-hidden">
+          <div className="flex items-center justify-center gap-1 xs:gap-2 sm:gap-4 md:gap-6 text-[10px] sm:text-xs md:text-sm font-medium">
+            <div className={`flex items-center gap-1 sm:gap-2 ${step <= 5 ? 'opacity-100 font-bold text-[#d4a843]' : 'opacity-60'}`}>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center border-2 text-[10px] sm:text-xs md:text-sm shrink-0 ${step <= 5 ? 'border-[#d4a843] bg-[#d4a843]/20' : 'border-white/40'}`}>1</span>
+              <span className="whitespace-nowrap">Votre toiture</span>
             </div>
-            <span className="text-white/30">―</span>
-            <div className={`flex items-center space-x-2 ${step === 6 ? 'opacity-100 font-bold text-[#d4a843]' : 'opacity-60'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center border-2 ${step === 6 ? 'border-[#d4a843] bg-[#d4a843]/20' : 'border-white/40'}`}>2</span>
-              <span>Votre consommation</span>
+            <span className="text-white/30 shrink-0">―</span>
+            <div className={`flex items-center gap-1 sm:gap-2 ${step === 6 ? 'opacity-100 font-bold text-[#d4a843]' : 'opacity-60'}`}>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center border-2 text-[10px] sm:text-xs md:text-sm shrink-0 ${step === 6 ? 'border-[#d4a843] bg-[#d4a843]/20' : 'border-white/40'}`}>2</span>
+              <span className="whitespace-nowrap">Votre consommation</span>
             </div>
-            <span className="text-white/30">―</span>
-            <div className={`flex items-center space-x-2 ${step >= 6.5 ? 'opacity-100 font-bold text-[#d4a843]' : 'opacity-60'}`}>
-              <span className={`w-7 h-7 rounded-full flex items-center justify-center border-2 ${step >= 6.5 ? 'border-[#d4a843] bg-[#d4a843]/20' : 'border-white/40'}`}>3</span>
-              <span>Votre résultat</span>
+            <span className="text-white/30 shrink-0">―</span>
+            <div className={`flex items-center gap-1 sm:gap-2 ${step >= 6.5 ? 'opacity-100 font-bold text-[#d4a843]' : 'opacity-60'}`}>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center border-2 text-[10px] sm:text-xs md:text-sm shrink-0 ${step >= 6.5 ? 'border-[#d4a843] bg-[#d4a843]/20' : 'border-white/40'}`}>3</span>
+              <span className="whitespace-nowrap">Votre résultat</span>
             </div>
           </div>
         </div>

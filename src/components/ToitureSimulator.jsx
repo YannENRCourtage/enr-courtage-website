@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, RefreshCw, 
   Sun, Zap, Leaf, Home, Award, Info, ShieldCheck, Sparkles, FileText,
-  RotateCcw, AlertCircle, PhoneCall, Check, Lock, Send, Building, DollarSign, TrendingUp, Clock, Wallet
+  RotateCcw, AlertCircle, PhoneCall, Check, Lock, Send, Building, DollarSign, TrendingUp, Clock, Wallet, AlertTriangle
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -583,9 +583,8 @@ export default function ToitureSimulator() {
   }, [installableKwc, productibleRatio]);
 
   const tariffPerKwh = useMemo(() => {
-    if (installableKwc <= 9) return 0.130;
-    if (installableKwc <= 36) return 0.115;
-    if (installableKwc <= 100) return 0.098;
+    if (installableKwc < 100) return 0;
+    if (installableKwc <= 250) return 0.098;
     return 0.085;
   }, [installableKwc]);
 
@@ -604,9 +603,9 @@ export default function ToitureSimulator() {
   }, [installableKwc]);
 
   const paybackYears = useMemo(() => {
-    if (annualRevenueEuros === 0) return 0;
+    if (annualRevenueEuros === 0 || installableKwc < 100) return "N/A";
     return (installationCostHT / annualRevenueEuros).toFixed(1);
-  }, [installationCostHT, annualRevenueEuros]);
+  }, [installationCostHT, annualRevenueEuros, installableKwc]);
 
   const co2AvoidedTonnes = useMemo(() => {
     return ((annualProductionKwh * 0.5) / 1000).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
@@ -750,7 +749,7 @@ export default function ToitureSimulator() {
         doc.text("RETOUR SUR INVESTISSEMENT", 113, 131);
         doc.setFontSize(16);
         doc.setTextColor(239, 68, 68);
-        doc.text(`${paybackYears} ans`, 113, 146);
+        doc.text(`${paybackYears}${paybackYears !== 'N/A' ? ' ans' : ''}`, 113, 146);
 
         doc.setFillColor(248, 250, 252);
         doc.roundedRect(15, 163, 180, 32, 3, 3, 'F');
@@ -821,20 +820,20 @@ export default function ToitureSimulator() {
 
       {/* Stepper visuel (Étapes 1 à 3) */}
       {step < 3.5 && (
-        <div className="bg-gray-50 border-b border-gray-100 px-6 py-3">
-          <div className="flex items-center justify-between max-w-2xl mx-auto text-xs font-semibold text-gray-500">
-            <div className={`flex items-center gap-2 ${step >= 1 ? 'text-[#0f2847] font-bold' : ''}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 1 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>1</span>
+        <div className="bg-gray-50 border-b border-gray-100 px-3 py-2 sm:px-6 sm:py-3">
+          <div className="flex items-center justify-between max-w-2xl mx-auto text-[11px] sm:text-xs font-semibold text-gray-500 gap-1">
+            <div className={`flex items-center gap-1 sm:gap-2 ${step >= 1 ? 'text-[#0f2847] font-bold' : ''}`}>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs shrink-0 ${step >= 1 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>1</span>
               <span>Adresse</span>
             </div>
-            <div className="h-0.5 w-12 bg-gray-200" />
-            <div className={`flex items-center gap-2 ${step >= 2 ? 'text-[#0f2847] font-bold' : ''}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 2 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>2</span>
+            <div className="h-0.5 w-6 sm:w-12 bg-gray-200 shrink" />
+            <div className={`flex items-center gap-1 sm:gap-2 ${step >= 2 ? 'text-[#0f2847] font-bold' : ''}`}>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs shrink-0 ${step >= 2 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>2</span>
               <span>Emplacement</span>
             </div>
-            <div className="h-0.5 w-12 bg-gray-200" />
-            <div className={`flex items-center gap-2 ${step >= 3 ? 'text-[#0f2847] font-bold' : ''}`}>
-              <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${step >= 3 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>3</span>
+            <div className="h-0.5 w-6 sm:w-12 bg-gray-200 shrink" />
+            <div className={`flex items-center gap-1 sm:gap-2 ${step >= 3 ? 'text-[#0f2847] font-bold' : ''}`}>
+              <span className={`w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center text-[10px] sm:text-xs shrink-0 ${step >= 3 ? 'bg-[#0f9b8e] text-white' : 'bg-gray-200 text-gray-600'}`}>3</span>
               <span>Toiture</span>
             </div>
           </div>
@@ -1049,6 +1048,28 @@ export default function ToitureSimulator() {
               <span className="text-xs uppercase tracking-widest text-[#0f9b8e] font-bold block mb-1">RÉSULTATS DE L'ÉTUDE</span>
               <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847] mb-8">Potentiel photovoltaïque de votre toiture</h3>
 
+              {/* Alerte si puissance < 100 kWc */}
+              {installableKwc < 100 && (
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-4 sm:p-5 mb-8 text-left flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                    <AlertTriangle className="w-6 h-6" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="bg-red-600 text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider">
+                        Investissement déconseillé
+                      </span>
+                    </div>
+                    <p className="text-sm font-bold text-red-900 mt-1">
+                      Puissance installable inférieure à 100 kWc ({installableKwc} kWc)
+                    </p>
+                    <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                      En revente totale d'électricité photovoltaïque sur toiture, le tarif d'obligation d'achat garanti (EDF OA) ne s'applique qu'aux centrales d'au moins 100 kWc. En dessous de ce seuil, le tarif de rachat est à 0 € et votre projet de revente n'est pas rentable.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Ligne 1 : 3 métriques principales */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                 {/* Puissance installable */}
@@ -1096,7 +1117,7 @@ export default function ToitureSimulator() {
                     <Clock className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Amortissement</span>
-                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{paybackYears} ans</span>
+                  <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{paybackYears}{paybackYears !== 'N/A' ? ' ans' : ''}</span>
                 </div>
               </div>
 
