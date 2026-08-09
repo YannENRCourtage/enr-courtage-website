@@ -1064,13 +1064,17 @@ export default function ToitureSimulator() {
                     <p className="text-sm font-bold text-red-900 mt-1">
                       Puissance installable inférieure à 100 kWc ({installableKwc} kWc)
                     </p>
-                    <p className="text-xs text-red-800 mt-1 leading-relaxed">
+                    <div className="text-xs text-red-800 mt-1 leading-relaxed">
                       {installableKwc <= 9 ? (
-                        "En revente totale d'électricité sur toiture, les installations ≤ 9 kWc ne sont pas éligibles au rachat (tarif à 0 € et revenus à 0 €)."
+                        <p>En revente totale d'électricité sur toiture, les installations ≤ 9 kWc ne sont pas éligibles au rachat (tarif à 0 € et revenus à 0 €).</p>
                       ) : (
-                        `En revente totale d'électricité sur toiture de 9 à 100 kWc, le tarif de rachat est très faible (1,1 c€/kWh HT). Vos revenus estimés sont de seulement ${annualRevenueEuros.toLocaleString('fr-FR')} €/an et le projet n'est pas rentable. L'autoconsommation est fortement recommandée.`
+                        <>
+                          <div>En revente totale d'électricité sur toiture de 9 à 100 kWc, le tarif de rachat est très faible (1,1 c€/kWh HT).</div>
+                          <div>Vos revenus estimés sont de seulement {annualRevenueEuros.toLocaleString('fr-FR')} €/an et le projet n'est pas rentable.</div>
+                          <div>Une solution d'autoconsommation est fortement recommandée.</div>
+                        </>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               )}
