@@ -18,6 +18,7 @@ import EligibilitySimulator from '@/components/EligibilitySimulator';
 import IrveSection from '@/components/IrveSection';
 import ToiturePhotovoltaiqueSection from '@/components/ToiturePhotovoltaiqueSection';
 import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
+import { isStagingOrTestEnvironment } from '@/utils/envUtils';
 
 
 const videos = ['/1.mp4', '/2.mp4'];
@@ -176,7 +177,7 @@ function MainPage() {
                   <Hero setActiveTab={handleSetActiveTab} />
                 </div>
               </div>
-              <ConfigurateurCharpente />
+              {isStagingOrTestEnvironment() && <ConfigurateurCharpente />}
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
