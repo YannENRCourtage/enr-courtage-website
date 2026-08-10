@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/Header';
@@ -80,9 +80,25 @@ function VideoBackground() {
 function MainPage() {
   const [activeTab, setActiveTab] = useState('home');
   const contactFormRef = useRef(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['toiture', 'autoconsommation', 'irve', 'construction', 'batterie', 'about', 'home'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    } else if (!tabParam && location.pathname === '/') {
+      setActiveTab('home');
+    }
+  }, [location.search, location.pathname]);
 
   const handleSetActiveTab = (tab) => {
     setActiveTab(tab);
+    if (tab === 'home') {
+      window.history.pushState({}, '', '/');
+    } else {
+      window.history.pushState({}, '', `/?tab=${tab}`);
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

@@ -45,11 +45,12 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
   const handleTabClick = (tabId) => {
     if (tabId === 'batterie') {
       navigate('/batterie-soutien-reseau');
-    } else {
+    } else if (tabId === 'home') {
       navigate('/');
-      setTimeout(() => {
-        setActiveTab(tabId);
-      }, 0);
+      setActiveTab('home');
+    } else {
+      navigate(`/?tab=${tabId}`);
+      setActiveTab(tabId);
     }
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
@@ -59,10 +60,8 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
     if (solutionId === 'batterie') {
       navigate('/batterie-soutien-reseau');
     } else {
-      navigate('/');
-      setTimeout(() => {
-        setActiveTab(solutionId);
-      }, 0);
+      navigate(`/?tab=${solutionId}`);
+      setActiveTab(solutionId);
     }
     setIsDropdownOpen(false);
     setIsMenuOpen(false);
