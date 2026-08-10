@@ -1,0 +1,7 @@
+.vercel
+.env*.local
+07082026
+dist
+node_modules
+*.mp4
+*.xlsx

@@ -1,41 +1,266 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Canvas } from '@react-three/fiber';
+import { OrbitControls, Text, Line } from '@react-three/drei';
+import * as THREE from 'three';
 import { 
   Building2, ArrowRight, ArrowLeft, Check, CheckCircle2, RotateCcw, 
   Sparkles, Layers, ShieldCheck, HelpCircle, FileText, Send, Eye,
-  Maximize2, ChevronRight, Info, Wrench, Warehouse, DollarSign
+  Maximize2, ChevronRight, Info, Wrench, Warehouse, DollarSign, Sun, Zap, AlertTriangle
 } from 'lucide-react';
 import ecoEvoData from '../data/ecoEvoBuildings.json';
 import { useToast } from './ui/use-toast';
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb";
 
-// Palette de couleurs RAL standard pour la toiture / bardage
+// Palette de couleurs RAL standard pour la toiture
 const COLOR_PALETTE = [
-  { id: '7016', name: 'Gris Anthracite (RAL 7016)', hex: '#373f47', bgClass: 'bg-[#373f47]' },
-  { id: '6005', name: 'Vert Mousse (RAL 6005)', hex: '#114232', bgClass: 'bg-[#114232]' },
-  { id: '8012', name: 'Rouge Tuile (RAL 8012)', hex: '#6b322a', bgClass: 'bg-[#6b322a]' },
-  { id: '9010', name: 'Blanc Pur (RAL 9010)', hex: '#f0f0f0', bgClass: 'bg-[#f0f0f0]' },
-  { id: '9006', name: 'Gris Aluminium (RAL 9006)', hex: '#a5a8ab', bgClass: 'bg-[#a5a8ab]' }
+  { id: '7016', name: 'Gris Anthracite (RAL 7016)', hex: '#373f47' },
+  { id: '6005', name: 'Vert Mousse (RAL 6005)', hex: '#114232' },
+  { id: '8012', name: 'Rouge Tuile (RAL 8012)', hex: '#6b322a' },
+  { id: '9010', name: 'Blanc Pur (RAL 9010)', hex: '#cbd5e1' },
+  { id: '9006', name: 'Gris Aluminium (RAL 9006)', hex: '#94a3b8' }
 ];
+
+// COMPOSANT 3D DU BÂTIMENT WEBGL SUR FOND BLANC DYNAMIQUE
+function Building3DModel({ 
+  category, subType, width, length, bayCount, baySpacing, eaveHeight, ridgeHeight, 
+  hasSolar, roofColor, showDimensions, claddingSides 
+}) {
+  const roofHex = useMemo(() => {
+    return COLOR_PALETTE.find(c => c.id === roofColor)?.hex || '#373f47';
+  }, [roofColor]);
+
+  // Positions des portiques le long du bâtiment
+  const framePositions = useMemo(() => {
+    const pos = [];
+    for (let i = 0; i <= bayCount; i++) {
+      pos.push(-length / 2 + i * baySpacing);
+    }
+    return pos;
+  }, [bayCount, baySpacing, length]);
+
+  // Dispose les panneaux solaires sur le toit si l'option solaire est activée
+  const solarPanels = useMemo(() => {
+    if (!hasSolar) return [];
+    const panels = [];
+    const rows = Math.floor(length / 1.9);
+    const cols = Math.floor(width / 1.3);
+    const startX = -width / 2 + 0.7;
+    const startZ = -length / 2 + 0.95;
+
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        panels.push({
+          x: startX + c * 1.3,
+          z: startZ + r * 1.9
+        });
+      }
+    }
+    return panels;
+  }, [hasSolar, width, length]);
+
+  const isOmbriere = category === 'ombriere';
+
+  return (
+    <group>
+      {/* Sol blanc clair & ombre de portée */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+        <planeGeometry args={[length + 30, width + 30]} />
+        <meshBasicMaterial color="#f8fafc" />
+      </mesh>
+
+      {/* PORTIQUES ACIER ET POTEAUX */}
+      {framePositions.map((z, idx) => {
+        const halfW = width / 2;
+        return (
+          <group key={idx} position={[0, 0, z]}>
+            {/* Poteaux Gauche & Droit */}
+            <mesh position={[-halfW, eaveHeight / 2, 0]}>
+              <boxGeometry args={[0.3, eaveHeight, 0.3]} />
+              <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.8} />
+            </mesh>
+            <mesh position={[halfW, eaveHeight / 2, 0]}>
+              <boxGeometry args={[0.3, eaveHeight, 0.3]} />
+              <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.8} />
+            </mesh>
+
+            {/* Arbalétriers / Ferme de toiture */}
+            {!isOmbriere && subType === 'monopente' ? (
+              <mesh position={[0, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0]} rotation={[0, 0, -Math.atan2(ridgeHeight - eaveHeight, width)]}>
+                <boxGeometry args={[Math.hypot(width, ridgeHeight - eaveHeight), 0.25, 0.25]} />
+                <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
+              </mesh>
+            ) : !isOmbriere ? (
+              <>
+                {/* Bipente Symétrique ou Asymétrique */}
+                <mesh position={[-halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0]} rotation={[0, 0, Math.atan2(ridgeHeight - eaveHeight, halfW)]}>
+                  <boxGeometry args={[Math.hypot(halfW, ridgeHeight - eaveHeight), 0.25, 0.25]} />
+                  <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
+                </mesh>
+                <mesh position={[halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0]} rotation={[0, 0, -Math.atan2(ridgeHeight - eaveHeight, halfW)]}>
+                  <boxGeometry args={[Math.hypot(halfW, ridgeHeight - eaveHeight), 0.25, 0.25]} />
+                  <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
+                </mesh>
+                {/* Tirant d'entrait horizontal */}
+                <mesh position={[0, eaveHeight, 0]}>
+                  <boxGeometry args={[width, 0.12, 0.12]} />
+                  <meshStandardMaterial color="#64748b" roughness={0.5} />
+                </mesh>
+              </>
+            ) : (
+              /* Ombrière Toiture Pente */
+              <mesh position={[0, eaveHeight + 0.3, 0]} rotation={[0, 0, -0.15]}>
+                <boxGeometry args={[width, 0.25, 0.25]} />
+                <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
+
+      {/* PANNES LONGITUDINALES */}
+      <mesh position={[0, eaveHeight, 0]}>
+        <boxGeometry args={[width + 0.2, 0.12, length]} />
+        <meshStandardMaterial color="#64748b" />
+      </mesh>
+
+      {/* TOITURE (BAC ACIER / COVER) */}
+      {!isOmbriere && subType === 'monopente' ? (
+        <mesh position={[0, (eaveHeight + ridgeHeight) / 2 + 0.1, 0]} rotation={[Math.atan2(ridgeHeight - eaveHeight, width), 0, 0]}>
+          <boxGeometry args={[width + 0.4, 0.08, length + 0.6]} />
+          <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
+        </mesh>
+      ) : !isOmbriere ? (
+        <>
+          {/* Pan Sud */}
+          <mesh position={[-width / 4, (eaveHeight + ridgeHeight) / 2 + 0.08, 0]} rotation={[0, 0, Math.atan2(ridgeHeight - eaveHeight, width / 2)]}>
+            <boxGeometry args={[Math.hypot(width / 2, ridgeHeight - eaveHeight) + 0.3, 0.08, length + 0.6]} />
+            <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
+          </mesh>
+          {/* Pan Nord */}
+          <mesh position={[width / 4, (eaveHeight + ridgeHeight) / 2 + 0.08, 0]} rotation={[0, 0, -Math.atan2(ridgeHeight - eaveHeight, width / 2)]}>
+            <boxGeometry args={[Math.hypot(width / 2, ridgeHeight - eaveHeight) + 0.3, 0.08, length + 0.6]} />
+            <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
+          </mesh>
+        </>
+      ) : (
+        /* Toiture Ombrière */
+        <mesh position={[0, eaveHeight + 0.4, 0]} rotation={[0, 0, -0.15]}>
+          <boxGeometry args={[width + 0.3, 0.08, length + 0.4]} />
+          <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
+        </mesh>
+      )}
+
+      {/* OPTION CENTRALE SOLAIRE PV (PANNEAUX PHOTOVOLTAÏQUES 3D) */}
+      {hasSolar && (
+        <group position={[0, (eaveHeight + ridgeHeight) / 2 + 0.2, 0]}>
+          {solarPanels.map((p, i) => (
+            <mesh key={i} position={[p.x, 0.05, p.z]}>
+              <boxGeometry args={[1.2, 0.04, 1.8]} />
+              <meshStandardMaterial color="#0f172a" roughness={0.1} metalness={0.9} />
+              <lineSegments>
+                <edgesGeometry args={[new THREE.BoxGeometry(1.2, 0.04, 1.8)]} />
+                <lineBasicMaterial color="#94a3b8" linewidth={1} />
+              </lineSegments>
+            </mesh>
+          ))}
+        </group>
+      )}
+
+      {/* COTATIONS ET MESURES 3D (Text & Lines sur Fond Blanc) */}
+      {showDimensions && (
+        <group>
+          {/* Largeur pignon */}
+          <Line 
+            points={[[-width / 2, 0.2, length / 2 + 2.5], [width / 2, 0.2, length / 2 + 2.5]]} 
+            color="#0284c7" 
+            lineWidth={3} 
+          />
+          <Text 
+            position={[0, 0.8, length / 2 + 2.5]} 
+            fontSize={1.6} 
+            color="#0f172a" 
+            anchorX="center" 
+            anchorY="bottom"
+            fontWeight="bold"
+          >
+            {`${width} m`}
+          </Text>
+
+          {/* Longueur bâtiment */}
+          <Line 
+            points={[[width / 2 + 2.5, 0.2, -length / 2], [width / 2 + 2.5, 0.2, length / 2]]} 
+            color="#0284c7" 
+            lineWidth={3} 
+          />
+          <Text 
+            position={[width / 2 + 2.5, 0.8, 0]} 
+            fontSize={1.6} 
+            color="#0f172a" 
+            anchorX="center" 
+            anchorY="bottom"
+            fontWeight="bold"
+          >
+            {`${length} m`}
+          </Text>
+
+          {/* Hauteur égout */}
+          <Line 
+            points={[[-width / 2 - 2.5, 0, length / 2], [-width / 2 - 2.5, eaveHeight, length / 2]]} 
+            color="#d4a843" 
+            lineWidth={3} 
+          />
+          <Text 
+            position={[-width / 2 - 3, eaveHeight / 2, length / 2]} 
+            fontSize={1.3} 
+            color="#0f172a" 
+            anchorX="right" 
+            anchorY="middle"
+            fontWeight="bold"
+          >
+            {`${eaveHeight} m`}
+          </Text>
+
+          {/* Surface au sommet */}
+          <Text 
+            position={[0, ridgeHeight + 3, 0]} 
+            fontSize={2.5} 
+            color="#0f172a" 
+            anchorX="center" 
+            anchorY="middle"
+            fontWeight="bold"
+          >
+            {`${Math.round(width * length)} m²`}
+          </Text>
+        </group>
+      )}
+    </group>
+  );
+}
 
 export default function ConfigurateurCharpente() {
   const { toast } = useToast();
 
   // ÉTAPE ACTUELLE DU CONFIGURATEUR (1 à 6)
   const [step, setStep] = useState(1);
-  const [viewMode, setViewMode] = useState('3D'); // '3D', '2D_PIGNON', '2D_PLAN'
 
-  // ÉTAT DE LA CONFIGURATION
-  const [buildingType, setBuildingType] = useState('symetrique'); // 'symetrique', 'monopente', 'auvent'
+  // SELECTION ÉTAPE 1 : CATÉGORIE (Bâtiment / Ombrière) ET TYPE
+  const [category, setCategory] = useState('batiment'); // 'batiment' ou 'ombriere'
+  const [subType, setSubType] = useState('symetrique'); // Bâtiment: 'symetrique', 'asymetrique', 'monopente' | Ombrière: 'simple_vl', 'double_vl', 'pl'
+  
+  // DIMENSIONS & CARACTÉRISTIQUES
   const [selectedWidth, setSelectedWidth] = useState(18.6); // Largeur pignon en m
   const [bayCount, setBayCount] = useState(4); // Nombre de travées (ex: 4 travées x 7.5m = 30m)
   const [bayLength, setBayLength] = useState(7.5); // Espacement travée (7.5m ou 6.2m)
   const [eaveHeight, setEaveHeight] = useState(5.5); // Hauteur égout (m)
+  
+  // OPTIONS COUVERTURE & CENTRALE SOLAIRE PV
+  const [hasSolar, setHasSolar] = useState(false); // Option centrale solaire PV
   const [roofType, setRoofType] = useState('bac_acier'); // 'bac_acier', 'sandwich_40', 'sandwich_80'
   const [roofColor, setRoofColor] = useState('7016');
   const [claddingSides, setCladdingSides] = useState(0); // 0 (ouvert), 1, 2, 3, 4 faces
-  const [extensionType, setExtensionType] = useState('aucun'); // 'aucun', 'auvent_sud_4', 'appentis_8'
+  const [showDimensions, setShowDimensions] = useState(true);
 
   // Formulaire de contact lead
   const [leadForm, setLeadForm] = useState({
@@ -63,16 +288,41 @@ export default function ConfigurateurCharpente() {
 
   // CALCUL DE LA HAUTEUR AU FAÎTAGE ESTIMÉE
   const ridgeHeight = useMemo(() => {
-    if (buildingType === 'monopente') {
+    if (category === 'ombriere') return eaveHeight + 0.8;
+    if (subType === 'monopente') {
       return Math.round((eaveHeight + selectedWidth * 0.15) * 10) / 10;
     }
     // Bipente 10°
     return Math.round((eaveHeight + (selectedWidth / 2) * 0.176) * 10) / 10;
-  }, [eaveHeight, selectedWidth, buildingType]);
+  }, [eaveHeight, selectedWidth, subType, category]);
 
-  // RECHERCHE DU BÂTIMENT DANS LE CATALOGUE ECO-EVO / GREEN INVEST (ecoEvoBuildings.json)
+  // CALCUL DE LA PUISSANCE SOLAIRE PV (kWc) SI L'OPTION EST ACTIVÉE
+  const solarCapacityKwc = useMemo(() => {
+    if (!hasSolar) return 0;
+    // Ratio ~204 Wc/m² (145 kWc pour 711 m²)
+    return Math.round((totalSurface * 0.204) * 100) / 100;
+  }, [hasSolar, totalSurface]);
+
+  // CALCUL DU PRODUCTIBLE ET REVENUS SOLAIRES PV (Même logique que la page toiture photovoltaïque)
+  const solarProductionKwh = useMemo(() => {
+    if (!hasSolar) return 0;
+    return Math.round(solarCapacityKwc * 1150); // 1150 kWh/kWc
+  }, [hasSolar, solarCapacityKwc]);
+
+  const solarTariffPerKwh = useMemo(() => {
+    if (!hasSolar) return 0;
+    if (solarCapacityKwc <= 9) return 0; // rachat impossible
+    if (solarCapacityKwc < 100) return 0.011; // 1,1 c€/kWh HT
+    return 0.085; // 8,5 c€/kWh HT
+  }, [hasSolar, solarCapacityKwc]);
+
+  const solarAnnualRevenueEuros = useMemo(() => {
+    if (!hasSolar) return 0;
+    return Math.round(solarProductionKwh * solarTariffPerKwh);
+  }, [hasSolar, solarProductionKwh, solarTariffPerKwh]);
+
+  // RECHERCHE DU BÂTIMENT DANS LE CATALOGUE ECO-EVO / GREEN INVEST
   const matchedBuilding = useMemo(() => {
-    // Filtrage par largeur approximative (marge 0.5m) et longueur (marge 0.5m)
     const match = ecoEvoData.find(b => {
       const wDiff = Math.abs(b.width - selectedWidth);
       const lDiff = Math.abs(b.length - totalLength);
@@ -81,27 +331,25 @@ export default function ConfigurateurCharpente() {
 
     if (match) return match;
 
-    // Fallback: chercher par largeur la plus proche
     const sameWidths = ecoEvoData.filter(b => Math.abs(b.width - selectedWidth) <= 1.5);
     if (sameWidths.length > 0) {
       sameWidths.sort((a, b) => Math.abs(a.length - totalLength) - Math.abs(b.length - totalLength));
       return sameWidths[0];
     }
-
     return null;
   }, [selectedWidth, totalLength]);
 
-  // CALCUL DU PRIX HT DU BÂTIMENT
+  // CALCUL DU PRIX HT DU BÂTIMENT OU DE L'OMBRIÈRE
   const calculatedPriceHT = useMemo(() => {
     let basePrice = 0;
     if (matchedBuilding && matchedBuilding.price_ht > 0) {
       basePrice = matchedBuilding.price_ht;
     } else {
-      // Estimation moyenne au m² charpente ECO-EVO (~105 € à 125 € / m²)
-      basePrice = Math.round(totalSurface * 112);
+      // Tarif au m² structure seule
+      const m2Price = category === 'ombriere' ? 98 : 112;
+      basePrice = Math.round(totalSurface * m2Price);
     }
 
-    // Adaptations selon la couverture et bardage
     let roofSurcost = 0;
     if (roofType === 'sandwich_40') roofSurcost = totalSurface * 18;
     if (roofType === 'sandwich_80') roofSurcost = totalSurface * 28;
@@ -114,15 +362,20 @@ export default function ConfigurateurCharpente() {
     }
 
     return Math.round(basePrice + roofSurcost + claddingSurcost);
-  }, [matchedBuilding, totalSurface, roofType, claddingSides, selectedWidth, totalLength, eaveHeight]);
+  }, [matchedBuilding, totalSurface, roofType, claddingSides, selectedWidth, totalLength, eaveHeight, category]);
 
-  // OPTIONS DISPONIBLES DE LARGEURS SELON TYPE
+  // OPTIONS DISPONIBLES DE LARGEURS SELON CATEGORIE ET TYPE
   const availableWidths = useMemo(() => {
-    if (buildingType === 'monopente') {
+    if (category === 'ombriere') {
+      if (subType === 'simple_vl') return [7.5, 8.5, 9.5];
+      if (subType === 'double_vl') return [15.0, 15.8, 16.5];
+      return [15.8, 18.0]; // PL
+    }
+    if (subType === 'monopente') {
       return [12.7, 15.0, 16.4, 18.6, 21.5, 24.4];
     }
     return [15.0, 16.4, 18.6, 20.0, 22.35, 25.5, 26.05, 29.75, 32.0, 33.46, 35.0, 39.0, 43.0];
-  }, [buildingType]);
+  }, [category, subType]);
 
   // GESTION SOUMISSION LEAD
   const handleSubmitLead = async (e) => {
@@ -139,7 +392,7 @@ export default function ConfigurateurCharpente() {
     setIsSubmitting(true);
     try {
       const payload = {
-        _subject: `[ENR COURTAGE] Demande de devis Structure Métallique Sans Solaire - ${leadForm.lastName} ${leadForm.firstName}`,
+        _subject: `[ENR COURTAGE] Demande de devis Structure Métallique - ${leadForm.lastName} ${leadForm.firstName}`,
         Nom: leadForm.lastName,
         Prenom: leadForm.firstName,
         Email: leadForm.email,
@@ -147,14 +400,13 @@ export default function ConfigurateurCharpente() {
         Departement: leadForm.dept,
         Profil: leadForm.userType,
         Configuration: {
-          Type: buildingType === 'symetrique' ? 'Bipente Symétrique' : buildingType === 'monopente' ? 'Monopente' : 'Bipente avec Auvent',
+          Categorie: category === 'batiment' ? 'Bâtiment' : 'Ombrière',
+          Type: subType,
           Dimensions: `${selectedWidth}m x ${totalLength}m (${totalSurface} m²)`,
           Travees: `${bayCount} travées x ${bayLength}m`,
           HauteurEgout: `${eaveHeight} m`,
           HauteurFaitage: `${ridgeHeight} m`,
-          Couverture: roofType,
-          Bardage: `${claddingSides} face(s)`,
-          CodeModele: matchedBuilding ? matchedBuilding.code : 'Sur-mesure ECO-EVO',
+          OptionSolaire: hasSolar ? `Centrale PV ${solarCapacityKwc} kWc (${solarAnnualRevenueEuros} €/an)` : 'Sans solaire',
           PrixEstimeHT: `${calculatedPriceHT.toLocaleString('fr-FR')} € HT`
         },
         Commentaires: leadForm.comments
@@ -170,7 +422,7 @@ export default function ConfigurateurCharpente() {
         setSubmitSuccess(true);
         toast({
           title: "Demande transmise avec succès !",
-          description: "Un conseiller charpente métallique va vous contacter sous 24h.",
+          description: "Un conseiller charpente métallique va vous recontacte sous 24h.",
           className: "bg-[#0f2847] text-white border border-emerald-500"
         });
       } else {
@@ -189,36 +441,32 @@ export default function ConfigurateurCharpente() {
 
   return (
     <section id="configurateur-charpente" className="py-16 md:py-24 bg-slate-900 text-white relative overflow-hidden font-sans">
-      {/* Background aesthetic shapes */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         
-        {/* HEADER ET PRÉSENTATION DU CONFIGURATEUR */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
+        {/* HEADER PRÉSENTATION DU CONFIGURATEUR */}
+        <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center space-x-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
             <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>Configurateur 3D Bâtiment Charpente Métallique</span>
+            <span>Configurateur 3D Bâtiment & Ombrière Métallique</span>
           </div>
 
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4 leading-tight">
-            Votre structure métallique <span className="text-emerald-400">sans solaire</span>
+            Votre structure métallique <span className="text-emerald-400">sur-mesure</span>
           </h2>
           <p className="text-slate-300 text-base sm:text-lg leading-relaxed font-light">
-            Configurez votre bâtiment charpente métallique (Gamme ECO-EVO) étape par étape. Obtenez votre visuel 3D et votre tarif immédiat en quelques clics.
+            Configurez votre bâtiment ou ombrière métallique étape par étape, visualisez la structure en 3D dynamique et obtenez votre chiffrage immédiat.
           </p>
         </div>
 
         {/* BARRE D'ÉTAPES DU CONFIGURATEUR (SCREB STYLE) */}
-        <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 mb-8 shadow-xl backdrop-blur-md">
+        <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 mb-8 shadow-xl">
           <div className="flex items-center justify-between overflow-x-auto gap-2 pb-2 sm:pb-0 no-scrollbar text-xs">
             {[
               { num: 1, label: '1. Modèle' },
               { num: 2, label: '2. Largeur' },
               { num: 3, label: '3. Longueur' },
               { num: 4, label: '4. Hauteur' },
-              { num: 5, label: '5. Habillage' },
+              { num: 5, label: '5. Solaire & Finitions' },
               { num: 6, label: '6. Tarif & Devis' },
             ].map((st) => (
               <button
@@ -246,214 +494,104 @@ export default function ConfigurateurCharpente() {
         {/* CONTENEUR PRINCIPAL DU CONFIGURATEUR (GRILLE 2 COLONNES) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* COLONNE GAUCHE (8 COLS) : VISUALISATEUR 3D / 2D VECTORIEL DYNAMIQUE */}
-          <div className="lg:col-span-7 bg-slate-800/90 rounded-3xl p-6 border border-slate-700 shadow-2xl relative flex flex-col justify-between min-h-[480px]">
+          {/* COLONNE GAUCHE (7 COLS) : VISIONNEUSE 3D WEBGL SUR FOND BLANC (EXACTEMENT COMME NELSONPV.FR) */}
+          <div className="lg:col-span-7 bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-200 shadow-2xl relative flex flex-col justify-between min-h-[520px]">
             
-            {/* Header Visualisateur */}
-            <div className="flex items-center justify-between mb-4 border-b border-slate-700/80 pb-4">
+            {/* Header & Badges NelsonPV Style */}
+            <div className="flex flex-wrap items-center justify-between gap-3 z-10 mb-2">
+              <div className="bg-blue-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-2">
+                <Warehouse className="w-4 h-4" />
+                <span>{totalLength}m x {selectedWidth}m - {totalSurface}m²</span>
+              </div>
+
+              {hasSolar && (
+                <div className="bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
+                  <Zap className="w-4 h-4 fill-amber-500 text-amber-600" />
+                  <span>{solarCapacityKwc} kWc</span>
+                </div>
+              )}
+
+              {/* Toggles de Visionneuse 3D */}
+              <div className="flex items-center gap-2 ml-auto">
+                <button
+                  onClick={() => setShowDimensions(!showDimensions)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors ${
+                    showDimensions ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-slate-100 border-slate-200 text-slate-600'
+                  }`}
+                >
+                  {showDimensions ? 'Masquer les côtes' : 'Afficher les côtes'}
+                </button>
+              </div>
+            </div>
+
+            {/* VISIONNEUSE WEBGL 3D INTERACTIVE AVEC SOURIS (ORBITCONTROLS) */}
+            <div className="relative w-full h-[400px] sm:h-[440px] bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 cursor-grab active:cursor-grabbing">
+              <Canvas
+                shadows
+                camera={{ position: [22, 16, 28], fov: 45 }}
+                style={{ background: '#ffffff' }}
+              >
+                <ambientLight intensity={0.8} />
+                <directionalLight position={[30, 40, 20]} intensity={1.8} castShadow />
+                <directionalLight position={[-30, 20, -20]} intensity={0.5} />
+                
+                {/* Modèle 3D Dynamique */}
+                <Building3DModel
+                  category={category}
+                  subType={subType}
+                  width={selectedWidth}
+                  length={totalLength}
+                  bayCount={bayCount}
+                  baySpacing={bayLength}
+                  eaveHeight={eaveHeight}
+                  ridgeHeight={ridgeHeight}
+                  hasSolar={hasSolar}
+                  roofColor={roofColor}
+                  showDimensions={showDimensions}
+                  claddingSides={claddingSides}
+                />
+
+                {/* Contrôles de Rotation / Zoom à la souris (OrbitControls) */}
+                <OrbitControls 
+                  enablePan={true}
+                  enableZoom={true}
+                  enableRotate={true}
+                  minDistance={5}
+                  maxDistance={150}
+                  maxPolarAngle={Math.PI / 2 - 0.02}
+                />
+              </Canvas>
+
+              {/* Indication d'interaction avec la souris */}
+              <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md border border-slate-200 px-3 py-1 rounded-lg text-[11px] text-slate-600 font-semibold shadow-sm pointer-events-none">
+                💡 Cliquez et faites glisser pour faire tourner en 3D
+              </div>
+            </div>
+
+            {/* BARRE DE CARACTÉRISTIQUES CLÉS EN BAS */}
+            <div className="mt-4 bg-slate-100/90 rounded-2xl p-4 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-800">
               <div>
-                <span className="text-xs font-extrabold text-emerald-400 uppercase tracking-widest block">Aperçu interactif</span>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <span>{totalLength}m x {selectedWidth}m</span>
-                  <span className="text-slate-400 text-sm font-normal">({totalSurface} m²)</span>
-                </h3>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Structure</span>
+                <span className="font-bold text-slate-900">
+                  {category === 'batiment' ? 'Bâtiment Charpente Métallique' : 'Ombrière Photovoltaïque'}
+                </span>
               </div>
-
-              {/* Toggles de Vue (3D, 2D Pignon, 2D Vue du haut) */}
-              <div className="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-700/80 gap-1 text-xs">
-                <button
-                  onClick={() => setViewMode('3D')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${viewMode === '3D' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
-                >
-                  Vue 3D
-                </button>
-                <button
-                  onClick={() => setViewMode('2D_PIGNON')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${viewMode === '2D_PIGNON' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
-                >
-                  2D Pignon
-                </button>
-                <button
-                  onClick={() => setViewMode('2D_PLAN')}
-                  className={`px-3 py-1.5 rounded-lg font-semibold transition-colors ${viewMode === '2D_PLAN' ? 'bg-emerald-500 text-slate-950 font-bold' : 'text-slate-400 hover:text-white'}`}
-                >
-                  Vue de dessus
-                </button>
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Surface Totale</span>
+                <span className="font-bold text-blue-600 text-sm">{totalSurface} m²</span>
               </div>
+              <div>
+                <span className="text-slate-500 block text-[10px] uppercase font-bold">Hauteur utile</span>
+                <span className="font-bold text-slate-900">{eaveHeight} m</span>
+              </div>
+              {hasSolar && (
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Puissance Solaire</span>
+                  <span className="font-extrabold text-amber-600 text-sm">{solarCapacityKwc} kWc</span>
+                </div>
+              )}
             </div>
 
-            {/* SVG RENDERING DU BÂTIMENT 3D / 2D */}
-            <div className="relative w-full h-80 sm:h-96 bg-slate-950 rounded-2xl overflow-hidden border border-slate-800 flex items-center justify-center p-4">
-              
-              {/* Badge d'informations dimensions */}
-              <div className="absolute top-4 left-4 bg-slate-900/90 border border-slate-700/90 rounded-xl p-3 text-xs space-y-1 shadow-lg backdrop-blur-md z-10">
-                <p className="text-emerald-400 font-bold flex items-center gap-1.5">
-                  <Warehouse className="w-3.5 h-3.5" />
-                  <span>{matchedBuilding ? matchedBuilding.range : 'Gamme ECO-EVO'}</span>
-                </p>
-                <p className="text-slate-300">Surface : <strong className="text-white">{totalSurface} m²</strong></p>
-                <p className="text-slate-300">Hauteur Égout : <strong className="text-white">{eaveHeight} m</strong></p>
-                <p className="text-slate-300">Hauteur Faîtage : <strong className="text-white">{ridgeHeight} m</strong></p>
-                <p className="text-slate-300">Travées : <strong className="text-white">{bayCount} x {bayLength}m</strong></p>
-              </div>
-
-              {/* SCHÉMA SVG INTERACTIF 3D ISOMÉTRIQUE / 2D */}
-              <svg className="w-full h-full max-h-[340px]" viewBox="0 0 800 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="roofGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor={COLOR_PALETTE.find(c => c.id === roofColor)?.hex || '#373f47'} />
-                    <stop offset="100%" stopColor="#1e293b" />
-                  </linearGradient>
-                  <linearGradient id="steelGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stopColor="#94a3b8" />
-                    <stop offset="100%" stopColor="#475569" />
-                  </linearGradient>
-                </defs>
-
-                {/* VUE 3D ISOMÉTRIQUE */}
-                {viewMode === '3D' && (
-                  <g transform="translate(400, 260)">
-                    {/* Grille au sol */}
-                    <ellipse cx="0" cy="110" rx="320" ry="80" fill="rgba(15, 23, 42, 0.6)" stroke="#334155" strokeWidth="1.5" strokeDasharray="4 4" />
-
-                    {/* Structure Portique Acier (Colonnes & Fermes) */}
-                    {Array.from({ length: Math.min(bayCount + 1, 10) }).map((_, i) => {
-                      const offset = (i - (bayCount / 2)) * 32;
-                      const isFront = i === bayCount;
-                      return (
-                        <g key={i} transform={`translate(${offset * 1.2}, ${-offset * 0.5})`}>
-                          {/* Poteaux arrière & avant */}
-                          <line x1="-140" y1="40" x2="-140" y2="-50" stroke="#64748b" strokeWidth="4" strokeLinecap="round" />
-                          <line x1="140" y1="40" x2="140" y2="-50" stroke="#64748b" strokeWidth="4" strokeLinecap="round" />
-                          {/* Arbalétriers (Ferme de toiture) */}
-                          <line x1="-140" y1="-50" x2="0" y2="-110" stroke="#94a3b8" strokeWidth="4" />
-                          <line x1="140" y1="-50" x2="0" y2="-110" stroke="#94a3b8" strokeWidth="4" />
-                          {/* Tirant d'entrait */}
-                          <line x1="-140" y1="-50" x2="140" y2="-50" stroke="#475569" strokeWidth="2" strokeDasharray="3 3" />
-                        </g>
-                      );
-                    })}
-
-                    {/* Couverture de Toiture 3D (Pan versant Sud/Nord) */}
-                    <polygon 
-                      points="-240,-120 0,-180 200,-110 -40,-50" 
-                      fill="url(#roofGrad)" 
-                      stroke="#1e293b" 
-                      strokeWidth="2" 
-                    />
-                    <polygon 
-                      points="0,-180 240,-120 40,0 -40,-50" 
-                      fill={COLOR_PALETTE.find(c => c.id === roofColor)?.hex || '#373f47'} 
-                      opacity="0.85"
-                      stroke="#1e293b" 
-                      strokeWidth="2" 
-                    />
-
-                    {/* Bardage si sélectionné */}
-                    {claddingSides > 0 && (
-                      <polygon 
-                        points="-240,-120 -40,-50 -40,40 -240,0" 
-                        fill="#334155" 
-                        opacity="0.75" 
-                        stroke="#475569" 
-                        strokeWidth="1.5" 
-                      />
-                    )}
-
-                    {/* Lignes de cotations dimensionnelles 3D */}
-                    <g transform="translate(0, 90)">
-                      {/* Largeur pignon */}
-                      <line x1="-140" y1="20" x2="140" y2="20" stroke="#10b981" strokeWidth="2" />
-                      <text x="0" y="38" fill="#10b981" fontSize="13" fontWeight="bold" textAnchor="middle">Largeur : {selectedWidth} m</text>
-                    </g>
-                    <g transform="translate(180, 0)">
-                      {/* Longueur bâtiment */}
-                      <line x1="20" y1="-80" x2="-80" y2="20" stroke="#38bdf8" strokeWidth="2" />
-                      <text x="-20" y="-10" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="middle">Longueur : {totalLength} m</text>
-                    </g>
-                  </g>
-                )}
-
-                {/* VUE 2D PIGNON */}
-                {viewMode === '2D_PIGNON' && (
-                  <g transform="translate(400, 260)">
-                    {/* Ligne du sol */}
-                    <line x1="-250" y1="80" x2="250" y2="80" stroke="#475569" strokeWidth="3" />
-                    
-                    {/* Structure Pignon 2D */}
-                    <line x1="-180" y1="80" x2="-180" y2="-40" stroke="#94a3b8" strokeWidth="6" />
-                    <line x1="180" y1="80" x2="180" y2="-40" stroke="#94a3b8" strokeWidth="6" />
-                    
-                    {/* Pente de Toit Bipente / Monopente */}
-                    {buildingType === 'monopente' ? (
-                      <line x1="-180" y1="20" x2="180" y2="-80" stroke="#10b981" strokeWidth="8" />
-                    ) : (
-                      <>
-                        <line x1="-180" y1="-40" x2="0" y2="-120" stroke="#10b981" strokeWidth="8" />
-                        <line x1="180" y1="-40" x2="0" y2="-120" stroke="#10b981" strokeWidth="8" />
-                      </>
-                    )}
-
-                    {/* Cotations 2D */}
-                    <line x1="-180" y1="110" x2="180" y2="110" stroke="#10b981" strokeWidth="2" />
-                    <text x="0" y="130" fill="#10b981" fontSize="14" fontWeight="bold" textAnchor="middle">Largeur Pignon : {selectedWidth} m</text>
-                    
-                    <line x1="-210" y1="80" x2="-210" y2="-40" stroke="#38bdf8" strokeWidth="2" />
-                    <text x="-225" y="20" fill="#38bdf8" fontSize="12" fontWeight="bold" textAnchor="end">H. Égout : {eaveHeight}m</text>
-
-                    <line x1="210" y1="80" x2="210" y2="-120" stroke="#f59e0b" strokeWidth="2" />
-                    <text x="225" y="-20" fill="#f59e0b" fontSize="12" fontWeight="bold" textAnchor="start">H. Faîtage : {ridgeHeight}m</text>
-                  </g>
-                )}
-
-                {/* VUE 2D VUE DE DESSUS (PLAN) */}
-                {viewMode === '2D_PLAN' && (
-                  <g transform="translate(400, 240)">
-                    {/* Rectangle Bâtiment Vue du haut */}
-                    <rect x="-180" y="-100" width="360" height="200" fill="#1e293b" stroke="#10b981" strokeWidth="3" rx="4" />
-                    
-                    {/* Lignes de travées */}
-                    {Array.from({ length: bayCount - 1 }).map((_, idx) => {
-                      const posX = -180 + ((idx + 1) * (360 / bayCount));
-                      return <line key={idx} x1={posX} y1="-100" x2={posX} y2="100" stroke="#475569" strokeWidth="2" strokeDasharray="4 4" />;
-                    })}
-
-                    {/* Ligne de Faîtage centrale */}
-                    <line x1="-180" y1="0" x2="180" y2="0" stroke="#f59e0b" strokeWidth="2" strokeDasharray="6 3" />
-                    <text x="0" y="-8" fill="#f59e0b" fontSize="11" fontWeight="bold" textAnchor="middle">Faîtage central</text>
-
-                    <text x="0" y="140" fill="#10b981" fontSize="14" fontWeight="bold" textAnchor="middle">Longueur totale : {totalLength} m ({bayCount} travées de {bayLength}m)</text>
-                    <text x="-210" y="5" fill="#38bdf8" fontSize="13" fontWeight="bold" textAnchor="end">Largeur : {selectedWidth} m</text>
-                  </g>
-                )}
-              </svg>
-            </div>
-
-            {/* BARRE D'INFORMATIONS DU BÂTIMENT SÉLECTIONNÉ */}
-            <div className="mt-6 bg-slate-900/80 rounded-2xl p-4 border border-slate-700/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                  <Warehouse className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-slate-400">Modèle référence :</p>
-                  <p className="text-sm font-bold text-white">
-                    {matchedBuilding ? `${matchedBuilding.range} - ${matchedBuilding.code}` : 'Charpente ECO-EVO'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-6">
-                <div>
-                  <p className="text-slate-400">Surface couverte :</p>
-                  <p className="text-sm font-extrabold text-emerald-400">{totalSurface} m²</p>
-                </div>
-                <div>
-                  <p className="text-slate-400">Structure :</p>
-                  <p className="text-sm font-bold text-white">Acier Galvanisé Haute Résistance</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* COLONNE DROITE (5 COLS) : CONTROLES ÉTAPE PAR ÉTAPE (SCREB STYLE) */}
@@ -461,42 +599,109 @@ export default function ConfigurateurCharpente() {
             
             <AnimatePresence mode="wait">
               
-              {/* ÉTAPE 1 : TYPE DE BÂTIMENT */}
+              {/* ÉTAPE 1 : CATÉGORIE (BÂTIMENT OU OMBRIÈRE) PUIS SOUS-TYPE */}
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 1 sur 6</span>
                     <h3 className="text-xl font-bold text-white">Choisissez le type de structure</h3>
-                    <p className="text-slate-400 text-xs mt-1">Sélectionnez la forme de toiture adaptée à vos besoins d'exploitation.</p>
+                    <p className="text-slate-400 text-xs mt-1">Sélectionnez Bâtiment ou Ombrière de parking.</p>
                   </div>
 
-                  <div className="space-y-3">
-                    {[
-                      { id: 'symetrique', title: 'Bipente Symétrique (Gamme HELIOS / ORION)', desc: 'Le classique agricole et industriel, toiture 2 pans équilibrée à 10°' },
-                      { id: 'monopente', title: 'Monopente / Asymétrique (Gamme ATLAS / YOKO)', desc: 'Toiture 1 pan orientée, idéale pour auvent ou adossement' },
-                      { id: 'auvent', title: 'Bipente avec Auvent (Gamme SOLEA)', desc: 'Bâtiment fermé ou ouvert avec auvent latéral de protection' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        onClick={() => setBuildingType(opt.id)}
-                        className={`w-full text-left p-4 rounded-2xl border transition-all flex items-start gap-3 ${
-                          buildingType === opt.id 
-                            ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-lg shadow-emerald-500/10' 
-                            : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0 ${
-                          buildingType === opt.id ? 'border-emerald-400 bg-emerald-400/20' : 'border-slate-500'
-                        }`}>
-                          {buildingType === opt.id && <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />}
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-white">{opt.title}</p>
-                          <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">{opt.desc}</p>
-                        </div>
-                      </button>
-                    ))}
+                  {/* Choix Principal : Bâtiment vs Ombrière */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setCategory('batiment');
+                        setSubType('symetrique');
+                        setSelectedWidth(18.6);
+                      }}
+                      className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
+                        category === 'batiment' 
+                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-lg' 
+                          : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      <Building2 className="w-7 h-7" />
+                      <span className="text-sm font-extrabold">Bâtiment</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setCategory('ombriere');
+                        setSubType('double_vl');
+                        setSelectedWidth(15.8);
+                      }}
+                      className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
+                        category === 'ombriere' 
+                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-lg' 
+                          : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                      }`}
+                    >
+                      <Warehouse className="w-7 h-7" />
+                      <span className="text-sm font-extrabold">Ombrière</span>
+                    </button>
                   </div>
+
+                  {/* Sous-choix Bâtiment */}
+                  {category === 'batiment' && (
+                    <div className="space-y-2 pt-2">
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Forme de toiture</label>
+                      {[
+                        { id: 'symetrique', title: 'Symétrique (Bipente 2 pans)', desc: 'Toiture 2 pans équilibrée à 10°' },
+                        { id: 'asymetrique', title: 'Asymétrique (Bipente dissymétrique)', desc: 'Pan principal orienté optimisé' },
+                        { id: 'monopente', title: 'Monopente', desc: 'Toiture 1 pan orientée' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setSubType(opt.id)}
+                          className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 ${
+                            subType === opt.id 
+                              ? 'bg-emerald-500/20 border-emerald-400 text-white' 
+                              : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0 ${
+                            subType === opt.id ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
+                          }`} />
+                          <div>
+                            <p className="font-bold text-xs text-white">{opt.title}</p>
+                            <p className="text-[11px] text-slate-400">{opt.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sous-choix Ombrière */}
+                  {category === 'ombriere' && (
+                    <div className="space-y-2 pt-2">
+                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Type d'ombrière</label>
+                      {[
+                        { id: 'simple_vl', title: 'Simple VL (Véhicules Légers)', desc: 'Ombrière 1 rangée de stationnement (Largeur ~7.5m)' },
+                        { id: 'double_vl', title: 'Double VL (Véhicules Légers)', desc: 'Ombrière 2 rangées de stationnement (Largeur ~15.8m)' },
+                        { id: 'pl', title: 'PL (Poids Lourds)', desc: 'Ombrière haute pour camions & bus (Hauteur 5.1m)' },
+                      ].map((opt) => (
+                        <button
+                          key={opt.id}
+                          onClick={() => setSubType(opt.id)}
+                          className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 ${
+                            subType === opt.id 
+                              ? 'bg-emerald-500/20 border-emerald-400 text-white' 
+                              : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
+                          }`}
+                        >
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0 ${
+                            subType === opt.id ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
+                          }`} />
+                          <div>
+                            <p className="font-bold text-xs text-white">{opt.title}</p>
+                            <p className="text-[11px] text-slate-400">{opt.desc}</p>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
 
                   <button
                     onClick={() => setStep(2)}
@@ -514,7 +719,7 @@ export default function ConfigurateurCharpente() {
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 2 sur 6</span>
                     <h3 className="text-xl font-bold text-white">Choisissez la largeur (Portée)</h3>
-                    <p className="text-slate-400 text-xs mt-1">Sélectionnez la largeur de pignon standardisée de la gamme ECO-EVO.</p>
+                    <p className="text-slate-400 text-xs mt-1">Sélectionnez la largeur de pignon standardisée.</p>
                   </div>
 
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -529,7 +734,7 @@ export default function ConfigurateurCharpente() {
                         }`}
                       >
                         <span className="text-lg block">{w} m</span>
-                        <span className="text-[10px] opacity-75 font-normal">Portée pignon</span>
+                        <span className="text-[10px] opacity-75 font-normal">Portée</span>
                       </button>
                     ))}
                   </div>
@@ -559,12 +764,11 @@ export default function ConfigurateurCharpente() {
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 3 sur 6</span>
                     <h3 className="text-xl font-bold text-white">Longueur & Nombre de travées</h3>
-                    <p className="text-slate-400 text-xs mt-1">Modifiez le nombre de travées (espacement standard 7.5m).</p>
+                    <p className="text-slate-400 text-xs mt-1">Choisissez le nombre de travées (espacement 7.5m).</p>
                   </div>
 
-                  {/* Boutons rapide SCREB style : x3, x4, x5, x6... */}
                   <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                    {[4, 5, 6, 7, 8, 9, 10, 12].map((cnt) => (
+                    {[3, 4, 5, 6, 7, 8, 9, 10, 12].map((cnt) => (
                       <button
                         key={cnt}
                         onClick={() => setBayCount(cnt)}
@@ -574,7 +778,7 @@ export default function ConfigurateurCharpente() {
                             : 'bg-slate-900/60 border-slate-700 text-slate-200 hover:border-slate-500'
                         }`}
                       >
-                        <span className="text-base font-bold block">{cnt} travées</span>
+                        <span className="text-base font-bold block">x {cnt}</span>
                         <span className="text-[10px] opacity-80">{cnt * bayLength} m</span>
                       </button>
                     ))}
@@ -610,16 +814,16 @@ export default function ConfigurateurCharpente() {
                 <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 4 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Choisissez la hauteur à l'égout</h3>
-                    <p className="text-slate-400 text-xs mt-1">Hauteur utile sous sablière pour vos engins et stockage.</p>
+                    <h3 className="text-xl font-bold text-white">Hauteur sous sablière</h3>
+                    <p className="text-slate-400 text-xs mt-1">Hauteur utile sous égout pour le passage et le stockage.</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { h: 3.9, label: '3.90 m', desc: 'Hauteur économique standard' },
-                      { h: 4.0, label: '4.00 m', desc: 'Hauteur courante agricole' },
-                      { h: 4.6, label: '4.60 m', desc: 'Passage poids lourds / engins' },
-                      { h: 5.5, label: '5.50 m', desc: 'Grand stockage & logistique' },
+                      { h: 3.9, label: '3.90 m', desc: 'Hauteur standard' },
+                      { h: 4.0, label: '4.00 m', desc: 'Courant agricole' },
+                      { h: 4.6, label: '4.60 m', desc: 'Passage camion' },
+                      { h: 5.5, label: '5.50 m', desc: 'Stockage & logistique' },
                     ].map((item) => (
                       <button
                         key={item.h}
@@ -648,61 +852,63 @@ export default function ConfigurateurCharpente() {
                       onClick={() => setStep(5)}
                       className="w-2/3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
                     >
-                      <span>Étape suivante : Habillage</span>
+                      <span>Étape suivante : Solaire & Finitions</span>
                       <ArrowRight className="w-4 h-4" />
                     </button>
                   </div>
                 </motion.div>
               )}
 
-              {/* ÉTAPE 5 : COUVERTURE, BARDAGE ET COULEUR */}
+              {/* ÉTAPE 5 : OPTION SOLAIRE PV & FINITIONS */}
               {step === 5 && (
                 <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 5 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Couverture & Bardage</h3>
-                    <p className="text-slate-400 text-xs mt-1">Personnalisez le type de tôles et le niveau de fermeture du bâtiment.</p>
+                    <h3 className="text-xl font-bold text-white">Centrale Solaire PV & Finitions</h3>
+                    <p className="text-slate-400 text-xs mt-1">Ajoutez une couverture solaire et choisissez la couleur des tôles.</p>
                   </div>
 
-                  {/* Choix de la couverture */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Couverture de toit</label>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      {[
-                        { id: 'bac_acier', label: 'Bac Acier non isolé' },
-                        { id: 'sandwich_40', label: 'Sandwich 40mm' },
-                        { id: 'sandwich_80', label: 'Sandwich 80mm' },
-                      ].map((r) => (
-                        <button
-                          key={r.id}
-                          onClick={() => setRoofType(r.id)}
-                          className={`p-2.5 rounded-xl border font-semibold text-center transition-all ${
-                            roofType === r.id ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'bg-slate-900/60 border-slate-700 text-slate-300'
-                          }`}
-                        >
-                          {r.label}
-                        </button>
-                      ))}
+                  {/* Interrupteur Option Solaire PV (Exactement comme sur NelsonPV.fr) */}
+                  <div className="bg-amber-950/40 border-2 border-amber-500/40 rounded-2xl p-4 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <Zap className="w-5 h-5 fill-amber-400" />
+                      </div>
+                      <div>
+                        <p className="font-extrabold text-sm text-white">Couverture Solaire PV</p>
+                        <p className="text-xs text-amber-200/80">Intégrer les panneaux photovoltaïques sur le toit</p>
+                      </div>
                     </div>
+
+                    <button
+                      onClick={() => setHasSolar(!hasSolar)}
+                      className={`w-14 h-8 rounded-full p-1 transition-colors relative ${
+                        hasSolar ? 'bg-amber-500' : 'bg-slate-700'
+                      }`}
+                    >
+                      <div className={`w-6 h-6 rounded-full bg-white transition-transform ${
+                        hasSolar ? 'translate-x-6' : 'translate-x-0'
+                      }`} />
+                    </button>
                   </div>
 
-                  {/* Choix du bardage */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Bardage périphérique</label>
-                    <div className="grid grid-cols-5 gap-2 text-xs">
-                      {[0, 1, 2, 3, 4].map((cnt) => (
-                        <button
-                          key={cnt}
-                          onClick={() => setCladdingSides(cnt)}
-                          className={`p-2.5 rounded-xl border font-bold text-center transition-all ${
-                            claddingSides === cnt ? 'bg-emerald-500 border-emerald-400 text-slate-950' : 'bg-slate-900/60 border-slate-700 text-slate-300'
-                          }`}
-                        >
-                          {cnt === 0 ? 'Ouvert' : `${cnt} face${cnt > 1 ? 's' : ''}`}
-                        </button>
-                      ))}
+                  {/* Affichage des métriques solaires si activé */}
+                  {hasSolar && (
+                    <div className="bg-amber-900/30 border border-amber-500/30 p-4 rounded-xl text-xs space-y-2">
+                      <div className="flex justify-between items-center text-amber-200">
+                        <span>Puissance Installable :</span>
+                        <strong className="text-sm font-extrabold text-white">{solarCapacityKwc} kWc</strong>
+                      </div>
+                      <div className="flex justify-between items-center text-amber-200">
+                        <span>Production annuelle estimée :</span>
+                        <strong className="text-white">{solarProductionKwh.toLocaleString('fr-FR')} kWh/an</strong>
+                      </div>
+                      <div className="flex justify-between items-center text-amber-200 pt-1 border-t border-amber-500/20">
+                        <span>Revenus solaires estimés (1ère année) :</span>
+                        <strong className="text-sm font-extrabold text-emerald-400">{solarAnnualRevenueEuros.toLocaleString('fr-FR')} €/an</strong>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Choix de la couleur RAL */}
                   <div>
@@ -713,9 +919,10 @@ export default function ConfigurateurCharpente() {
                           key={c.id}
                           onClick={() => setRoofColor(c.id)}
                           title={c.name}
-                          className={`w-9 h-9 rounded-full border-2 transition-transform ${c.bgClass} ${
+                          className={`w-9 h-9 rounded-full border-2 transition-transform ${
                             roofColor === c.id ? 'scale-115 border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600 hover:scale-105'
                           }`}
+                          style={{ backgroundColor: c.hex }}
                         />
                       ))}
                     </div>
@@ -746,30 +953,31 @@ export default function ConfigurateurCharpente() {
                   <div>
                     <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 6 sur 6</span>
                     <h3 className="text-xl font-bold text-white">Récapitulatif & Tarif estimatif</h3>
-                    <p className="text-slate-400 text-xs mt-1">Tarif indicatif d'après la grille de référence GREEN INVEST / Barconnière.</p>
+                    <p className="text-slate-400 text-xs mt-1">Chiffrage indicatif de la structure seule et des revenus solaires.</p>
                   </div>
 
                   {/* CARTE PRIX INDICATIF HT */}
                   <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-2xl border border-emerald-500/40 text-center relative overflow-hidden shadow-xl">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-300" />
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest block mb-1">Structure Métallique Seule</span>
+                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest block mb-1">
+                      {category === 'batiment' ? 'Structure Bâtiment Seule' : 'Ombrière Métallique Seule'}
+                    </span>
                     
                     <div className="text-3xl sm:text-4xl font-extrabold text-white my-2">
                       {calculatedPriceHT.toLocaleString('fr-FR')} € <span className="text-base text-slate-400 font-normal">HT</span>
                     </div>
 
-                    <p className="text-xs text-slate-400 italic mt-1">
-                      {matchedBuilding 
-                        ? `Tarif exact du catalogue catalogue ${matchedBuilding.range} - ${matchedBuilding.code}`
-                        : `Estimation basée sur une surface de ${totalSurface} m² (${Math.round(calculatedPriceHT / totalSurface)} € HT / m²)`
-                      }
-                    </p>
+                    {hasSolar && (
+                      <div className="mt-3 pt-3 border-t border-slate-800 text-amber-400 text-xs font-bold">
+                        ⚡ Centrale Solaire PV {solarCapacityKwc} kWc : +{solarAnnualRevenueEuros.toLocaleString('fr-FR')} €/an de revenus solaires
+                      </div>
+                    )}
                   </div>
 
                   {/* FORMULAIRE LEAD DE DEVIS GRATUIT */}
                   {!submitSuccess ? (
                     <form onSubmit={handleSubmitLead} className="space-y-3 pt-2">
-                      <p className="text-xs font-bold text-white">Recevez votre étude technique & devis personnalisé sous 24h :</p>
+                      <p className="text-xs font-bold text-white">Recevez votre étude technique & devis gratuit sous 24h :</p>
                       
                       <div className="grid grid-cols-2 gap-3">
                         <input
@@ -822,7 +1030,7 @@ export default function ConfigurateurCharpente() {
                     <div className="bg-emerald-950/80 border border-emerald-500/40 p-4 rounded-xl text-center space-y-2">
                       <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
                       <p className="font-bold text-sm text-white">Merci ! Votre demande a été enregistrée.</p>
-                      <p className="text-xs text-slate-300">Notre équipe charpente métallique va étudier vos dimensions ({totalLength}m x {selectedWidth}m) et revenir vers vous sous 24h.</p>
+                      <p className="text-xs text-slate-300">Notre équipe va étudier vos dimensions ({totalLength}m x {selectedWidth}m) et vous recontacter sous 24h.</p>
                     </div>
                   )}
 
