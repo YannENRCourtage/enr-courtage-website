@@ -1,8 +1,7 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text, Line } from '@react-three/drei';
 import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { 
   Building2, ArrowRight, ArrowLeft, Check, CheckCircle2, RotateCcw, 
   Sparkles, Layers, ShieldCheck, HelpCircle, FileText, Send, Eye,
@@ -18,229 +17,18 @@ const COLOR_PALETTE = [
   { id: '7016', name: 'Gris Anthracite (RAL 7016)', hex: '#373f47' },
   { id: '6005', name: 'Vert Mousse (RAL 6005)', hex: '#114232' },
   { id: '8012', name: 'Rouge Tuile (RAL 8012)', hex: '#6b322a' },
-  { id: '9010', name: 'Blanc Pur (RAL 9010)', hex: '#cbd5e1' },
+  { id: '9010', name: 'Blanc Pur (RAL 9010)', hex: '#e2e8f0' },
   { id: '9006', name: 'Gris Aluminium (RAL 9006)', hex: '#94a3b8' }
 ];
 
-// COMPOSANT 3D DU BÂTIMENT WEBGL SUR FOND BLANC DYNAMIQUE
-function Building3DModel({ 
-  category, subType, width, length, bayCount, baySpacing, eaveHeight, ridgeHeight, 
-  hasSolar, roofColor, showDimensions, claddingSides 
-}) {
-  const roofHex = useMemo(() => {
-    return COLOR_PALETTE.find(c => c.id === roofColor)?.hex || '#373f47';
-  }, [roofColor]);
-
-  // Positions des portiques le long du bâtiment
-  const framePositions = useMemo(() => {
-    const pos = [];
-    for (let i = 0; i <= bayCount; i++) {
-      pos.push(-length / 2 + i * baySpacing);
-    }
-    return pos;
-  }, [bayCount, baySpacing, length]);
-
-  // Dispose les panneaux solaires sur le toit si l'option solaire est activée
-  const solarPanels = useMemo(() => {
-    if (!hasSolar) return [];
-    const panels = [];
-    const rows = Math.floor(length / 1.9);
-    const cols = Math.floor(width / 1.3);
-    const startX = -width / 2 + 0.7;
-    const startZ = -length / 2 + 0.95;
-
-    for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) {
-        panels.push({
-          x: startX + c * 1.3,
-          z: startZ + r * 1.9
-        });
-      }
-    }
-    return panels;
-  }, [hasSolar, width, length]);
-
-  const isOmbriere = category === 'ombriere';
-
-  return (
-    <group>
-      {/* Sol blanc clair & ombre de portée */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[length + 30, width + 30]} />
-        <meshBasicMaterial color="#f8fafc" />
-      </mesh>
-
-      {/* PORTIQUES ACIER ET POTEAUX */}
-      {framePositions.map((z, idx) => {
-        const halfW = width / 2;
-        return (
-          <group key={idx} position={[0, 0, z]}>
-            {/* Poteaux Gauche & Droit */}
-            <mesh position={[-halfW, eaveHeight / 2, 0]}>
-              <boxGeometry args={[0.3, eaveHeight, 0.3]} />
-              <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.8} />
-            </mesh>
-            <mesh position={[halfW, eaveHeight / 2, 0]}>
-              <boxGeometry args={[0.3, eaveHeight, 0.3]} />
-              <meshStandardMaterial color="#475569" roughness={0.3} metalness={0.8} />
-            </mesh>
-
-            {/* Arbalétriers / Ferme de toiture */}
-            {!isOmbriere && subType === 'monopente' ? (
-              <mesh position={[0, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0]} rotation={[0, 0, -Math.atan2(ridgeHeight - eaveHeight, width)]}>
-                <boxGeometry args={[Math.hypot(width, ridgeHeight - eaveHeight), 0.25, 0.25]} />
-                <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
-              </mesh>
-            ) : !isOmbriere ? (
-              <>
-                {/* Bipente Symétrique ou Asymétrique */}
-                <mesh position={[-halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0]} rotation={[0, 0, Math.atan2(ridgeHeight - eaveHeight, halfW)]}>
-                  <boxGeometry args={[Math.hypot(halfW, ridgeHeight - eaveHeight), 0.25, 0.25]} />
-                  <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
-                </mesh>
-                <mesh position={[halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0]} rotation={[0, 0, -Math.atan2(ridgeHeight - eaveHeight, halfW)]}>
-                  <boxGeometry args={[Math.hypot(halfW, ridgeHeight - eaveHeight), 0.25, 0.25]} />
-                  <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
-                </mesh>
-                {/* Tirant d'entrait horizontal */}
-                <mesh position={[0, eaveHeight, 0]}>
-                  <boxGeometry args={[width, 0.12, 0.12]} />
-                  <meshStandardMaterial color="#64748b" roughness={0.5} />
-                </mesh>
-              </>
-            ) : (
-              /* Ombrière Toiture Pente */
-              <mesh position={[0, eaveHeight + 0.3, 0]} rotation={[0, 0, -0.15]}>
-                <boxGeometry args={[width, 0.25, 0.25]} />
-                <meshStandardMaterial color="#334155" roughness={0.3} metalness={0.8} />
-              </mesh>
-            )}
-          </group>
-        );
-      })}
-
-      {/* PANNES LONGITUDINALES */}
-      <mesh position={[0, eaveHeight, 0]}>
-        <boxGeometry args={[width + 0.2, 0.12, length]} />
-        <meshStandardMaterial color="#64748b" />
-      </mesh>
-
-      {/* TOITURE (BAC ACIER / COVER) */}
-      {!isOmbriere && subType === 'monopente' ? (
-        <mesh position={[0, (eaveHeight + ridgeHeight) / 2 + 0.1, 0]} rotation={[Math.atan2(ridgeHeight - eaveHeight, width), 0, 0]}>
-          <boxGeometry args={[width + 0.4, 0.08, length + 0.6]} />
-          <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
-        </mesh>
-      ) : !isOmbriere ? (
-        <>
-          {/* Pan Sud */}
-          <mesh position={[-width / 4, (eaveHeight + ridgeHeight) / 2 + 0.08, 0]} rotation={[0, 0, Math.atan2(ridgeHeight - eaveHeight, width / 2)]}>
-            <boxGeometry args={[Math.hypot(width / 2, ridgeHeight - eaveHeight) + 0.3, 0.08, length + 0.6]} />
-            <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
-          </mesh>
-          {/* Pan Nord */}
-          <mesh position={[width / 4, (eaveHeight + ridgeHeight) / 2 + 0.08, 0]} rotation={[0, 0, -Math.atan2(ridgeHeight - eaveHeight, width / 2)]}>
-            <boxGeometry args={[Math.hypot(width / 2, ridgeHeight - eaveHeight) + 0.3, 0.08, length + 0.6]} />
-            <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
-          </mesh>
-        </>
-      ) : (
-        /* Toiture Ombrière */
-        <mesh position={[0, eaveHeight + 0.4, 0]} rotation={[0, 0, -0.15]}>
-          <boxGeometry args={[width + 0.3, 0.08, length + 0.4]} />
-          <meshStandardMaterial color={roofHex} roughness={0.4} metalness={0.3} />
-        </mesh>
-      )}
-
-      {/* OPTION CENTRALE SOLAIRE PV (PANNEAUX PHOTOVOLTAÏQUES 3D) */}
-      {hasSolar && (
-        <group position={[0, (eaveHeight + ridgeHeight) / 2 + 0.2, 0]}>
-          {solarPanels.map((p, i) => (
-            <mesh key={i} position={[p.x, 0.05, p.z]}>
-              <boxGeometry args={[1.2, 0.04, 1.8]} />
-              <meshStandardMaterial color="#0f172a" roughness={0.1} metalness={0.9} />
-              <lineSegments>
-                <edgesGeometry args={[new THREE.BoxGeometry(1.2, 0.04, 1.8)]} />
-                <lineBasicMaterial color="#94a3b8" linewidth={1} />
-              </lineSegments>
-            </mesh>
-          ))}
-        </group>
-      )}
-
-      {/* COTATIONS ET MESURES 3D (Text & Lines sur Fond Blanc) */}
-      {showDimensions && (
-        <group>
-          {/* Largeur pignon */}
-          <Line 
-            points={[[-width / 2, 0.2, length / 2 + 2.5], [width / 2, 0.2, length / 2 + 2.5]]} 
-            color="#0284c7" 
-            lineWidth={3} 
-          />
-          <Text 
-            position={[0, 0.8, length / 2 + 2.5]} 
-            fontSize={1.6} 
-            color="#0f172a" 
-            anchorX="center" 
-            anchorY="bottom"
-            fontWeight="bold"
-          >
-            {`${width} m`}
-          </Text>
-
-          {/* Longueur bâtiment */}
-          <Line 
-            points={[[width / 2 + 2.5, 0.2, -length / 2], [width / 2 + 2.5, 0.2, length / 2]]} 
-            color="#0284c7" 
-            lineWidth={3} 
-          />
-          <Text 
-            position={[width / 2 + 2.5, 0.8, 0]} 
-            fontSize={1.6} 
-            color="#0f172a" 
-            anchorX="center" 
-            anchorY="bottom"
-            fontWeight="bold"
-          >
-            {`${length} m`}
-          </Text>
-
-          {/* Hauteur égout */}
-          <Line 
-            points={[[-width / 2 - 2.5, 0, length / 2], [-width / 2 - 2.5, eaveHeight, length / 2]]} 
-            color="#d4a843" 
-            lineWidth={3} 
-          />
-          <Text 
-            position={[-width / 2 - 3, eaveHeight / 2, length / 2]} 
-            fontSize={1.3} 
-            color="#0f172a" 
-            anchorX="right" 
-            anchorY="middle"
-            fontWeight="bold"
-          >
-            {`${eaveHeight} m`}
-          </Text>
-
-          {/* Surface au sommet */}
-          <Text 
-            position={[0, ridgeHeight + 3, 0]} 
-            fontSize={2.5} 
-            color="#0f172a" 
-            anchorX="center" 
-            anchorY="middle"
-            fontWeight="bold"
-          >
-            {`${Math.round(width * length)} m²`}
-          </Text>
-        </group>
-      )}
-    </group>
-  );
-}
-
 export default function ConfigurateurCharpente() {
   const { toast } = useToast();
+
+  // Ref pour le conteneur du canvas WebGL Three.js
+  const mountRef = useRef(null);
+  const sceneRef = useRef(null);
+  const controlsRef = useRef(null);
+  const rendererRef = useRef(null);
 
   // ÉTAPE ACTUELLE DU CONFIGURATEUR (1 à 6)
   const [step, setStep] = useState(1);
@@ -296,14 +84,13 @@ export default function ConfigurateurCharpente() {
     return Math.round((eaveHeight + (selectedWidth / 2) * 0.176) * 10) / 10;
   }, [eaveHeight, selectedWidth, subType, category]);
 
-  // CALCUL DE LA PUISSANCE SOLAIRE PV (kWc) SI L'OPTION EST ACTIVÉE
+  // CALCUL DE LA PUISSANCE SOLAIRE PV (kWc)
   const solarCapacityKwc = useMemo(() => {
     if (!hasSolar) return 0;
-    // Ratio ~204 Wc/m² (145 kWc pour 711 m²)
     return Math.round((totalSurface * 0.204) * 100) / 100;
   }, [hasSolar, totalSurface]);
 
-  // CALCUL DU PRODUCTIBLE ET REVENUS SOLAIRES PV (Même logique que la page toiture photovoltaïque)
+  // CALCUL DU PRODUCTIBLE ET REVENUS SOLAIRES PV
   const solarProductionKwh = useMemo(() => {
     if (!hasSolar) return 0;
     return Math.round(solarCapacityKwc * 1150); // 1150 kWh/kWc
@@ -345,7 +132,6 @@ export default function ConfigurateurCharpente() {
     if (matchedBuilding && matchedBuilding.price_ht > 0) {
       basePrice = matchedBuilding.price_ht;
     } else {
-      // Tarif au m² structure seule
       const m2Price = category === 'ombriere' ? 98 : 112;
       basePrice = Math.round(totalSurface * m2Price);
     }
@@ -364,7 +150,7 @@ export default function ConfigurateurCharpente() {
     return Math.round(basePrice + roofSurcost + claddingSurcost);
   }, [matchedBuilding, totalSurface, roofType, claddingSides, selectedWidth, totalLength, eaveHeight, category]);
 
-  // OPTIONS DISPONIBLES DE LARGEURS SELON CATEGORIE ET TYPE
+  // OPTIONS DISPONIBLES DE LARGEURS
   const availableWidths = useMemo(() => {
     if (category === 'ombriere') {
       if (subType === 'simple_vl') return [7.5, 8.5, 9.5];
@@ -376,6 +162,214 @@ export default function ConfigurateurCharpente() {
     }
     return [15.0, 16.4, 18.6, 20.0, 22.35, 25.5, 26.05, 29.75, 32.0, 33.46, 35.0, 39.0, 43.0];
   }, [category, subType]);
+
+  // INITIALISATION ET MISE À JOUR DU RENDU 3D THREE.JS EN CANVAS PUR
+  useEffect(() => {
+    const container = mountRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 600;
+    const height = container.clientHeight || 400;
+
+    // SCÈNE SUR FOND BLANC PUR (#ffffff) COMME NELSONPV.FR
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);
+    sceneRef.current = scene;
+
+    // CAMÉRA PERSPECTIVE
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(selectedWidth * 1.5, eaveHeight * 2.2, totalLength * 1.2);
+
+    // RENDERER WEBGL
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    rendererRef.current = renderer;
+
+    // Nettoyage conteneur et ajout canvas
+    container.innerHTML = '';
+    container.appendChild(renderer.domElement);
+
+    // CONTROLES SOURIS ORBITCONTROLS (ROTATION, PAN, SCROLL ZOOM)
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.01; // Empêche de passer sous le sol
+    controls.target.set(0, eaveHeight / 2, 0);
+    controls.update();
+    controlsRef.current = controls;
+
+    // ÉCLAIRAGE PHOTORÉALISTE SUR FOND BLANC
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
+    dirLight1.position.set(40, 60, 30);
+    dirLight1.castShadow = true;
+    scene.add(dirLight1);
+
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+    dirLight2.position.set(-30, 30, -20);
+    scene.add(dirLight2);
+
+    // SOL GRIS CLAIR / OMBRE
+    const groundGeo = new THREE.PlaneGeometry(totalLength + 40, selectedWidth + 40);
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    const ground = new THREE.Mesh(groundGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -0.01;
+    scene.add(ground);
+
+    // GROUPE CONTENANT TOUTE LA STRUCTURE 3D DU BÂTIMENT
+    const buildingGroup = new THREE.Group();
+
+    // MATÉRIAUX ACIER ET TOITURE
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.8 });
+    const rafterMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.8 });
+    const hexColor = COLOR_PALETTE.find(c => c.id === roofColor)?.hex || '#373f47';
+    const roofMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hexColor), roughness: 0.4, metalness: 0.3 });
+    const solarMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.9 });
+
+    // CRÉATION DES PORTIQUES ET POTEAUX
+    const isOmbriere = category === 'ombriere';
+    const numFrames = bayCount + 1;
+    const halfW = selectedWidth / 2;
+
+    for (let i = 0; i < numFrames; i++) {
+      const zPos = -totalLength / 2 + i * bayLength;
+      const frameGroup = new THREE.Group();
+      frameGroup.position.set(0, 0, zPos);
+
+      // Poteaux Gauche & Droit
+      const colGeo = new THREE.BoxGeometry(0.3, eaveHeight, 0.3);
+      const colL = new THREE.Mesh(colGeo, steelMat);
+      colL.position.set(-halfW, eaveHeight / 2, 0);
+      colL.castShadow = true;
+      frameGroup.add(colL);
+
+      const colR = new THREE.Mesh(colGeo, steelMat);
+      colR.position.set(halfW, eaveHeight / 2, 0);
+      colR.castShadow = true;
+      frameGroup.add(colR);
+
+      // Fermes de toiture
+      if (!isOmbriere && subType === 'monopente') {
+        const span = Math.hypot(selectedWidth, ridgeHeight - eaveHeight);
+        const rGeo = new THREE.BoxGeometry(span, 0.25, 0.25);
+        const rafter = new THREE.Mesh(rGeo, rafterMat);
+        rafter.position.set(0, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0);
+        rafter.rotation.z = -Math.atan2(ridgeHeight - eaveHeight, selectedWidth);
+        frameGroup.add(rafter);
+      } else if (!isOmbriere) {
+        const spanHalf = Math.hypot(halfW, ridgeHeight - eaveHeight);
+        const rGeo = new THREE.BoxGeometry(spanHalf, 0.25, 0.25);
+        
+        const rafterL = new THREE.Mesh(rGeo, rafterMat);
+        rafterL.position.set(-halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0);
+        rafterL.rotation.z = Math.atan2(ridgeHeight - eaveHeight, halfW);
+        frameGroup.add(rafterL);
+
+        const rafterR = new THREE.Mesh(rGeo, rafterMat);
+        rafterR.position.set(halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0);
+        rafterR.rotation.z = -Math.atan2(ridgeHeight - eaveHeight, halfW);
+        frameGroup.add(rafterR);
+
+        // Tirant horizontal
+        const tieGeo = new THREE.BoxGeometry(selectedWidth, 0.12, 0.12);
+        const tie = new THREE.Mesh(tieGeo, steelMat);
+        tie.position.set(0, eaveHeight, 0);
+        frameGroup.add(tie);
+      } else {
+        // Ombrière
+        const rGeo = new THREE.BoxGeometry(selectedWidth, 0.25, 0.25);
+        const rafter = new THREE.Mesh(rGeo, rafterMat);
+        rafter.position.set(0, eaveHeight + 0.3, 0);
+        rafter.rotation.z = -0.15;
+        frameGroup.add(rafter);
+      }
+
+      buildingGroup.add(frameGroup);
+    }
+
+    // TOITURE (PANNEAUX BAC ACIER)
+    if (!isOmbriere && subType === 'monopente') {
+      const roofGeo = new THREE.BoxGeometry(selectedWidth + 0.4, 0.08, totalLength + 0.6);
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.set(0, (eaveHeight + ridgeHeight) / 2 + 0.1, 0);
+      roof.rotation.x = Math.atan2(ridgeHeight - eaveHeight, selectedWidth);
+      buildingGroup.add(roof);
+    } else if (!isOmbriere) {
+      const spanHalf = Math.hypot(halfW, ridgeHeight - eaveHeight);
+      const roofGeo = new THREE.BoxGeometry(spanHalf + 0.3, 0.08, totalLength + 0.6);
+
+      const roofL = new THREE.Mesh(roofGeo, roofMat);
+      roofL.position.set(-halfW / 2, (eaveHeight + ridgeHeight) / 2 + 0.08, 0);
+      roofL.rotation.z = Math.atan2(ridgeHeight - eaveHeight, halfW);
+      buildingGroup.add(roofL);
+
+      const roofR = new THREE.Mesh(roofGeo, roofMat);
+      roofR.position.set(halfW / 2, (eaveHeight + ridgeHeight) / 2 + 0.08, 0);
+      roofR.rotation.z = -Math.atan2(ridgeHeight - eaveHeight, halfW);
+      buildingGroup.add(roofR);
+    } else {
+      const roofGeo = new THREE.BoxGeometry(selectedWidth + 0.3, 0.08, totalLength + 0.4);
+      const roof = new THREE.Mesh(roofGeo, roofMat);
+      roof.position.set(0, eaveHeight + 0.4, 0);
+      roof.rotation.z = -0.15;
+      buildingGroup.add(roof);
+    }
+
+    // DISPOSITION DES PANNEAUX SOLAIRES PV SI ACTIVÉ
+    if (hasSolar) {
+      const rows = Math.floor(totalLength / 1.9);
+      const cols = Math.floor(selectedWidth / 1.3);
+      const startX = -selectedWidth / 2 + 0.7;
+      const startZ = -totalLength / 2 + 0.95;
+
+      const panelGeo = new THREE.BoxGeometry(1.2, 0.04, 1.8);
+      const solarGroup = new THREE.Group();
+      solarGroup.position.set(0, (eaveHeight + ridgeHeight) / 2 + 0.2, 0);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const panel = new THREE.Mesh(panelGeo, solarMat);
+          panel.position.set(startX + c * 1.3, 0.05, startZ + r * 1.9);
+          solarGroup.add(panel);
+        }
+      }
+      buildingGroup.add(solarGroup);
+    }
+
+    scene.add(buildingGroup);
+
+    // BOUCLE D'ANIMATION WEBGL
+    let animationFrameId;
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    };
+    animate();
+
+    // REDIMENSIONNEMENT FENÊTRE
+    const handleResize = () => {
+      if (!container) return;
+      const w = container.clientWidth;
+      const h = container.clientHeight;
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', handleResize);
+      renderer.dispose();
+    };
+  }, [category, subType, selectedWidth, totalLength, bayCount, bayLength, eaveHeight, ridgeHeight, hasSolar, roofColor]);
 
   // GESTION SOUMISSION LEAD
   const handleSubmitLead = async (e) => {
@@ -510,62 +504,17 @@ export default function ConfigurateurCharpente() {
                   <span>{solarCapacityKwc} kWc</span>
                 </div>
               )}
-
-              {/* Toggles de Visionneuse 3D */}
-              <div className="flex items-center gap-2 ml-auto">
-                <button
-                  onClick={() => setShowDimensions(!showDimensions)}
-                  className={`text-xs font-semibold px-3 py-1.5 rounded-xl border transition-colors ${
-                    showDimensions ? 'bg-blue-50 border-blue-300 text-blue-700' : 'bg-slate-100 border-slate-200 text-slate-600'
-                  }`}
-                >
-                  {showDimensions ? 'Masquer les côtes' : 'Afficher les côtes'}
-                </button>
-              </div>
             </div>
 
-            {/* VISIONNEUSE WEBGL 3D INTERACTIVE AVEC SOURIS (ORBITCONTROLS) */}
-            <div className="relative w-full h-[400px] sm:h-[440px] bg-slate-50 rounded-2xl overflow-hidden border border-slate-200 cursor-grab active:cursor-grabbing">
-              <Canvas
-                shadows
-                camera={{ position: [22, 16, 28], fov: 45 }}
-                style={{ background: '#ffffff' }}
-              >
-                <ambientLight intensity={0.8} />
-                <directionalLight position={[30, 40, 20]} intensity={1.8} castShadow />
-                <directionalLight position={[-30, 20, -20]} intensity={0.5} />
-                
-                {/* Modèle 3D Dynamique */}
-                <Building3DModel
-                  category={category}
-                  subType={subType}
-                  width={selectedWidth}
-                  length={totalLength}
-                  bayCount={bayCount}
-                  baySpacing={bayLength}
-                  eaveHeight={eaveHeight}
-                  ridgeHeight={ridgeHeight}
-                  hasSolar={hasSolar}
-                  roofColor={roofColor}
-                  showDimensions={showDimensions}
-                  claddingSides={claddingSides}
-                />
+            {/* VISIONNEUSE WEBGL 3D THREE.JS SUR FOND BLANC AVEC ROTATION A LA SOURIS (ORBITCONTROLS) */}
+            <div 
+              ref={mountRef} 
+              className="relative w-full h-[400px] sm:h-[440px] bg-white rounded-2xl overflow-hidden border border-slate-200 cursor-grab active:cursor-grabbing shadow-inner"
+            />
 
-                {/* Contrôles de Rotation / Zoom à la souris (OrbitControls) */}
-                <OrbitControls 
-                  enablePan={true}
-                  enableZoom={true}
-                  enableRotate={true}
-                  minDistance={5}
-                  maxDistance={150}
-                  maxPolarAngle={Math.PI / 2 - 0.02}
-                />
-              </Canvas>
-
-              {/* Indication d'interaction avec la souris */}
-              <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-md border border-slate-200 px-3 py-1 rounded-lg text-[11px] text-slate-600 font-semibold shadow-sm pointer-events-none">
-                💡 Cliquez et faites glisser pour faire tourner en 3D
-              </div>
+            {/* Indication d'interaction avec la souris */}
+            <div className="mt-2 text-center text-xs text-slate-500 font-medium">
+              💡 Maintenez le clic gauche et déplacez la souris pour faire pivoter le bâtiment en 3D
             </div>
 
             {/* BARRE DE CARACTÉRISTIQUES CLÉS EN BAS */}
@@ -868,7 +817,7 @@ export default function ConfigurateurCharpente() {
                     <p className="text-slate-400 text-xs mt-1">Ajoutez une couverture solaire et choisissez la couleur des tôles.</p>
                   </div>
 
-                  {/* Interrupteur Option Solaire PV (Exactement comme sur NelsonPV.fr) */}
+                  {/* Interrupteur Option Solaire PV */}
                   <div className="bg-amber-950/40 border-2 border-amber-500/40 rounded-2xl p-4 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
