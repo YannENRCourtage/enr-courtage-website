@@ -27,36 +27,34 @@ function getRegionalProductible(addressStr) {
   return 1150;
 }
 
-// Orientation efficiency multiplier (Roof slope facing South = 100%)
+// Orientation efficiency multiplier (0° = Sud Plein = 100%)
 function getOrientationMultiplier(deg) {
   const angle = ((deg % 360) + 360) % 360;
-  if (angle >= 150 && angle <= 210) return 1.0;
-  if ((angle >= 120 && angle < 150) || (angle > 210 && angle <= 240)) return 0.96;
-  if ((angle >= 60 && angle < 120) || (angle > 240 && angle <= 300)) return 0.88;
-  return 0.68;
+  if (angle <= 30 || angle >= 330) return 1.0; // Sud Plein (0° / 360°)
+  if ((angle > 30 && angle <= 65) || (angle >= 295 && angle < 330)) return 0.96; // Sud-Est / Sud-Ouest
+  if ((angle > 65 && angle <= 115) || (angle >= 245 && angle < 295)) return 0.88; // Est / Ouest
+  return 0.68; // Nord
 }
 
-// Cardinal direction label helper
+// Cardinal direction label helper (0° = Sud Plein, matching Image 2)
 function getCardinalLabel(deg) {
   const angle = ((deg % 360) + 360) % 360;
-  if (angle >= 337.5 || angle < 22.5) return 'Nord (0°)';
-  if (angle >= 22.5 && angle < 67.5) return 'Nord-Est (45°)';
+  if (angle >= 337.5 || angle < 22.5) return 'Sud Plein (0°) - Idéal ☀️';
+  if (angle >= 22.5 && angle < 67.5) return 'Sud-Est (45°)';
   if (angle >= 67.5 && angle < 112.5) return 'Est (90°)';
-  if (angle >= 112.5 && angle < 157.5) return 'Sud-Est (135°)';
-  if (angle >= 157.5 && angle < 202.5) return 'Sud Plein (180°) - Idéal ☀️';
-  if (angle >= 202.5 && angle < 247.5) return 'Sud-Ouest (225°)';
+  if (angle >= 112.5 && angle < 157.5) return 'Nord-Est (135°)';
+  if (angle >= 157.5 && angle < 202.5) return 'Nord (180°)';
+  if (angle >= 202.5 && angle < 247.5) return 'Nord-Ouest (225°)';
   if (angle >= 247.5 && angle < 292.5) return 'Ouest (270°)';
-  return 'Nord-Ouest (315°)';
+  return 'Sud-Ouest (315°)';
 }
 
 // ==========================================
-// COMPOSANT GRAPHIQUE 30 ANS (Exactement comme Toiture Photovoltaïque - Image 4)
+// COMPOSANT GRAPHIQUE 30 ANS (Format Image 4)
 // ==========================================
 function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125, paybackYears, installationCostHT }) {
-  const annualRevenue = annualProductionKwh * tariffPerKwh;
   const pbYearFloat = typeof paybackYears === 'number' ? paybackYears : parseFloat(paybackYears) || 0;
 
-  // Calcul du chiffre d'affaires cumulé à 10, 20 et 30 ans
   const getCumulAtYear = (targetYear) => {
     let sum = 0;
     for (let y = 1; y <= targetYear; y++) {
@@ -70,7 +68,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
   const cum20 = getCumulAtYear(20).toLocaleString('fr-FR');
   const cum30 = getCumulAtYear(30).toLocaleString('fr-FR');
 
-  // Génération des données pour les 30 années
   const data = useMemo(() => {
     const list = [];
     let sum = 0;
@@ -96,7 +93,7 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
         <p className="text-slate-300 text-xs mt-1">Projection sur 30 ans du chiffre d'affaires cumulé généré par votre centrale photovoltaïque</p>
       </div>
 
-      {/* Cartes de synthèse à 10, 20 et 30 ans (Format Image 4) */}
+      {/* Cartes de synthèse à 10, 20 et 30 ans */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
         <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
           <p className="text-xs text-slate-400 mb-1 font-semibold">sur 10 ans</p>
@@ -189,8 +186,8 @@ export default function StructureSurMesureSection() {
   const [coords, setCoords] = useState({ lat: 43.2965, lng: 5.3698 });
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
 
-  // Orientation State (Degrees 0 to 360)
-  const [orientationDeg, setOrientationDeg] = useState(180);
+  // Orientation State (Default 0° = Plein Sud, matching Image 2)
+  const [orientationDeg, setOrientationDeg] = useState(0);
 
   // Map & Polygon Leaflet Refs
   const mapContainerRef = useRef(null);
@@ -299,7 +296,7 @@ export default function StructureSurMesureSection() {
     }
   };
 
-  // Initialize & Update Leaflet Satellite Map on Step 2 (Fixing Building Overlay at Center while Map Moves under it)
+  // Initialize & Update Leaflet Satellite Map on Step 2 (True Isometric Mercator Rotation without Rhombus Distortion)
   useEffect(() => {
     if (step !== 2 || !mapContainerRef.current) return;
 
@@ -318,7 +315,6 @@ export default function StructureSurMesureSection() {
         maxZoom: 22
       }).addTo(map);
 
-      // Listen to map movement: Map moves freely while building footprint stays locked to map center!
       map.on('move', () => {
         const center = map.getCenter();
         setCoords({ lat: center.lat, lng: center.lng });
@@ -331,33 +327,48 @@ export default function StructureSurMesureSection() {
 
     const map = mapInstanceRef.current;
 
-    // Draw building footprint polygon locked at center
+    // Remove existing layers
     if (polygonLayerRef.current) map.removeLayer(polygonLayerRef.current);
     if (ridgeLineLayerRef.current) map.removeLayer(ridgeLineLayerRef.current);
 
-    const latMeters = 111111;
-    const lngMeters = 111111 * Math.cos((coords.lat * Math.PI) / 180);
-
-    const halfW = (totalWidth / 2) / lngMeters;
-    const halfL = (totalLength / 2) / latMeters;
+    // ==========================================
+    // RIGOROUS NON-DISTORTING CARTESIAN METRIC ROTATION MATH
+    // Prevents skewing into a rhombus at any angle!
+    // At 0° (Sud Plein - Image 2): Long side (Length) is along East-West (x), Short side (Width) is along North-South (y)
+    // ==========================================
+    const halfL = totalLength / 2; // meters along length (East-West at 0°)
+    const halfW = totalWidth / 2;  // meters along width (North-South at 0°)
 
     const rad = (orientationDeg * Math.PI) / 180;
     const cosR = Math.cos(rad);
     const sinR = Math.sin(rad);
 
-    const baseCorners = [
-      { x: -halfW, y: -halfL },
-      { x: halfW, y: -halfL },
-      { x: halfW, y: halfL },
-      { x: -halfW, y: halfL }
+    // Base corners in pure 2D Cartesian meters (Perfect 90° right angles)
+    const baseCornersMeters = [
+      { x: -halfL, y: -halfW },
+      { x: halfL, y: -halfW },
+      { x: halfL, y: halfW },
+      { x: -halfL, y: halfW }
     ];
 
-    const rotatedCorners = baseCorners.map(c => {
-      const rx = c.x * cosR - c.y * sinR;
-      const ry = c.x * sinR + c.y * cosR;
-      return [coords.lat + ry, coords.lng + rx];
-    });
+    // Rotate 2D Cartesian meter coordinates
+    const rotatedMeters = baseCornersMeters.map(c => ({
+      x: c.x * cosR - c.y * sinR,
+      y: c.x * sinR + c.y * cosR
+    }));
 
+    // Convert local Cartesian meters to Geodetic WGS84 Lat/Lng offsets using exact WGS84 radius
+    const R_EARTH = 6378137;
+    const latRad = (coords.lat * Math.PI) / 180;
+    const metersPerLatDegree = (Math.PI / 180) * R_EARTH;
+    const metersPerLngDegree = (Math.PI / 180) * R_EARTH * Math.cos(latRad);
+
+    const rotatedCorners = rotatedMeters.map(c => [
+      coords.lat + (c.y / metersPerLatDegree),
+      coords.lng + (c.x / metersPerLngDegree)
+    ]);
+
+    // Render exact 90° building footprint polygon
     const polygon = L.polygon(rotatedCorners, {
       color: '#2563eb',
       weight: 3,
@@ -365,26 +376,37 @@ export default function StructureSurMesureSection() {
       fillOpacity: 0.45
     }).addTo(map);
 
+    // Tooltip placed cleanly BELOW the building (direction: 'bottom'), not overimposed on roof!
     polygon.bindTooltip(`<b>${totalLength.toFixed(1)}m × ${totalWidth.toFixed(1)}m</b><br/>Surface: ${totalSurface} m²`, {
       permanent: true,
-      direction: 'center',
-      className: 'bg-white/95 text-slate-900 text-xs font-bold px-2.5 py-1 rounded-lg shadow-md border border-slate-300'
+      direction: 'bottom',
+      offset: [0, 15],
+      className: 'bg-white/95 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl border border-slate-300'
     });
 
     // Draw Dashed Ridge Line (Faîtage du bâtiment) running along length at center of width
-    const ridgeStart = { x: 0, y: -halfL };
-    const ridgeEnd = { x: 0, y: halfL };
+    const ridgeStartMeter = { x: -halfL, y: 0 };
+    const ridgeEndMeter = { x: halfL, y: 0 };
 
-    const rStartRot = [
-      coords.lat + (ridgeStart.x * sinR + ridgeStart.y * cosR),
-      coords.lng + (ridgeStart.x * cosR - ridgeStart.y * sinR)
+    const rStartRot = {
+      x: ridgeStartMeter.x * cosR - ridgeStartMeter.y * sinR,
+      y: ridgeStartMeter.x * sinR + ridgeStartMeter.y * cosR
+    };
+    const rEndRot = {
+      x: ridgeEndMeter.x * cosR - ridgeEndMeter.y * sinR,
+      y: ridgeEndMeter.x * sinR + ridgeEndMeter.y * cosR
+    };
+
+    const ridgeStartLatLng = [
+      coords.lat + (rStartRot.y / metersPerLatDegree),
+      coords.lng + (rStartRot.x / metersPerLngDegree)
     ];
-    const rEndRot = [
-      coords.lat + (ridgeEnd.x * sinR + ridgeEnd.y * cosR),
-      coords.lng + (ridgeEnd.x * cosR - ridgeEnd.y * sinR)
+    const ridgeEndLatLng = [
+      coords.lat + (rEndRot.y / metersPerLatDegree),
+      coords.lng + (rEndRot.x / metersPerLngDegree)
     ];
 
-    const ridgeLine = L.polyline([rStartRot, rEndRot], {
+    const ridgeLine = L.polyline([ridgeStartLatLng, ridgeEndLatLng], {
       color: '#f59e0b',
       weight: 3,
       dashArray: '6, 6'
@@ -583,7 +605,7 @@ export default function StructureSurMesureSection() {
                       </p>
                     </div>
 
-                    {/* Orientation Slider */}
+                    {/* Orientation Slider (0° = Sud Plein, matching Image 2) */}
                     <div className="bg-slate-50 p-4 rounded-2xl border border-gray-200 space-y-4">
                       <div className="flex justify-between items-center text-xs font-bold text-gray-700">
                         <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-blue-600" /> Orientation</span>
@@ -607,9 +629,9 @@ export default function StructureSurMesureSection() {
                       {/* Quick preset buttons */}
                       <div className="grid grid-cols-3 gap-1.5">
                         {[
-                          { label: 'Sud (180°)', val: 180 },
-                          { label: 'Sud-Est (135°)', val: 135 },
-                          { label: 'Sud-Ouest (225°)', val: 225 }
+                          { label: 'Sud (0°)', val: 0 },
+                          { label: 'Sud-Est (45°)', val: 45 },
+                          { label: 'Sud-Ouest (315°)', val: 315 }
                         ].map(preset => (
                           <button
                             key={preset.val}
@@ -661,7 +683,7 @@ export default function StructureSurMesureSection() {
               </motion.div>
             )}
 
-            {/* STEP 3: FINANCIAL & FEASIBILITY DASHBOARD (2 ROWS KPI & EXACT TOITURE PHOTOVOLTAÏQUE IMPACT/CHART) */}
+            {/* STEP 3: FINANCIAL & FEASIBILITY DASHBOARD */}
             {step === 3 && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <div className="space-y-10">
@@ -742,7 +764,7 @@ export default function StructureSurMesureSection() {
                         </div>
                       </div>
 
-                      {/* KPI 5: Taux de Placement Financier (NEW) */}
+                      {/* KPI 5: Taux de Placement Financier */}
                       <div className="bg-amber-950 text-white p-5 rounded-2xl shadow-lg border border-amber-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-amber-300 text-xs font-bold uppercase tracking-wider">
                           <span>Taux de Rendement</span>
@@ -769,7 +791,7 @@ export default function StructureSurMesureSection() {
                     </div>
                   </div>
 
-                  {/* 30-YEAR RECHARTS FINANCIAL GRAPH (Exactement identique à Toiture Photovoltaïque - Image 4) */}
+                  {/* 30-YEAR RECHARTS FINANCIAL GRAPH */}
                   <CumulativeRevenuesBarChart
                     annualProductionKwh={annualProductionKwh}
                     tariffPerKwh={edfOaTariff}
@@ -777,7 +799,7 @@ export default function StructureSurMesureSection() {
                     installationCostHT={estimatedInvestmentHT}
                   />
 
-                  {/* ENVIRONMENTAL IMPACT SECTION (Exactement identique à Toiture Photovoltaïque - Image 5) */}
+                  {/* ENVIRONMENTAL IMPACT SECTION */}
                   <div className="pt-8 mt-10 border-t border-gray-200 text-center">
                     <h4 className="text-lg font-bold text-[#0f2847] mb-6 flex items-center justify-center gap-2">
                       <Leaf className="w-5 h-5 text-emerald-500" />
