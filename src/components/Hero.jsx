@@ -144,7 +144,7 @@ const Hero = ({ setActiveTab }) => {
                     <Building2 className="h-5 w-5" />
                   </div>
                   <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
-                    Votre structure métallique sans solaire
+                    Votre structure métallique
                   </h3>
                 </div>
                 <p className="text-white/70 text-xs font-medium max-w-xl text-center">
@@ -213,7 +213,7 @@ const Hero = ({ setActiveTab }) => {
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
                     <Building2 className="h-4 w-4" />
                   </div>
-                  <h3 className="text-sm font-bold text-white">Votre structure métallique sans solaire</h3>
+                  <h3 className="text-sm font-bold text-white">Votre structure métallique</h3>
                 </div>
                 <p className="text-white/70 text-xs text-center">Configurez votre bâtiment charpente métallique étape par étape</p>
               </div>

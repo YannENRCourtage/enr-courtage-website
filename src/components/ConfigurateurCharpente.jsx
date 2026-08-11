@@ -66,15 +66,30 @@ export default function ConfigurateurCharpente() {
     setIsCapturing(false);
   };
 
-  // Fullscreen handler
+  // Fullscreen handler (Requests fullscreen on the ENTIRE configurator wrapper)
   const handleFullscreen = () => {
-    const elem = document.getElementById('3d-view-container');
+    const elem = document.getElementById('configurateur-main-wrapper');
     if (!document.fullscreenElement) {
-      elem?.requestFullscreen();
+      if (elem?.requestFullscreen) {
+        elem.requestFullscreen();
+      }
     } else {
-      document.exitFullscreen();
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
     }
   };
+
+  // Dispatch resize event when exiting/entering fullscreen to restore canvas aspect ratio
+  useEffect(() => {
+    const handleFSChange = () => {
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+    };
+    document.addEventListener('fullscreenchange', handleFSChange);
+    return () => document.removeEventListener('fullscreenchange', handleFSChange);
+  }, []);
 
   return (
     <section id="configurateur-charpente" className="py-12 bg-white text-slate-900 font-sans relative">
@@ -91,7 +106,7 @@ export default function ConfigurateurCharpente() {
         </div>
 
         {/* CONFIGURATOR MAIN WRAPPER (NELSON EXACT LAYOUT) */}
-        <div className="h-[760px] max-h-[calc(100vh-100px)] w-full bg-slate-50 rounded-3xl border border-slate-200 shadow-xl relative flex flex-col lg:flex-row overflow-hidden isolate">
+        <div id="configurateur-main-wrapper" className="h-[760px] max-h-[calc(100vh-100px)] w-full bg-white rounded-3xl border border-slate-200 shadow-xl relative flex flex-col lg:flex-row overflow-hidden isolate">
           
           {/* ========== CONTROL PANEL (LEFT) ========== */}
           <div className="relative z-20 w-full lg:w-[380px] h-full overflow-y-auto bg-white border-r border-slate-200">

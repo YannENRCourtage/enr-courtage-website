@@ -326,56 +326,54 @@ export function ControlPanel({ isAcama = false, selectedProject = null }) {
                 )
             }
 
-            {/* ========== ESPACEMENT TRAVÉES — masqué pour ACAMA EPONA/TALIAN ========== */}
+            {/* ========== ESPACEMENT & NOMBRE DE TRAVÉES (SUR LA MÊME LIGNE) ========== */}
             {
                 !isAcama && (
-                    <div className="param-group mb-4">
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
-                            Espacement Travées
-                        </label>
-                        <div className="inline-flex rounded-lg overflow-hidden border-2 border-slate-300">
-                            <button
-                                onClick={() => setBaySpacing(6)}
-                                className={`px-4 py-2 font-bold text-xs transition-all ${baySpacing === 6 ? 'bg-green-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
-                            >
-                                6m
-                            </button>
-                            <button
-                                onClick={() => setBaySpacing(7.5)}
-                                className={`px-4 py-2 font-bold text-xs transition-all ${baySpacing === 7.5 ? 'bg-green-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
-                            >
-                                7.5m
-                            </button>
-                        </div>
-                    </div>
-                )
-            }
-
-            {/* ========== NOMBRE DE TRAVÉES — masqué pour ACAMA EPONA/TALIAN ========== */}
-            {
-                !isAcama && (
-                    <div className="param-group mb-4">
-                        <label className="block text-[10px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">
-                            Nombre de Travées
-                        </label>
-                        <div className="flex items-center gap-3">
-                            <button
-                                onClick={decrementBayCount}
-                                disabled={bayCount <= 4}
-                                className={`w-10 h-10 rounded-lg font-bold text-lg transition-all ${bayCount > 4 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
-                            >
-                                −
-                            </button>
-                            <div className="text-center">
-                                <span className="text-2xl font-bold text-slate-900">{bayCount}</span>
-                                <p className="text-[10px] text-slate-500 leading-none mt-0.5">travées</p>
+                    <div className="param-group mb-3 flex gap-3 items-center justify-between">
+                        {/* Espacement Travées */}
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider">
+                                Espacement
+                            </label>
+                            <div className="flex rounded-lg overflow-hidden border-2 border-slate-300">
+                                <button
+                                    onClick={() => setBaySpacing(6)}
+                                    className={`flex-1 py-1.5 font-bold text-xs transition-all ${baySpacing === 6 ? 'bg-green-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                                >
+                                    6m
+                                </button>
+                                <button
+                                    onClick={() => setBaySpacing(7.5)}
+                                    className={`flex-1 py-1.5 font-bold text-xs transition-all ${baySpacing === 7.5 ? 'bg-green-600 text-white' : 'bg-white text-slate-700 hover:bg-slate-50'}`}
+                                >
+                                    7.5m
+                                </button>
                             </div>
-                            <button
-                                onClick={incrementBayCount}
-                                className="w-10 h-10 rounded-lg bg-green-500 text-white font-bold text-lg hover:bg-green-600 transition-all"
-                            >
-                                +
-                            </button>
+                        </div>
+
+                        {/* Nombre de Travées */}
+                        <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-slate-500 mb-1 uppercase tracking-wider text-right">
+                                Travées
+                            </label>
+                            <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                    onClick={decrementBayCount}
+                                    disabled={bayCount <= 4}
+                                    className={`w-7 h-7 rounded-lg font-bold text-base transition-all flex items-center justify-center ${bayCount > 4 ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}`}
+                                >
+                                    −
+                                </button>
+                                <div className="text-center min-w-[28px]">
+                                    <span className="text-base font-bold text-slate-900">{bayCount}</span>
+                                </div>
+                                <button
+                                    onClick={incrementBayCount}
+                                    className="w-7 h-7 rounded-lg bg-green-500 text-white font-bold text-base hover:bg-green-600 transition-all flex items-center justify-center"
+                                >
+                                    +
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )
