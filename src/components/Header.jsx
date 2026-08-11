@@ -11,6 +11,12 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
 
   const solutions = [
     { 
+      id: 'structure_sur_mesure', 
+      label: 'Structure métallique sur-mesure', 
+      icon: <Building2 className="h-5 w-5" />,
+      color: 'hover:bg-emerald-50 hover:text-emerald-700'
+    },
+    { 
       id: 'toiture', 
       label: 'Toiture photovoltaïque', 
       icon: <Sun className="h-5 w-5" />,
@@ -45,6 +51,9 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
   const handleTabClick = (tabId) => {
     if (tabId === 'batterie') {
       navigate('/batterie-soutien-reseau');
+    } else if (tabId === 'structure_sur_mesure') {
+      navigate('/structure-metallique-sur-mesure');
+      setActiveTab('structure_sur_mesure');
     } else if (tabId === 'home') {
       navigate('/');
       setActiveTab('home');
@@ -59,6 +68,9 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
   const handleDropdownItemClick = (solutionId) => {
     if (solutionId === 'batterie') {
       navigate('/batterie-soutien-reseau');
+    } else if (solutionId === 'structure_sur_mesure') {
+      navigate('/structure-metallique-sur-mesure');
+      setActiveTab('structure_sur_mesure');
     } else {
       navigate(`/?tab=${solutionId}`);
       setActiveTab(solutionId);

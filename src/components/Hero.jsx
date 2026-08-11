@@ -133,8 +133,7 @@ const Hero = ({ setActiveTab }) => {
             <div
               className="glass-effect rounded-2xl p-4 md:p-5 cursor-pointer group relative overflow-hidden border border-emerald-500/40 hover:border-emerald-400 transition-all duration-300 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.3)] flex items-center justify-center text-center"
               onClick={() => {
-                const el = document.getElementById('configurateur-charpente');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                setActiveTab('structure_sur_mesure');
               }}
             >
               <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500" />
@@ -203,8 +202,7 @@ const Hero = ({ setActiveTab }) => {
             <div
               className="glass-effect rounded-xl p-4 cursor-pointer group relative overflow-hidden border border-emerald-500/40 text-center flex flex-col items-center justify-center"
               onClick={() => {
-                const el = document.getElementById('configurateur-charpente');
-                if (el) el.scrollIntoView({ behavior: 'smooth' });
+                setActiveTab('structure_sur_mesure');
               }}
             >
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-emerald-400" />

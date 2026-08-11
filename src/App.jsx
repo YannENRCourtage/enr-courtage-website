@@ -18,6 +18,7 @@ import EligibilitySimulator from '@/components/EligibilitySimulator';
 import IrveSection from '@/components/IrveSection';
 import ToiturePhotovoltaiqueSection from '@/components/ToiturePhotovoltaiqueSection';
 import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
+import StructureSurMesureSection from '@/components/StructureSurMesureSection';
 import { isStagingOrTestEnvironment } from '@/utils/envUtils';
 
 
@@ -85,8 +86,10 @@ function MainPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (tabParam && ['toiture', 'autoconsommation', 'irve', 'construction', 'batterie', 'about', 'home'].includes(tabParam)) {
+    if (tabParam && ['toiture', 'autoconsommation', 'irve', 'construction', 'batterie', 'about', 'structure_sur_mesure', 'home'].includes(tabParam)) {
       setActiveTab(tabParam);
+    } else if (location.pathname === '/structure-metallique-sur-mesure') {
+      setActiveTab('structure_sur_mesure');
     } else if (!tabParam && location.pathname === '/') {
       setActiveTab('home');
     }
@@ -96,6 +99,8 @@ function MainPage() {
     setActiveTab(tab);
     if (tab === 'home') {
       window.history.pushState({}, '', '/');
+    } else if (tab === 'structure_sur_mesure') {
+      window.history.pushState({}, '', '/structure-metallique-sur-mesure');
     } else {
       window.history.pushState({}, '', `/?tab=${tab}`);
     }
@@ -121,6 +126,16 @@ function MainPage() {
 
   const renderContent = () => {
     switch (activeTab) {
+      case 'structure_sur_mesure':
+        return (
+          <motion.div key="structure_sur_mesure" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
+            <div className="pt-28">
+              <StructureSurMesureSection />
+              <TestimonialsCarousel />
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
+            </div>
+          </motion.div>
+        );
       case 'toiture':
         return (
           <motion.div key="toiture" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
@@ -226,6 +241,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainPage />} />
+        <Route path="/structure-metallique-sur-mesure" element={<MainPage />} />
         <Route path="/batterie-soutien-reseau" element={<BatterieDetailPage />} />
       </Routes>
       <Toaster />
