@@ -14,7 +14,7 @@ import ecoEvoData from '../data/ecoEvoBuildings.json';
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb";
 
-// Solar Pricing Schedule based on PJ 5 table (identical to ConfigurateurCharpente)
+// Solar Pricing Schedule based on PJ 5 table
 function getSolarPriceHT(kwc) {
   if (!kwc || kwc <= 0) return 0;
   const wc = kwc * 1000;
@@ -235,13 +235,13 @@ export default function StructureSurMesureSection() {
   const totalLength = config.length || 37.5;
   const totalSurface = Math.round(totalWidth * totalLength);
 
-  // Solar kWc from 3D configurator state
+  // Solar kWc potential from 3D configurator state (or auto-estimate if solar toggle off)
   const installedKwc = useMemo(() => {
-    if (config.hasSolar && config.solarStats?.power) {
+    if (config.solarStats?.power && config.solarStats.power > 0) {
       return config.solarStats.power;
     }
     return Math.round((totalSurface / 2.38) * 0.465 * 100) / 100;
-  }, [config.hasSolar, config.solarStats, totalSurface]);
+  }, [config.solarStats, totalSurface]);
 
   // Financial & Solar Calculations
   const productibleBase = useMemo(() => getRegionalProductible(selectedAddress), [selectedAddress]);
@@ -257,7 +257,7 @@ export default function StructureSurMesureSection() {
     return Math.round(annualProductionKwh * edfOaTariff);
   }, [annualProductionKwh]);
 
-  // Exact Structure & Solar Cost Calculation matching ConfigurateurCharpente.jsx TOTAL HT
+  // Coût Estimé (HT) ALWAYS includes Solar Installation Cost for the building solar potential!
   const estimatedInvestmentHT = useMemo(() => {
     const matchedBuilding = ecoEvoData.find(b => Math.abs(b.width - config.width) <= 0.8 && Math.abs(b.length - totalLength) <= 0.8);
     let basePrice = matchedBuilding ? matchedBuilding.price_ht : Math.round(totalSurface * 110);
@@ -265,11 +265,11 @@ export default function StructureSurMesureSection() {
     if (rightExtW > 0) basePrice += Math.round(totalLength * rightExtW * (config.rightSide === 'auvent' ? 55 : 75));
     const charpentePriceHT = Math.round(basePrice);
 
-    const solarPowerKwc = config.hasSolar ? installedKwc : 0;
-    const solarPriceHT = getSolarPriceHT(solarPowerKwc);
+    // ALWAYS calculate full solar installation cost for the building potential
+    const solarPriceHT = getSolarPriceHT(installedKwc);
 
-    return charpentePriceHT + (config.hasSolar ? solarPriceHT : 0);
-  }, [config.width, config.leftSide, config.rightSide, config.hasSolar, installedKwc, totalLength, totalSurface, leftExtW, rightExtW]);
+    return charpentePriceHT + solarPriceHT;
+  }, [config.width, config.leftSide, config.rightSide, installedKwc, totalLength, totalSurface, leftExtW, rightExtW]);
 
   // Taux de placement financier (ROI Yield %)
   const financialPlacementRate = useMemo(() => {
@@ -321,9 +321,18 @@ export default function StructureSurMesureSection() {
     }
   };
 
-  // Initialize & Update Leaflet Satellite Map on Step 2
+  // Initialize & Update Leaflet Satellite Map on Step 2 (Fixing Map Unmount/Remount white screen)
   useEffect(() => {
-    if (step !== 2) return;
+    if (step !== 2) {
+      // Clean up Leaflet map when navigating away from Step 2 to guarantee clean remount
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        polygonLayerRef.current = null;
+        ridgeLineLayerRef.current = null;
+      }
+      return;
+    }
 
     const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
@@ -362,16 +371,14 @@ export default function StructureSurMesureSection() {
 
       // ==========================================
       // NON-DISTORTING CARTESIAN ROTATION MATH
-      // Invert angle sign for visual rendering so Sud-Ouest (45°) tilts in the exact direction requested in Image 5!
       // ==========================================
-      const halfL = totalLength / 2; // meters along length (East-West at 0°)
-      const halfW = totalWidth / 2;  // meters along width (North-South at 0°)
+      const halfL = totalLength / 2;
+      const halfW = totalWidth / 2;
 
       const mapRad = (-orientationDeg * Math.PI) / 180;
       const cosR = Math.cos(mapRad);
       const sinR = Math.sin(mapRad);
 
-      // Base corners in pure 2D Cartesian meters
       const baseCornersMeters = [
         { x: -halfL, y: -halfW },
         { x: halfL, y: -halfW },
@@ -379,13 +386,11 @@ export default function StructureSurMesureSection() {
         { x: -halfL, y: halfW }
       ];
 
-      // Rotate 2D Cartesian meter coordinates
       const rotatedMeters = baseCornersMeters.map(c => ({
         x: c.x * cosR - c.y * sinR,
         y: c.x * sinR + c.y * cosR
       }));
 
-      // Convert local Cartesian meters to Geodetic WGS84 Lat/Lng
       const R_EARTH = 6378137;
       const latRad = (coords.lat * Math.PI) / 180;
       const metersPerLatDegree = (Math.PI / 180) * R_EARTH;
@@ -396,7 +401,6 @@ export default function StructureSurMesureSection() {
         coords.lng + (c.x / metersPerLngDegree)
       ]);
 
-      // Render exact 90° building footprint polygon
       const polygon = L.polygon(rotatedCorners, {
         color: '#2563eb',
         weight: 3,
@@ -404,7 +408,6 @@ export default function StructureSurMesureSection() {
         fillOpacity: 0.45
       }).addTo(map);
 
-      // Tooltip placed cleanly BELOW the building (direction: 'bottom')
       polygon.bindTooltip(`<b>${totalLength.toFixed(1)}m × ${totalWidth.toFixed(1)}m</b><br/>Surface: ${totalSurface} m²`, {
         permanent: true,
         direction: 'bottom',
@@ -457,7 +460,7 @@ export default function StructureSurMesureSection() {
 
       polygonLayerRef.current = polygon;
       ridgeLineLayerRef.current = ridgeLine;
-    }, 60);
+    }, 100);
 
     return () => clearTimeout(timer);
 
@@ -666,7 +669,7 @@ export default function StructureSurMesureSection() {
                         {getCardinalLabel(orientationDeg)}
                       </div>
 
-                      {/* Quick preset buttons (Sud = 0°, Sud-Est = -45°, Sud-Ouest = 45°) */}
+                      {/* Quick preset buttons */}
                       <div className="grid grid-cols-3 gap-1.5">
                         {[
                           { label: 'Sud (0°)', val: 0 },
@@ -792,7 +795,7 @@ export default function StructureSurMesureSection() {
                     {/* Row 2: Financial Investment & Returns */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       
-                      {/* KPI 4: Coût estimé (Synced exactly with TOTAL HT) */}
+                      {/* KPI 4: Coût estimé (Includes Solar Cost ALWAYS) */}
                       <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
                           <span>Coût estimé</span>
@@ -861,7 +864,7 @@ export default function StructureSurMesureSection() {
                     </div>
                   </div>
 
-                  {/* LEAD GENERATION FORM (ENLARGED max-w-4xl & RENAMED TITLE/BUTTON) */}
+                  {/* LEAD GENERATION FORM */}
                   <div id="etude-contact-form" className="bg-gray-50/80 p-6 sm:p-10 rounded-3xl border border-gray-200 text-left max-w-4xl mx-auto mt-10 shadow-sm">
                     <h4 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847] mb-2 text-center">Contactez un expert</h4>
                     <p className="text-xs text-gray-500 mb-8 text-center">Recevez votre étude de faisabilité technique & financière détaillée sous 24h.</p>
