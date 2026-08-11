@@ -10,8 +10,23 @@ import 'leaflet/dist/leaflet.css';
 import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
 import { useConfiguratorValues } from '@/stores/useConfiguratorStore';
 import { useToast } from '@/components/ui/use-toast';
+import ecoEvoData from '../data/ecoEvoBuildings.json';
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb";
+
+// Solar Pricing Schedule based on PJ 5 table (identical to ConfigurateurCharpente)
+function getSolarPriceHT(kwc) {
+  if (!kwc || kwc <= 0) return 0;
+  const wc = kwc * 1000;
+  let rateHT = 0.76;
+  if (kwc <= 36) rateHT = 1.05;
+  else if (kwc <= 99.99) rateHT = 0.98;
+  else if (kwc <= 249.99) rateHT = 0.92;
+  else if (kwc <= 499.99) rateHT = 0.86;
+  else if (kwc <= 999.99) rateHT = 0.79;
+
+  return Math.round(wc * rateHT);
+}
 
 // Regional solar productible factor (kWh/kWc)
 function getRegionalProductible(addressStr) {
@@ -28,7 +43,6 @@ function getRegionalProductible(addressStr) {
 }
 
 // Orientation efficiency multiplier with angle in range [-180°, 180°]
-// 0° = Sud Plein (100% efficiency)
 function getOrientationMultiplier(deg) {
   const absDeg = Math.abs(deg);
   if (absDeg <= 30) return 1.0; // Sud Plein (0° ± 30°)
@@ -37,7 +51,7 @@ function getOrientationMultiplier(deg) {
   return 0.68; // Nord (180° / -180°)
 }
 
-// Cardinal direction label helper (Strict user requested convention: Sud = 0°, Sud-Est = -45°, Sud-Ouest = 45°, Est = -90°, Ouest = 90°, Nord = 180°)
+// Cardinal direction label helper
 function getCardinalLabel(deg) {
   if (deg >= -22.5 && deg <= 22.5) return 'Sud Plein (0°) - Idéal ☀️';
   if (deg > 22.5 && deg <= 67.5) return 'Sud-Ouest (45°)';
@@ -243,12 +257,19 @@ export default function StructureSurMesureSection() {
     return Math.round(annualProductionKwh * edfOaTariff);
   }, [annualProductionKwh]);
 
-  // Investment / Structure + Solar cost estimate
+  // Exact Structure & Solar Cost Calculation matching ConfigurateurCharpente.jsx TOTAL HT
   const estimatedInvestmentHT = useMemo(() => {
-    const charpenteEst = Math.round(totalSurface * 110);
-    const solarEst = Math.round(installedKwc * 1000 * 0.88);
-    return charpenteEst + solarEst;
-  }, [totalSurface, installedKwc]);
+    const matchedBuilding = ecoEvoData.find(b => Math.abs(b.width - config.width) <= 0.8 && Math.abs(b.length - totalLength) <= 0.8);
+    let basePrice = matchedBuilding ? matchedBuilding.price_ht : Math.round(totalSurface * 110);
+    if (leftExtW > 0) basePrice += Math.round(totalLength * leftExtW * (config.leftSide === 'auvent' ? 55 : 75));
+    if (rightExtW > 0) basePrice += Math.round(totalLength * rightExtW * (config.rightSide === 'auvent' ? 55 : 75));
+    const charpentePriceHT = Math.round(basePrice);
+
+    const solarPowerKwc = config.hasSolar ? installedKwc : 0;
+    const solarPriceHT = getSolarPriceHT(solarPowerKwc);
+
+    return charpentePriceHT + (config.hasSolar ? solarPriceHT : 0);
+  }, [config.width, config.leftSide, config.rightSide, config.hasSolar, installedKwc, totalLength, totalSurface, leftExtW, rightExtW]);
 
   // Taux de placement financier (ROI Yield %)
   const financialPlacementRate = useMemo(() => {
@@ -300,11 +321,10 @@ export default function StructureSurMesureSection() {
     }
   };
 
-  // Initialize & Update Leaflet Satellite Map on Step 2 (With InvalidateSize Fix when returning from Step 3 & Precise Asymmetric Ridge Offset)
+  // Initialize & Update Leaflet Satellite Map on Step 2
   useEffect(() => {
     if (step !== 2) return;
 
-    // Small delay to ensure DOM container is rendered before initializing or invalidating Leaflet map size
     const timer = setTimeout(() => {
       if (!mapContainerRef.current) return;
 
@@ -342,13 +362,14 @@ export default function StructureSurMesureSection() {
 
       // ==========================================
       // NON-DISTORTING CARTESIAN ROTATION MATH
+      // Invert angle sign for visual rendering so Sud-Ouest (45°) tilts in the exact direction requested in Image 5!
       // ==========================================
       const halfL = totalLength / 2; // meters along length (East-West at 0°)
       const halfW = totalWidth / 2;  // meters along width (North-South at 0°)
 
-      const rad = (orientationDeg * Math.PI) / 180;
-      const cosR = Math.cos(rad);
-      const sinR = Math.sin(rad);
+      const mapRad = (-orientationDeg * Math.PI) / 180;
+      const cosR = Math.cos(mapRad);
+      const sinR = Math.sin(mapRad);
 
       // Base corners in pure 2D Cartesian meters
       const baseCornersMeters = [
@@ -393,15 +414,12 @@ export default function StructureSurMesureSection() {
 
       // ==========================================
       // ACCURATE ASYMMETRIC RIDGE LINE OFFSET MATH
-      // Calculates exact ridge line (faîtage) position matching the 3D configurator geometry!
       // ==========================================
-      let ridgeRatioInMain = 0.5; // Symmetric by default
+      let ridgeRatioInMain = 0.5;
       if (config.buildingType === 'asymetrique_1') ridgeRatioInMain = 0.33;
       else if (config.buildingType === 'asymetrique_2') ridgeRatioInMain = 0.67;
 
-      // Distance of ridge from the South/Bottom edge of the building width (in meters)
       const ridgeYFromBottom = leftExtW + (mainWidth * ridgeRatioInMain);
-      // Offset from building width center (0)
       const ridgeLocalY = ridgeYFromBottom - halfW;
 
       const ridgeStartMeter = { x: -halfL, y: ridgeLocalY };
@@ -535,7 +553,7 @@ export default function StructureSurMesureSection() {
               Renseignez l'adresse de votre terrain pour simuler la disposition satellite exacte de votre bâtiment ({totalLength.toFixed(1)}m × {totalWidth.toFixed(1)}m) et calculer vos revenus photovoltaïques.
             </p>
 
-            {/* Step Indicators (Clickable to switch back and forth freely) */}
+            {/* Step Indicators */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8">
               {[
                 { num: 1, label: '1. Adresse' },
@@ -613,7 +631,7 @@ export default function StructureSurMesureSection() {
               </motion.div>
             )}
 
-            {/* STEP 2: SATELLITE MAP (FIXED BUILDING OVERLAY & MAP PANNING) */}
+            {/* STEP 2: SATELLITE MAP */}
             {step === 2 && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
@@ -648,7 +666,7 @@ export default function StructureSurMesureSection() {
                         {getCardinalLabel(orientationDeg)}
                       </div>
 
-                      {/* Quick preset buttons (Exact User Convention: Sud = 0°, Sud-Est = -45°, Sud-Ouest = 45°) */}
+                      {/* Quick preset buttons (Sud = 0°, Sud-Est = -45°, Sud-Ouest = 45°) */}
                       <div className="grid grid-cols-3 gap-1.5">
                         {[
                           { label: 'Sud (0°)', val: 0 },
@@ -774,19 +792,19 @@ export default function StructureSurMesureSection() {
                     {/* Row 2: Financial Investment & Returns */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       
-                      {/* KPI 4: Coût Estimé */}
+                      {/* KPI 4: Coût estimé (Synced exactly with TOTAL HT) */}
                       <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
-                          <span>Coût (Est. HT)</span>
+                          <span>Coût estimé</span>
                           <Wallet className="w-4 h-4 text-purple-400" />
                         </div>
                         <div className="mt-3">
                           <div className="text-2xl sm:text-3xl font-black text-purple-300">{estimatedInvestmentHT.toLocaleString('fr-FR')} <span className="text-xs text-purple-200 font-bold">€ HT</span></div>
-                          <div className="text-xs text-gray-300 mt-1">Structure charpente & centrale PV</div>
+                          <div className="text-xs text-gray-300 mt-1">Total HT Structure & PV</div>
                         </div>
                       </div>
 
-                      {/* KPI 5: Taux de Placement Financier (Phrase exact: Performance financière intéressante) */}
+                      {/* KPI 5: Taux de Placement Financier */}
                       <div className="bg-amber-950 text-white p-5 rounded-2xl shadow-lg border border-amber-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-amber-300 text-xs font-bold uppercase tracking-wider">
                           <span>Taux de Rendement</span>
@@ -843,21 +861,21 @@ export default function StructureSurMesureSection() {
                     </div>
                   </div>
 
-                  {/* LEAD GENERATION FORM (CONVERSION) */}
-                  <div id="etude-contact-form" className="bg-gray-50/80 p-6 sm:p-8 rounded-2xl border border-gray-200 text-left max-w-2xl mx-auto mt-10">
-                    <h4 className="text-lg font-bold text-[#0f2847] mb-2 text-center">Contactez un expert pour valoriser votre bâtiment</h4>
-                    <p className="text-xs text-gray-500 mb-6 text-center">Recevez votre étude de faisabilité technique & financière détaillée sous 24h.</p>
+                  {/* LEAD GENERATION FORM (ENLARGED max-w-4xl & RENAMED TITLE/BUTTON) */}
+                  <div id="etude-contact-form" className="bg-gray-50/80 p-6 sm:p-10 rounded-3xl border border-gray-200 text-left max-w-4xl mx-auto mt-10 shadow-sm">
+                    <h4 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847] mb-2 text-center">Contactez un expert</h4>
+                    <p className="text-xs text-gray-500 mb-8 text-center">Recevez votre étude de faisabilité technique & financière détaillée sous 24h.</p>
 
                     {formSubmitted ? (
-                      <div className="bg-emerald-50 border border-emerald-500 rounded-2xl p-6 text-center space-y-3">
-                        <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
-                        <h5 className="text-xl font-bold text-emerald-900">Merci {leadForm.prenom} !</h5>
-                        <p className="text-gray-700 text-xs">
+                      <div className="bg-emerald-50 border border-emerald-500 rounded-2xl p-8 text-center space-y-3">
+                        <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
+                        <h5 className="text-2xl font-bold text-emerald-900">Merci {leadForm.prenom} !</h5>
+                        <p className="text-gray-700 text-sm">
                           Votre demande d'étude pour le projet à <strong>{selectedAddress}</strong> a bien été enregistrée. Notre équipe d'experts vous recontactera très rapidement.
                         </p>
                       </div>
                     ) : (
-                      <form onSubmit={handleLeadSubmit} className="space-y-4">
+                      <form onSubmit={handleLeadSubmit} className="space-y-4 max-w-3xl mx-auto">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Nom *</label>
@@ -942,7 +960,7 @@ export default function StructureSurMesureSection() {
                               <span>Envoi en cours...</span>
                             ) : (
                               <>
-                                <span>Contactez un expert pour valoriser votre bâtiment</span>
+                                <span>Contactez un expert</span>
                                 <Send className="w-4 h-4" />
                               </>
                             )}
