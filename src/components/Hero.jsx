@@ -123,47 +123,36 @@ const Hero = ({ setActiveTab }) => {
             </motion.div>
           ))}
 
-          {/* 6ème Solution: Votre structure métallique sans solaire (largeur 3 cadres, demi-hauteur) */}
-          {showTestFeatures && (
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.8, ease: "easeOut" }}
-              className="col-start-2 col-span-3 mt-4"
+          {/* 6ème Solution: Votre structure métallique sans solaire */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.8, ease: "easeOut" }}
+            className="col-start-2 col-span-3 mt-4"
+          >
+            <div
+              className="glass-effect rounded-2xl p-4 md:p-5 cursor-pointer group relative overflow-hidden border border-emerald-500/40 hover:border-emerald-400 transition-all duration-300 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.3)] flex items-center justify-center text-center"
+              onClick={() => {
+                const el = document.getElementById('configurateur-charpente');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
-              <div
-                className="glass-effect rounded-2xl p-4 md:p-5 cursor-pointer group relative overflow-hidden border border-emerald-500/40 hover:border-emerald-400 transition-all duration-300 shadow-[0_0_25px_rgba(16,185,129,0.15)] hover:shadow-[0_0_35px_rgba(16,185,129,0.3)] flex items-center justify-between gap-6"
-                onClick={() => {
-                  const el = document.getElementById('configurateur-charpente');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500" />
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <Building2 className="h-6 w-6" />
+              <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-500" />
+              <div className="flex flex-col items-center justify-center text-center gap-2 py-1">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Building2 className="h-5 w-5" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
-                        Votre structure métallique sans solaire
-                      </h3>
-                      <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-500/30">
-                        Configurateur 3D
-                      </span>
-                    </div>
-                    <p className="text-white/60 text-xs mt-0.5">
-                      Configurez votre bâtiment charpente métallique (Gamme ECO-EVO) étape par étape et obtenez votre tarif immédiat
-                    </p>
-                  </div>
+                  <h3 className="text-base font-bold text-white group-hover:text-emerald-300 transition-colors">
+                    Votre structure métallique sans solaire
+                  </h3>
                 </div>
-                <div className="flex items-center text-xs font-bold text-emerald-400 group-hover:translate-x-1 transition-transform shrink-0">
-                  <span>Lancer le configurateur</span>
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
-                </div>
+                <p className="text-white/70 text-xs font-medium max-w-xl text-center">
+                  Configurez votre bâtiment charpente métallique étape par étape et obtenez votre tarif immédiat
+                </p>
               </div>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
         </div>
 
         {/* Tablet & Mobile: Stacked layout */}
@@ -205,36 +194,31 @@ const Hero = ({ setActiveTab }) => {
           ))}
 
           {/* 6ème Solution mobile */}
-          {showTestFeatures && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.7 }}
-              className="col-span-1 sm:col-span-2 mt-2"
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.7 }}
+            className="col-span-1 sm:col-span-2 mt-2"
+          >
+            <div
+              className="glass-effect rounded-xl p-4 cursor-pointer group relative overflow-hidden border border-emerald-500/40 text-center flex flex-col items-center justify-center"
+              onClick={() => {
+                const el = document.getElementById('configurateur-charpente');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
-              <div
-                className="glass-effect rounded-xl p-4 cursor-pointer group relative overflow-hidden border border-emerald-500/40"
-                onClick={() => {
-                  const el = document.getElementById('configurateur-charpente');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                <div className="absolute top-0 left-0 right-0 h-[2px] bg-emerald-400" />
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="h-5 w-5" />
+              <div className="absolute top-0 left-0 right-0 h-[2px] bg-emerald-400" />
+              <div className="flex flex-col items-center justify-center text-center gap-1.5">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="h-4 w-4" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-white">Votre structure métallique sans solaire</h3>
-                      <span className="bg-emerald-500/20 text-emerald-300 text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase">3D</span>
-                    </div>
-                    <p className="text-white/60 text-xs mt-0.5">Configurateur bâtiment charpente métallique Gamme ECO-EVO</p>
-                  </div>
+                  <h3 className="text-sm font-bold text-white">Votre structure métallique sans solaire</h3>
                 </div>
+                <p className="text-white/70 text-xs text-center">Configurez votre bâtiment charpente métallique étape par étape</p>
               </div>
-            </motion.div>
-          )}
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

@@ -1,342 +1,419 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { 
-  Building2, ArrowRight, ArrowLeft, Check, CheckCircle2, RotateCcw, 
-  Sparkles, Layers, ShieldCheck, HelpCircle, FileText, Send, Eye,
-  Maximize2, ChevronRight, Info, Wrench, Warehouse, DollarSign, Sun, Zap, AlertTriangle
+  Building2, Sun, Zap, Download, Maximize, FileText, CheckCircle2, 
+  ChevronRight, ArrowRight, ArrowLeft, RefreshCw, Send, X, Layers
 } from 'lucide-react';
-import ecoEvoData from '../data/ecoEvoBuildings.json';
 import { useToast } from './ui/use-toast';
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb";
 
-// Palette de couleurs RAL standard pour la toiture
-const COLOR_PALETTE = [
-  { id: '7016', name: 'Gris Anthracite (RAL 7016)', hex: '#373f47' },
-  { id: '6005', name: 'Vert Mousse (RAL 6005)', hex: '#114232' },
-  { id: '8012', name: 'Rouge Tuile (RAL 8012)', hex: '#6b322a' },
-  { id: '9010', name: 'Blanc Pur (RAL 9010)', hex: '#e2e8f0' },
-  { id: '9006', name: 'Gris Aluminium (RAL 9006)', hex: '#94a3b8' }
+// Solar Pricing Schedule based on PJ 5
+// de 0kWc à 36kWc: 1,05€ HT/Wc
+// de 36,01kWc à 99,99kWc: 0,98€ HT/Wc
+// de 100kWc à 249,99kWc: 0,92€ HT/Wc
+// de 250kWc à 499,99kWc: 0,86€ HT/Wc
+// de 500kWc à 999,99kWc: 0,79€ HT/Wc
+// au-delà de 1000kWc: 0,76€ HT/Wc
+function getSolarPricing(kwc) {
+  if (!kwc || kwc <= 0) return null;
+  const wc = kwc * 1000;
+  let rateHT = 0.76;
+  if (kwc <= 36) rateHT = 1.05;
+  else if (kwc <= 99.99) rateHT = 0.98;
+  else if (kwc <= 249.99) rateHT = 0.92;
+  else if (kwc <= 499.99) rateHT = 0.86;
+  else if (kwc <= 999.99) rateHT = 0.79;
+
+  const totalHT = wc * rateHT;
+  const tva = totalHT * 0.20;
+  const totalTTC = totalHT * 1.20;
+
+  return {
+    rateHT,
+    totalHT: Math.round(totalHT),
+    tva: Math.round(tva),
+    totalTTC: Math.round(totalTTC)
+  };
+}
+
+// Map of standard building types & available widths
+const BUILDING_TYPES = [
+  { value: 'symetrique', label: 'Symétrique' },
+  { value: 'asymetrique_1_zone', label: 'Asymétrique 1 zone' },
+  { value: 'asymetrique_2_zones', label: 'Asymétrique 2 zones' },
+  { value: 'monopente', label: 'Monopente' },
+  { value: 'ombriere_vl_simple_gauche', label: 'Ombrière VL simple gauche' },
+  { value: 'ombriere_vl_simple_droite', label: 'Ombrière VL simple droite' },
+  { value: 'ombriere_vl_double', label: 'Ombrière VL double' },
+  { value: 'ombriere_pl', label: 'Ombrière PL' },
 ];
+
+const TYPE_WIDTHS_MAP = {
+  symetrique: ['15.0', '18.6', '22.3', '26.0', '29.8', '33.5'],
+  asymetrique_1_zone: ['16.4', '20.0'],
+  asymetrique_2_zones: ['25.5', '29.1'],
+  monopente: ['12.7', '16.4'],
+  ombriere_vl_simple_gauche: ['6.9'],
+  ombriere_vl_simple_droite: ['6.9'],
+  ombriere_vl_double: ['9.1', '11.3'],
+  ombriere_pl: ['15.8', '20.2', '24.6'],
+};
+
+// Fixed ridge heights by width
+const WIDTH_HEIGHT_MAP = {
+  '15.0': { ridge: 6.8, eave: 5.5, pitch: 10 },
+  '18.6': { ridge: 7.1, eave: 5.5, pitch: 10 },
+  '22.3': { ridge: 7.5, eave: 5.5, pitch: 10 },
+  '26.0': { ridge: 7.8, eave: 5.5, pitch: 10 },
+  '29.8': { ridge: 8.1, eave: 5.5, pitch: 10 },
+  '33.5': { ridge: 8.5, eave: 5.5, pitch: 10 },
+  '16.4': { ridge: 6.9, eave: 4.0, pitch: 15 },
+  '20.0': { ridge: 7.3, eave: 4.0, pitch: 15 },
+  '25.5': { ridge: 8.9, eave: 4.0, pitch: 15 },
+  '29.1': { ridge: 9.8, eave: 4.0, pitch: 15 },
+  '12.7': { ridge: 7.4, eave: 4.0, pitch: 15 },
+  '6.9': { ridge: 4.7, eave: 3.7, pitch: 10 },
+  '9.1': { ridge: 4.2, eave: 3.5, pitch: 5 },
+  '11.3': { ridge: 4.4, eave: 3.5, pitch: 5 },
+  '15.8': { ridge: 5.8, eave: 4.5, pitch: 5 },
+  '20.2': { ridge: 6.2, eave: 4.5, pitch: 5 },
+  '24.6': { ridge: 6.6, eave: 4.5, pitch: 5 },
+};
 
 export default function ConfigurateurCharpente() {
   const { toast } = useToast();
 
-  // Ref pour le conteneur du canvas WebGL Three.js
-  const mountRef = useRef(null);
-  const sceneRef = useRef(null);
-  const controlsRef = useRef(null);
-  const rendererRef = useRef(null);
+  // Mode Selection: 'standard' (formerly eco-evo) vs 'sur-mesure'
+  const [gammeMode, setGammeMode] = useState('standard');
 
-  // ÉTAPE ACTUELLE DU CONFIGURATEUR (1 à 6)
-  const [step, setStep] = useState(1);
-
-  // SELECTION ÉTAPE 1 : CATÉGORIE (Bâtiment / Ombrière) ET TYPE
-  const [category, setCategory] = useState('batiment'); // 'batiment' ou 'ombriere'
-  const [subType, setSubType] = useState('symetrique'); // Bâtiment: 'symetrique', 'asymetrique', 'monopente' | Ombrière: 'simple_vl', 'double_vl', 'pl'
-  
-  // DIMENSIONS & CARACTÉRISTIQUES
-  const [selectedWidth, setSelectedWidth] = useState(18.6); // Largeur pignon en m
-  const [bayCount, setBayCount] = useState(4); // Nombre de travées (ex: 4 travées x 7.5m = 30m)
-  const [bayLength, setBayLength] = useState(7.5); // Espacement travée (7.5m ou 6.2m)
-  const [eaveHeight, setEaveHeight] = useState(5.5); // Hauteur égout (m)
-  
-  // OPTIONS COUVERTURE & CENTRALE SOLAIRE PV
-  const [hasSolar, setHasSolar] = useState(false); // Option centrale solaire PV
-  const [roofType, setRoofType] = useState('bac_acier'); // 'bac_acier', 'sandwich_40', 'sandwich_80'
-  const [roofColor, setRoofColor] = useState('7016');
-  const [claddingSides, setCladdingSides] = useState(0); // 0 (ouvert), 1, 2, 3, 4 faces
+  // Config State
+  const [buildingType, setBuildingType] = useState('symetrique');
+  const [largeurBatiment, setLargeurBatiment] = useState('18.6');
+  const [espacementTravees, setEspacementTravees] = useState('7.5m'); // '6m' or '7.5m'
+  const [nombreTravees, setNombreTravees] = useState(4);
+  const [solarEnabled, setSolarEnabled] = useState(false);
   const [showDimensions, setShowDimensions] = useState(true);
+  const [viewMode, setViewMode] = useState('3d'); // '3d' or '2d'
 
-  // Formulaire de contact lead
+  // Extensions
+  const [extensions, setExtensions] = useState({
+    nord: { avant: 0, arriere: 0 },
+    sud: { avant: 0, arriere: 0 }
+  });
+
+  // Modal State
+  const [showOfferModal, setShowOfferModal] = useState(false);
   const [leadForm, setLeadForm] = useState({
-    lastName: '',
-    firstName: '',
-    email: '',
-    phone: '',
-    dept: '',
-    userType: 'Professionnel / Agriculteur',
-    rgpd: true,
-    comments: ''
+    lastName: '', firstName: '', email: '', phone: '', company: '', comments: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // CALCUL DE LA LONGUEUR TOTALE
-  const totalLength = useMemo(() => {
-    return Math.round(bayCount * bayLength * 10) / 10;
-  }, [bayCount, bayLength]);
+  // Canvas Refs
+  const canvasContainerRef = useRef(null);
+  const rendererRef = useRef(null);
+  const sceneRef = useRef(null);
+  const cameraRef = useRef(null);
+  const controlsRef = useRef(null);
 
-  // CALCUL DE LA SURFACE TOTALE
-  const totalSurface = useMemo(() => {
-    return Math.round(selectedWidth * totalLength);
-  }, [selectedWidth, totalLength]);
-
-  // CALCUL DE LA HAUTEUR AU FAÎTAGE ESTIMÉE
-  const ridgeHeight = useMemo(() => {
-    if (category === 'ombriere') return eaveHeight + 0.8;
-    if (subType === 'monopente') {
-      return Math.round((eaveHeight + selectedWidth * 0.15) * 10) / 10;
-    }
-    // Bipente 10°
-    return Math.round((eaveHeight + (selectedWidth / 2) * 0.176) * 10) / 10;
-  }, [eaveHeight, selectedWidth, subType, category]);
-
-  // CALCUL DE LA PUISSANCE SOLAIRE PV (kWc)
-  const solarCapacityKwc = useMemo(() => {
-    if (!hasSolar) return 0;
-    return Math.round((totalSurface * 0.204) * 100) / 100;
-  }, [hasSolar, totalSurface]);
-
-  // CALCUL DU PRODUCTIBLE ET REVENUS SOLAIRES PV
-  const solarProductionKwh = useMemo(() => {
-    if (!hasSolar) return 0;
-    return Math.round(solarCapacityKwc * 1150); // 1150 kWh/kWc
-  }, [hasSolar, solarCapacityKwc]);
-
-  const solarTariffPerKwh = useMemo(() => {
-    if (!hasSolar) return 0;
-    if (solarCapacityKwc <= 9) return 0; // rachat impossible
-    if (solarCapacityKwc < 100) return 0.011; // 1,1 c€/kWh HT
-    return 0.085; // 8,5 c€/kWh HT
-  }, [hasSolar, solarCapacityKwc]);
-
-  const solarAnnualRevenueEuros = useMemo(() => {
-    if (!hasSolar) return 0;
-    return Math.round(solarProductionKwh * solarTariffPerKwh);
-  }, [hasSolar, solarProductionKwh, solarTariffPerKwh]);
-
-  // RECHERCHE DU BÂTIMENT DANS LE CATALOGUE ECO-EVO / GREEN INVEST
-  const matchedBuilding = useMemo(() => {
-    const match = ecoEvoData.find(b => {
-      const wDiff = Math.abs(b.width - selectedWidth);
-      const lDiff = Math.abs(b.length - totalLength);
-      return wDiff <= 0.8 && lDiff <= 0.8;
-    });
-
-    if (match) return match;
-
-    const sameWidths = ecoEvoData.filter(b => Math.abs(b.width - selectedWidth) <= 1.5);
-    if (sameWidths.length > 0) {
-      sameWidths.sort((a, b) => Math.abs(a.length - totalLength) - Math.abs(b.length - totalLength));
-      return sameWidths[0];
-    }
-    return null;
-  }, [selectedWidth, totalLength]);
-
-  // CALCUL DU PRIX HT DU BÂTIMENT OU DE L'OMBRIÈRE
-  const calculatedPriceHT = useMemo(() => {
-    let basePrice = 0;
-    if (matchedBuilding && matchedBuilding.price_ht > 0) {
-      basePrice = matchedBuilding.price_ht;
-    } else {
-      const m2Price = category === 'ombriere' ? 98 : 112;
-      basePrice = Math.round(totalSurface * m2Price);
-    }
-
-    let roofSurcost = 0;
-    if (roofType === 'sandwich_40') roofSurcost = totalSurface * 18;
-    if (roofType === 'sandwich_80') roofSurcost = totalSurface * 28;
-
-    let claddingSurcost = 0;
-    if (claddingSides > 0) {
-      const perimeter = (selectedWidth + totalLength) * 2;
-      const wallArea = (perimeter * eaveHeight) * (claddingSides / 4);
-      claddingSurcost = Math.round(wallArea * 35);
-    }
-
-    return Math.round(basePrice + roofSurcost + claddingSurcost);
-  }, [matchedBuilding, totalSurface, roofType, claddingSides, selectedWidth, totalLength, eaveHeight, category]);
-
-  // OPTIONS DISPONIBLES DE LARGEURS
+  // Available Widths computed based on type & mode
   const availableWidths = useMemo(() => {
-    if (category === 'ombriere') {
-      if (subType === 'simple_vl') return [7.5, 8.5, 9.5];
-      if (subType === 'double_vl') return [15.0, 15.8, 16.5];
-      return [15.8, 18.0]; // PL
-    }
-    if (subType === 'monopente') {
-      return [12.7, 15.0, 16.4, 18.6, 21.5, 24.4];
-    }
-    return [15.0, 16.4, 18.6, 20.0, 22.35, 25.5, 26.05, 29.75, 32.0, 33.46, 35.0, 39.0, 43.0];
-  }, [category, subType]);
+    return TYPE_WIDTHS_MAP[buildingType] || ['18.6'];
+  }, [buildingType]);
 
-  // INITIALISATION ET MISE À JOUR DU RENDU 3D THREE.JS EN CANVAS PUR
+  // Keep width valid when buildingType changes
   useEffect(() => {
-    const container = mountRef.current;
+    if (!availableWidths.includes(largeurBatiment)) {
+      setLargeurBatiment(availableWidths[0]);
+    }
+  }, [buildingType, availableWidths, largeurBatiment]);
+
+  // Geometry calculations
+  const numericWidth = useMemo(() => parseFloat(largeurBatiment) || 18.6, [largeurBatiment]);
+  const bayLength = useMemo(() => (espacementTravees === '6m' ? 6.0 : 7.5), [espacementTravees]);
+  const longueur = useMemo(() => bayLength * nombreTravees, [bayLength, nombreTravees]);
+  const surface = useMemo(() => Math.round(numericWidth * longueur), [numericWidth, longueur]);
+
+  // Fixed parameters
+  const specs = useMemo(() => {
+    return WIDTH_HEIGHT_MAP[largeurBatiment] || { ridge: 7.1, eave: 4.5, pitch: 10 };
+  }, [largeurBatiment]);
+
+  // Solar capacity & panel count
+  const panelCount = useMemo(() => {
+    if (!solarEnabled) return 0;
+    // Calculate panels fitting on roof surface (~2.5m² per 465Wc panel)
+    return Math.floor(surface / 2.5);
+  }, [solarEnabled, surface]);
+
+  const solarPowerKwc = useMemo(() => {
+    if (!solarEnabled) return 0;
+    return Math.round(panelCount * 0.465 * 100) / 100;
+  }, [solarEnabled, panelCount]);
+
+  const solarPricing = useMemo(() => {
+    return getSolarPricing(solarPowerKwc);
+  }, [solarPowerKwc]);
+
+  // Toggle extension
+  const toggleExtension = (side, position) => {
+    setExtensions(prev => ({
+      ...prev,
+      [side]: {
+        ...prev[side],
+        [position]: prev[side][position] > 0 ? 0 : 3.0
+      }
+    }));
+  };
+
+  // ---------------------------------------------------------------------------
+  // 3D Scene Initialization & Render Loop (Three.js Pure WebGL)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const container = canvasContainerRef.current;
     if (!container) return;
 
-    const width = container.clientWidth || 600;
-    const height = container.clientHeight || 400;
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 500;
 
-    // SCÈNE SUR FOND BLANC PUR (#ffffff) COMME NELSONPV.FR
+    // Scene with pure WHITE background (#ffffff) as requested
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffff);
     sceneRef.current = scene;
 
-    // CAMÉRA PERSPECTIVE
+    // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(selectedWidth * 1.5, eaveHeight * 2.2, totalLength * 1.2);
+    camera.position.set(numericWidth * 1.4, specs.ridge * 1.8, longueur * 1.1);
+    cameraRef.current = camera;
 
-    // RENDERER WEBGL
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    // Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
-    // Nettoyage conteneur et ajout canvas
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // CONTROLES SOURIS ORBITCONTROLS (ROTATION, PAN, SCROLL ZOOM)
+    // OrbitControls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.01; // Empêche de passer sous le sol
-    controls.target.set(0, eaveHeight / 2, 0);
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.target.set(0, specs.eave / 2, 0);
     controls.update();
     controlsRef.current = controls;
 
-    // ÉCLAIRAGE PHOTORÉALISTE SUR FOND BLANC
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    // Lighting (Bright & crisp on white background)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.5);
-    dirLight1.position.set(40, 60, 30);
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.4);
+    dirLight1.position.set(30, 50, 40);
     dirLight1.castShadow = true;
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
-    dirLight2.position.set(-30, 30, -20);
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight2.position.set(-30, 30, -30);
     scene.add(dirLight2);
 
-    // SOL GRIS CLAIR / OMBRE
-    const groundGeo = new THREE.PlaneGeometry(totalLength + 40, selectedWidth + 40);
-    const groundMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
+    // Ground plane shadow catcher
+    const groundGeo = new THREE.PlaneGeometry(longueur + 30, numericWidth + 30);
+    const groundMat = new THREE.MeshBasicMaterial({ color: 0xf1f5f9 });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.01;
     scene.add(ground);
 
-    // GROUPE CONTENANT TOUTE LA STRUCTURE 3D DU BÂTIMENT
+    // -------------------------------------------------------------------------
+    // Build 3D Metal Structure
+    // -------------------------------------------------------------------------
     const buildingGroup = new THREE.Group();
 
-    // MATÉRIAUX ACIER ET TOITURE
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.3, metalness: 0.8 });
-    const rafterMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.3, metalness: 0.8 });
-    const hexColor = COLOR_PALETTE.find(c => c.id === roofColor)?.hex || '#373f47';
-    const roofMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(hexColor), roughness: 0.4, metalness: 0.3 });
-    const solarMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.1, metalness: 0.9 });
+    // Materials (matching Green Invest visuals)
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.7, roughness: 0.3 });
+    const rafterMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8, roughness: 0.3 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.4, roughness: 0.5 });
+    const solarMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, metalness: 0.9, roughness: 0.1 });
 
-    // CRÉATION DES PORTIQUES ET POTEAUX
-    const isOmbriere = category === 'ombriere';
-    const numFrames = bayCount + 1;
-    const halfW = selectedWidth / 2;
+    const w = numericWidth;
+    const l = longueur;
+    const eh = specs.eave;
+    const rh = specs.ridge;
+    const halfW = w / 2;
 
-    for (let i = 0; i < numFrames; i++) {
-      const zPos = -totalLength / 2 + i * bayLength;
-      const frameGroup = new THREE.Group();
-      frameGroup.position.set(0, 0, zPos);
+    // Portal frames along bays
+    for (let i = 0; i <= nombreTravees; i++) {
+      const z = -l / 2 + i * bayLength;
+      const frame = new THREE.Group();
+      frame.position.set(0, 0, z);
 
-      // Poteaux Gauche & Droit
-      const colGeo = new THREE.BoxGeometry(0.3, eaveHeight, 0.3);
-      const colL = new THREE.Mesh(colGeo, steelMat);
-      colL.position.set(-halfW, eaveHeight / 2, 0);
-      colL.castShadow = true;
-      frameGroup.add(colL);
+      if (buildingType === 'symetrique') {
+        // Left Column
+        const colGeo = new THREE.BoxGeometry(0.25, eh, 0.25);
+        const colL = new THREE.Mesh(colGeo, steelMat);
+        colL.position.set(-halfW, eh / 2, 0);
+        colL.castShadow = true;
+        frame.add(colL);
 
-      const colR = new THREE.Mesh(colGeo, steelMat);
-      colR.position.set(halfW, eaveHeight / 2, 0);
-      colR.castShadow = true;
-      frameGroup.add(colR);
+        // Right Column
+        const colR = new THREE.Mesh(colGeo, steelMat);
+        colR.position.set(halfW, eh / 2, 0);
+        colR.castShadow = true;
+        frame.add(colR);
 
-      // Fermes de toiture
-      if (!isOmbriere && subType === 'monopente') {
-        const span = Math.hypot(selectedWidth, ridgeHeight - eaveHeight);
-        const rGeo = new THREE.BoxGeometry(span, 0.25, 0.25);
-        const rafter = new THREE.Mesh(rGeo, rafterMat);
-        rafter.position.set(0, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0);
-        rafter.rotation.z = -Math.atan2(ridgeHeight - eaveHeight, selectedWidth);
-        frameGroup.add(rafter);
-      } else if (!isOmbriere) {
-        const spanHalf = Math.hypot(halfW, ridgeHeight - eaveHeight);
-        const rGeo = new THREE.BoxGeometry(spanHalf, 0.25, 0.25);
-        
-        const rafterL = new THREE.Mesh(rGeo, rafterMat);
-        rafterL.position.set(-halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0);
-        rafterL.rotation.z = Math.atan2(ridgeHeight - eaveHeight, halfW);
-        frameGroup.add(rafterL);
+        // Left Rafter
+        const spanL = Math.hypot(halfW, rh - eh);
+        const rafterLGeo = new THREE.BoxGeometry(spanL, 0.2, 0.2);
+        const rafterL = new THREE.Mesh(rafterLGeo, rafterMat);
+        rafterL.position.set(-halfW / 2, (eh + rh) / 2, 0);
+        rafterL.rotation.z = Math.atan2(rh - eh, halfW);
+        frame.add(rafterL);
 
-        const rafterR = new THREE.Mesh(rGeo, rafterMat);
-        rafterR.position.set(halfW / 2, eaveHeight + (ridgeHeight - eaveHeight) / 2, 0);
-        rafterR.rotation.z = -Math.atan2(ridgeHeight - eaveHeight, halfW);
-        frameGroup.add(rafterR);
+        // Right Rafter
+        const rafterR = new THREE.Mesh(rafterLGeo, rafterMat);
+        rafterR.position.set(halfW / 2, (eh + rh) / 2, 0);
+        rafterR.rotation.z = -Math.atan2(rh - eh, halfW);
+        frame.add(rafterR);
 
-        // Tirant horizontal
-        const tieGeo = new THREE.BoxGeometry(selectedWidth, 0.12, 0.12);
+        // Tie beam
+        const tieGeo = new THREE.BoxGeometry(w, 0.12, 0.12);
         const tie = new THREE.Mesh(tieGeo, steelMat);
-        tie.position.set(0, eaveHeight, 0);
-        frameGroup.add(tie);
-      } else {
-        // Ombrière
-        const rGeo = new THREE.BoxGeometry(selectedWidth, 0.25, 0.25);
+        tie.position.set(0, eh, 0);
+        frame.add(tie);
+
+      } else if (buildingType.startsWith('asymetrique')) {
+        const colGeo = new THREE.BoxGeometry(0.25, eh, 0.25);
+        const colL = new THREE.Mesh(colGeo, steelMat);
+        colL.position.set(-halfW, eh / 2, 0);
+        frame.add(colL);
+
+        const colRGeo = new THREE.BoxGeometry(0.25, rh, 0.25);
+        const colR = new THREE.Mesh(colRGeo, steelMat);
+        colR.position.set(halfW, rh / 2, 0);
+        frame.add(colR);
+
+        const span = Math.hypot(w, rh - eh);
+        const rGeo = new THREE.BoxGeometry(span, 0.2, 0.2);
         const rafter = new THREE.Mesh(rGeo, rafterMat);
-        rafter.position.set(0, eaveHeight + 0.3, 0);
-        rafter.rotation.z = -0.15;
-        frameGroup.add(rafter);
+        rafter.position.set(0, (eh + rh) / 2, 0);
+        rafter.rotation.z = Math.atan2(rh - eh, w);
+        frame.add(rafter);
+
+      } else if (buildingType === 'monopente') {
+        const colGeoL = new THREE.BoxGeometry(0.25, eh, 0.25);
+        const colL = new THREE.Mesh(colGeoL, steelMat);
+        colL.position.set(-halfW, eh / 2, 0);
+        frame.add(colL);
+
+        const colGeoR = new THREE.BoxGeometry(0.25, rh, 0.25);
+        const colR = new THREE.Mesh(colGeoR, steelMat);
+        colR.position.set(halfW, rh / 2, 0);
+        frame.add(colR);
+
+        const span = Math.hypot(w, rh - eh);
+        const rGeo = new THREE.BoxGeometry(span, 0.2, 0.2);
+        const rafter = new THREE.Mesh(rGeo, rafterMat);
+        rafter.position.set(0, (eh + rh) / 2, 0);
+        rafter.rotation.z = Math.atan2(rh - eh, w);
+        frame.add(rafter);
+
+      } else if (buildingType === 'ombriere_vl_double') {
+        // Center single pillar
+        const colGeo = new THREE.BoxGeometry(0.35, rh, 0.35);
+        const colC = new THREE.Mesh(colGeo, steelMat);
+        colC.position.set(0, rh / 2, 0);
+        frame.add(colC);
+
+        const rGeo = new THREE.BoxGeometry(w, 0.2, 0.2);
+        const rafter = new THREE.Mesh(rGeo, rafterMat);
+        rafter.position.set(0, rh, 0);
+        frame.add(rafter);
+
+      } else {
+        // Ombrière VL simple & PL
+        const colGeo = new THREE.BoxGeometry(0.25, eh, 0.25);
+        const colL = new THREE.Mesh(colGeo, steelMat);
+        colL.position.set(-halfW, eh / 2, 0);
+        frame.add(colL);
+
+        const colR = new THREE.Mesh(colGeo, steelMat);
+        colR.position.set(halfW, rh / 2, 0);
+        frame.add(colR);
+
+        const rGeo = new THREE.BoxGeometry(w, 0.2, 0.2);
+        const rafter = new THREE.Mesh(rGeo, rafterMat);
+        rafter.position.set(0, (eh + rh) / 2, 0);
+        rafter.rotation.z = 0.1;
+        frame.add(rafter);
       }
 
-      buildingGroup.add(frameGroup);
+      buildingGroup.add(frame);
     }
 
-    // TOITURE (PANNEAUX BAC ACIER)
-    if (!isOmbriere && subType === 'monopente') {
-      const roofGeo = new THREE.BoxGeometry(selectedWidth + 0.4, 0.08, totalLength + 0.6);
-      const roof = new THREE.Mesh(roofGeo, roofMat);
-      roof.position.set(0, (eaveHeight + ridgeHeight) / 2 + 0.1, 0);
-      roof.rotation.x = Math.atan2(ridgeHeight - eaveHeight, selectedWidth);
-      buildingGroup.add(roof);
-    } else if (!isOmbriere) {
-      const spanHalf = Math.hypot(halfW, ridgeHeight - eaveHeight);
-      const roofGeo = new THREE.BoxGeometry(spanHalf + 0.3, 0.08, totalLength + 0.6);
+    // Longitudinal purlins
+    const purlinGeo = new THREE.BoxGeometry(0.08, 0.08, l + 0.2);
+    const p1 = new THREE.Mesh(purlinGeo, steelMat);
+    p1.position.set(-halfW, eh + 0.05, 0);
+    const p2 = new THREE.Mesh(purlinGeo, steelMat);
+    p2.position.set(halfW, eh + 0.05, 0);
+    const pRidge = new THREE.Mesh(purlinGeo, steelMat);
+    pRidge.position.set(0, rh + 0.05, 0);
+    buildingGroup.add(p1, p2, pRidge);
 
-      const roofL = new THREE.Mesh(roofGeo, roofMat);
-      roofL.position.set(-halfW / 2, (eaveHeight + ridgeHeight) / 2 + 0.08, 0);
-      roofL.rotation.z = Math.atan2(ridgeHeight - eaveHeight, halfW);
-      buildingGroup.add(roofL);
+    // Roof Sheets
+    if (buildingType === 'symetrique') {
+      const spanL = Math.hypot(halfW, rh - eh);
+      const rSheetGeo = new THREE.BoxGeometry(spanL + 0.2, 0.05, l + 0.4);
+      
+      const rSheetL = new THREE.Mesh(rSheetGeo, roofMat);
+      rSheetL.position.set(-halfW / 2, (eh + rh) / 2 + 0.05, 0);
+      rSheetL.rotation.z = Math.atan2(rh - eh, halfW);
+      buildingGroup.add(rSheetL);
 
-      const roofR = new THREE.Mesh(roofGeo, roofMat);
-      roofR.position.set(halfW / 2, (eaveHeight + ridgeHeight) / 2 + 0.08, 0);
-      roofR.rotation.z = -Math.atan2(ridgeHeight - eaveHeight, halfW);
-      buildingGroup.add(roofR);
+      const rSheetR = new THREE.Mesh(rSheetGeo, roofMat);
+      rSheetR.position.set(halfW / 2, (eh + rh) / 2 + 0.05, 0);
+      rSheetR.rotation.z = -Math.atan2(rh - eh, halfW);
+      buildingGroup.add(rSheetR);
     } else {
-      const roofGeo = new THREE.BoxGeometry(selectedWidth + 0.3, 0.08, totalLength + 0.4);
-      const roof = new THREE.Mesh(roofGeo, roofMat);
-      roof.position.set(0, eaveHeight + 0.4, 0);
-      roof.rotation.z = -0.15;
-      buildingGroup.add(roof);
+      const span = Math.hypot(w, rh - eh);
+      const rSheetGeo = new THREE.BoxGeometry(span + 0.2, 0.05, l + 0.4);
+      const rSheet = new THREE.Mesh(rSheetGeo, roofMat);
+      rSheet.position.set(0, (eh + rh) / 2 + 0.05, 0);
+      rSheet.rotation.z = Math.atan2(rh - eh, w);
+      buildingGroup.add(rSheet);
     }
 
-    // DISPOSITION DES PANNEAUX SOLAIRES PV SI ACTIVÉ
-    if (hasSolar) {
-      const rows = Math.floor(totalLength / 1.9);
-      const cols = Math.floor(selectedWidth / 1.3);
-      const startX = -selectedWidth / 2 + 0.7;
-      const startZ = -totalLength / 2 + 0.95;
-
-      const panelGeo = new THREE.BoxGeometry(1.2, 0.04, 1.8);
+    // Solar Panels Grid in 3D
+    if (solarEnabled) {
       const solarGroup = new THREE.Group();
-      solarGroup.position.set(0, (eaveHeight + ridgeHeight) / 2 + 0.2, 0);
+      const rows = Math.floor(l / 2.0);
+      const cols = Math.floor(halfW / 1.4);
+      const panelGeo = new THREE.BoxGeometry(1.2, 0.03, 1.8);
 
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const panel = new THREE.Mesh(panelGeo, solarMat);
-          panel.position.set(startX + c * 1.3, 0.05, startZ + r * 1.9);
-          solarGroup.add(panel);
+          // Left roof slope
+          const panelL = new THREE.Mesh(panelGeo, solarMat);
+          const pxL = -halfW + 0.8 + c * 1.3;
+          const pzL = -l / 2 + 1.0 + r * 2.0;
+          const pyL = eh + (pxL + halfW) * Math.tan(Math.atan2(rh - eh, halfW)) + 0.1;
+          panelL.position.set(pxL, pyL, pzL);
+          panelL.rotation.z = Math.atan2(rh - eh, halfW);
+          solarGroup.add(panelL);
+
+          // Right roof slope
+          const panelR = new THREE.Mesh(panelGeo, solarMat);
+          const pxR = 0.8 + c * 1.3;
+          const pzR = -l / 2 + 1.0 + r * 2.0;
+          const pyR = rh - pxR * Math.tan(Math.atan2(rh - eh, halfW)) + 0.1;
+          panelR.position.set(pxR, pyR, pzR);
+          panelR.rotation.z = -Math.atan2(rh - eh, halfW);
+          solarGroup.add(panelR);
         }
       }
       buildingGroup.add(solarGroup);
@@ -344,7 +421,7 @@ export default function ConfigurateurCharpente() {
 
     scene.add(buildingGroup);
 
-    // BOUCLE D'ANIMATION WEBGL
+    // Animation Loop
     let animationFrameId;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -353,14 +430,13 @@ export default function ConfigurateurCharpente() {
     };
     animate();
 
-    // REDIMENSIONNEMENT FENÊTRE
     const handleResize = () => {
       if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
+      const wRes = container.clientWidth;
+      const hRes = container.clientHeight;
+      camera.aspect = wRes / hRes;
       camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      renderer.setSize(wRes, hRes);
     };
     window.addEventListener('resize', handleResize);
 
@@ -369,20 +445,42 @@ export default function ConfigurateurCharpente() {
       window.removeEventListener('resize', handleResize);
       renderer.dispose();
     };
-  }, [category, subType, selectedWidth, totalLength, bayCount, bayLength, eaveHeight, ridgeHeight, hasSolar, roofColor]);
+  }, [buildingType, numericWidth, longueur, specs, bayLength, nombreTravees, solarEnabled]);
 
-  // GESTION SOUMISSION LEAD
+  // 2D/3D View Switch
+  const handleViewMode = (mode) => {
+    setViewMode(mode);
+    if (!cameraRef.current || !controlsRef.current) return;
+    if (mode === '2d') {
+      cameraRef.current.position.set(0, specs.ridge * 1.1, numericWidth * 2.2);
+      controlsRef.current.target.set(0, specs.ridge / 2, 0);
+    } else {
+      cameraRef.current.position.set(numericWidth * 1.4, specs.ridge * 1.8, longueur * 1.1);
+      controlsRef.current.target.set(0, specs.eave / 2, 0);
+    }
+    controlsRef.current.update();
+  };
+
+  // Screenshot capture
+  const handleScreenshot = () => {
+    if (!rendererRef.current) return;
+    const link = document.createElement('a');
+    link.download = `configurateur-charpente-${Date.now()}.png`;
+    link.href = rendererRef.current.domElement.toDataURL('image/png');
+    link.click();
+  };
+
+  // Fullscreen
+  const handleFullscreen = () => {
+    const elem = canvasContainerRef.current;
+    if (elem && elem.requestFullscreen) {
+      elem.requestFullscreen();
+    }
+  };
+
+  // Lead Quote submission
   const handleSubmitLead = async (e) => {
     e.preventDefault();
-    if (!leadForm.lastName || !leadForm.firstName || !leadForm.email || !leadForm.phone) {
-      toast({
-        title: "Champs obligatoires manquants",
-        description: "Veuillez renseigner votre nom, prénom, email et téléphone.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsSubmitting(true);
     try {
       const payload = {
@@ -391,17 +489,14 @@ export default function ConfigurateurCharpente() {
         Prenom: leadForm.firstName,
         Email: leadForm.email,
         Telephone: leadForm.phone,
-        Departement: leadForm.dept,
-        Profil: leadForm.userType,
+        Societe: leadForm.company,
         Configuration: {
-          Categorie: category === 'batiment' ? 'Bâtiment' : 'Ombrière',
-          Type: subType,
-          Dimensions: `${selectedWidth}m x ${totalLength}m (${totalSurface} m²)`,
-          Travees: `${bayCount} travées x ${bayLength}m`,
-          HauteurEgout: `${eaveHeight} m`,
-          HauteurFaitage: `${ridgeHeight} m`,
-          OptionSolaire: hasSolar ? `Centrale PV ${solarCapacityKwc} kWc (${solarAnnualRevenueEuros} €/an)` : 'Sans solaire',
-          PrixEstimeHT: `${calculatedPriceHT.toLocaleString('fr-FR')} € HT`
+          Type: buildingType,
+          Largeur: `${numericWidth} m`,
+          Longueur: `${longueur} m (${surface} m²)`,
+          Travees: `${nombreTravees} travées x ${bayLength}m`,
+          OptionSolaire: solarEnabled ? `Oui (${solarPowerKwc} kWc)` : 'Non',
+          TarifSolaireHT: solarPricing ? `${solarPricing.totalHT.toLocaleString('fr-FR')} € HT` : 'N/A'
         },
         Commentaires: leadForm.comments
       };
@@ -414,591 +509,556 @@ export default function ConfigurateurCharpente() {
 
       if (res.ok) {
         setSubmitSuccess(true);
-        toast({
-          title: "Demande transmise avec succès !",
-          description: "Un conseiller charpente métallique va vous recontacte sous 24h.",
-          className: "bg-[#0f2847] text-white border border-emerald-500"
-        });
+        toast({ title: "Demande transmise avec succès !", description: "Un conseiller va vous contacter sous 24h." });
       } else {
-        throw new Error("Erreur lors de l'envoi");
+        throw new Error("Erreur");
       }
     } catch (err) {
-      toast({
-        title: "Erreur d'envoi",
-        description: "Une erreur est survenue. Veuillez nous contacter directement par téléphone.",
-        variant: "destructive"
-      });
+      toast({ title: "Erreur d'envoi", description: "Veuillez réessayer.", variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <section id="configurateur-charpente" className="py-16 md:py-24 bg-slate-900 text-white relative overflow-hidden font-sans">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+    <section id="configurateur-charpente" style={{ background: '#ffffff', color: '#1f2937', padding: '3rem 1rem', fontFamily: 'Inter, system-ui, sans-serif' }}>
+      
+      {/* SECTION HEADER */}
+      <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto 2.5rem' }}>
+        <h2 style={{ fontSize: '2.2rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.6rem', letterSpacing: '-0.02em' }}>
+          Votre structure métallique <span style={{ color: '#2563eb' }}>sur-mesure</span>
+        </h2>
+        <p style={{ color: '#64748b', fontSize: '1rem', lineHeight: 1.5 }}>
+          Configurez votre bâtiment ou ombrière métallique étape par étape, visualisez la structure en 3D dynamique et obtenez votre chiffrage immédiat.
+        </p>
+      </div>
+
+      {/* MAIN CONFIGURATOR CONTAINER (EXACT LAYOUT AS NELSON GREEN INVEST INTERFACE) */}
+      <div style={{
+        maxWidth: '1440px',
+        margin: '0 auto',
+        display: 'flex',
+        height: 'calc(100vh - 120px)',
+        minHeight: '680px',
+        maxHeight: '900px',
+        background: '#f8fafc',
+        borderRadius: '16px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
+        overflow: 'hidden'
+      }}>
         
-        {/* HEADER PRÉSENTATION DU CONFIGURATEUR */}
-        <div className="text-center max-w-3xl mx-auto mb-10">
-          <div className="inline-flex items-center space-x-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
-            <Sparkles className="w-4 h-4 text-emerald-400" />
-            <span>Configurateur 3D Bâtiment & Ombrière Métallique</span>
-          </div>
-
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight mb-4 leading-tight">
-            Votre structure métallique <span className="text-emerald-400">sur-mesure</span>
+        {/* =================================================================== */}
+        {/* LEFT PANEL: CONFIGURATION CONTROLS (Width 270px)                    */}
+        {/* =================================================================== */}
+        <div style={{
+          width: '270px',
+          minWidth: '270px',
+          background: '#ffffff',
+          borderRight: '1px solid #e2e8f0',
+          overflowY: 'auto',
+          padding: '1.25rem 1rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1.1rem'
+        }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>
+            Configurateur 2D/3D
           </h2>
-          <p className="text-slate-300 text-base sm:text-lg leading-relaxed font-light">
-            Configurez votre bâtiment ou ombrière métallique étape par étape, visualisez la structure en 3D dynamique et obtenez votre chiffrage immédiat.
-          </p>
-        </div>
 
-        {/* BARRE D'ÉTAPES DU CONFIGURATEUR (SCREB STYLE) */}
-        <div className="bg-slate-800/90 border border-slate-700/80 rounded-2xl p-4 mb-8 shadow-xl">
-          <div className="flex items-center justify-between overflow-x-auto gap-2 pb-2 sm:pb-0 no-scrollbar text-xs">
-            {[
-              { num: 1, label: '1. Modèle' },
-              { num: 2, label: '2. Largeur' },
-              { num: 3, label: '3. Longueur' },
-              { num: 4, label: '4. Hauteur' },
-              { num: 5, label: '5. Solaire & Finitions' },
-              { num: 6, label: '6. Tarif & Devis' },
-            ].map((st) => (
+          {/* Gamme Toggle Switch */}
+          <div style={{ display: 'flex', gap: '0.4rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px' }}>
+            <button
+              onClick={() => setGammeMode('standard')}
+              style={{
+                flex: 1, padding: '0.5rem 0.6rem', borderRadius: '8px', border: 'none',
+                background: gammeMode === 'standard' ? '#3b82f6' : 'transparent',
+                color: gammeMode === 'standard' ? '#ffffff' : '#64748b',
+                fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              Gamme Standard
+            </button>
+            <button
+              onClick={() => setGammeMode('sur-mesure')}
+              style={{
+                flex: 1, padding: '0.5rem 0.6rem', borderRadius: '8px', border: 'none',
+                background: gammeMode === 'sur-mesure' ? '#3b82f6' : 'transparent',
+                color: gammeMode === 'sur-mesure' ? '#ffffff' : '#64748b',
+                fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              Bâtiments sur-mesure
+            </button>
+          </div>
+
+          {/* Type de Bâtiment */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              TYPE DE BÂTIMENT
+            </label>
+            <select
+              value={buildingType}
+              onChange={(e) => setBuildingType(e.target.value)}
+              style={{
+                width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1',
+                background: '#ffffff', fontSize: '0.85rem', color: '#0f172a', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              {BUILDING_TYPES.map(bt => (
+                <option key={bt.value} value={bt.value}>{bt.label}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Largeur du Bâtiment */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              LARGEUR DU BÂTIMENT
+            </label>
+            <select
+              value={largeurBatiment}
+              onChange={(e) => setLargeurBatiment(e.target.value)}
+              style={{
+                width: '100%', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1',
+                background: '#ffffff', fontSize: '0.85rem', color: '#0f172a', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              {availableWidths.map(wVal => (
+                <option key={wVal} value={wVal}>{wVal} m</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Extensions (Auvent / Appentis) */}
+          {(!buildingType.startsWith('ombriere')) && (
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                EXTENSIONS
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem' }}>
+                  <span style={{ width: '32px', color: '#64748b', fontWeight: 700 }}>RCH</span>
+                  <button
+                    onClick={() => toggleExtension('nord', 'avant')}
+                    style={{
+                      flex: 1, padding: '0.35rem', borderRadius: '6px',
+                      border: `1px solid ${extensions.nord.avant > 0 ? '#3b82f6' : '#cbd5e1'}`,
+                      background: extensions.nord.avant > 0 ? '#eff6ff' : '#ffffff',
+                      color: extensions.nord.avant > 0 ? '#2563eb' : '#64748b',
+                      fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    AUVENT
+                  </button>
+                  <button
+                    onClick={() => toggleExtension('nord', 'arriere')}
+                    style={{
+                      flex: 1, padding: '0.35rem', borderRadius: '6px',
+                      border: `1px solid ${extensions.nord.arriere > 0 ? '#3b82f6' : '#cbd5e1'}`,
+                      background: extensions.nord.arriere > 0 ? '#eff6ff' : '#ffffff',
+                      color: extensions.nord.arriere > 0 ? '#2563eb' : '#64748b',
+                      fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    APPENTIS
+                  </button>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem' }}>
+                  <span style={{ width: '32px', color: '#64748b', fontWeight: 700 }}>DRY</span>
+                  <button
+                    onClick={() => toggleExtension('sud', 'avant')}
+                    style={{
+                      flex: 1, padding: '0.35rem', borderRadius: '6px',
+                      border: `1px solid ${extensions.sud.avant > 0 ? '#3b82f6' : '#cbd5e1'}`,
+                      background: extensions.sud.avant > 0 ? '#eff6ff' : '#ffffff',
+                      color: extensions.sud.avant > 0 ? '#2563eb' : '#64748b',
+                      fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    AUVENT
+                  </button>
+                  <button
+                    onClick={() => toggleExtension('sud', 'arriere')}
+                    style={{
+                      flex: 1, padding: '0.35rem', borderRadius: '6px',
+                      border: `1px solid ${extensions.sud.arriere > 0 ? '#3b82f6' : '#cbd5e1'}`,
+                      background: extensions.sud.arriere > 0 ? '#eff6ff' : '#ffffff',
+                      color: extensions.sud.arriere > 0 ? '#2563eb' : '#64748b',
+                      fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer'
+                    }}
+                  >
+                    APPENTIS
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Espacement Travées */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              ESPACEMENT TRAVÉES
+            </label>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {['6m', '7.5m'].map(esp => (
+                <button
+                  key={esp}
+                  onClick={() => setEspacementTravees(esp)}
+                  style={{
+                    flex: 1, padding: '0.45rem', borderRadius: '8px', border: 'none',
+                    background: espacementTravees === esp ? '#3b82f6' : '#f1f5f9',
+                    color: espacementTravees === esp ? '#ffffff' : '#64748b',
+                    fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer'
+                  }}
+                >
+                  {esp}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Nombre de Travées */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              NOMBRE DE TRAVÉES
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
               <button
-                key={st.num}
-                onClick={() => setStep(st.num)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all font-semibold shrink-0 ${
-                  step === st.num 
-                    ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20' 
-                    : step > st.num 
-                      ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-500/40' 
-                      : 'bg-slate-700/50 text-slate-400 hover:text-white'
-                }`}
+                onClick={() => setNombreTravees(Math.max(1, nombreTravees - 1))}
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%', border: 'none',
+                  background: '#ef4444', color: '#ffffff', fontSize: '1.2rem', fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
               >
-                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                  step === st.num ? 'bg-slate-950 text-emerald-400' : 'bg-slate-800 text-slate-300'
-                }`}>
-                  {step > st.num ? <Check className="w-3 h-3 stroke-[3]" /> : st.num}
-                </span>
-                <span>{st.label}</span>
+                −
               </button>
-            ))}
+              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', minWidth: '32px', textAlign: 'center' }}>
+                {nombreTravees}
+              </span>
+              <button
+                onClick={() => setNombreTravees(Math.min(20, nombreTravees + 1))}
+                style={{
+                  width: '32px', height: '32px', borderRadius: '50%', border: 'none',
+                  background: '#22c55e', color: '#ffffff', fontSize: '1.2rem', fontWeight: 700,
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                }}
+              >
+                +
+              </button>
+            </div>
+            <span style={{ fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.2rem', display: 'block' }}>
+              {nombreTravees} travée{nombreTravees > 1 ? 's' : ''} x {bayLength}m = {longueur}m
+            </span>
+          </div>
+
+          {/* Paramètres Fixes */}
+          <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '0.75rem', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+              PARAMÈTRES FIXES
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem', color: '#64748b' }}>
+              <span>🔴 Pente: {specs.pitch}°</span>
+              <span>🔴 H. Égout: {specs.eave}m</span>
+            </div>
+          </div>
+
+          {/* Option Solaire Toggle */}
+          <div>
+            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              OPTION SOLAIRE
+            </label>
+            <button
+              onClick={() => setSolarEnabled(!solarEnabled)}
+              style={{
+                width: '100%', padding: '0.6rem', borderRadius: '8px',
+                border: `2px solid ${solarEnabled ? '#f97316' : '#e2e8f0'}`,
+                background: solarEnabled ? '#fff7ed' : '#ffffff',
+                color: solarEnabled ? '#ea580c' : '#64748b',
+                fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
+              }}
+            >
+              Couverture Solaire PV
+            </button>
+          </div>
+
+          {/* Puissance & Tarif Solaire Detailed Breakdown (Pj 5 Table) */}
+          {solarEnabled && (
+            <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '10px', padding: '0.8rem' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#c2410c', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
+                PUISSANCE INSTALLÉE
+              </div>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ea580c' }}>
+                {solarPowerKwc} <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>kWc</span>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600, marginBottom: '0.5rem' }}>
+                {panelCount} panneaux (465Wc)
+              </div>
+
+              {/* Pricing detail from Pj 5 */}
+              {solarPricing && (
+                <div style={{ borderTop: '1px solid #fed7aa', paddingTop: '0.5rem', fontSize: '0.75rem', color: '#9a3412', display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Tarif Wc HT:</span>
+                    <strong>{solarPricing.rateHT.toFixed(2)} € / Wc</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Montant Solaire HT:</span>
+                    <strong style={{ color: '#059669' }}>{solarPricing.totalHT.toLocaleString('fr-FR')} € HT</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', color: '#65a30d' }}>
+                    <span>TVA (20%):</span>
+                    <span>{solarPricing.tva.toLocaleString('fr-FR')} €</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* =================================================================== */}
+        {/* CENTER PANEL: 3D VIEWPORT & CANVAS (Pure White #ffffff)              */}
+        {/* =================================================================== */}
+        <div style={{ flex: 1, position: 'relative', background: '#ffffff' }} ref={canvasContainerRef}>
+          
+          {/* Top-Left Overlays: Badges & Dimensions Toggle */}
+          <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {/* Dimensions Badge */}
+            <div style={{
+              background: '#ffffff', borderRadius: '8px', padding: '0.55rem 1rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0',
+              fontSize: '0.9rem', fontWeight: 700, color: '#0f172a'
+            }}>
+              {longueur.toFixed(2)}m x {numericWidth.toFixed(2)}m – {surface}m²
+            </div>
+
+            {/* Solar Badge */}
+            {solarEnabled && (
+              <div style={{
+                background: '#ffffff', borderRadius: '8px', padding: '0.55rem 1rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)', border: '1px solid #fed7aa',
+                fontSize: '0.9rem', fontWeight: 800, color: '#ea580c',
+                display: 'flex', alignItems: 'center', gap: '0.4rem'
+              }}>
+                ⚡ {solarPowerKwc} kWc
+              </div>
+            )}
+
+            {/* Toggle Dimensions Switch Button */}
+            <div
+              onClick={() => setShowDimensions(!showDimensions)}
+              style={{
+                background: '#ef4444', borderRadius: '8px', padding: '0.5rem 0.9rem',
+                display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer',
+                color: '#ffffff', fontSize: '0.8rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+              }}
+            >
+              <span>Afficher les côtes</span>
+              <div style={{
+                width: '36px', height: '20px', borderRadius: '10px',
+                background: showDimensions ? '#22c55e' : '#94a3b8',
+                position: 'relative', transition: 'background 0.2s'
+              }}>
+                <div style={{
+                  width: '16px', height: '16px', borderRadius: '50%', background: '#ffffff',
+                  position: 'absolute', top: '2px', left: showDimensions ? '18px' : '2px',
+                  transition: 'left 0.2s'
+                }} />
+              </div>
+            </div>
+          </div>
+
+          {/* Mouse interaction tip */}
+          <div style={{
+            position: 'absolute', bottom: '1rem', left: '50%', transform: 'translateX(-50%)',
+            zIndex: 10, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)',
+            padding: '0.4rem 1rem', borderRadius: '20px', fontSize: '0.75rem',
+            color: '#64748b', fontWeight: 600, border: '1px solid #e2e8f0', pointerEvents: 'none'
+          }}>
+            💡 Maintenez le clic gauche et glissez pour faire pivoter en 3D
           </div>
         </div>
 
-        {/* CONTENEUR PRINCIPAL DU CONFIGURATEUR (GRILLE 2 COLONNES) */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* COLONNE GAUCHE (7 COLS) : VISIONNEUSE 3D WEBGL SUR FOND BLANC (EXACTEMENT COMME NELSONPV.FR) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl p-4 sm:p-6 border-2 border-slate-200 shadow-2xl relative flex flex-col justify-between min-h-[520px]">
-            
-            {/* Header & Badges NelsonPV Style */}
-            <div className="flex flex-wrap items-center justify-between gap-3 z-10 mb-2">
-              <div className="bg-blue-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl shadow-md flex items-center gap-2">
-                <Warehouse className="w-4 h-4" />
-                <span>{totalLength}m x {selectedWidth}m - {totalSurface}m²</span>
-              </div>
-
-              {hasSolar && (
-                <div className="bg-amber-100 border border-amber-300 text-amber-900 font-extrabold text-xs px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-sm">
-                  <Zap className="w-4 h-4 fill-amber-500 text-amber-600" />
-                  <span>{solarCapacityKwc} kWc</span>
-                </div>
-              )}
-            </div>
-
-            {/* VISIONNEUSE WEBGL 3D THREE.JS SUR FOND BLANC AVEC ROTATION A LA SOURIS (ORBITCONTROLS) */}
-            <div 
-              ref={mountRef} 
-              className="relative w-full h-[400px] sm:h-[440px] bg-white rounded-2xl overflow-hidden border border-slate-200 cursor-grab active:cursor-grabbing shadow-inner"
-            />
-
-            {/* Indication d'interaction avec la souris */}
-            <div className="mt-2 text-center text-xs text-slate-500 font-medium">
-              💡 Maintenez le clic gauche et déplacez la souris pour faire pivoter le bâtiment en 3D
-            </div>
-
-            {/* BARRE DE CARACTÉRISTIQUES CLÉS EN BAS */}
-            <div className="mt-4 bg-slate-100/90 rounded-2xl p-4 border border-slate-200 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-800">
-              <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Structure</span>
-                <span className="font-bold text-slate-900">
-                  {category === 'batiment' ? 'Bâtiment Charpente Métallique' : 'Ombrière Photovoltaïque'}
-                </span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Surface Totale</span>
-                <span className="font-bold text-blue-600 text-sm">{totalSurface} m²</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Hauteur utile</span>
-                <span className="font-bold text-slate-900">{eaveHeight} m</span>
-              </div>
-              {hasSolar && (
-                <div>
-                  <span className="text-slate-500 block text-[10px] uppercase font-bold">Puissance Solaire</span>
-                  <span className="font-extrabold text-amber-600 text-sm">{solarCapacityKwc} kWc</span>
-                </div>
-              )}
-            </div>
-
+        {/* =================================================================== */}
+        {/* RIGHT PANEL: ACTIONS & MODALS (Width 165px)                         */}
+        {/* =================================================================== */}
+        <div style={{
+          width: '165px', minWidth: '165px', background: '#ffffff',
+          borderLeft: '1px solid #e2e8f0', padding: '1rem 0.8rem',
+          display: 'flex', flexDirection: 'column', gap: '0.75rem'
+        }}>
+          {/* View mode toggle */}
+          <div style={{ display: 'flex', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1' }}>
+            <button
+              onClick={() => handleViewMode('3d')}
+              style={{
+                flex: 1, padding: '0.45rem', border: 'none',
+                background: viewMode === '3d' ? '#3b82f6' : '#ffffff',
+                color: viewMode === '3d' ? '#ffffff' : '#64748b',
+                fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+              }}
+            >
+              Vue 3D
+            </button>
+            <button
+              onClick={() => handleViewMode('2d')}
+              style={{
+                flex: 1, padding: '0.45rem', border: 'none',
+                background: viewMode === '2d' ? '#3b82f6' : '#ffffff',
+                color: viewMode === '2d' ? '#ffffff' : '#64748b',
+                fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer'
+              }}
+            >
+              Vue 2D
+            </button>
           </div>
 
-          {/* COLONNE DROITE (5 COLS) : CONTROLES ÉTAPE PAR ÉTAPE (SCREB STYLE) */}
-          <div className="lg:col-span-5 bg-slate-800/90 rounded-3xl p-6 sm:p-8 border border-slate-700 shadow-2xl">
-            
-            <AnimatePresence mode="wait">
-              
-              {/* ÉTAPE 1 : CATÉGORIE (BÂTIMENT OU OMBRIÈRE) PUIS SOUS-TYPE */}
-              {step === 1 && (
-                <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 1 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Choisissez le type de structure</h3>
-                    <p className="text-slate-400 text-xs mt-1">Sélectionnez Bâtiment ou Ombrière de parking.</p>
-                  </div>
+          {/* Generate Offer button */}
+          <button
+            onClick={() => setShowOfferModal(true)}
+            style={{
+              padding: '0.65rem 0.5rem', borderRadius: '8px', border: 'none',
+              background: '#22c55e', color: '#ffffff', fontSize: '0.8rem',
+              fontWeight: 800, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', gap: '0.35rem',
+              boxShadow: '0 4px 10px rgba(34,197,94,0.25)', transition: 'all 0.2s'
+            }}
+          >
+            📄 Générer l'Offre
+          </button>
 
-                  {/* Choix Principal : Bâtiment vs Ombrière */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        setCategory('batiment');
-                        setSubType('symetrique');
-                        setSelectedWidth(18.6);
-                      }}
-                      className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
-                        category === 'batiment' 
-                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-lg' 
-                          : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                      }`}
-                    >
-                      <Building2 className="w-7 h-7" />
-                      <span className="text-sm font-extrabold">Bâtiment</span>
-                    </button>
+          {/* Download Image button */}
+          <button
+            onClick={handleScreenshot}
+            style={{
+              padding: '0.55rem 0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1',
+              background: '#ffffff', color: '#475569', fontSize: '0.75rem',
+              fontWeight: 600, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', gap: '0.3rem'
+            }}
+          >
+            <Download size={14} /> Télécharger image
+          </button>
 
-                    <button
-                      onClick={() => {
-                        setCategory('ombriere');
-                        setSubType('double_vl');
-                        setSelectedWidth(15.8);
-                      }}
-                      className={`p-4 rounded-2xl border text-center transition-all flex flex-col items-center gap-2 ${
-                        category === 'ombriere' 
-                          ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-bold shadow-lg' 
-                          : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                      }`}
-                    >
-                      <Warehouse className="w-7 h-7" />
-                      <span className="text-sm font-extrabold">Ombrière</span>
-                    </button>
-                  </div>
-
-                  {/* Sous-choix Bâtiment */}
-                  {category === 'batiment' && (
-                    <div className="space-y-2 pt-2">
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Forme de toiture</label>
-                      {[
-                        { id: 'symetrique', title: 'Symétrique (Bipente 2 pans)', desc: 'Toiture 2 pans équilibrée à 10°' },
-                        { id: 'asymetrique', title: 'Asymétrique (Bipente dissymétrique)', desc: 'Pan principal orienté optimisé' },
-                        { id: 'monopente', title: 'Monopente', desc: 'Toiture 1 pan orientée' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => setSubType(opt.id)}
-                          className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 ${
-                            subType === opt.id 
-                              ? 'bg-emerald-500/20 border-emerald-400 text-white' 
-                              : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0 ${
-                            subType === opt.id ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
-                          }`} />
-                          <div>
-                            <p className="font-bold text-xs text-white">{opt.title}</p>
-                            <p className="text-[11px] text-slate-400">{opt.desc}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Sous-choix Ombrière */}
-                  {category === 'ombriere' && (
-                    <div className="space-y-2 pt-2">
-                      <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Type d'ombrière</label>
-                      {[
-                        { id: 'simple_vl', title: 'Simple VL (Véhicules Légers)', desc: 'Ombrière 1 rangée de stationnement (Largeur ~7.5m)' },
-                        { id: 'double_vl', title: 'Double VL (Véhicules Légers)', desc: 'Ombrière 2 rangées de stationnement (Largeur ~15.8m)' },
-                        { id: 'pl', title: 'PL (Poids Lourds)', desc: 'Ombrière haute pour camions & bus (Hauteur 5.1m)' },
-                      ].map((opt) => (
-                        <button
-                          key={opt.id}
-                          onClick={() => setSubType(opt.id)}
-                          className={`w-full text-left p-3.5 rounded-xl border transition-all flex items-start gap-3 ${
-                            subType === opt.id 
-                              ? 'bg-emerald-500/20 border-emerald-400 text-white' 
-                              : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                          }`}
-                        >
-                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center mt-0.5 shrink-0 ${
-                            subType === opt.id ? 'border-emerald-400 bg-emerald-400' : 'border-slate-500'
-                          }`} />
-                          <div>
-                            <p className="font-bold text-xs text-white">{opt.title}</p>
-                            <p className="text-[11px] text-slate-400">{opt.desc}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => setStep(2)}
-                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-500/20"
-                  >
-                    <span>Étape suivante : Largeur Pignon</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
-                </motion.div>
-              )}
-
-              {/* ÉTAPE 2 : LARGEUR DU PIGNON */}
-              {step === 2 && (
-                <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 2 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Choisissez la largeur (Portée)</h3>
-                    <p className="text-slate-400 text-xs mt-1">Sélectionnez la largeur de pignon standardisée.</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {availableWidths.map((w) => (
-                      <button
-                        key={w}
-                        onClick={() => setSelectedWidth(w)}
-                        className={`p-3.5 rounded-2xl border text-center transition-all ${
-                          selectedWidth === w 
-                            ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-extrabold shadow-lg shadow-emerald-500/20' 
-                            : 'bg-slate-900/60 border-slate-700 text-slate-200 hover:border-slate-500 font-semibold'
-                        }`}
-                      >
-                        <span className="text-lg block">{w} m</span>
-                        <span className="text-[10px] opacity-75 font-normal">Portée</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setStep(1)}
-                      className="w-1/3 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl transition-colors text-xs flex items-center justify-center gap-1.5"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Retour</span>
-                    </button>
-                    <button
-                      onClick={() => setStep(3)}
-                      className="w-2/3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-                    >
-                      <span>Étape suivante : Longueur</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ÉTAPE 3 : NOMBRE DE TRAVÉES / LONGUEUR */}
-              {step === 3 && (
-                <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 3 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Longueur & Nombre de travées</h3>
-                    <p className="text-slate-400 text-xs mt-1">Choisissez le nombre de travées (espacement 7.5m).</p>
-                  </div>
-
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
-                    {[3, 4, 5, 6, 7, 8, 9, 10, 12].map((cnt) => (
-                      <button
-                        key={cnt}
-                        onClick={() => setBayCount(cnt)}
-                        className={`p-3 rounded-xl border text-center transition-all ${
-                          bayCount === cnt 
-                            ? 'bg-emerald-500 border-emerald-400 text-slate-950 font-extrabold shadow-md' 
-                            : 'bg-slate-900/60 border-slate-700 text-slate-200 hover:border-slate-500'
-                        }`}
-                      >
-                        <span className="text-base font-bold block">x {cnt}</span>
-                        <span className="text-[10px] opacity-80">{cnt * bayLength} m</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="bg-slate-900/80 p-4 rounded-xl border border-slate-700/80 text-xs space-y-1">
-                    <p className="text-slate-300">Espacement travée : <strong className="text-white">{bayLength} m</strong></p>
-                    <p className="text-slate-300">Longueur totale : <strong className="text-emerald-400 text-sm font-bold">{totalLength} m</strong></p>
-                    <p className="text-slate-300">Surface couverte : <strong className="text-emerald-400 text-sm font-bold">{totalSurface} m²</strong></p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setStep(2)}
-                      className="w-1/3 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl transition-colors text-xs flex items-center justify-center gap-1.5"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Retour</span>
-                    </button>
-                    <button
-                      onClick={() => setStep(4)}
-                      className="w-2/3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-                    >
-                      <span>Étape suivante : Hauteur</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ÉTAPE 4 : HAUTEUR À L'ÉGOUT */}
-              {step === 4 && (
-                <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 4 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Hauteur sous sablière</h3>
-                    <p className="text-slate-400 text-xs mt-1">Hauteur utile sous égout pour le passage et le stockage.</p>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { h: 3.9, label: '3.90 m', desc: 'Hauteur standard' },
-                      { h: 4.0, label: '4.00 m', desc: 'Courant agricole' },
-                      { h: 4.6, label: '4.60 m', desc: 'Passage camion' },
-                      { h: 5.5, label: '5.50 m', desc: 'Stockage & logistique' },
-                    ].map((item) => (
-                      <button
-                        key={item.h}
-                        onClick={() => setEaveHeight(item.h)}
-                        className={`p-4 rounded-2xl border text-left transition-all ${
-                          eaveHeight === item.h 
-                            ? 'bg-emerald-500/15 border-emerald-500 text-white shadow-lg' 
-                            : 'bg-slate-900/60 border-slate-700 text-slate-300 hover:border-slate-500'
-                        }`}
-                      >
-                        <p className="text-lg font-bold text-white">{item.label}</p>
-                        <p className="text-xs text-slate-400 mt-1">{item.desc}</p>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setStep(3)}
-                      className="w-1/3 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl transition-colors text-xs flex items-center justify-center gap-1.5"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Retour</span>
-                    </button>
-                    <button
-                      onClick={() => setStep(5)}
-                      className="w-2/3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-                    >
-                      <span>Étape suivante : Solaire & Finitions</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ÉTAPE 5 : OPTION SOLAIRE PV & FINITIONS */}
-              {step === 5 && (
-                <motion.div key="step5" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 5 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Centrale Solaire PV & Finitions</h3>
-                    <p className="text-slate-400 text-xs mt-1">Ajoutez une couverture solaire et choisissez la couleur des tôles.</p>
-                  </div>
-
-                  {/* Interrupteur Option Solaire PV */}
-                  <div className="bg-amber-950/40 border-2 border-amber-500/40 rounded-2xl p-4 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-                        <Zap className="w-5 h-5 fill-amber-400" />
-                      </div>
-                      <div>
-                        <p className="font-extrabold text-sm text-white">Couverture Solaire PV</p>
-                        <p className="text-xs text-amber-200/80">Intégrer les panneaux photovoltaïques sur le toit</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => setHasSolar(!hasSolar)}
-                      className={`w-14 h-8 rounded-full p-1 transition-colors relative ${
-                        hasSolar ? 'bg-amber-500' : 'bg-slate-700'
-                      }`}
-                    >
-                      <div className={`w-6 h-6 rounded-full bg-white transition-transform ${
-                        hasSolar ? 'translate-x-6' : 'translate-x-0'
-                      }`} />
-                    </button>
-                  </div>
-
-                  {/* Affichage des métriques solaires si activé */}
-                  {hasSolar && (
-                    <div className="bg-amber-900/30 border border-amber-500/30 p-4 rounded-xl text-xs space-y-2">
-                      <div className="flex justify-between items-center text-amber-200">
-                        <span>Puissance Installable :</span>
-                        <strong className="text-sm font-extrabold text-white">{solarCapacityKwc} kWc</strong>
-                      </div>
-                      <div className="flex justify-between items-center text-amber-200">
-                        <span>Production annuelle estimée :</span>
-                        <strong className="text-white">{solarProductionKwh.toLocaleString('fr-FR')} kWh/an</strong>
-                      </div>
-                      <div className="flex justify-between items-center text-amber-200 pt-1 border-t border-amber-500/20">
-                        <span>Revenus solaires estimés (1ère année) :</span>
-                        <strong className="text-sm font-extrabold text-emerald-400">{solarAnnualRevenueEuros.toLocaleString('fr-FR')} €/an</strong>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Choix de la couleur RAL */}
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">Couleur des tôles (RAL)</label>
-                    <div className="flex items-center gap-3">
-                      {COLOR_PALETTE.map((c) => (
-                        <button
-                          key={c.id}
-                          onClick={() => setRoofColor(c.id)}
-                          title={c.name}
-                          className={`w-9 h-9 rounded-full border-2 transition-transform ${
-                            roofColor === c.id ? 'scale-115 border-emerald-400 ring-2 ring-emerald-400/50' : 'border-slate-600 hover:scale-105'
-                          }`}
-                          style={{ backgroundColor: c.hex }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setStep(4)}
-                      className="w-1/3 bg-slate-700 hover:bg-slate-600 text-white font-bold py-3.5 rounded-xl transition-colors text-xs flex items-center justify-center gap-1.5"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Retour</span>
-                    </button>
-                    <button
-                      onClick={() => setStep(6)}
-                      className="w-2/3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold py-3.5 rounded-xl transition-all text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20"
-                    >
-                      <span>Étape suivante : Obtenir le Tarif</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ÉTAPE 6 : RÉCAPITULATIF, TARIF HT ET DEMANDE DE DEVIS */}
-              {step === 6 && (
-                <motion.div key="step6" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-6">
-                  <div>
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block mb-1">Étape 6 sur 6</span>
-                    <h3 className="text-xl font-bold text-white">Récapitulatif & Tarif estimatif</h3>
-                    <p className="text-slate-400 text-xs mt-1">Chiffrage indicatif de la structure seule et des revenus solaires.</p>
-                  </div>
-
-                  {/* CARTE PRIX INDICATIF HT */}
-                  <div className="bg-gradient-to-br from-slate-900 to-slate-950 p-6 rounded-2xl border border-emerald-500/40 text-center relative overflow-hidden shadow-xl">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-400 to-teal-300" />
-                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest block mb-1">
-                      {category === 'batiment' ? 'Structure Bâtiment Seule' : 'Ombrière Métallique Seule'}
-                    </span>
-                    
-                    <div className="text-3xl sm:text-4xl font-extrabold text-white my-2">
-                      {calculatedPriceHT.toLocaleString('fr-FR')} € <span className="text-base text-slate-400 font-normal">HT</span>
-                    </div>
-
-                    {hasSolar && (
-                      <div className="mt-3 pt-3 border-t border-slate-800 text-amber-400 text-xs font-bold">
-                        ⚡ Centrale Solaire PV {solarCapacityKwc} kWc : +{solarAnnualRevenueEuros.toLocaleString('fr-FR')} €/an de revenus solaires
-                      </div>
-                    )}
-                  </div>
-
-                  {/* FORMULAIRE LEAD DE DEVIS GRATUIT */}
-                  {!submitSuccess ? (
-                    <form onSubmit={handleSubmitLead} className="space-y-3 pt-2">
-                      <p className="text-xs font-bold text-white">Recevez votre étude technique & devis gratuit sous 24h :</p>
-                      
-                      <div className="grid grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Nom *"
-                          value={leadForm.lastName}
-                          onChange={(e) => setLeadForm({ ...leadForm, lastName: e.target.value })}
-                          className="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
-                        />
-                        <input
-                          type="text"
-                          required
-                          placeholder="Prénom *"
-                          value={leadForm.firstName}
-                          onChange={(e) => setLeadForm({ ...leadForm, firstName: e.target.value })}
-                          className="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-3">
-                        <input
-                          type="email"
-                          required
-                          placeholder="Email *"
-                          value={leadForm.email}
-                          onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
-                          className="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
-                        />
-                        <input
-                          type="tel"
-                          required
-                          placeholder="Téléphone *"
-                          value={leadForm.phone}
-                          onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
-                          className="bg-slate-900 border border-slate-700 rounded-xl p-3 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold py-3.5 px-6 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider shadow-lg shadow-emerald-500/20"
-                      >
-                        {isSubmitting ? 'Transmission en cours...' : 'Demander mon devis gratuit'}
-                        <Send className="w-4 h-4" />
-                      </button>
-                    </form>
-                  ) : (
-                    <div className="bg-emerald-950/80 border border-emerald-500/40 p-4 rounded-xl text-center space-y-2">
-                      <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto" />
-                      <p className="font-bold text-sm text-white">Merci ! Votre demande a été enregistrée.</p>
-                      <p className="text-xs text-slate-300">Notre équipe va étudier vos dimensions ({totalLength}m x {selectedWidth}m) et vous recontacter sous 24h.</p>
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => setStep(5)}
-                    className="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold py-2.5 rounded-xl transition-colors text-xs flex items-center justify-center gap-1.5"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Modifier la configuration</span>
-                  </button>
-                </motion.div>
-              )}
-
-            </AnimatePresence>
-          </div>
-
+          {/* Fullscreen button */}
+          <button
+            onClick={handleFullscreen}
+            style={{
+              padding: '0.55rem 0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1',
+              background: '#ffffff', color: '#475569', fontSize: '0.75rem',
+              fontWeight: 600, cursor: 'pointer', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', gap: '0.3rem'
+            }}
+          >
+            <Maximize size={14} /> Plein écran
+          </button>
         </div>
 
       </div>
+
+      {/* ===================================================================== */}
+      {/* OFFER GENERATION MODAL                                                */}
+      {/* ===================================================================== */}
+      {showOfferModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '16px', maxWidth: '500px', width: '100%',
+            padding: '2rem', boxShadow: '0 20px 40px rgba(0,0,0,0.2)', position: 'relative'
+          }}>
+            <button
+              onClick={() => setShowOfferModal(false)}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', border: 'none', background: 'none', cursor: 'pointer', color: '#64748b' }}
+            >
+              <X size={20} />
+            </button>
+
+            {!submitSuccess ? (
+              <>
+                <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.4rem' }}>
+                  Demande de devis & étude technique
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.25rem' }}>
+                  Recevez gratuitement votre étude technique détaillée pour la structure {longueur}m x {numericWidth}m ({surface}m²).
+                </p>
+
+                <form onSubmit={handleSubmitLead} style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                    <input
+                      type="text" required placeholder="Nom *" value={leadForm.lastName}
+                      onChange={(e) => setLeadForm({ ...leadForm, lastName: e.target.value })}
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                    <input
+                      type="text" required placeholder="Prénom *" value={leadForm.firstName}
+                      onChange={(e) => setLeadForm({ ...leadForm, firstName: e.target.value })}
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                    <input
+                      type="email" required placeholder="Email *" value={leadForm.email}
+                      onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                    <input
+                      type="tel" required placeholder="Téléphone *" value={leadForm.phone}
+                      onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
+                      style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <input
+                    type="text" placeholder="Entreprise / Exploitation" value={leadForm.company}
+                    onChange={(e) => setLeadForm({ ...leadForm, company: e.target.value })}
+                    style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+
+                  <textarea
+                    rows={2} placeholder="Remarques ou spécificités..." value={leadForm.comments}
+                    onChange={(e) => setLeadForm({ ...leadForm, comments: e.target.value })}
+                    style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+
+                  <button
+                    type="submit" disabled={isSubmitting}
+                    style={{
+                      marginTop: '0.5rem', padding: '0.8rem', borderRadius: '8px', border: 'none',
+                      background: '#22c55e', color: '#ffffff', fontSize: '0.9rem', fontWeight: 800,
+                      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem'
+                    }}
+                  >
+                    {isSubmitting ? 'Transmission en cours...' : 'Envoyer ma demande de devis'}
+                    <Send size={16} />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <CheckCircle2 size={48} color="#22c55e" style={{ margin: '0 auto 1rem' }} />
+                <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem' }}>
+                  Merci ! Votre demande a été enregistrée.
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
+                  Un conseiller charpente métallique va analyser vos dimensions ({longueur}m x {numericWidth}m) et vous contacter sous 24h.
+                </p>
+                <button
+                  onClick={() => { setShowOfferModal(false); setSubmitSuccess(false); }}
+                  style={{ marginTop: '1.5rem', padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none', background: '#3b82f6', color: '#ffffff', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Fermer
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

@@ -193,7 +193,7 @@ function MainPage() {
                   <Hero setActiveTab={handleSetActiveTab} />
                 </div>
               </div>
-              {isStagingOrTestEnvironment() && <ConfigurateurCharpente />}
+              <ConfigurateurCharpente />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
