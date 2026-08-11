@@ -65,12 +65,9 @@ function getCardinalLabel(deg) {
 }
 
 // ==========================================
-// COMPOSANT GRAPHIQUE 30 ANS (Avec baisse rendement -1%/an & hausse tarif +2%/an)
+// COMPOSANT GRAPHIQUE 30 ANS
 // ==========================================
 function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125, paybackYears, installationCostHT }) {
-  // Calculate exact revenue data taking into account:
-  // 1. Panel efficiency degradation: -1% / year -> prodY = annualProductionKwh * (0.99)^(y-1)
-  // 2. Tariff indexation: +2% / year -> tariffY = tariffPerKwh * (1.02)^(y-1)
   const data = useMemo(() => {
     const list = [];
     let sum = 0;
@@ -89,7 +86,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
     return list;
   }, [annualProductionKwh, tariffPerKwh]);
 
-  // Exact Payback Year calculation incorporating indexation + degradation
   const pbYearFloat = useMemo(() => {
     if (!installationCostHT || installationCostHT <= 0) return typeof paybackYears === 'number' ? paybackYears : parseFloat(paybackYears) || 0;
     let sum = 0;
@@ -116,8 +112,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
 
   return (
     <div className="bg-[#0f2847] text-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-800 space-y-6">
-      
-      {/* Header */}
       <div>
         <h4 className="text-xl font-black text-white flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-[#84cc16]" /> Revenus cumulés de la revente d'électricité
@@ -127,7 +121,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
         </p>
       </div>
 
-      {/* Cartes de synthèse à 10, 20 et 30 ans */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
         <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
           <p className="text-xs text-slate-400 mb-1 font-semibold">sur 10 ans</p>
@@ -143,11 +136,9 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
         </div>
       </div>
 
-      {/* Graphique de Barres en Histogramme avec ligne d'amortissement */}
       <div className="relative h-64 w-full pt-8 pb-0">
         <div className="absolute left-6 right-2 bottom-0 h-px bg-slate-600 z-0"></div>
 
-        {/* Ligne d'amortissement rouge pointillée avec badge d'année ROI */}
         {pbYearFloat > 0 && pbYearFloat <= 30 && (
           <div 
             className="absolute top-0 bottom-0 border-l-2 border-dashed border-[#ef4444] z-20 pointer-events-none"
@@ -166,7 +157,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
 
             return (
               <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
-                {/* Tooltip au survol */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-9 bg-slate-900 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg border border-slate-700 whitespace-nowrap z-30 pointer-events-none shadow-xl">
                   Année {d.year} : +{d.cumRevenue.toLocaleString('fr-FR')} € (Cumul)
                 </div>
@@ -181,7 +171,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
         </div>
       </div>
 
-      {/* Axe des ordonnées / Repères d'Années */}
       <div className="w-full h-px bg-slate-600 mt-2 mb-2"></div>
       <div className="flex justify-between pl-6 pr-2 text-xs font-bold text-slate-300">
         {targetYears.map((yr) => (
@@ -191,7 +180,6 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
         ))}
       </div>
 
-      {/* Légende */}
       <div className="flex justify-center gap-6 text-xs text-slate-300 mt-5 border-t border-slate-700/60 pt-3 flex-wrap">
         <span className="flex items-center gap-2">
           <span className="w-3 h-3 rounded bg-[#3b82f6] inline-block"></span>
@@ -284,7 +272,6 @@ export default function StructureSurMesureSection() {
     if (rightExtW > 0) basePrice += Math.round(totalLength * rightExtW * (config.rightSide === 'auvent' ? 55 : 75));
     const charpentePriceHT = Math.round(basePrice);
 
-    // ALWAYS calculate full solar installation cost for the building potential
     const solarPriceHT = getSolarPriceHT(installedKwc);
 
     return charpentePriceHT + solarPriceHT;
@@ -353,6 +340,21 @@ export default function StructureSurMesureSection() {
     }
   };
 
+  // Reverse Geocode BAN function to update address dynamically when map is panned
+  const reverseGeocodeMapCenter = async (lat, lng) => {
+    try {
+      const res = await fetch(`https://api-adresse.data.gouv.fr/reverse/?lon=${lng}&lat=${lat}`);
+      const data = await res.json();
+      if (data && data.features && data.features.length > 0) {
+        const label = data.features[0].properties.label;
+        setSelectedAddress(label);
+        setAddressInput(label);
+      }
+    } catch (err) {
+      console.error("Reverse geocoding BAN error:", err);
+    }
+  };
+
   // Initialize & Update Leaflet Satellite Map on Step 2
   useEffect(() => {
     if (step !== 2) {
@@ -386,6 +388,12 @@ export default function StructureSurMesureSection() {
         map.on('move', () => {
           const center = map.getCenter();
           setCoords({ lat: center.lat, lng: center.lng });
+        });
+
+        // Update address dynamically when user finishes panning/moving the map!
+        map.on('moveend', () => {
+          const center = map.getCenter();
+          reverseGeocodeMapCenter(center.lat, center.lng);
         });
 
         mapInstanceRef.current = map;
@@ -747,12 +755,28 @@ export default function StructureSurMesureSection() {
                     </div>
                   </div>
 
-                  {/* Right: Satellite Map Viewer with Fixed Center Footprint */}
-                  <div className="lg:col-span-3 h-[520px] rounded-2xl overflow-hidden border border-gray-200 shadow-lg relative" ref={mapContainerRef}>
-                    <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur px-3.5 py-2 rounded-xl text-xs font-bold text-gray-800 border border-gray-200 shadow-md flex items-center gap-2">
-                      <Move className="w-4 h-4 text-blue-600" /> Glissez la carte pour ajuster l'emplacement de votre parcelle sous le bâtiment
+                  {/* Right: Satellite Map Viewer with Dynamic Address Badge Below */}
+                  <div className="lg:col-span-3 space-y-3">
+                    <div className="h-[520px] rounded-2xl overflow-hidden border border-gray-200 shadow-lg relative" ref={mapContainerRef}>
+                      <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur px-3.5 py-2 rounded-xl text-xs font-bold text-gray-800 border border-gray-200 shadow-md flex items-center gap-2">
+                        <Move className="w-4 h-4 text-blue-600" /> Glissez la carte pour ajuster l'emplacement de votre parcelle sous le bâtiment
+                      </div>
+                    </div>
+
+                    {/* DYNAMIC ADDRESS DISPLAY UNDER MAP (Updates on map move/drag) */}
+                    <div className="bg-white p-3.5 rounded-2xl border border-gray-200 shadow-sm flex items-center justify-between text-xs text-gray-700">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0 border border-emerald-200">
+                          <MapPin className="w-4 h-4" />
+                        </div>
+                        <div className="overflow-hidden">
+                          <span className="text-gray-400 font-semibold block text-[10px] uppercase tracking-wider">Adresse actuelle sous le bâtiment :</span>
+                          <span className="font-bold text-[#0f2847] text-xs block truncate">{selectedAddress}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
+
                 </div>
               </motion.div>
             )}
@@ -850,7 +874,7 @@ export default function StructureSurMesureSection() {
                         </div>
                       </div>
 
-                      {/* KPI 6: Temps de Retour ROI (Calculé avec -1%/an baisse prod & +2%/an hausse tarif) */}
+                      {/* KPI 6: Temps de Retour ROI */}
                       <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
                           <span>Amortissement (ROI)</span>
