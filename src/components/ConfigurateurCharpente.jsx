@@ -19,7 +19,7 @@ function getSolarPriceHT(kwc) {
   return Math.round(wc * rateHT);
 }
 
-export default function ConfigurateurCharpente() {
+export default function ConfigurateurCharpente({ hideHeader = false }) {
   const config = useConfiguratorValues();
   const actions = useConfiguratorActions();
 
