@@ -65,34 +65,51 @@ function getCardinalLabel(deg) {
 }
 
 // ==========================================
-// COMPOSANT GRAPHIQUE 30 ANS
+// COMPOSANT GRAPHIQUE 30 ANS (Avec baisse rendement -1%/an & hausse tarif +2%/an)
 // ==========================================
 function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125, paybackYears, installationCostHT }) {
-  const pbYearFloat = typeof paybackYears === 'number' ? paybackYears : parseFloat(paybackYears) || 0;
-
-  const getCumulAtYear = (targetYear) => {
-    let sum = 0;
-    for (let y = 1; y <= targetYear; y++) {
-      const yrTariff = y <= 20 ? tariffPerKwh : tariffPerKwh * 0.85;
-      sum += annualProductionKwh * yrTariff;
-    }
-    return Math.round(sum);
-  };
-
-  const cum10 = getCumulAtYear(10).toLocaleString('fr-FR');
-  const cum20 = getCumulAtYear(20).toLocaleString('fr-FR');
-  const cum30 = getCumulAtYear(30).toLocaleString('fr-FR');
-
+  // Calculate exact revenue data taking into account:
+  // 1. Panel efficiency degradation: -1% / year -> prodY = annualProductionKwh * (0.99)^(y-1)
+  // 2. Tariff indexation: +2% / year -> tariffY = tariffPerKwh * (1.02)^(y-1)
   const data = useMemo(() => {
     const list = [];
     let sum = 0;
     for (let y = 1; y <= 30; y++) {
-      const yrTariff = y <= 20 ? tariffPerKwh : tariffPerKwh * 0.85;
-      sum += annualProductionKwh * yrTariff;
-      list.push({ year: y, cumRevenue: Math.round(sum) });
+      const prodY = annualProductionKwh * Math.pow(0.99, y - 1);
+      const baseTariffY = tariffPerKwh * Math.pow(1.02, y - 1);
+      const yrTariff = y <= 20 ? baseTariffY : baseTariffY * 0.85;
+      const yrRev = prodY * yrTariff;
+      sum += yrRev;
+      list.push({ 
+        year: y, 
+        yrRevenue: Math.round(yrRev), 
+        cumRevenue: Math.round(sum) 
+      });
     }
     return list;
   }, [annualProductionKwh, tariffPerKwh]);
+
+  // Exact Payback Year calculation incorporating indexation + degradation
+  const pbYearFloat = useMemo(() => {
+    if (!installationCostHT || installationCostHT <= 0) return typeof paybackYears === 'number' ? paybackYears : parseFloat(paybackYears) || 0;
+    let sum = 0;
+    for (let y = 1; y <= 30; y++) {
+      const prodY = annualProductionKwh * Math.pow(0.99, y - 1);
+      const baseTariffY = tariffPerKwh * Math.pow(1.02, y - 1);
+      const yrTariff = y <= 20 ? baseTariffY : baseTariffY * 0.85;
+      const yrRev = prodY * yrTariff;
+      if (sum + yrRev >= installationCostHT) {
+        const fraction = (installationCostHT - sum) / yrRev;
+        return Math.round((y - 1 + fraction) * 10) / 10;
+      }
+      sum += yrRev;
+    }
+    return 30;
+  }, [annualProductionKwh, tariffPerKwh, installationCostHT, paybackYears]);
+
+  const cum10 = data.length >= 10 ? data[9].cumRevenue.toLocaleString('fr-FR') : '0';
+  const cum20 = data.length >= 20 ? data[19].cumRevenue.toLocaleString('fr-FR') : '0';
+  const cum30 = data.length >= 30 ? data[29].cumRevenue.toLocaleString('fr-FR') : '0';
 
   const maxVal = data.length > 0 ? data[data.length - 1].cumRevenue : 1;
   const targetYears = [1, 5, 10, 15, 20, 25, 30];
@@ -105,7 +122,9 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
         <h4 className="text-xl font-black text-white flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-[#84cc16]" /> Revenus cumulés de la revente d'électricité
         </h4>
-        <p className="text-slate-300 text-xs mt-1">Projection sur 30 ans du chiffre d'affaires cumulé généré par votre centrale photovoltaïque</p>
+        <p className="text-slate-300 text-xs mt-1">
+          Projection sur 30 ans (intègre une dégradation panneaux de -1%/an et une revalorisation tarifaire de +2%/an)
+        </p>
       </div>
 
       {/* Cartes de synthèse à 10, 20 et 30 ans */}
@@ -135,7 +154,7 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
             style={{ left: `calc(1.5rem + (100% - 2rem) * ${pbYearFloat / 30})` }}
           >
             <div className="absolute -top-7 -translate-x-1/2 bg-[#ef4444] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
-              Amorti en {paybackYears} ans
+              Amorti en {pbYearFloat} ans
             </div>
           </div>
         )}
@@ -149,7 +168,7 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125,
               <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
                 {/* Tooltip au survol */}
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-9 bg-slate-900 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg border border-slate-700 whitespace-nowrap z-30 pointer-events-none shadow-xl">
-                  Année {d.year} : +{d.cumRevenue.toLocaleString('fr-FR')} €
+                  Année {d.year} : +{d.cumRevenue.toLocaleString('fr-FR')} € (Cumul)
                 </div>
 
                 <div 
@@ -235,7 +254,7 @@ export default function StructureSurMesureSection() {
   const totalLength = config.length || 37.5;
   const totalSurface = Math.round(totalWidth * totalLength);
 
-  // Solar kWc potential from 3D configurator state (or auto-estimate if solar toggle off)
+  // Solar kWc potential from 3D configurator state
   const installedKwc = useMemo(() => {
     if (config.solarStats?.power && config.solarStats.power > 0) {
       return config.solarStats.power;
@@ -277,10 +296,23 @@ export default function StructureSurMesureSection() {
     return ((annualSolarRevenue / estimatedInvestmentHT) * 100).toFixed(1);
   }, [annualSolarRevenue, estimatedInvestmentHT]);
 
+  // Amortissement ROI exact avec dégradation (-1%/an) et hausse tarif (+2%/an)
   const roiYears = useMemo(() => {
-    if (annualSolarRevenue <= 0) return 10;
-    return Math.round((estimatedInvestmentHT / annualSolarRevenue) * 10) / 10;
-  }, [estimatedInvestmentHT, annualSolarRevenue]);
+    if (annualSolarRevenue <= 0 || estimatedInvestmentHT <= 0) return 10;
+    let sum = 0;
+    for (let y = 1; y <= 30; y++) {
+      const prodY = annualProductionKwh * Math.pow(0.99, y - 1);
+      const baseTariffY = edfOaTariff * Math.pow(1.02, y - 1);
+      const yrTariff = y <= 20 ? baseTariffY : baseTariffY * 0.85;
+      const yrRev = prodY * yrTariff;
+      if (sum + yrRev >= estimatedInvestmentHT) {
+        const fraction = (estimatedInvestmentHT - sum) / yrRev;
+        return Math.round((y - 1 + fraction) * 10) / 10;
+      }
+      sum += yrRev;
+    }
+    return 30;
+  }, [annualProductionKwh, edfOaTariff, estimatedInvestmentHT]);
 
   // Environmental Impact Stats
   const co2AvoidedTonnes = useMemo(() => (Math.round((annualProductionKwh * 0.09) / 1000 * 10) / 10).toFixed(1), [annualProductionKwh]);
@@ -321,10 +353,9 @@ export default function StructureSurMesureSection() {
     }
   };
 
-  // Initialize & Update Leaflet Satellite Map on Step 2 (Fixing Map Unmount/Remount white screen)
+  // Initialize & Update Leaflet Satellite Map on Step 2
   useEffect(() => {
     if (step !== 2) {
-      // Clean up Leaflet map when navigating away from Step 2 to guarantee clean remount
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -795,7 +826,7 @@ export default function StructureSurMesureSection() {
                     {/* Row 2: Financial Investment & Returns */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       
-                      {/* KPI 4: Coût estimé (Includes Solar Cost ALWAYS) */}
+                      {/* KPI 4: Coût estimé */}
                       <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
                           <span>Coût estimé</span>
@@ -819,7 +850,7 @@ export default function StructureSurMesureSection() {
                         </div>
                       </div>
 
-                      {/* KPI 6: Temps de Retour ROI */}
+                      {/* KPI 6: Temps de Retour ROI (Calculé avec -1%/an baisse prod & +2%/an hausse tarif) */}
                       <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
                           <span>Amortissement (ROI)</span>
