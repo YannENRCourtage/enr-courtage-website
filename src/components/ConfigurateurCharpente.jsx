@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import BuildingScene from './configurator/BuildingScene.jsx';
 import { ControlPanel } from './configurator/ui/ControlPanel.jsx';
 import { useConfiguratorValues, useConfiguratorActions } from '@/stores/useConfiguratorStore.js';
@@ -50,6 +50,7 @@ export default function ConfigurateurCharpente() {
   // Solar Pricing
   const solarPowerKwc = config.hasSolar ? (config.solarStats?.power || Math.round((totalSurface / 2.5) * 0.465 * 100) / 100) : 0;
   const solarPriceHT = getSolarPriceHT(solarPowerKwc);
+  const totalPriceHT = charpentePriceHT + (config.hasSolar ? solarPriceHT : 0);
 
   // Download screenshot handler
   const handleScreenshot = async () => {
@@ -222,6 +223,12 @@ export default function ConfigurateurCharpente() {
                   </div>
                 </>
               )}
+
+              {/* TOTAL HT ROW */}
+              <div className="flex justify-between items-center text-xs pt-2 border-t-2 border-slate-200 mt-1">
+                <span className="text-slate-900 font-extrabold uppercase">Total HT :</span>
+                <span className="font-extrabold text-emerald-600 text-sm">{totalPriceHT.toLocaleString('fr-FR')} € HT</span>
+              </div>
             </div>
 
             {/* Mouse Drag Hint */}
