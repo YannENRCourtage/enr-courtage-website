@@ -3,28 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, Sun, Zap, 
   Leaf, Home, ShieldCheck, Sparkles, Building, DollarSign, TrendingUp, 
-  Clock, Wallet, RotateCcw, Compass, Check, PhoneCall, FileText, Send, Move
+  Clock, Wallet, RotateCcw, Compass, Check, PhoneCall, FileText, Send, Move, Percent
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
 import { useConfiguratorValues } from '@/stores/useConfiguratorStore';
 import { useToast } from '@/components/ui/use-toast';
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb";
-
-// Leaflet center drag marker icon
-const createCenterDragIcon = () => new L.DivIcon({
-  className: 'custom-center-drag-icon',
-  html: `<div style="display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; cursor: move;">
-          <div style="background: #2563eb; border: 3px solid #ffffff; width: 32px; height: 32px; border-radius: 50%; box-shadow: 0 6px 16px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px;">
-            ✥
-          </div>
-         </div>`,
-  iconSize: [44, 44],
-  iconAnchor: [22, 22]
-});
 
 // Regional solar productible factor (kWh/kWc)
 function getRegionalProductible(addressStr) {
@@ -40,7 +27,7 @@ function getRegionalProductible(addressStr) {
   return 1150;
 }
 
-// Orientation efficiency multiplier
+// Orientation efficiency multiplier (Roof slope facing South = 100%)
 function getOrientationMultiplier(deg) {
   const angle = ((deg % 360) + 360) % 360;
   if (angle >= 150 && angle <= 210) return 1.0;
@@ -62,6 +49,132 @@ function getCardinalLabel(deg) {
   return 'Nord-Ouest (315°)';
 }
 
+// ==========================================
+// COMPOSANT GRAPHIQUE 30 ANS (Exactement comme Toiture Photovoltaïque - Image 4)
+// ==========================================
+function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125, paybackYears, installationCostHT }) {
+  const annualRevenue = annualProductionKwh * tariffPerKwh;
+  const pbYearFloat = typeof paybackYears === 'number' ? paybackYears : parseFloat(paybackYears) || 0;
+
+  // Calcul du chiffre d'affaires cumulé à 10, 20 et 30 ans
+  const getCumulAtYear = (targetYear) => {
+    let sum = 0;
+    for (let y = 1; y <= targetYear; y++) {
+      const yrTariff = y <= 20 ? tariffPerKwh : tariffPerKwh * 0.85;
+      sum += annualProductionKwh * yrTariff;
+    }
+    return Math.round(sum);
+  };
+
+  const cum10 = getCumulAtYear(10).toLocaleString('fr-FR');
+  const cum20 = getCumulAtYear(20).toLocaleString('fr-FR');
+  const cum30 = getCumulAtYear(30).toLocaleString('fr-FR');
+
+  // Génération des données pour les 30 années
+  const data = useMemo(() => {
+    const list = [];
+    let sum = 0;
+    for (let y = 1; y <= 30; y++) {
+      const yrTariff = y <= 20 ? tariffPerKwh : tariffPerKwh * 0.85;
+      sum += annualProductionKwh * yrTariff;
+      list.push({ year: y, cumRevenue: Math.round(sum) });
+    }
+    return list;
+  }, [annualProductionKwh, tariffPerKwh]);
+
+  const maxVal = data.length > 0 ? data[data.length - 1].cumRevenue : 1;
+  const targetYears = [1, 5, 10, 15, 20, 25, 30];
+
+  return (
+    <div className="bg-[#0f2847] text-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-800 space-y-6">
+      
+      {/* Header */}
+      <div>
+        <h4 className="text-xl font-black text-white flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-[#84cc16]" /> Revenus cumulés de la revente d'électricité
+        </h4>
+        <p className="text-slate-300 text-xs mt-1">Projection sur 30 ans du chiffre d'affaires cumulé généré par votre centrale photovoltaïque</p>
+      </div>
+
+      {/* Cartes de synthèse à 10, 20 et 30 ans (Format Image 4) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
+          <p className="text-xs text-slate-400 mb-1 font-semibold">sur 10 ans</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-[#84cc16]">{cum10} €</p>
+        </div>
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
+          <p className="text-xs text-slate-400 mb-1 font-semibold">sur 20 ans</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-[#84cc16]">{cum20} €</p>
+        </div>
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
+          <p className="text-xs text-slate-400 mb-1 font-semibold">sur 30 ans</p>
+          <p className="text-xl sm:text-2xl font-extrabold text-[#84cc16]">{cum30} €</p>
+        </div>
+      </div>
+
+      {/* Graphique de Barres en Histogramme avec ligne d'amortissement */}
+      <div className="relative h-64 w-full pt-8 pb-0">
+        <div className="absolute left-6 right-2 bottom-0 h-px bg-slate-600 z-0"></div>
+
+        {/* Ligne d'amortissement rouge pointillée avec badge d'année ROI */}
+        {pbYearFloat > 0 && pbYearFloat <= 30 && (
+          <div 
+            className="absolute top-0 bottom-0 border-l-2 border-dashed border-[#ef4444] z-20 pointer-events-none"
+            style={{ left: `calc(1.5rem + (100% - 2rem) * ${pbYearFloat / 30})` }}
+          >
+            <div className="absolute -top-7 -translate-x-1/2 bg-[#ef4444] text-white text-[10px] font-bold px-2 py-0.5 rounded shadow whitespace-nowrap">
+              Amorti en {paybackYears} ans
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end justify-between h-full pl-6 pr-2 relative z-10">
+          {data.map((d) => {
+            const heightPct = Math.min(100, Math.max(1, (d.cumRevenue / maxVal) * 100));
+            const isAmortized = pbYearFloat > 0 && d.year >= pbYearFloat;
+
+            return (
+              <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
+                {/* Tooltip au survol */}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-9 bg-slate-900 text-white text-[11px] font-bold py-1.5 px-2.5 rounded-lg border border-slate-700 whitespace-nowrap z-30 pointer-events-none shadow-xl">
+                  Année {d.year} : +{d.cumRevenue.toLocaleString('fr-FR')} €
+                </div>
+
+                <div 
+                  className={`w-[75%] max-w-[14px] rounded-t-md transition-all duration-300 group-hover:scale-110 ${isAmortized ? 'bg-[#10b981] group-hover:bg-[#34d399]' : 'bg-[#3b82f6] group-hover:bg-[#60a5fa]'}`}
+                  style={{ height: `${heightPct}%` }}
+                />
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Axe des ordonnées / Repères d'Années */}
+      <div className="w-full h-px bg-slate-600 mt-2 mb-2"></div>
+      <div className="flex justify-between pl-6 pr-2 text-xs font-bold text-slate-300">
+        {targetYears.map((yr) => (
+          <div key={yr} className="text-center w-6">
+            {yr}
+          </div>
+        ))}
+      </div>
+
+      {/* Légende */}
+      <div className="flex justify-center gap-6 text-xs text-slate-300 mt-5 border-t border-slate-700/60 pt-3 flex-wrap">
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#3b82f6] inline-block"></span>
+          <span>Amortissement en cours</span>
+        </span>
+        <span className="flex items-center gap-2">
+          <span className="w-3 h-3 rounded bg-[#10b981] inline-block"></span>
+          <span>Bénéfices nets (Post ROI)</span>
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function StructureSurMesureSection() {
   const { toast } = useToast();
   const config = useConfiguratorValues();
@@ -79,11 +192,11 @@ export default function StructureSurMesureSection() {
   // Orientation State (Degrees 0 to 360)
   const [orientationDeg, setOrientationDeg] = useState(180);
 
-  // Map, Footprint & Center Marker Refs
+  // Map & Polygon Leaflet Refs
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const polygonLayerRef = useRef(null);
-  const centerMarkerRef = useRef(null);
+  const ridgeLineLayerRef = useRef(null);
 
   // Form Lead State
   const [isSubmittingForm, setIsSubmittingForm] = useState(false);
@@ -123,7 +236,7 @@ export default function StructureSurMesureSection() {
     return Math.round(installedKwc * productibleBase * orientationFactor);
   }, [installedKwc, productibleBase, orientationFactor]);
 
-  // EDF OA Tariff (average ~0.125 €/kWh for feed-in)
+  // EDF OA Tariff
   const edfOaTariff = 0.125;
   const annualSolarRevenue = useMemo(() => {
     return Math.round(annualProductionKwh * edfOaTariff);
@@ -136,37 +249,21 @@ export default function StructureSurMesureSection() {
     return charpenteEst + solarEst;
   }, [totalSurface, installedKwc]);
 
+  // Taux de placement financier (ROI Yield %)
+  const financialPlacementRate = useMemo(() => {
+    if (estimatedInvestmentHT <= 0) return '9.5';
+    return ((annualSolarRevenue / estimatedInvestmentHT) * 100).toFixed(1);
+  }, [annualSolarRevenue, estimatedInvestmentHT]);
+
   const roiYears = useMemo(() => {
     if (annualSolarRevenue <= 0) return 10;
     return Math.round((estimatedInvestmentHT / annualSolarRevenue) * 10) / 10;
   }, [estimatedInvestmentHT, annualSolarRevenue]);
 
-  // 30-Year Financial Graph Data
-  const chart30YearsData = useMemo(() => {
-    const data = [];
-    let cumulRevenue = 0;
-    let cumulNet = 0;
-
-    for (let yr = 1; yr <= 30; yr++) {
-      const yrRev = yr <= 20 ? annualSolarRevenue : Math.round(annualSolarRevenue * 0.85);
-      cumulRevenue += yrRev;
-      cumulNet = Math.max(0, cumulRevenue - estimatedInvestmentHT);
-
-      if (yr % 2 === 0 || yr === 1 || yr === 30) {
-        data.push({
-          annee: `An ${yr}`,
-          RevenusCumules: Math.round(cumulRevenue / 1000),
-          GainNetCumule: Math.round(cumulNet / 1000)
-        });
-      }
-    }
-    return data;
-  }, [annualSolarRevenue, estimatedInvestmentHT]);
-
-  // Environmental Impact Stats
-  const co2AvoidedTonnes = useMemo(() => Math.round((annualProductionKwh * 0.09) / 1000 * 10) / 10, [annualProductionKwh]);
+  // Environmental Impact Stats (Format Image 5)
+  const co2AvoidedTonnes = useMemo(() => (Math.round((annualProductionKwh * 0.09) / 1000 * 10) / 10).toFixed(1), [annualProductionKwh]);
   const treesPlanted = useMemo(() => Math.round(co2AvoidedTonnes * 45), [co2AvoidedTonnes]);
-  const householdsPowered = useMemo(() => Math.round(annualProductionKwh / 3500), [annualProductionKwh]);
+  const householdsPowered = useMemo(() => (Math.round(annualProductionKwh / 3500 * 10) / 10).toFixed(1), [annualProductionKwh]);
 
   // BAN Geocoding Search
   const handleAddressSearch = async (query) => {
@@ -202,7 +299,7 @@ export default function StructureSurMesureSection() {
     }
   };
 
-  // Initialize & Update Leaflet Satellite Map on Step 2 (With High-Resolution Zoom & Drag & Drop)
+  // Initialize & Update Leaflet Satellite Map on Step 2 (Fixing Building Overlay at Center while Map Moves under it)
   useEffect(() => {
     if (step !== 2 || !mapContainerRef.current) return;
 
@@ -210,16 +307,22 @@ export default function StructureSurMesureSection() {
       const map = L.map(mapContainerRef.current, {
         center: [coords.lat, coords.lng],
         zoom: 19,
-        maxZoom: 22, // High resolution zoom capability as requested
-        zoomControl: true
+        maxZoom: 22,
+        zoomControl: true,
+        doubleClickZoom: false
       });
 
-      // Esri Satellite Layer with high maxZoom & maxNativeZoom
       L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Esri, Maxar, Earthstar Geographics',
         maxNativeZoom: 19,
         maxZoom: 22
       }).addTo(map);
+
+      // Listen to map movement: Map moves freely while building footprint stays locked to map center!
+      map.on('move', () => {
+        const center = map.getCenter();
+        setCoords({ lat: center.lat, lng: center.lng });
+      });
 
       mapInstanceRef.current = map;
     } else {
@@ -228,34 +331,9 @@ export default function StructureSurMesureSection() {
 
     const map = mapInstanceRef.current;
 
-    // Draggable Center Handle Marker for smooth Drag & Drop placement
-    if (!centerMarkerRef.current) {
-      const marker = L.marker([coords.lat, coords.lng], {
-        icon: createCenterDragIcon(),
-        draggable: true,
-        zIndexOffset: 1000
-      }).addTo(map);
-
-      marker.on('dragend', (e) => {
-        const newPos = e.target.getLatLng();
-        setCoords({ lat: newPos.lat, lng: newPos.lng });
-      });
-
-      marker.bindTooltip('<b>Glissez pour déplacer le bâtiment sur le terrain</b>', {
-        permanent: false,
-        direction: 'top',
-        className: 'bg-[#0f2847] text-white text-xs font-bold px-2 py-1 rounded shadow-md'
-      });
-
-      centerMarkerRef.current = marker;
-    } else {
-      centerMarkerRef.current.setLatLng([coords.lat, coords.lng]);
-    }
-
-    // Draw rotated building footprint polygon on satellite map
-    if (polygonLayerRef.current) {
-      map.removeLayer(polygonLayerRef.current);
-    }
+    // Draw building footprint polygon locked at center
+    if (polygonLayerRef.current) map.removeLayer(polygonLayerRef.current);
+    if (ridgeLineLayerRef.current) map.removeLayer(ridgeLineLayerRef.current);
 
     const latMeters = 111111;
     const lngMeters = 111111 * Math.cos((coords.lat * Math.PI) / 180);
@@ -284,7 +362,7 @@ export default function StructureSurMesureSection() {
       color: '#2563eb',
       weight: 3,
       fillColor: '#3b82f6',
-      fillOpacity: 0.5
+      fillOpacity: 0.45
     }).addTo(map);
 
     polygon.bindTooltip(`<b>${totalLength.toFixed(1)}m × ${totalWidth.toFixed(1)}m</b><br/>Surface: ${totalSurface} m²`, {
@@ -293,7 +371,33 @@ export default function StructureSurMesureSection() {
       className: 'bg-white/95 text-slate-900 text-xs font-bold px-2.5 py-1 rounded-lg shadow-md border border-slate-300'
     });
 
+    // Draw Dashed Ridge Line (Faîtage du bâtiment) running along length at center of width
+    const ridgeStart = { x: 0, y: -halfL };
+    const ridgeEnd = { x: 0, y: halfL };
+
+    const rStartRot = [
+      coords.lat + (ridgeStart.x * sinR + ridgeStart.y * cosR),
+      coords.lng + (ridgeStart.x * cosR - ridgeStart.y * sinR)
+    ];
+    const rEndRot = [
+      coords.lat + (ridgeEnd.x * sinR + ridgeEnd.y * cosR),
+      coords.lng + (ridgeEnd.x * cosR - ridgeEnd.y * sinR)
+    ];
+
+    const ridgeLine = L.polyline([rStartRot, rEndRot], {
+      color: '#f59e0b',
+      weight: 3,
+      dashArray: '6, 6'
+    }).addTo(map);
+
+    ridgeLine.bindTooltip('<b>--- Faîtage du bâtiment ---</b>', {
+      permanent: false,
+      direction: 'top',
+      className: 'bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm'
+    });
+
     polygonLayerRef.current = polygon;
+    ridgeLineLayerRef.current = ridgeLine;
 
   }, [step, coords, totalWidth, totalLength, totalSurface, orientationDeg]);
 
@@ -311,6 +415,7 @@ export default function StructureSurMesureSection() {
         puissanceKwc: installedKwc,
         productionKwh: annualProductionKwh,
         renteAnnuelle: annualSolarRevenue,
+        tauxPlacement: `${financialPlacementRate}% / an`,
         investissementEst: estimatedInvestmentHT
       };
 
@@ -339,7 +444,7 @@ export default function StructureSurMesureSection() {
   return (
     <div className="bg-white text-slate-900 font-sans min-h-screen">
       
-      {/* HERO SECTION WITH VIDEO BACKGROUND MATCHING TOITURE PHOTOVOLTAÏQUE PAGE */}
+      {/* HERO SECTION WITH VIDEO BACKGROUND */}
       <section className="relative pt-24 pb-20 overflow-hidden bg-[#0f2847]">
         <div className="absolute inset-0 z-0 overflow-hidden">
           <video
@@ -355,7 +460,6 @@ export default function StructureSurMesureSection() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
           <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            {/* Title matching exact Toiture Photovoltaïque gold gradient font styling */}
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
               Votre structure métallique <span className="enr-gradient-text-gold">sur-mesure</span>
             </h1>
@@ -374,7 +478,7 @@ export default function StructureSurMesureSection() {
         </div>
       </section>
 
-      {/* SECTION 2: INTERACTIVE SIMULATION TUNNEL (MATCHING TOITURE PHOTOVOLTAÏQUE DESIGN) */}
+      {/* SECTION 2: INTERACTIVE SIMULATION TUNNEL */}
       <section id="tunnel-faisabilite" className="py-16 bg-slate-50 border-t border-slate-200">
         <div className="max-w-7xl mx-auto px-4">
           
@@ -412,7 +516,7 @@ export default function StructureSurMesureSection() {
             </div>
           </div>
 
-          {/* STEP CONTENT CONTAINER (Exact shadow & style from ToiturePhotovoltaique) */}
+          {/* STEP CONTENT CONTAINER */}
           <div className="bg-white rounded-3xl border border-gray-100 shadow-[0_20px_60px_rgba(0,0,0,0.1)] overflow-hidden p-6 sm:p-10">
             
             {/* STEP 1: ADDRESS SEARCH */}
@@ -465,17 +569,17 @@ export default function StructureSurMesureSection() {
               </motion.div>
             )}
 
-            {/* STEP 2: SATELLITE MAP & ORIENTATION (EXPANDED MAP VIEW 4 COLUMNS, DRAG & DROP) */}
+            {/* STEP 2: SATELLITE MAP (FIXED BUILDING OVERLAY & MAP PANNING) */}
             {step === 2 && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
                   
-                  {/* Left Controls (Narrower Column, lg:col-span-1) */}
+                  {/* Left Controls */}
                   <div className="lg:col-span-1 space-y-6">
                     <div>
                       <h3 className="text-xl font-extrabold text-[#0f2847] mb-2">Implantation Satellite</h3>
                       <p className="text-gray-500 text-xs leading-relaxed">
-                        L'emprise de votre bâtiment (<strong>{totalLength.toFixed(1)}m × {totalWidth.toFixed(1)}m – {totalSurface} m²</strong>) est projetée. Glissez l'icône bleue ✥ pour déplacer le bâtiment sur votre terrain.
+                        L'emprise (<strong>{totalLength.toFixed(1)}m × {totalWidth.toFixed(1)}m – {totalSurface} m²</strong>) reste au centre. Déplacez la carte ci-contre pour caler votre parcelle sous le bâtiment. Le trait pointillé orange représente le <strong>faîtage</strong>.
                       </p>
                     </div>
 
@@ -547,17 +651,17 @@ export default function StructureSurMesureSection() {
                     </div>
                   </div>
 
-                  {/* Right: Larger Satellite Map Viewer (lg:col-span-3, Height 520px) */}
+                  {/* Right: Satellite Map Viewer with Fixed Center Footprint */}
                   <div className="lg:col-span-3 h-[520px] rounded-2xl overflow-hidden border border-gray-200 shadow-lg relative" ref={mapContainerRef}>
                     <div className="absolute top-3 left-3 z-[1000] bg-white/95 backdrop-blur px-3.5 py-2 rounded-xl text-xs font-bold text-gray-800 border border-gray-200 shadow-md flex items-center gap-2">
-                      <Move className="w-4 h-4 text-blue-600" /> Glissez l'icône centrale pour positionner le bâtiment sur votre parcelle
+                      <Move className="w-4 h-4 text-blue-600" /> Glissez la carte pour ajuster l'emplacement de votre parcelle sous le bâtiment
                     </div>
                   </div>
                 </div>
               </motion.div>
             )}
 
-            {/* STEP 3: FINANCIAL & FEASIBILITY DASHBOARD (REMOVED LLD / SUNLIB MENTIONS) */}
+            {/* STEP 3: FINANCIAL & FEASIBILITY DASHBOARD (2 ROWS KPI & EXACT TOITURE PHOTOVOLTAÏQUE IMPACT/CHART) */}
             {step === 3 && (
               <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
                 <div className="space-y-10">
@@ -580,238 +684,225 @@ export default function StructureSurMesureSection() {
                     </button>
                   </div>
 
-                  {/* 5 KEY KPI CARDS */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                    
-                    {/* KPI 1: Puissance Installable */}
-                    <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
-                      <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
-                        <span>Puissance</span>
-                        <Zap className="w-4 h-4 text-amber-400" />
+                  {/* 6 KPI CARDS ARRANGED ON 2 NEAT ROWS */}
+                  <div className="space-y-4">
+                    {/* Row 1: Energy & Solar Revenues */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      
+                      {/* KPI 1: Puissance Installable */}
+                      <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          <span>Puissance Solaire</span>
+                          <Zap className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <div className="mt-3">
+                          <div className="text-2xl sm:text-3xl font-black text-amber-400">{installedKwc} <span className="text-xs text-gray-300 font-bold">kWc</span></div>
+                          <div className="text-xs text-gray-300 mt-1">{totalSurface} m² de toiture disponible</div>
+                        </div>
                       </div>
-                      <div className="mt-4">
-                        <div className="text-2xl font-black text-amber-400">{installedKwc} <span className="text-xs text-gray-300 font-bold">kWc</span></div>
-                        <div className="text-[11px] text-gray-300 mt-1">{totalSurface} m² de toiture</div>
+
+                      {/* KPI 2: Production Annuelle */}
+                      <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          <span>Production Annuelle</span>
+                          <Sun className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <div className="mt-3">
+                          <div className="text-2xl sm:text-3xl font-black text-white">{annualProductionKwh.toLocaleString('fr-FR')} <span className="text-xs text-gray-300 font-bold">kWh/an</span></div>
+                          <div className="text-xs text-emerald-400 mt-1">Rendement {Math.round(orientationFactor * 100)}% ({productibleBase} kWh/kWc)</div>
+                        </div>
                       </div>
+
+                      {/* KPI 3: Revenus Solaires Annuels */}
+                      <div className="bg-emerald-950 text-white p-5 rounded-2xl shadow-lg border border-emerald-800 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-emerald-300 text-xs font-bold uppercase tracking-wider">
+                          <span>Revenus 1ère Année</span>
+                          <DollarSign className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <div className="mt-3">
+                          <div className="text-2xl sm:text-3xl font-black text-emerald-400">+{annualSolarRevenue.toLocaleString('fr-FR')} <span className="text-xs text-emerald-200 font-bold">€ HT/an</span></div>
+                          <div className="text-xs text-emerald-300 mt-1">Garantis 20 ans par EDF OA</div>
+                        </div>
+                      </div>
+
                     </div>
 
-                    {/* KPI 2: Production Annuelle */}
-                    <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
-                      <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
-                        <span>Production</span>
-                        <Sun className="w-4 h-4 text-amber-400" />
-                      </div>
-                      <div className="mt-4">
-                        <div className="text-2xl font-black text-white">{annualProductionKwh.toLocaleString('fr-FR')} <span className="text-xs text-gray-300 font-bold">kWh/an</span></div>
-                        <div className="text-[11px] text-emerald-400 mt-1">Rendement {Math.round(orientationFactor * 100)}%</div>
-                      </div>
-                    </div>
-
-                    {/* KPI 3: Revenus Solaires Annuels */}
-                    <div className="bg-emerald-950 text-white p-5 rounded-2xl shadow-lg border border-emerald-800 flex flex-col justify-between">
-                      <div className="flex justify-between items-center text-emerald-300 text-xs font-bold uppercase tracking-wider">
-                        <span>Revenus Solaires</span>
-                        <DollarSign className="w-4 h-4 text-emerald-400" />
-                      </div>
-                      <div className="mt-4">
-                        <div className="text-2xl font-black text-emerald-400">+{annualSolarRevenue.toLocaleString('fr-FR')} <span className="text-xs text-emerald-200 font-bold">€ HT/an</span></div>
-                        <div className="text-[11px] text-emerald-300 mt-1">Revente EDF OA 20 ans</div>
-                      </div>
-                    </div>
-
-                    {/* KPI 4: Investissement Estimé */}
-                    <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
-                      <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
-                        <span>Coût Estimé</span>
-                        <Wallet className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div className="mt-4">
-                        <div className="text-2xl font-black text-blue-300">{estimatedInvestmentHT.toLocaleString('fr-FR')} <span className="text-xs text-blue-200 font-bold">€ HT</span></div>
-                        <div className="text-[11px] text-gray-300 mt-1">Structure & Centrale PV</div>
-                      </div>
-                    </div>
-
-                    {/* KPI 5: Temps de Retour ROI */}
-                    <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
-                      <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
-                        <span>Retour / ROI</span>
-                        <Clock className="w-4 h-4 text-blue-400" />
-                      </div>
-                      <div className="mt-4">
-                        <div className="text-2xl font-black text-white">{roiYears} <span className="text-xs text-gray-300 font-bold">ans</span></div>
-                        <div className="text-[11px] text-emerald-400 mt-1">Amortissement rapide</div>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* 30-YEAR RECHARTS FINANCIAL GRAPH */}
-                  <div className="bg-[#0f2847] text-white p-6 sm:p-8 rounded-3xl shadow-2xl border border-slate-800 space-y-6">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div>
-                        <h4 className="text-xl font-black text-white flex items-center gap-2">
-                          <TrendingUp className="w-5 h-5 text-[#d4a843]" /> Évolution des Revenus Solaires Cumulés sur 30 Ans
-                        </h4>
-                        <p className="text-slate-300 text-xs mt-1">Revente totale d'électricité photovoltaïque (EDF OA 20 ans + marché)</p>
+                    {/* Row 2: Financial Investment & Returns */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      
+                      {/* KPI 4: Coût Estimé */}
+                      <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          <span>Coût (Est. HT)</span>
+                          <Wallet className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="mt-3">
+                          <div className="text-2xl sm:text-3xl font-black text-purple-300">{estimatedInvestmentHT.toLocaleString('fr-FR')} <span className="text-xs text-purple-200 font-bold">€ HT</span></div>
+                          <div className="text-xs text-gray-300 mt-1">Structure charpente & centrale PV</div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-4 text-xs font-bold">
-                        <span className="flex items-center gap-1.5 text-[#d4a843]"><span className="w-3 h-3 bg-[#d4a843] rounded-full inline-block" /> Revenus Cumulés (k€)</span>
-                        <span className="flex items-center gap-1.5 text-emerald-400"><span className="w-3 h-3 bg-emerald-500 rounded-full inline-block" /> Gain Net Cumulé (k€)</span>
+                      {/* KPI 5: Taux de Placement Financier (NEW) */}
+                      <div className="bg-amber-950 text-white p-5 rounded-2xl shadow-lg border border-amber-800 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-amber-300 text-xs font-bold uppercase tracking-wider">
+                          <span>Taux de Rendement</span>
+                          <Percent className="w-4 h-4 text-amber-400" />
+                        </div>
+                        <div className="mt-3">
+                          <div className="text-2xl sm:text-3xl font-black text-amber-400">{financialPlacementRate} <span className="text-xs text-amber-200 font-bold">% / an</span></div>
+                          <div className="text-xs text-amber-300 mt-1">Performance supérieure au Livret A (3%)</div>
+                        </div>
                       </div>
-                    </div>
 
-                    <div className="h-72 w-full pt-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chart30YearsData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-                          <XAxis dataKey="annee" stroke="#94a3b8" fontSize={11} />
-                          <YAxis stroke="#94a3b8" fontSize={11} unit="k€" />
-                          <Tooltip
-                            contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#fff', fontSize: '12px' }}
-                            formatter={(val) => [`${val.toLocaleString('fr-FR')} k€ HT`, '']}
-                          />
-                          <Bar dataKey="RevenusCumules" fill="#d4a843" name="Revenus Cumulés (k€)" radius={[4, 4, 0, 0]} />
-                          <Bar dataKey="GainNetCumule" fill="#10b981" name="Gain Net Cumulé (k€)" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
+                      {/* KPI 6: Temps de Retour ROI */}
+                      <div className="bg-[#0f2847] text-white p-5 rounded-2xl shadow-lg border border-slate-800 flex flex-col justify-between">
+                        <div className="flex justify-between items-center text-gray-400 text-xs font-bold uppercase tracking-wider">
+                          <span>Amortissement (ROI)</span>
+                          <Clock className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div className="mt-3">
+                          <div className="text-2xl sm:text-3xl font-black text-white">{roiYears} <span className="text-xs text-gray-300 font-bold">ans</span></div>
+                          <div className="text-xs text-emerald-400 mt-1">Amortissement rapide du capital</div>
+                        </div>
+                      </div>
+
                     </div>
                   </div>
 
-                  {/* ENVIRONMENTAL IMPACT SECTION */}
-                  <div className="bg-gradient-to-r from-emerald-900 to-teal-900 text-white p-6 sm:p-8 rounded-3xl shadow-xl border border-emerald-700/50">
-                    <h4 className="text-xl font-black mb-6 text-emerald-300 flex items-center gap-2">
-                      <Leaf className="w-5 h-5 text-emerald-400" /> Impact Environnemental & Écologique Estimé
+                  {/* 30-YEAR RECHARTS FINANCIAL GRAPH (Exactement identique à Toiture Photovoltaïque - Image 4) */}
+                  <CumulativeRevenuesBarChart
+                    annualProductionKwh={annualProductionKwh}
+                    tariffPerKwh={edfOaTariff}
+                    paybackYears={roiYears}
+                    installationCostHT={estimatedInvestmentHT}
+                  />
+
+                  {/* ENVIRONMENTAL IMPACT SECTION (Exactement identique à Toiture Photovoltaïque - Image 5) */}
+                  <div className="pt-8 mt-10 border-t border-gray-200 text-center">
+                    <h4 className="text-lg font-bold text-[#0f2847] mb-6 flex items-center justify-center gap-2">
+                      <Leaf className="w-5 h-5 text-emerald-500" />
+                      <span>Votre impact sur l'environnement</span>
                     </h4>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                      <div className="bg-emerald-950/60 p-5 rounded-2xl border border-emerald-700/40 text-center">
-                        <div className="text-3xl font-black text-emerald-400 mb-1">{co2AvoidedTonnes} t</div>
-                        <div className="text-xs text-emerald-200 font-bold uppercase tracking-wider">Tonnes de CO₂ évitées / an</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                        <p className="text-2xl font-black text-emerald-600">{co2AvoidedTonnes} tonnes</p>
+                        <p className="text-xs text-gray-600 mt-1">de CO₂ évitées par an</p>
                       </div>
-
-                      <div className="bg-emerald-950/60 p-5 rounded-2xl border border-emerald-700/40 text-center">
-                        <div className="text-3xl font-black text-emerald-400 mb-1">{treesPlanted}</div>
-                        <div className="text-xs text-emerald-200 font-bold uppercase tracking-wider">Arbres équivalents plantés</div>
+                      <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                        <p className="text-2xl font-black text-emerald-600">{treesPlanted}</p>
+                        <p className="text-xs text-gray-600 mt-1">arbres plantés par an</p>
                       </div>
-
-                      <div className="bg-emerald-950/60 p-5 rounded-2xl border border-emerald-700/40 text-center">
-                        <div className="text-3xl font-black text-emerald-400 mb-1">{householdsPowered}</div>
-                        <div className="text-xs text-emerald-200 font-bold uppercase tracking-wider">Foyers alimentés en électricité</div>
+                      <div className="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                        <p className="text-2xl font-black text-emerald-600">{householdsPowered}</p>
+                        <p className="text-xs text-gray-600 mt-1">foyer(s) alimenté(s) en électricité</p>
                       </div>
                     </div>
                   </div>
 
                   {/* LEAD GENERATION FORM (CONVERSION) */}
-                  <div id="etude-contact-form" className="bg-white p-8 sm:p-10 rounded-3xl border-2 border-[#0f2847] shadow-2xl space-y-6">
-                    <div className="text-center max-w-2xl mx-auto space-y-2">
-                      <div className="inline-flex items-center gap-2 text-xs font-extrabold text-[#0f2847] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-200">
-                        <PhoneCall className="w-4 h-4 text-blue-600" /> Étude Approfondie Gratuite & Sans Engagement
-                      </div>
-                      <h4 className="text-2xl sm:text-3xl font-black text-[#0f2847]">Demandez votre étude détaillée ENR COURTAGE</h4>
-                      <p className="text-gray-600 text-sm">
-                        Recevez le dossier complet de votre projet ({totalLength.toFixed(1)}m × {totalWidth.toFixed(1)}m, {installedKwc} kWc) avec l'analyse d'implantation sous 24h à 48h.
-                      </p>
-                    </div>
+                  <div id="etude-contact-form" className="bg-gray-50/80 p-6 sm:p-8 rounded-2xl border border-gray-200 text-left max-w-2xl mx-auto mt-10">
+                    <h4 className="text-lg font-bold text-[#0f2847] mb-2 text-center">Contactez un expert pour valoriser votre bâtiment</h4>
+                    <p className="text-xs text-gray-500 mb-6 text-center">Recevez votre étude de faisabilité technique & financière détaillée sous 24h.</p>
 
                     {formSubmitted ? (
-                      <div className="bg-emerald-50 border-2 border-emerald-500 rounded-2xl p-8 text-center space-y-4 max-w-xl mx-auto">
-                        <CheckCircle2 className="w-12 h-12 text-emerald-600 mx-auto" />
-                        <h5 className="text-2xl font-black text-emerald-900">Merci {leadForm.prenom} !</h5>
-                        <p className="text-gray-700 text-sm">
+                      <div className="bg-emerald-50 border border-emerald-500 rounded-2xl p-6 text-center space-y-3">
+                        <CheckCircle2 className="w-10 h-10 text-emerald-600 mx-auto" />
+                        <h5 className="text-xl font-bold text-emerald-900">Merci {leadForm.prenom} !</h5>
+                        <p className="text-gray-700 text-xs">
                           Votre demande d'étude pour le projet à <strong>{selectedAddress}</strong> a bien été enregistrée. Notre équipe d'experts vous recontactera très rapidement.
                         </p>
                       </div>
                     ) : (
-                      <form onSubmit={handleLeadSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-3xl mx-auto">
-                        <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Nom *</label>
-                          <input
-                            type="text"
-                            required
-                            value={leadForm.nom}
-                            onChange={(e) => setLeadForm({ ...leadForm, nom: e.target.value })}
-                            placeholder="Votre nom"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm font-semibold outline-none focus:border-[#0f2847] focus:ring-2 focus:ring-blue-100"
-                          />
+                      <form onSubmit={handleLeadSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Nom *</label>
+                            <input
+                              type="text"
+                              required
+                              value={leadForm.nom}
+                              onChange={(e) => setLeadForm({ ...leadForm, nom: e.target.value })}
+                              placeholder="Dupont"
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Prénom *</label>
+                            <input
+                              type="text"
+                              required
+                              value={leadForm.prenom}
+                              onChange={(e) => setLeadForm({ ...leadForm, prenom: e.target.value })}
+                              placeholder="Jean"
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Email *</label>
+                            <input
+                              type="email"
+                              required
+                              value={leadForm.email}
+                              onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
+                              placeholder="jean.dupont@exemple.fr"
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Téléphone *</label>
+                            <input
+                              type="tel"
+                              required
+                              value={leadForm.telephone}
+                              onChange={(e) => setLeadForm({ ...leadForm, telephone: e.target.value })}
+                              placeholder="06 12 34 56 78"
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                            />
+                          </div>
                         </div>
 
                         <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Prénom *</label>
-                          <input
-                            type="text"
-                            required
-                            value={leadForm.prenom}
-                            onChange={(e) => setLeadForm({ ...leadForm, prenom: e.target.value })}
-                            placeholder="Votre prénom"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm font-semibold outline-none focus:border-[#0f2847] focus:ring-2 focus:ring-blue-100"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Email professionnel *</label>
-                          <input
-                            type="email"
-                            required
-                            value={leadForm.email}
-                            onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
-                            placeholder="votre.email@domaine.com"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm font-semibold outline-none focus:border-[#0f2847] focus:ring-2 focus:ring-blue-100"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Téléphone *</label>
-                          <input
-                            type="tel"
-                            required
-                            value={leadForm.telephone}
-                            onChange={(e) => setLeadForm({ ...leadForm, telephone: e.target.value })}
-                            placeholder="06 00 00 00 00"
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm font-semibold outline-none focus:border-[#0f2847] focus:ring-2 focus:ring-blue-100"
-                          />
-                        </div>
-
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Société / Nom du projet (Optionnel)</label>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">Société / Nom du projet (Optionnel)</label>
                           <input
                             type="text"
                             value={leadForm.societe}
                             onChange={(e) => setLeadForm({ ...leadForm, societe: e.target.value })}
                             placeholder="Nom de votre entreprise, exploitation agricole ou SCI..."
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm font-semibold outline-none focus:border-[#0f2847] focus:ring-2 focus:ring-blue-100"
+                            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                           />
                         </div>
 
-                        <div className="sm:col-span-2">
-                          <label className="block text-xs font-bold text-gray-700 mb-1">Commentaires / Précisions sur votre terrain</label>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1">Commentaires / Précisions sur votre terrain</label>
                           <textarea
                             rows={3}
                             value={leadForm.commentaire}
                             onChange={(e) => setLeadForm({ ...leadForm, commentaire: e.target.value })}
                             placeholder="Précisez votre calendrier de projet, caractéristiques du terrain, etc."
-                            className="w-full px-4 py-3 rounded-xl border border-gray-300 text-sm font-semibold outline-none focus:border-[#0f2847] focus:ring-2 focus:ring-blue-100"
+                            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                           />
                         </div>
 
-                        <div className="sm:col-span-2 pt-2">
+                        <div className="pt-2">
                           <button
                             type="submit"
                             disabled={isSubmittingForm}
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 px-6 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 text-base uppercase tracking-wider"
+                            className="w-full bg-[#84cc16] hover:bg-[#65a30d] text-white font-black py-4 px-6 rounded-xl shadow-lg transition-all flex items-center justify-center gap-3 text-sm uppercase tracking-wider"
                           >
                             {isSubmittingForm ? (
                               <span>Envoi en cours...</span>
                             ) : (
                               <>
-                                <span>Envoyer ma demande d'étude de faisabilité</span>
-                                <Send className="w-5 h-5" />
+                                <span>Contactez un expert pour valoriser votre bâtiment</span>
+                                <Send className="w-4 h-4" />
                               </>
                             )}
                           </button>
-                          <div className="text-center text-xs text-gray-400 mt-2 flex items-center justify-center gap-1">
-                            <ShieldCheck className="w-4 h-4 text-emerald-600" /> Vos données sont protégées. Étude 100% gratuite et sans engagement.
-                          </div>
                         </div>
                       </form>
                     )}
