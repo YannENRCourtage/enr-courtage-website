@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { Download, Maximize, CheckCircle2, Zap } from 'lucide-react';
+import { Download, Maximize } from 'lucide-react';
 import ecoEvoData from '../data/ecoEvoBuildings.json';
 import { useToast } from './ui/use-toast';
 
@@ -51,48 +51,36 @@ const WIDTH_HEIGHT_MAP = {
   '33.5': { ridge: 8.5, eave: 5.5, pitch: 10 },
   '16.4': { ridge: 7.40, eave: 4.0, pitch: 15 },
   '20.0': { ridge: 7.80, eave: 4.0, pitch: 15 },
-  '25.5': { ridge: 8.9, eave: 4.0, pitch: 15 },
-  '29.1': { ridge: 9.8, eave: 4.0, pitch: 15 },
-  '12.7': { ridge: 7.4, eave: 4.0, pitch: 15 },
+  '25.5': { ridge: 8.90, eave: 4.0, pitch: 15 },
+  '29.1': { ridge: 9.80, eave: 4.0, pitch: 15 },
+  '12.7': { ridge: 7.40, eave: 4.0, pitch: 15 },
   '6.9': { ridge: 4.10, eave: 2.9, pitch: 10 },
-  '9.1': { ridge: 4.2, eave: 3.5, pitch: 5 },
-  '11.3': { ridge: 4.4, eave: 3.5, pitch: 5 },
+  '9.1': { ridge: 4.20, eave: 3.5, pitch: 5 },
+  '11.3': { ridge: 4.40, eave: 3.5, pitch: 5 },
   '15.8': { ridge: 7.90, eave: 5.1, pitch: 10 },
   '20.2': { ridge: 8.30, eave: 5.1, pitch: 10 },
   '24.6': { ridge: 8.70, eave: 5.1, pitch: 10 },
 };
 
-// Helper: Create 3D Text Sprite for measurement annotations
-function createTextSprite(text, fontSize = 30, color = '#000000', bgColor = 'rgba(255,255,255,0.95)') {
+// Helper: Create transparent 3D Text Sprite (NO WHITE BUBBLE BOX) matching Nelsonpv.fr
+function createTextSprite(text, fontSize = 34, color = '#000000') {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
-  canvas.height = 128;
+  canvas.height = 96;
   const ctx = canvas.getContext('2d');
 
-  if (bgColor) {
-    ctx.fillStyle = bgColor;
-    if (ctx.roundRect) {
-      ctx.roundRect(14, 26, 228, 76, 12);
-    } else {
-      ctx.fillRect(14, 26, 228, 76);
-    }
-    ctx.fill();
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-  }
-
+  ctx.clearRect(0, 0, 256, 96);
   ctx.font = `Bold ${fontSize}px Inter, system-ui, sans-serif`;
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, 128, 64);
+  ctx.fillText(text, 128, 48);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.minFilter = THREE.LinearFilter;
   const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
   const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(3.8, 1.9, 1);
+  sprite.scale.set(3.2, 1.2, 1);
   return sprite;
 }
 
@@ -100,11 +88,13 @@ export default function ConfigurateurCharpente() {
   const { toast } = useToast();
 
   // Configuration State
-  const [buildingType, setBuildingType] = useState('asymetrique_1_zone');
-  const [largeurBatiment, setLargeurBatiment] = useState('16.4');
+  const [buildingType, setBuildingType] = useState('asymetrique_2_zones');
+  const [largeurBatiment, setLargeurBatiment] = useState('25.5');
   const [espacementTravees, setEspacementTravees] = useState('7.5m'); // '6m' or '7.5m'
   const [nombreTravees, setNombreTravees] = useState(5);
-  const [solarEnabled, setSolarEnabled] = useState(true);
+
+  // SOLAR OPTION UNCHECKED / DISABLED BY DEFAULT as requested
+  const [solarEnabled, setSolarEnabled] = useState(false);
   const [showDimensions, setShowDimensions] = useState(true);
 
   // Extensions (GCH = Gauche, DRT = Droite)
@@ -121,7 +111,7 @@ export default function ConfigurateurCharpente() {
   const buildingGroupRef = useRef(null);
 
   // Available Widths computed based on type
-  const availableWidths = useMemo(() => TYPE_WIDTHS_MAP[buildingType] || ['18.6'], [buildingType]);
+  const availableWidths = useMemo(() => TYPE_WIDTHS_MAP[buildingType] || ['25.5'], [buildingType]);
 
   // Keep width valid when buildingType changes
   useEffect(() => {
@@ -135,7 +125,7 @@ export default function ConfigurateurCharpente() {
   const widthDrt = useMemo(() => (extDrt === 'auvent' ? 4.0 : (extDrt === 'appentis' ? 9.3 : 0)), [extDrt]);
 
   // Geometry calculations
-  const numericWidth = useMemo(() => parseFloat(largeurBatiment) || 16.4, [largeurBatiment]);
+  const numericWidth = useMemo(() => parseFloat(largeurBatiment) || 25.5, [largeurBatiment]);
   const bayLength = useMemo(() => (espacementTravees === '6m' ? 6.0 : 7.5), [espacementTravees]);
   const longueur = useMemo(() => bayLength * nombreTravees, [bayLength, nombreTravees]);
   
@@ -143,7 +133,7 @@ export default function ConfigurateurCharpente() {
   const totalSurface = useMemo(() => Math.round(totalWidth * longueur), [totalWidth, longueur]);
 
   // Specs (ridge height, eave height, pitch)
-  const specs = useMemo(() => WIDTH_HEIGHT_MAP[largeurBatiment] || { ridge: 7.4, eave: 4.0, pitch: 15 }, [largeurBatiment]);
+  const specs = useMemo(() => WIDTH_HEIGHT_MAP[largeurBatiment] || { ridge: 8.90, eave: 4.0, pitch: 15 }, [largeurBatiment]);
 
   // Solar power & panels
   const panelCount = useMemo(() => {
@@ -192,7 +182,7 @@ export default function ConfigurateurCharpente() {
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 550;
 
-    // Pure WHITE background (#ffffff) with NO ground shadows as requested
+    // Pure WHITE background (#ffffff) with NO ground shadows matching Nelsonpv.fr
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0xffffffff);
     sceneRef.current = scene;
@@ -211,7 +201,7 @@ export default function ConfigurateurCharpente() {
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // OrbitControls (Persistent position, smooth damping)
+    // OrbitControls (Persistent camera position)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
@@ -221,7 +211,7 @@ export default function ConfigurateurCharpente() {
     controlsRef.current = controls;
 
     // Lighting (Bright & crisp daylight)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
     scene.add(ambientLight);
 
     const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.3);
@@ -280,12 +270,13 @@ export default function ConfigurateurCharpente() {
       bGroup.remove(obj);
     }
 
-    // Exact Nelson Green Invest Materials (steel grey frame + dark roof + indigo solar)
+    // Exact Nelson Green Invest Materials (galvanized steel frame + dark roof + indigo solar)
     const steelMat = new THREE.MeshStandardMaterial({ color: 0x5a6675, metalness: 0.6, roughness: 0.3 });
     const rafterMat = new THREE.MeshStandardMaterial({ color: 0x4a5565, metalness: 0.65, roughness: 0.3 });
     const roofMat = new THREE.MeshStandardMaterial({ color: 0x38414e, metalness: 0.4, roughness: 0.5 });
     const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, metalness: 0.85, roughness: 0.15 });
     const lineMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+    const dotMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
 
     const w = numericWidth;
     const l = longueur;
@@ -470,39 +461,50 @@ export default function ConfigurateurCharpente() {
     }
 
     // -------------------------------------------------------------------------
-    // 3D Measurement Dimension Markers & Annotations
+    // 3D Measurement Dimension Markers (NO WHITE BUBBLE BOX, BLACK TEXT + DOTS)
     // -------------------------------------------------------------------------
     if (showDimensions) {
       const dimGroup = new THREE.Group();
+      const dotGeo = new THREE.SphereGeometry(0.04, 8, 8);
 
       // Width Line & Label
       const lineWGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-shalfW, 0.02, sl / 2 + 0.6),
-        new THREE.Vector3(shalfW, 0.02, sl / 2 + 0.6)
+        new THREE.Vector3(-shalfW, 0.02, sl / 2 + 0.5),
+        new THREE.Vector3(shalfW, 0.02, sl / 2 + 0.5)
       ]);
       const lineW = new THREE.Line(lineWGeo, lineMat);
       dimGroup.add(lineW);
 
-      const labelW = createTextSprite(`${numericWidth.toFixed(1)} m`, 32);
-      labelW.position.set(0, 0.2, sl / 2 + 0.6);
+      const dotW1 = new THREE.Mesh(dotGeo, dotMat);
+      dotW1.position.set(-shalfW, 0.02, sl / 2 + 0.5);
+      const dotW2 = new THREE.Mesh(dotGeo, dotMat);
+      dotW2.position.set(shalfW, 0.02, sl / 2 + 0.5);
+      dimGroup.add(dotW1, dotW2);
+
+      const labelW = createTextSprite(`${numericWidth.toFixed(1)} m`, 32, '#000000');
+      labelW.position.set(0, 0.15, sl / 2 + 0.5);
       dimGroup.add(labelW);
 
       // Extension Width Label if active
       if (sWidthDrt > 0) {
         const lineExtGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(shalfW, 0.02, sl / 2 + 0.6),
-          new THREE.Vector3(shalfW + sWidthDrt, 0.02, sl / 2 + 0.6)
+          new THREE.Vector3(shalfW, 0.02, sl / 2 + 0.5),
+          new THREE.Vector3(shalfW + sWidthDrt, 0.02, sl / 2 + 0.5)
         ]);
         const lineExt = new THREE.Line(lineExtGeo, lineMat);
         dimGroup.add(lineExt);
 
-        const labelExt = createTextSprite(`${widthDrt.toFixed(1)} m`, 30);
-        labelExt.position.set(shalfW + sWidthDrt / 2, 0.2, sl / 2 + 0.6);
+        const dotE1 = new THREE.Mesh(dotGeo, dotMat);
+        dotE1.position.set(shalfW + sWidthDrt, 0.02, sl / 2 + 0.5);
+        dimGroup.add(dotE1);
+
+        const labelExt = createTextSprite(`${widthDrt.toFixed(1)} m`, 30, '#000000');
+        labelExt.position.set(shalfW + sWidthDrt / 2, 0.15, sl / 2 + 0.5);
         dimGroup.add(labelExt);
       }
 
       // Length Line & Label (Right side)
-      const xLength = shalfW + sWidthDrt + 0.6;
+      const xLength = shalfW + sWidthDrt + 0.5;
       const lineLGeo = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(xLength, 0.02, -sl / 2),
         new THREE.Vector3(xLength, 0.02, sl / 2)
@@ -510,12 +512,18 @@ export default function ConfigurateurCharpente() {
       const lineL = new THREE.Line(lineLGeo, lineMat);
       dimGroup.add(lineL);
 
-      const labelL = createTextSprite(`${longueur.toFixed(1)} m`, 32);
-      labelL.position.set(xLength + 0.4, 0.2, 0);
+      const dotL1 = new THREE.Mesh(dotGeo, dotMat);
+      dotL1.position.set(xLength, 0.02, -sl / 2);
+      const dotL2 = new THREE.Mesh(dotGeo, dotMat);
+      dotL2.position.set(xLength, 0.02, sl / 2);
+      dimGroup.add(dotL1, dotL2);
+
+      const labelL = createTextSprite(`${longueur.toFixed(1)} m`, 32, '#000000');
+      labelL.position.set(xLength + 0.35, 0.15, 0);
       dimGroup.add(labelL);
 
       // Eave Height Line & Label
-      const xEaveLine = -shalfW - sWidthGch - 0.6;
+      const xEaveLine = -shalfW - sWidthGch - 0.5;
       const lineEaveGeo = new THREE.BufferGeometry().setFromPoints([
         new THREE.Vector3(xEaveLine, 0, -sl / 2),
         new THREE.Vector3(xEaveLine, seh, -sl / 2)
@@ -523,25 +531,25 @@ export default function ConfigurateurCharpente() {
       const lineEave = new THREE.Line(lineEaveGeo, lineMat);
       dimGroup.add(lineEave);
 
-      const labelEave = createTextSprite(`${specs.eave.toFixed(1)} m`, 30);
-      labelEave.position.set(xEaveLine - 0.4, seh / 2, -sl / 2);
+      const labelEave = createTextSprite(`${specs.eave.toFixed(1)} m`, 30, '#000000');
+      labelEave.position.set(xEaveLine - 0.35, seh / 2, -sl / 2);
       dimGroup.add(labelEave);
 
       // Ridge Height Line & Label
       const lineRidgeGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, -sl / 2 - 0.6),
-        new THREE.Vector3(0, srh, -sl / 2 - 0.6)
+        new THREE.Vector3(0, 0, -sl / 2 - 0.5),
+        new THREE.Vector3(0, srh, -sl / 2 - 0.5)
       ]);
       const lineRidge = new THREE.Line(lineRidgeGeo, lineMat);
       dimGroup.add(lineRidge);
 
-      const labelRidge = createTextSprite(`${specs.ridge.toFixed(2)} m`, 30);
-      labelRidge.position.set(0, srh / 2, -sl / 2 - 0.9);
+      const labelRidge = createTextSprite(`${specs.ridge.toFixed(2)} m`, 30, '#000000');
+      labelRidge.position.set(0, srh / 2, -sl / 2 - 0.8);
       dimGroup.add(labelRidge);
 
-      // Roof Surface Label (On top of roof)
-      const labelSurf = createTextSprite(`${totalSurface} m²`, 36, '#0f172a', 'rgba(255,255,255,0.96)');
-      labelSurf.position.set(0, srh + 0.4, 0);
+      // Roof Surface Label (Rendered directly on roof sheets)
+      const labelSurf = createTextSprite(`${totalSurface} m²`, 36, '#0f172a');
+      labelSurf.position.set(0, srh + 0.3, 0);
       dimGroup.add(labelSurf);
 
       structureGroup.add(dimGroup);
@@ -732,7 +740,7 @@ export default function ConfigurateurCharpente() {
                   onClick={() => setEspacementTravees(esp)}
                   style={{
                     flex: 1, padding: '0.45rem', borderRadius: '8px', border: 'none',
-                    background: espacementTravees === esp ? '#3b82f6' : '#f1f5f9',
+                    background: espacementTravees === esp ? '#2563eb' : '#f1f5f9',
                     color: espacementTravees === esp ? '#ffffff' : '#64748b',
                     fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer'
                   }}
@@ -798,9 +806,9 @@ export default function ConfigurateurCharpente() {
               onClick={() => setSolarEnabled(!solarEnabled)}
               style={{
                 width: '100%', padding: '0.6rem', borderRadius: '8px',
-                border: `2px solid ${solarEnabled ? '#f97316' : '#e2e8f0'}`,
-                background: solarEnabled ? '#fff7ed' : '#ffffff',
-                color: solarEnabled ? '#ea580c' : '#64748b',
+                border: `2px solid ${solarEnabled ? '#facc15' : '#cbd5e1'}`,
+                background: solarEnabled ? '#fef9c3' : '#ffffff',
+                color: solarEnabled ? '#ca8a04' : '#64748b',
                 fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s'
               }}
             >
@@ -810,11 +818,11 @@ export default function ConfigurateurCharpente() {
 
           {/* Puissance & Nombre de Panneaux (NO pricing mentioned here) */}
           {solarEnabled && (
-            <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '10px', padding: '0.8rem' }}>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#c2410c', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
+            <div style={{ background: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '10px', padding: '0.8rem' }}>
+              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#b45309', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
                 PUISSANCE INSTALLÉE
               </div>
-              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ea580c' }}>
+              <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#d97706' }}>
                 {solarPowerKwc} <span style={{ fontSize: '0.85rem', fontWeight: 700 }}>kWc</span>
               </div>
               <div style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600, marginTop: '0.2rem' }}>
@@ -852,13 +860,13 @@ export default function ConfigurateurCharpente() {
               </div>
             )}
 
-            {/* Toggle Dimensions Button (Nelson Pill Style) */}
+            {/* Toggle Dimensions Button (Nelson Blue Pill Style) */}
             <div
               onClick={() => setShowDimensions(!showDimensions)}
               style={{
-                background: '#3b82f6', borderRadius: '8px', padding: '0.5rem 0.9rem',
+                background: '#2563eb', borderRadius: '8px', padding: '0.5rem 0.9rem',
                 display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer',
-                color: '#ffffff', fontSize: '0.8rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                color: '#ffffff', fontSize: '0.8rem', fontWeight: 700, boxShadow: '0 2px 8px rgba(37,99,235,0.25)'
               }}
             >
               <span>Afficher les côtes</span>
@@ -876,9 +884,44 @@ export default function ConfigurateurCharpente() {
             </div>
           </div>
 
+          {/* SUMMARY BOX MOVED TO BOTTOM-LEFT OF VIEWPORT AS REQUESTED */}
+          <div style={{
+            position: 'absolute', bottom: '1.25rem', left: '1.25rem', zIndex: 10,
+            background: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(10px)',
+            borderRadius: '14px', border: '1px solid #cbd5e1', padding: '0.85rem 1.2rem',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.08)', minWidth: '270px', display: 'flex',
+            flexDirection: 'column', gap: '0.4rem'
+          }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.3rem' }}>
+              SYNTHÈSE DU BÂTIMENT
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#334155' }}>
+              <span>Dimensions:</span>
+              <strong>{longueur.toFixed(2)}m x {totalWidth.toFixed(2)}m</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#334155' }}>
+              <span>Surface au sol:</span>
+              <strong>{totalSurface} m²</strong>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#0f172a', paddingTop: '0.2rem', borderTop: '1px stroke #f1f5f9' }}>
+              <span>Charpente métallique:</span>
+              <strong style={{ color: '#2563eb' }}>{charpentePriceHT.toLocaleString('fr-FR')} € HT</strong>
+            </div>
+
+            {solarEnabled && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ea580c', paddingTop: '0.2rem' }}>
+                <span>Installation solaire:</span>
+                <strong>{solarPriceHT.toLocaleString('fr-FR')} € HT</strong>
+              </div>
+            )}
+          </div>
+
           {/* Mouse interaction tip */}
           <div style={{
-            position: 'absolute', bottom: '1rem', left: '1.25rem',
+            position: 'absolute', bottom: '1rem', right: '1.25rem',
             zIndex: 10, background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(8px)',
             padding: '0.4rem 0.9rem', borderRadius: '20px', fontSize: '0.75rem',
             color: '#64748b', fontWeight: 600, border: '1px solid #e2e8f0', pointerEvents: 'none'
@@ -888,10 +931,10 @@ export default function ConfigurateurCharpente() {
         </div>
 
         {/* =================================================================== */}
-        {/* RIGHT PANEL: ACTIONS & SUMMARY (Width 180px)                        */}
+        {/* RIGHT PANEL: ACTIONS (Width 150px)                                  */}
         {/* =================================================================== */}
         <div style={{
-          width: '185px', minWidth: '185px', background: '#ffffff',
+          width: '150px', minWidth: '150px', background: '#ffffff',
           borderLeft: '1px solid #e2e8f0', padding: '1rem 0.75rem',
           display: 'flex', flexDirection: 'column', gap: '0.75rem'
         }}>
@@ -922,39 +965,6 @@ export default function ConfigurateurCharpente() {
           >
             <Maximize size={14} /> Plein écran
           </button>
-
-          {/* SUMMARY BOX DIRECTLY UNDER BUTTONS AS REQUESTED */}
-          <div style={{
-            marginTop: '0.5rem', background: '#f8fafc', borderRadius: '12px',
-            border: '1px solid #cbd5e1', padding: '0.8rem 0.75rem',
-            display: 'flex', flexDirection: 'column', gap: '0.45rem'
-          }}>
-            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.3rem' }}>
-              SYNTHÈSE DU BÂTIMENT
-            </div>
-            
-            <div style={{ fontSize: '0.75rem', color: '#334155' }}>
-              <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Dimensions</span>
-              <strong>{longueur.toFixed(2)}m x {totalWidth.toFixed(2)}m</strong>
-            </div>
-
-            <div style={{ fontSize: '0.75rem', color: '#334155' }}>
-              <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Surface au sol</span>
-              <strong>{totalSurface} m²</strong>
-            </div>
-
-            <div style={{ fontSize: '0.78rem', color: '#0f172a', paddingTop: '0.3rem', borderTop: '1px solid #e2e8f0' }}>
-              <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Charpente métallique</span>
-              <strong style={{ color: '#2563eb' }}>{charpentePriceHT.toLocaleString('fr-FR')} € HT</strong>
-            </div>
-
-            {solarEnabled && (
-              <div style={{ fontSize: '0.78rem', color: '#ea580c', paddingTop: '0.2rem' }}>
-                <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Installation solaire</span>
-                <strong>{solarPriceHT.toLocaleString('fr-FR')} € HT</strong>
-              </div>
-            )}
-          </div>
         </div>
 
       </div>
