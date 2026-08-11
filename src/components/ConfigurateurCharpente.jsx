@@ -49,21 +49,21 @@ const WIDTH_HEIGHT_MAP = {
   '26.0': { ridge: 7.8, eave: 5.5, pitch: 10 },
   '29.8': { ridge: 8.1, eave: 5.5, pitch: 10 },
   '33.5': { ridge: 8.5, eave: 5.5, pitch: 10 },
-  '16.4': { ridge: 6.9, eave: 4.0, pitch: 15 },
-  '20.0': { ridge: 7.3, eave: 4.0, pitch: 15 },
+  '16.4': { ridge: 7.40, eave: 4.0, pitch: 15 },
+  '20.0': { ridge: 7.80, eave: 4.0, pitch: 15 },
   '25.5': { ridge: 8.9, eave: 4.0, pitch: 15 },
   '29.1': { ridge: 9.8, eave: 4.0, pitch: 15 },
   '12.7': { ridge: 7.4, eave: 4.0, pitch: 15 },
   '6.9': { ridge: 4.10, eave: 2.9, pitch: 10 },
   '9.1': { ridge: 4.2, eave: 3.5, pitch: 5 },
   '11.3': { ridge: 4.4, eave: 3.5, pitch: 5 },
-  '15.8': { ridge: 5.8, eave: 4.5, pitch: 5 },
-  '20.2': { ridge: 6.2, eave: 4.5, pitch: 5 },
-  '24.6': { ridge: 6.6, eave: 4.5, pitch: 5 },
+  '15.8': { ridge: 7.90, eave: 5.1, pitch: 10 },
+  '20.2': { ridge: 8.30, eave: 5.1, pitch: 10 },
+  '24.6': { ridge: 8.70, eave: 5.1, pitch: 10 },
 };
 
-// Helper: Create 3D Text Sprite facing camera
-function createTextSprite(text, fontSize = 32, color = '#0f172a', bgColor = 'rgba(255,255,255,0.92)') {
+// Helper: Create 3D Text Sprite for measurement annotations
+function createTextSprite(text, fontSize = 30, color = '#000000', bgColor = 'rgba(255,255,255,0.95)') {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 128;
@@ -72,17 +72,17 @@ function createTextSprite(text, fontSize = 32, color = '#0f172a', bgColor = 'rgb
   if (bgColor) {
     ctx.fillStyle = bgColor;
     if (ctx.roundRect) {
-      ctx.roundRect(12, 24, 232, 80, 14);
+      ctx.roundRect(14, 26, 228, 76, 12);
     } else {
-      ctx.fillRect(12, 24, 232, 80);
+      ctx.fillRect(14, 26, 228, 76);
     }
     ctx.fill();
     ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
     ctx.stroke();
   }
 
-  ctx.font = `Bold ${fontSize}px Inter, sans-serif`;
+  ctx.font = `Bold ${fontSize}px Inter, system-ui, sans-serif`;
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -92,7 +92,7 @@ function createTextSprite(text, fontSize = 32, color = '#0f172a', bgColor = 'rgb
   texture.minFilter = THREE.LinearFilter;
   const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
   const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(4.5, 2.25, 1);
+  sprite.scale.set(3.8, 1.9, 1);
   return sprite;
 }
 
@@ -100,8 +100,8 @@ export default function ConfigurateurCharpente() {
   const { toast } = useToast();
 
   // Configuration State
-  const [buildingType, setBuildingType] = useState('symetrique');
-  const [largeurBatiment, setLargeurBatiment] = useState('22.3');
+  const [buildingType, setBuildingType] = useState('asymetrique_1_zone');
+  const [largeurBatiment, setLargeurBatiment] = useState('16.4');
   const [espacementTravees, setEspacementTravees] = useState('7.5m'); // '6m' or '7.5m'
   const [nombreTravees, setNombreTravees] = useState(5);
   const [solarEnabled, setSolarEnabled] = useState(true);
@@ -109,15 +109,16 @@ export default function ConfigurateurCharpente() {
 
   // Extensions (GCH = Gauche, DRT = Droite)
   // Value: 'none', 'auvent' (4.0m), 'appentis' (9.3m)
-  const [extGch, setExtGch] = useState('auvent');
-  const [extDrt, setExtDrt] = useState('appentis');
+  const [extGch, setExtGch] = useState('none');
+  const [extDrt, setExtDrt] = useState('none');
 
-  // Canvas Refs
+  // Canvas & Scene Refs
   const canvasContainerRef = useRef(null);
   const rendererRef = useRef(null);
   const sceneRef = useRef(null);
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
+  const buildingGroupRef = useRef(null);
 
   // Available Widths computed based on type
   const availableWidths = useMemo(() => TYPE_WIDTHS_MAP[buildingType] || ['18.6'], [buildingType]);
@@ -134,7 +135,7 @@ export default function ConfigurateurCharpente() {
   const widthDrt = useMemo(() => (extDrt === 'auvent' ? 4.0 : (extDrt === 'appentis' ? 9.3 : 0)), [extDrt]);
 
   // Geometry calculations
-  const numericWidth = useMemo(() => parseFloat(largeurBatiment) || 18.6, [largeurBatiment]);
+  const numericWidth = useMemo(() => parseFloat(largeurBatiment) || 16.4, [largeurBatiment]);
   const bayLength = useMemo(() => (espacementTravees === '6m' ? 6.0 : 7.5), [espacementTravees]);
   const longueur = useMemo(() => bayLength * nombreTravees, [bayLength, nombreTravees]);
   
@@ -142,12 +143,12 @@ export default function ConfigurateurCharpente() {
   const totalSurface = useMemo(() => Math.round(totalWidth * longueur), [totalWidth, longueur]);
 
   // Specs (ridge height, eave height, pitch)
-  const specs = useMemo(() => WIDTH_HEIGHT_MAP[largeurBatiment] || { ridge: 7.1, eave: 5.5, pitch: 10 }, [largeurBatiment]);
+  const specs = useMemo(() => WIDTH_HEIGHT_MAP[largeurBatiment] || { ridge: 7.4, eave: 4.0, pitch: 15 }, [largeurBatiment]);
 
   // Solar power & panels
   const panelCount = useMemo(() => {
     if (!solarEnabled) return 0;
-    return Math.floor((totalSurface * 0.95) / 2.68);
+    return Math.floor((totalSurface * 0.95) / 2.38);
   }, [solarEnabled, totalSurface]);
 
   const solarPowerKwc = useMemo(() => {
@@ -158,9 +159,8 @@ export default function ConfigurateurCharpente() {
   // Pricing calculations
   const charpentePriceHT = useMemo(() => {
     const match = ecoEvoData.find(b => Math.abs(b.width - numericWidth) <= 0.8 && Math.abs(b.length - longueur) <= 0.8);
-    let base = match ? match.price_ht : Math.round(totalSurface * 108);
+    let base = match ? match.price_ht : Math.round(totalSurface * 110);
 
-    // Add surcost for extensions
     if (extGch === 'auvent') base += Math.round(longueur * 4.0 * 55);
     if (extGch === 'appentis') base += Math.round(longueur * 9.3 * 75);
     if (extDrt === 'auvent') base += Math.round(longueur * 4.0 * 55);
@@ -183,7 +183,7 @@ export default function ConfigurateurCharpente() {
   };
 
   // ---------------------------------------------------------------------------
-  // 3D Scene Initialization & Render Loop (Three.js WebGL)
+  // 1. Initial Scene Setup (Three.js WebGL) - RUNS ONCE ON MOUNT
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const container = canvasContainerRef.current;
@@ -192,393 +192,52 @@ export default function ConfigurateurCharpente() {
     const width = container.clientWidth || 800;
     const height = container.clientHeight || 550;
 
-    // Scene on pure WHITE background (#ffffff)
+    // Pure WHITE background (#ffffff) with NO ground shadows as requested
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xffffff);
+    scene.background = new THREE.Color(0xffffffff);
     sceneRef.current = scene;
 
-    // Camera
-    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
-    camera.position.set(totalWidth * 1.3, specs.ridge * 1.7, longueur * 1.05);
+    // Camera matching Nelson orientation: position [8, 6, 8], fov 45
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+    camera.position.set(16, 12, 16);
     cameraRef.current = camera;
 
     // Renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     rendererRef.current = renderer;
 
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
-    // OrbitControls
+    // OrbitControls (Persistent position, smooth damping)
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.maxPolarAngle = Math.PI / 2 - 0.02;
-    controls.target.set(0, specs.eave / 2, 0);
+    controls.maxPolarAngle = Math.PI / 2 - 0.01;
+    controls.target.set(0, 3, 0);
     controls.update();
     controlsRef.current = controls;
 
-    // Lighting (Bright daylight matching Green Invest interface)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.95);
+    // Lighting (Bright & crisp daylight)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
-    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.4);
-    dirLight1.position.set(40, 60, 30);
-    dirLight1.castShadow = true;
-    dirLight1.shadow.mapSize.width = 2048;
-    dirLight1.shadow.mapSize.height = 2048;
-    dirLight1.shadow.bias = -0.0001;
+    const dirLight1 = new THREE.DirectionalLight(0xffffff, 1.3);
+    dirLight1.position.set(20, 30, 20);
     scene.add(dirLight1);
 
-    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    dirLight2.position.set(-40, 30, -30);
+    const dirLight2 = new THREE.DirectionalLight(0xffffff, 0.5);
+    dirLight2.position.set(-20, 20, -20);
     scene.add(dirLight2);
 
-    // Soft Contact Shadow Ground Plane (matching Nelson Green Invest visual)
-    const groundGeo = new THREE.PlaneGeometry(longueur + 40, totalWidth + 40);
-    const groundMat = new THREE.ShadowMaterial({ opacity: 0.25 });
-    const ground = new THREE.Mesh(groundGeo, groundMat);
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.01;
-    ground.receiveShadow = true;
-    scene.add(ground);
+    // Group for building meshes
+    const bGroup = new THREE.Group();
+    buildingGroupRef.current = bGroup;
+    scene.add(bGroup);
 
-    // Light grey floor background plane
-    const floorGeo = new THREE.PlaneGeometry(longueur + 100, totalWidth + 100);
-    const floorMat = new THREE.MeshBasicMaterial({ color: 0xf8fafc });
-    const floor = new THREE.Mesh(floorGeo, floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.02;
-    scene.add(floor);
-
-    // -------------------------------------------------------------------------
-    // Build 3D Metal Structure
-    // -------------------------------------------------------------------------
-    const buildingGroup = new THREE.Group();
-
-    // Exact Green Invest Materials (galvanized steel frame + dark corrugated roof)
-    const steelMat = new THREE.MeshStandardMaterial({ color: 0x8a95a5, metalness: 0.75, roughness: 0.25 });
-    const rafterMat = new THREE.MeshStandardMaterial({ color: 0x788696, metalness: 0.8, roughness: 0.2 });
-    const roofMat = new THREE.MeshStandardMaterial({ color: 0x38414e, metalness: 0.35, roughness: 0.45 });
-    const solarMat = new THREE.MeshStandardMaterial({ color: 0x1e1b4b, metalness: 0.9, roughness: 0.1 });
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
-
-    const w = numericWidth;
-    const l = longueur;
-    const eh = specs.eave;
-    const rh = specs.ridge;
-    const halfW = w / 2;
-    const isOmbriere = buildingType.startsWith('ombriere');
-
-    // Portal frames along bays
-    for (let i = 0; i <= nombreTravees; i++) {
-      const z = -l / 2 + i * bayLength;
-      const frame = new THREE.Group();
-      frame.position.set(0, 0, z);
-
-      // Main Building Columns & Rafters
-      if (buildingType === 'symetrique') {
-        // Left Column
-        const colGeo = new THREE.BoxGeometry(0.24, eh, 0.24);
-        const colL = new THREE.Mesh(colGeo, steelMat);
-        colL.position.set(-halfW, eh / 2, 0);
-        colL.castShadow = true;
-        frame.add(colL);
-
-        // Right Column
-        const colR = new THREE.Mesh(colGeo, steelMat);
-        colR.position.set(halfW, eh / 2, 0);
-        colR.castShadow = true;
-        frame.add(colR);
-
-        // Left Rafter
-        const spanL = Math.hypot(halfW, rh - eh);
-        const rafterGeo = new THREE.BoxGeometry(spanL, 0.2, 0.2);
-        const rafterL = new THREE.Mesh(rafterGeo, rafterMat);
-        rafterL.position.set(-halfW / 2, (eh + rh) / 2, 0);
-        rafterL.rotation.z = Math.atan2(rh - eh, halfW);
-        rafterL.castShadow = true;
-        frame.add(rafterL);
-
-        // Right Rafter
-        const rafterR = new THREE.Mesh(rafterGeo, rafterMat);
-        rafterR.position.set(halfW / 2, (eh + rh) / 2, 0);
-        rafterR.rotation.z = -Math.atan2(rh - eh, halfW);
-        rafterR.castShadow = true;
-        frame.add(rafterR);
-
-        // Tie beam
-        const tieGeo = new THREE.BoxGeometry(w, 0.12, 0.12);
-        const tie = new THREE.Mesh(tieGeo, steelMat);
-        tie.position.set(0, eh, 0);
-        frame.add(tie);
-
-      } else {
-        // Asymétrique / Monopente / Ombrière
-        const colGeoL = new THREE.BoxGeometry(0.24, eh, 0.24);
-        const colL = new THREE.Mesh(colGeoL, steelMat);
-        colL.position.set(-halfW, eh / 2, 0);
-        colL.castShadow = true;
-        frame.add(colL);
-
-        const colGeoR = new THREE.BoxGeometry(0.24, rh, 0.24);
-        const colR = new THREE.Mesh(colGeoR, steelMat);
-        colR.position.set(halfW, rh / 2, 0);
-        colR.castShadow = true;
-        frame.add(colR);
-
-        const span = Math.hypot(w, rh - eh);
-        const rGeo = new THREE.BoxGeometry(span, 0.2, 0.2);
-        const rafter = new THREE.Mesh(rGeo, rafterMat);
-        rafter.position.set(0, (eh + rh) / 2, 0);
-        rafter.rotation.z = Math.atan2(rh - eh, w);
-        rafter.castShadow = true;
-        frame.add(rafter);
-      }
-
-      // Extension Gauche (GCH) Structure
-      if (widthGch > 0 && !isOmbriere) {
-        const extX = -halfW - widthGch / 2;
-        if (extGch === 'appentis') {
-          const outerH = 3.9;
-          const colGeoExt = new THREE.BoxGeometry(0.2, outerH, 0.2);
-          const colExt = new THREE.Mesh(colGeoExt, steelMat);
-          colExt.position.set(-halfW - widthGch, outerH / 2, 0);
-          colExt.castShadow = true;
-          frame.add(colExt);
-
-          const rSpan = Math.hypot(widthGch, eh - outerH);
-          const rGeoExt = new THREE.BoxGeometry(rSpan, 0.18, 0.18);
-          const rafterExt = new THREE.Mesh(rGeoExt, rafterMat);
-          rafterExt.position.set(extX, (eh + outerH) / 2, 0);
-          rafterExt.rotation.z = Math.atan2(eh - outerH, widthGch);
-          frame.add(rafterExt);
-        } else {
-          // Auvent
-          const rGeoExt = new THREE.BoxGeometry(widthGch, 0.18, 0.18);
-          const rafterExt = new THREE.Mesh(rGeoExt, rafterMat);
-          rafterExt.position.set(extX, eh + 0.1, 0);
-          rafterExt.rotation.z = Math.atan2(rh - eh, halfW);
-          frame.add(rafterExt);
-        }
-      }
-
-      // Extension Droite (DRT) Structure
-      if (widthDrt > 0 && !isOmbriere) {
-        const extX = halfW + widthDrt / 2;
-        if (extDrt === 'appentis') {
-          const outerH = 3.9;
-          const colGeoExt = new THREE.BoxGeometry(0.2, outerH, 0.2);
-          const colExt = new THREE.Mesh(colGeoExt, steelMat);
-          colExt.position.set(halfW + widthDrt, outerH / 2, 0);
-          colExt.castShadow = true;
-          frame.add(colExt);
-
-          const rSpan = Math.hypot(widthDrt, eh - outerH);
-          const rGeoExt = new THREE.BoxGeometry(rSpan, 0.18, 0.18);
-          const rafterExt = new THREE.Mesh(rGeoExt, rafterMat);
-          rafterExt.position.set(extX, (eh + outerH) / 2, 0);
-          rafterExt.rotation.z = -Math.atan2(eh - outerH, widthDrt);
-          frame.add(rafterExt);
-        } else {
-          // Auvent
-          const rGeoExt = new THREE.BoxGeometry(widthDrt, 0.18, 0.18);
-          const rafterExt = new THREE.Mesh(rGeoExt, rafterMat);
-          rafterExt.position.set(extX, eh + 0.1, 0);
-          rafterExt.rotation.z = -Math.atan2(rh - eh, halfW);
-          frame.add(rafterExt);
-        }
-      }
-
-      buildingGroup.add(frame);
-    }
-
-    // Purlins
-    const purlinGeo = new THREE.BoxGeometry(0.08, 0.08, l + 0.2);
-    const p1 = new THREE.Mesh(purlinGeo, steelMat);
-    p1.position.set(-halfW, eh + 0.05, 0);
-    const p2 = new THREE.Mesh(purlinGeo, steelMat);
-    p2.position.set(halfW, eh + 0.05, 0);
-    const pRidge = new THREE.Mesh(purlinGeo, steelMat);
-    pRidge.position.set(0, rh + 0.05, 0);
-    buildingGroup.add(p1, p2, pRidge);
-
-    // Roof Sheets
-    if (buildingType === 'symetrique') {
-      const spanL = Math.hypot(halfW, rh - eh);
-      const rSheetGeo = new THREE.BoxGeometry(spanL + 0.2, 0.05, l + 0.4);
-      
-      const rSheetL = new THREE.Mesh(rSheetGeo, roofMat);
-      rSheetL.position.set(-halfW / 2, (eh + rh) / 2 + 0.05, 0);
-      rSheetL.rotation.z = Math.atan2(rh - eh, halfW);
-      rSheetL.castShadow = true;
-      buildingGroup.add(rSheetL);
-
-      const rSheetR = new THREE.Mesh(rSheetGeo, roofMat);
-      rSheetR.position.set(halfW / 2, (eh + rh) / 2 + 0.05, 0);
-      rSheetR.rotation.z = -Math.atan2(rh - eh, halfW);
-      rSheetR.castShadow = true;
-      buildingGroup.add(rSheetR);
-    } else {
-      const span = Math.hypot(w, rh - eh);
-      const rSheetGeo = new THREE.BoxGeometry(span + 0.2, 0.05, l + 0.4);
-      const rSheet = new THREE.Mesh(rSheetGeo, roofMat);
-      rSheet.position.set(0, (eh + rh) / 2 + 0.05, 0);
-      rSheet.rotation.z = Math.atan2(rh - eh, w);
-      rSheet.castShadow = true;
-      buildingGroup.add(rSheet);
-    }
-
-    // Roof Extensions (Auvent/Appentis Roof Sheets)
-    if (widthGch > 0 && !isOmbriere) {
-      const rGeo = new THREE.BoxGeometry(widthGch + 0.2, 0.05, l + 0.4);
-      const rMesh = new THREE.Mesh(rGeo, roofMat);
-      rMesh.position.set(-halfW - widthGch / 2, eh + 0.1, 0);
-      rMesh.rotation.z = extGch === 'appentis' ? Math.atan2(eh - 3.9, widthGch) : Math.atan2(rh - eh, halfW);
-      rMesh.castShadow = true;
-      buildingGroup.add(rMesh);
-    }
-    if (widthDrt > 0 && !isOmbriere) {
-      const rGeo = new THREE.BoxGeometry(widthDrt + 0.2, 0.05, l + 0.4);
-      const rMesh = new THREE.Mesh(rGeo, roofMat);
-      rMesh.position.set(halfW + widthDrt / 2, eh + 0.1, 0);
-      rMesh.rotation.z = extDrt === 'appentis' ? -Math.atan2(eh - 3.9, widthDrt) : -Math.atan2(rh - eh, halfW);
-      rMesh.castShadow = true;
-      buildingGroup.add(rMesh);
-    }
-
-    // Photovoltaic Solar Panels Grid (Implantation Solaire)
-    if (solarEnabled) {
-      const solarGroup = new THREE.Group();
-      const rows = Math.floor(l / 1.9);
-      const cols = Math.floor(halfW / 1.3);
-      const panelGeo = new THREE.BoxGeometry(1.2, 0.03, 1.8);
-
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          // Left roof slope
-          const panelL = new THREE.Mesh(panelGeo, solarMat);
-          const pxL = -halfW + 0.8 + c * 1.3;
-          const pzL = -l / 2 + 1.0 + r * 1.9;
-          const pyL = eh + (pxL + halfW) * Math.tan(Math.atan2(rh - eh, halfW)) + 0.1;
-          panelL.position.set(pxL, pyL, pzL);
-          panelL.rotation.z = Math.atan2(rh - eh, halfW);
-          solarGroup.add(panelL);
-
-          // Right roof slope
-          const panelR = new THREE.Mesh(panelGeo, solarMat);
-          const pxR = 0.8 + c * 1.3;
-          const pzR = -l / 2 + 1.0 + r * 1.9;
-          const pyR = rh - pxR * Math.tan(Math.atan2(rh - eh, halfW)) + 0.1;
-          panelR.position.set(pxR, pyR, pzR);
-          panelR.rotation.z = -Math.atan2(rh - eh, halfW);
-          solarGroup.add(panelR);
-        }
-      }
-
-      // Panels on Extensions if active
-      if (widthDrt > 0 && extDrt === 'appentis') {
-        const extCols = Math.floor(widthDrt / 1.3);
-        for (let r = 0; r < rows; r++) {
-          for (let c = 0; c < extCols; c++) {
-            const panel = new THREE.Mesh(panelGeo, solarMat);
-            const px = halfW + 0.8 + c * 1.3;
-            const pz = -l / 2 + 1.0 + r * 1.9;
-            const py = eh - (px - halfW) * Math.tan(Math.atan2(eh - 3.9, widthDrt)) + 0.1;
-            panel.position.set(px, py, pz);
-            panel.rotation.z = -Math.atan2(eh - 3.9, widthDrt);
-            solarGroup.add(panel);
-          }
-        }
-      }
-
-      buildingGroup.add(solarGroup);
-    }
-
-    // -------------------------------------------------------------------------
-    // 3D Dimension Lines & Annotation Labels (Matching Nelson Green Invest)
-    // -------------------------------------------------------------------------
-    if (showDimensions) {
-      const dimGroup = new THREE.Group();
-
-      // Width Annotation Line & Text
-      const lineWGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-halfW, 0.05, l / 2 + 2.5),
-        new THREE.Vector3(halfW, 0.05, l / 2 + 2.5)
-      ]);
-      const lineW = new THREE.Line(lineWGeo, lineMat);
-      dimGroup.add(lineW);
-
-      const labelW = createTextSprite(`${numericWidth.toFixed(1)} m`, 30);
-      labelW.position.set(0, 0.5, l / 2 + 2.5);
-      dimGroup.add(labelW);
-
-      // Appentis / Extension Width Annotation if present
-      if (widthDrt > 0) {
-        const lineExtGeo = new THREE.BufferGeometry().setFromPoints([
-          new THREE.Vector3(halfW, 0.05, l / 2 + 2.5),
-          new THREE.Vector3(halfW + widthDrt, 0.05, l / 2 + 2.5)
-        ]);
-        const lineExt = new THREE.Line(lineExtGeo, lineMat);
-        dimGroup.add(lineExt);
-
-        const labelExt = createTextSprite(`${widthDrt.toFixed(1)} m`, 30);
-        labelExt.position.set(halfW + widthDrt / 2, 0.5, l / 2 + 2.5);
-        dimGroup.add(labelExt);
-      }
-
-      // Length Annotation Line & Text (Right Side)
-      const xLengthLine = halfW + widthDrt + 2.5;
-      const lineLGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(xLengthLine, 0.05, -l / 2),
-        new THREE.Vector3(xLengthLine, 0.05, l / 2)
-      ]);
-      const lineL = new THREE.Line(lineLGeo, lineMat);
-      dimGroup.add(lineL);
-
-      const labelL = createTextSprite(`${longueur.toFixed(1)} m`, 30);
-      labelL.position.set(xLengthLine + 1.2, 0.5, 0);
-      dimGroup.add(labelL);
-
-      // Eave Height Annotation Line & Text
-      const lineEaveGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(-halfW - widthGch - 2.0, 0, -l / 2),
-        new THREE.Vector3(-halfW - widthGch - 2.0, eh, -l / 2)
-      ]);
-      const lineEave = new THREE.Line(lineEaveGeo, lineMat);
-      dimGroup.add(lineEave);
-
-      const labelEave = createTextSprite(`${eh.toFixed(1)} m`, 28);
-      labelEave.position.set(-halfW - widthGch - 3.2, eh / 2, -l / 2);
-      dimGroup.add(labelEave);
-
-      // Ridge Height Annotation Line & Text
-      const lineRidgeGeo = new THREE.BufferGeometry().setFromPoints([
-        new THREE.Vector3(0, 0, -l / 2 - 2.0),
-        new THREE.Vector3(0, rh, -l / 2 - 2.0)
-      ]);
-      const lineRidge = new THREE.Line(lineRidgeGeo, lineMat);
-      dimGroup.add(lineRidge);
-
-      const labelRidge = createTextSprite(`${rh.toFixed(2)} m`, 28);
-      labelRidge.position.set(0, rh / 2, -l / 2 - 3.2);
-      dimGroup.add(labelRidge);
-
-      // Surface Text directly on Roof
-      const labelSurf = createTextSprite(`${totalSurface} m²`, 36, '#0f172a', 'rgba(255,255,255,0.95)');
-      labelSurf.position.set(0, rh + 1.2, 0);
-      dimGroup.add(labelSurf);
-
-      buildingGroup.add(dimGroup);
-    }
-
-    scene.add(buildingGroup);
-
-    // Animation Loop
+    // Animation loop
     let animationFrameId;
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
@@ -587,21 +246,309 @@ export default function ConfigurateurCharpente() {
     };
     animate();
 
+    // Resize handler (Window + Fullscreen change fix)
     const handleResize = () => {
-      if (!container) return;
+      if (!container || !rendererRef.current || !cameraRef.current) return;
       const wRes = container.clientWidth;
       const hRes = container.clientHeight;
-      camera.aspect = wRes / hRes;
-      camera.updateProjectionMatrix();
-      renderer.setSize(wRes, hRes);
+      cameraRef.current.aspect = wRes / hRes;
+      cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(wRes, hRes);
     };
+
     window.addEventListener('resize', handleResize);
+    document.addEventListener('fullscreenchange', handleResize);
 
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
+      document.removeEventListener('fullscreenchange', handleResize);
       renderer.dispose();
     };
+  }, []); // Run ONCE on mount to ensure persistent camera orientation
+
+  // ---------------------------------------------------------------------------
+  // 2. Rebuild 3D Meshes when options change (Camera position remains persistent)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const bGroup = buildingGroupRef.current;
+    if (!bGroup) return;
+
+    // Clear previous meshes
+    while (bGroup.children.length > 0) {
+      const obj = bGroup.children[0];
+      bGroup.remove(obj);
+    }
+
+    // Exact Nelson Green Invest Materials (steel grey frame + dark roof + indigo solar)
+    const steelMat = new THREE.MeshStandardMaterial({ color: 0x5a6675, metalness: 0.6, roughness: 0.3 });
+    const rafterMat = new THREE.MeshStandardMaterial({ color: 0x4a5565, metalness: 0.65, roughness: 0.3 });
+    const roofMat = new THREE.MeshStandardMaterial({ color: 0x38414e, metalness: 0.4, roughness: 0.5 });
+    const solarMat = new THREE.MeshStandardMaterial({ color: 0x1a237e, metalness: 0.85, roughness: 0.15 });
+    const lineMat = new THREE.LineBasicMaterial({ color: 0x000000, linewidth: 2 });
+
+    const w = numericWidth;
+    const l = longueur;
+    const eh = specs.eave;
+    const rh = specs.ridge;
+    const halfW = w / 2;
+    const pitchRad = (specs.pitch * Math.PI) / 180;
+    const isOmbriere = buildingType.startsWith('ombriere');
+
+    // Scale down 3D model to fit view space cleanly (scale 0.25)
+    const s = 0.25;
+    const sw = w * s;
+    const sl = l * s;
+    const seh = eh * s;
+    const srh = rh * s;
+    const shalfW = sw / 2;
+    const sbayL = bayLength * s;
+
+    const sWidthGch = widthGch * s;
+    const sWidthDrt = widthDrt * s;
+
+    // Center offset
+    const centerX = (sWidthGch - sWidthDrt) / 2;
+    const structureGroup = new THREE.Group();
+    structureGroup.position.set(centerX, 0, 0);
+
+    // Generate Frames at each travée
+    for (let i = 0; i <= nombreTravees; i++) {
+      const z = -sl / 2 + i * sbayL;
+      const frame = new THREE.Group();
+      frame.position.set(0, 0, z);
+
+      if (buildingType === 'symetrique') {
+        // Left Column
+        const colGeo = new THREE.BoxGeometry(0.08, seh, 0.08);
+        const colL = new THREE.Mesh(colGeo, steelMat);
+        colL.position.set(-shalfW, seh / 2, 0);
+        frame.add(colL);
+
+        // Right Column
+        const colR = new THREE.Mesh(colGeo, steelMat);
+        colR.position.set(shalfW, seh / 2, 0);
+        frame.add(colR);
+
+        // Rafters
+        const spanL = Math.hypot(shalfW, srh - seh);
+        const rGeo = new THREE.BoxGeometry(spanL, 0.06, 0.06);
+        const rafterL = new THREE.Mesh(rGeo, rafterMat);
+        rafterL.position.set(-shalfW / 2, (seh + srh) / 2, 0);
+        rafterL.rotation.z = Math.atan2(srh - seh, shalfW);
+        frame.add(rafterL);
+
+        const rafterR = new THREE.Mesh(rGeo, rafterMat);
+        rafterR.position.set(shalfW / 2, (seh + srh) / 2, 0);
+        rafterR.rotation.z = -Math.atan2(srh - seh, shalfW);
+        frame.add(rafterR);
+
+        // Tie beam
+        const tieGeo = new THREE.BoxGeometry(sw, 0.05, 0.05);
+        const tie = new THREE.Mesh(tieGeo, steelMat);
+        tie.position.set(0, seh, 0);
+        frame.add(tie);
+
+      } else {
+        // Asymétrique / Monopente / Ombrière
+        const colGeoL = new THREE.BoxGeometry(0.08, seh, 0.08);
+        const colL = new THREE.Mesh(colGeoL, steelMat);
+        colL.position.set(-shalfW, seh / 2, 0);
+        frame.add(colL);
+
+        const colGeoR = new THREE.BoxGeometry(0.08, srh, 0.08);
+        const colR = new THREE.Mesh(colGeoR, steelMat);
+        colR.position.set(shalfW, srh / 2, 0);
+        frame.add(colR);
+
+        const span = Math.hypot(sw, srh - seh);
+        const rGeo = new THREE.BoxGeometry(span, 0.06, 0.06);
+        const rafter = new THREE.Mesh(rGeo, rafterMat);
+        rafter.position.set(0, (seh + srh) / 2, 0);
+        rafter.rotation.z = Math.atan2(srh - seh, sw);
+        frame.add(rafter);
+      }
+
+      // Extension Gauche (GCH) Structure - Strictly following roof pitch
+      if (sWidthGch > 0 && !isOmbriere) {
+        const extX = -shalfW - sWidthGch / 2;
+        const outerEH = extGch === 'appentis' ? 3.9 * s : seh - sWidthGch * Math.tan(pitchRad);
+
+        const colExtGeo = new THREE.BoxGeometry(0.07, outerEH, 0.07);
+        const colExt = new THREE.Mesh(colExtGeo, steelMat);
+        colExt.position.set(-shalfW - sWidthGch, outerEH / 2, 0);
+        frame.add(colExt);
+
+        const rSpan = Math.hypot(sWidthGch, seh - outerEH);
+        const rExtGeo = new THREE.BoxGeometry(rSpan, 0.05, 0.05);
+        const rafterExt = new THREE.Mesh(rExtGeo, rafterMat);
+        rafterExt.position.set(extX, (seh + outerEH) / 2, 0);
+        rafterExt.rotation.z = Math.atan2(seh - outerEH, sWidthGch);
+        frame.add(rafterExt);
+      }
+
+      // Extension Droite (DRT) Structure - Strictly following roof pitch
+      if (sWidthDrt > 0 && !isOmbriere) {
+        const extX = shalfW + sWidthDrt / 2;
+        const outerEH = extDrt === 'appentis' ? 3.9 * s : seh - sWidthDrt * Math.tan(pitchRad);
+
+        const colExtGeo = new THREE.BoxGeometry(0.07, outerEH, 0.07);
+        const colExt = new THREE.Mesh(colExtGeo, steelMat);
+        colExt.position.set(shalfW + sWidthDrt, outerEH / 2, 0);
+        frame.add(colExt);
+
+        const rSpan = Math.hypot(sWidthDrt, seh - outerEH);
+        const rExtGeo = new THREE.BoxGeometry(rSpan, 0.05, 0.05);
+        const rafterExt = new THREE.Mesh(rExtGeo, rafterMat);
+        rafterExt.position.set(extX, (seh + outerEH) / 2, 0);
+        rafterExt.rotation.z = -Math.atan2(seh - outerEH, sWidthDrt);
+        frame.add(rafterExt);
+      }
+
+      // Diagonal Cross Bracing (Croix de Saint-André) between 1st & 2nd frame
+      if (i === 1) {
+        const bLineGeo1 = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-shalfW, 0, -sl / 2),
+          new THREE.Vector3(-shalfW, seh, -sl / 2 + sbayL)
+        ]);
+        const bLine1 = new THREE.Line(bLineGeo1, steelMat);
+        frame.add(bLine1);
+
+        const bLineGeo2 = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(-shalfW, seh, -sl / 2),
+          new THREE.Vector3(-shalfW, 0, -sl / 2 + sbayL)
+        ]);
+        const bLine2 = new THREE.Line(bLineGeo2, steelMat);
+        frame.add(bLine2);
+      }
+
+      structureGroup.add(frame);
+    }
+
+    // Roof Sheets
+    if (buildingType === 'symetrique') {
+      const spanL = Math.hypot(shalfW, srh - seh);
+      const rSheetGeo = new THREE.BoxGeometry(spanL, 0.02, sl + 0.1);
+      
+      const rSheetL = new THREE.Mesh(rSheetGeo, roofMat);
+      rSheetL.position.set(-shalfW / 2, (seh + srh) / 2 + 0.02, 0);
+      rSheetL.rotation.z = Math.atan2(srh - seh, shalfW);
+      structureGroup.add(rSheetL);
+
+      const rSheetR = new THREE.Mesh(rSheetGeo, roofMat);
+      rSheetR.position.set(shalfW / 2, (seh + srh) / 2 + 0.02, 0);
+      rSheetR.rotation.z = -Math.atan2(srh - seh, shalfW);
+      structureGroup.add(rSheetR);
+    } else {
+      const span = Math.hypot(sw, srh - seh);
+      const rSheetGeo = new THREE.BoxGeometry(span, 0.02, sl + 0.1);
+      const rSheet = new THREE.Mesh(rSheetGeo, roofMat);
+      rSheet.position.set(0, (seh + srh) / 2 + 0.02, 0);
+      rSheet.rotation.z = Math.atan2(srh - seh, sw);
+      structureGroup.add(rSheet);
+    }
+
+    // Solar Panels Grid (Implantation Solaire)
+    if (solarEnabled) {
+      const solarGroup = new THREE.Group();
+      const rows = Math.floor(sl / 0.5);
+      const cols = Math.floor(sw / 0.4);
+      const panelGeo = new THREE.BoxGeometry(0.35, 0.015, 0.48);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const panel = new THREE.Mesh(panelGeo, solarMat);
+          const px = -shalfW + 0.2 + c * 0.38;
+          const pz = -sl / 2 + 0.25 + r * 0.5;
+          const py = seh + (px + shalfW) * Math.tan(Math.atan2(srh - seh, sw)) + 0.03;
+          panel.position.set(px, py, pz);
+          panel.rotation.z = Math.atan2(srh - seh, sw);
+          solarGroup.add(panel);
+        }
+      }
+      structureGroup.add(solarGroup);
+    }
+
+    // -------------------------------------------------------------------------
+    // 3D Measurement Dimension Markers & Annotations
+    // -------------------------------------------------------------------------
+    if (showDimensions) {
+      const dimGroup = new THREE.Group();
+
+      // Width Line & Label
+      const lineWGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(-shalfW, 0.02, sl / 2 + 0.6),
+        new THREE.Vector3(shalfW, 0.02, sl / 2 + 0.6)
+      ]);
+      const lineW = new THREE.Line(lineWGeo, lineMat);
+      dimGroup.add(lineW);
+
+      const labelW = createTextSprite(`${numericWidth.toFixed(1)} m`, 32);
+      labelW.position.set(0, 0.2, sl / 2 + 0.6);
+      dimGroup.add(labelW);
+
+      // Extension Width Label if active
+      if (sWidthDrt > 0) {
+        const lineExtGeo = new THREE.BufferGeometry().setFromPoints([
+          new THREE.Vector3(shalfW, 0.02, sl / 2 + 0.6),
+          new THREE.Vector3(shalfW + sWidthDrt, 0.02, sl / 2 + 0.6)
+        ]);
+        const lineExt = new THREE.Line(lineExtGeo, lineMat);
+        dimGroup.add(lineExt);
+
+        const labelExt = createTextSprite(`${widthDrt.toFixed(1)} m`, 30);
+        labelExt.position.set(shalfW + sWidthDrt / 2, 0.2, sl / 2 + 0.6);
+        dimGroup.add(labelExt);
+      }
+
+      // Length Line & Label (Right side)
+      const xLength = shalfW + sWidthDrt + 0.6;
+      const lineLGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(xLength, 0.02, -sl / 2),
+        new THREE.Vector3(xLength, 0.02, sl / 2)
+      ]);
+      const lineL = new THREE.Line(lineLGeo, lineMat);
+      dimGroup.add(lineL);
+
+      const labelL = createTextSprite(`${longueur.toFixed(1)} m`, 32);
+      labelL.position.set(xLength + 0.4, 0.2, 0);
+      dimGroup.add(labelL);
+
+      // Eave Height Line & Label
+      const xEaveLine = -shalfW - sWidthGch - 0.6;
+      const lineEaveGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(xEaveLine, 0, -sl / 2),
+        new THREE.Vector3(xEaveLine, seh, -sl / 2)
+      ]);
+      const lineEave = new THREE.Line(lineEaveGeo, lineMat);
+      dimGroup.add(lineEave);
+
+      const labelEave = createTextSprite(`${specs.eave.toFixed(1)} m`, 30);
+      labelEave.position.set(xEaveLine - 0.4, seh / 2, -sl / 2);
+      dimGroup.add(labelEave);
+
+      // Ridge Height Line & Label
+      const lineRidgeGeo = new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0, -sl / 2 - 0.6),
+        new THREE.Vector3(0, srh, -sl / 2 - 0.6)
+      ]);
+      const lineRidge = new THREE.Line(lineRidgeGeo, lineMat);
+      dimGroup.add(lineRidge);
+
+      const labelRidge = createTextSprite(`${specs.ridge.toFixed(2)} m`, 30);
+      labelRidge.position.set(0, srh / 2, -sl / 2 - 0.9);
+      dimGroup.add(labelRidge);
+
+      // Roof Surface Label (On top of roof)
+      const labelSurf = createTextSprite(`${totalSurface} m²`, 36, '#0f172a', 'rgba(255,255,255,0.96)');
+      labelSurf.position.set(0, srh + 0.4, 0);
+      dimGroup.add(labelSurf);
+
+      structureGroup.add(dimGroup);
+    }
+
+    bGroup.add(structureGroup);
+
   }, [buildingType, numericWidth, longueur, specs, bayLength, nombreTravees, solarEnabled, extGch, extDrt, widthGch, widthDrt, totalWidth, totalSurface, showDimensions]);
 
   // Screenshot capture
@@ -613,7 +560,7 @@ export default function ConfigurateurCharpente() {
     link.click();
   };
 
-  // Fullscreen
+  // Fullscreen toggle
   const handleFullscreen = () => {
     const elem = canvasContainerRef.current;
     if (elem && elem.requestFullscreen) {
@@ -634,7 +581,7 @@ export default function ConfigurateurCharpente() {
         </p>
       </div>
 
-      {/* MAIN CONFIGURATOR CONTAINER */}
+      {/* MAIN CONFIGURATOR CONTAINER (EXACT REPLICA OF NELSON GREEN INVEST INTERFACE) */}
       <div style={{
         maxWidth: '1440px',
         margin: '0 auto',
@@ -642,7 +589,7 @@ export default function ConfigurateurCharpente() {
         height: 'calc(100vh - 120px)',
         minHeight: '680px',
         maxHeight: '900px',
-        background: '#f8fafc',
+        background: '#ffffff',
         borderRadius: '16px',
         border: '1px solid #e2e8f0',
         boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
@@ -663,13 +610,13 @@ export default function ConfigurateurCharpente() {
           flexDirection: 'column',
           gap: '1.1rem'
         }}>
-          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h2 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1a1a2e', margin: 0 }}>
             Configurateur 3D
           </h2>
 
           {/* Type de Bâtiment */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#374151', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               TYPE DE BÂTIMENT
             </label>
             <select
@@ -688,7 +635,7 @@ export default function ConfigurateurCharpente() {
 
           {/* Largeur du Bâtiment */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#374151', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               LARGEUR DU BÂTIMENT
             </label>
             <select
@@ -708,7 +655,7 @@ export default function ConfigurateurCharpente() {
           {/* Extensions (GCH & DRT) */}
           {(!buildingType.startsWith('ombriere')) && (
             <div>
-              <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#374151', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 EXTENSIONS
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -775,7 +722,7 @@ export default function ConfigurateurCharpente() {
 
           {/* Espacement Travées */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#374151', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               ESPACEMENT TRAVÉES
             </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -798,7 +745,7 @@ export default function ConfigurateurCharpente() {
 
           {/* Nombre de Travées */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#374151', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               NOMBRE DE TRAVÉES
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -833,7 +780,7 @@ export default function ConfigurateurCharpente() {
 
           {/* Paramètres Fixes */}
           <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '0.75rem', border: '1px solid #e2e8f0' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#374151', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
               PARAMÈTRES FIXES
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', fontSize: '0.8rem', color: '#64748b' }}>
@@ -844,7 +791,7 @@ export default function ConfigurateurCharpente() {
 
           {/* Option Solaire Toggle */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 800, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#374151', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               OPTION SOLAIRE
             </label>
             <button
@@ -861,7 +808,7 @@ export default function ConfigurateurCharpente() {
             </button>
           </div>
 
-          {/* Puissance & Nombre de Panneaux (NO pricing mentioned here as requested) */}
+          {/* Puissance & Nombre de Panneaux (NO pricing mentioned here) */}
           {solarEnabled && (
             <div style={{ background: '#fff7ed', border: '1px solid #ffedd5', borderRadius: '10px', padding: '0.8rem' }}>
               <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#c2410c', marginBottom: '0.3rem', textTransform: 'uppercase' }}>
@@ -882,7 +829,7 @@ export default function ConfigurateurCharpente() {
         {/* =================================================================== */}
         <div style={{ flex: 1, position: 'relative', background: '#ffffff' }} ref={canvasContainerRef}>
           
-          {/* Top-Left Overlays: Badges & Dimensions Toggle */}
+          {/* Top-Left Overlays: Badges & Dimensions Toggle Button */}
           <div style={{ position: 'absolute', top: '1rem', left: '1rem', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {/* Dimensions Badge */}
             <div style={{
@@ -905,7 +852,7 @@ export default function ConfigurateurCharpente() {
               </div>
             )}
 
-            {/* Toggle Dimensions Switch Button */}
+            {/* Toggle Dimensions Button (Nelson Pill Style) */}
             <div
               onClick={() => setShowDimensions(!showDimensions)}
               style={{
@@ -929,41 +876,6 @@ export default function ConfigurateurCharpente() {
             </div>
           </div>
 
-          {/* BOTTOM RIGHT SUMMARY BOX (SYNTHÈSE DU TARIF CHARPENTE & SOLAIRE) */}
-          <div style={{
-            position: 'absolute', bottom: '1.25rem', right: '1.25rem', zIndex: 10,
-            background: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(10px)',
-            borderRadius: '14px', border: '1px solid #cbd5e1', padding: '0.9rem 1.25rem',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.1)', minWidth: '280px', display: 'flex',
-            flexDirection: 'column', gap: '0.4rem'
-          }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.3rem' }}>
-              SYNTHÈSE DE LA STRUCTURE
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#334155' }}>
-              <span>Dimensions:</span>
-              <strong>{longueur.toFixed(2)}m x {totalWidth.toFixed(2)}m</strong>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', color: '#334155' }}>
-              <span>Surface au sol:</span>
-              <strong>{totalSurface} m²</strong>
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#0f172a', paddingTop: '0.2rem', borderTop: '1px stroke #f1f5f9' }}>
-              <span>Charpente métallique:</span>
-              <strong style={{ color: '#2563eb' }}>{charpentePriceHT.toLocaleString('fr-FR')} € HT</strong>
-            </div>
-
-            {solarEnabled && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#ea580c', paddingTop: '0.2rem' }}>
-                <span>Installation solaire:</span>
-                <strong>{solarPriceHT.toLocaleString('fr-FR')} € HT</strong>
-              </div>
-            )}
-          </div>
-
           {/* Mouse interaction tip */}
           <div style={{
             position: 'absolute', bottom: '1rem', left: '1.25rem',
@@ -976,10 +888,10 @@ export default function ConfigurateurCharpente() {
         </div>
 
         {/* =================================================================== */}
-        {/* RIGHT PANEL: ACTIONS (Width 140px)                                  */}
+        {/* RIGHT PANEL: ACTIONS & SUMMARY (Width 180px)                        */}
         {/* =================================================================== */}
         <div style={{
-          width: '140px', minWidth: '140px', background: '#ffffff',
+          width: '185px', minWidth: '185px', background: '#ffffff',
           borderLeft: '1px solid #e2e8f0', padding: '1rem 0.75rem',
           display: 'flex', flexDirection: 'column', gap: '0.75rem'
         }}>
@@ -1010,6 +922,39 @@ export default function ConfigurateurCharpente() {
           >
             <Maximize size={14} /> Plein écran
           </button>
+
+          {/* SUMMARY BOX DIRECTLY UNDER BUTTONS AS REQUESTED */}
+          <div style={{
+            marginTop: '0.5rem', background: '#f8fafc', borderRadius: '12px',
+            border: '1px solid #cbd5e1', padding: '0.8rem 0.75rem',
+            display: 'flex', flexDirection: 'column', gap: '0.45rem'
+          }}>
+            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.3rem' }}>
+              SYNTHÈSE DU BÂTIMENT
+            </div>
+            
+            <div style={{ fontSize: '0.75rem', color: '#334155' }}>
+              <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Dimensions</span>
+              <strong>{longueur.toFixed(2)}m x {totalWidth.toFixed(2)}m</strong>
+            </div>
+
+            <div style={{ fontSize: '0.75rem', color: '#334155' }}>
+              <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Surface au sol</span>
+              <strong>{totalSurface} m²</strong>
+            </div>
+
+            <div style={{ fontSize: '0.78rem', color: '#0f172a', paddingTop: '0.3rem', borderTop: '1px solid #e2e8f0' }}>
+              <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Charpente métallique</span>
+              <strong style={{ color: '#2563eb' }}>{charpentePriceHT.toLocaleString('fr-FR')} € HT</strong>
+            </div>
+
+            {solarEnabled && (
+              <div style={{ fontSize: '0.78rem', color: '#ea580c', paddingTop: '0.2rem' }}>
+                <span style={{ color: '#64748b', display: 'block', fontSize: '0.65rem' }}>Installation solaire</span>
+                <strong>{solarPriceHT.toLocaleString('fr-FR')} € HT</strong>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>
