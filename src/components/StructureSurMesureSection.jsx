@@ -27,30 +27,31 @@ function getRegionalProductible(addressStr) {
   return 1150;
 }
 
-// Orientation efficiency multiplier (0° = Sud Plein = 100%)
+// Orientation efficiency multiplier with angle in range [-180°, 180°]
+// 0° = Sud Plein (100% efficiency)
 function getOrientationMultiplier(deg) {
-  const angle = ((deg % 360) + 360) % 360;
-  if (angle <= 30 || angle >= 330) return 1.0; // Sud Plein (0° / 360°)
-  if ((angle > 30 && angle <= 65) || (angle >= 295 && angle < 330)) return 0.96; // Sud-Est / Sud-Ouest
-  if ((angle > 65 && angle <= 115) || (angle >= 245 && angle < 295)) return 0.88; // Est / Ouest
-  return 0.68; // Nord
+  const absDeg = Math.abs(deg);
+  if (absDeg <= 30) return 1.0; // Sud Plein (0° ± 30°)
+  if (absDeg > 30 && absDeg <= 65) return 0.96; // Sud-Est (-45°) / Sud-Ouest (45°)
+  if (absDeg > 65 && absDeg <= 115) return 0.88; // Est (-90°) / Ouest (90°)
+  return 0.68; // Nord (180° / -180°)
 }
 
-// Cardinal direction label helper (0° = Sud Plein, matching Image 2)
+// Cardinal direction label helper (Strict user requested convention: Sud = 0°, Sud-Est = -45°, Sud-Ouest = 45°, Est = -90°, Ouest = 90°, Nord = 180°)
 function getCardinalLabel(deg) {
-  const angle = ((deg % 360) + 360) % 360;
-  if (angle >= 337.5 || angle < 22.5) return 'Sud Plein (0°) - Idéal ☀️';
-  if (angle >= 22.5 && angle < 67.5) return 'Sud-Est (45°)';
-  if (angle >= 67.5 && angle < 112.5) return 'Est (90°)';
-  if (angle >= 112.5 && angle < 157.5) return 'Nord-Est (135°)';
-  if (angle >= 157.5 && angle < 202.5) return 'Nord (180°)';
-  if (angle >= 202.5 && angle < 247.5) return 'Nord-Ouest (225°)';
-  if (angle >= 247.5 && angle < 292.5) return 'Ouest (270°)';
-  return 'Sud-Ouest (315°)';
+  if (deg >= -22.5 && deg <= 22.5) return 'Sud Plein (0°) - Idéal ☀️';
+  if (deg > 22.5 && deg <= 67.5) return 'Sud-Ouest (45°)';
+  if (deg > 67.5 && deg <= 112.5) return 'Ouest (90°)';
+  if (deg > 112.5 && deg <= 157.5) return 'Nord-Ouest (135°)';
+  if (deg < -157.5 || deg > 157.5) return 'Nord (180°)';
+  if (deg >= -157.5 && deg < -112.5) return 'Nord-Est (-135°)';
+  if (deg >= -112.5 && deg < -67.5) return 'Est (-90°)';
+  if (deg >= -67.5 && deg < -22.5) return 'Sud-Est (-45°)';
+  return `${deg}°`;
 }
 
 // ==========================================
-// COMPOSANT GRAPHIQUE 30 ANS (Format Image 4)
+// COMPOSANT GRAPHIQUE 30 ANS
 // ==========================================
 function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125, paybackYears, installationCostHT }) {
   const pbYearFloat = typeof paybackYears === 'number' ? paybackYears : parseFloat(paybackYears) || 0;
@@ -186,7 +187,7 @@ export default function StructureSurMesureSection() {
   const [coords, setCoords] = useState({ lat: 43.2965, lng: 5.3698 });
   const [isSearchingAddress, setIsSearchingAddress] = useState(false);
 
-  // Orientation State (Default 0° = Plein Sud, matching Image 2)
+  // Orientation State in range [-180°, 180°] (Default 0° = Plein Sud)
   const [orientationDeg, setOrientationDeg] = useState(0);
 
   // Map & Polygon Leaflet Refs
@@ -207,13 +208,16 @@ export default function StructureSurMesureSection() {
     commentaire: ''
   });
 
-  // Building Footprint Dimensions from 3D Configurator state
+  // Building Footprint Dimensions & Extension widths from 3D Configurator state
   const getExtWidth = (side) => {
     if (side === 'appentis') return 9.3;
     if (side === 'auvent') return 4.0;
     return 0;
   };
-  const totalWidth = config.width + getExtWidth(config.leftSide) + getExtWidth(config.rightSide);
+  const leftExtW = getExtWidth(config.leftSide);
+  const rightExtW = getExtWidth(config.rightSide);
+  const mainWidth = config.width;
+  const totalWidth = mainWidth + leftExtW + rightExtW;
   const totalLength = config.length || 37.5;
   const totalSurface = Math.round(totalWidth * totalLength);
 
@@ -257,7 +261,7 @@ export default function StructureSurMesureSection() {
     return Math.round((estimatedInvestmentHT / annualSolarRevenue) * 10) / 10;
   }, [estimatedInvestmentHT, annualSolarRevenue]);
 
-  // Environmental Impact Stats (Format Image 5)
+  // Environmental Impact Stats
   const co2AvoidedTonnes = useMemo(() => (Math.round((annualProductionKwh * 0.09) / 1000 * 10) / 10).toFixed(1), [annualProductionKwh]);
   const treesPlanted = useMemo(() => Math.round(co2AvoidedTonnes * 45), [co2AvoidedTonnes]);
   const householdsPowered = useMemo(() => (Math.round(annualProductionKwh / 3500 * 10) / 10).toFixed(1), [annualProductionKwh]);
@@ -296,132 +300,150 @@ export default function StructureSurMesureSection() {
     }
   };
 
-  // Initialize & Update Leaflet Satellite Map on Step 2 (True Isometric Mercator Rotation without Rhombus Distortion)
+  // Initialize & Update Leaflet Satellite Map on Step 2 (With InvalidateSize Fix when returning from Step 3 & Precise Asymmetric Ridge Offset)
   useEffect(() => {
-    if (step !== 2 || !mapContainerRef.current) return;
+    if (step !== 2) return;
 
-    if (!mapInstanceRef.current) {
-      const map = L.map(mapContainerRef.current, {
-        center: [coords.lat, coords.lng],
-        zoom: 19,
-        maxZoom: 22,
-        zoomControl: true,
-        doubleClickZoom: false
-      });
+    // Small delay to ensure DOM container is rendered before initializing or invalidating Leaflet map size
+    const timer = setTimeout(() => {
+      if (!mapContainerRef.current) return;
 
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Esri, Maxar, Earthstar Geographics',
-        maxNativeZoom: 19,
-        maxZoom: 22
+      if (!mapInstanceRef.current) {
+        const map = L.map(mapContainerRef.current, {
+          center: [coords.lat, coords.lng],
+          zoom: 19,
+          maxZoom: 22,
+          zoomControl: true,
+          doubleClickZoom: false
+        });
+
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+          attribution: 'Esri, Maxar, Earthstar Geographics',
+          maxNativeZoom: 19,
+          maxZoom: 22
+        }).addTo(map);
+
+        map.on('move', () => {
+          const center = map.getCenter();
+          setCoords({ lat: center.lat, lng: center.lng });
+        });
+
+        mapInstanceRef.current = map;
+      } else {
+        mapInstanceRef.current.invalidateSize();
+        mapInstanceRef.current.setView([coords.lat, coords.lng], mapInstanceRef.current.getZoom() || 19);
+      }
+
+      const map = mapInstanceRef.current;
+
+      // Remove existing layers
+      if (polygonLayerRef.current) map.removeLayer(polygonLayerRef.current);
+      if (ridgeLineLayerRef.current) map.removeLayer(ridgeLineLayerRef.current);
+
+      // ==========================================
+      // NON-DISTORTING CARTESIAN ROTATION MATH
+      // ==========================================
+      const halfL = totalLength / 2; // meters along length (East-West at 0°)
+      const halfW = totalWidth / 2;  // meters along width (North-South at 0°)
+
+      const rad = (orientationDeg * Math.PI) / 180;
+      const cosR = Math.cos(rad);
+      const sinR = Math.sin(rad);
+
+      // Base corners in pure 2D Cartesian meters
+      const baseCornersMeters = [
+        { x: -halfL, y: -halfW },
+        { x: halfL, y: -halfW },
+        { x: halfL, y: halfW },
+        { x: -halfL, y: halfW }
+      ];
+
+      // Rotate 2D Cartesian meter coordinates
+      const rotatedMeters = baseCornersMeters.map(c => ({
+        x: c.x * cosR - c.y * sinR,
+        y: c.x * sinR + c.y * cosR
+      }));
+
+      // Convert local Cartesian meters to Geodetic WGS84 Lat/Lng
+      const R_EARTH = 6378137;
+      const latRad = (coords.lat * Math.PI) / 180;
+      const metersPerLatDegree = (Math.PI / 180) * R_EARTH;
+      const metersPerLngDegree = (Math.PI / 180) * R_EARTH * Math.cos(latRad);
+
+      const rotatedCorners = rotatedMeters.map(c => [
+        coords.lat + (c.y / metersPerLatDegree),
+        coords.lng + (c.x / metersPerLngDegree)
+      ]);
+
+      // Render exact 90° building footprint polygon
+      const polygon = L.polygon(rotatedCorners, {
+        color: '#2563eb',
+        weight: 3,
+        fillColor: '#3b82f6',
+        fillOpacity: 0.45
       }).addTo(map);
 
-      map.on('move', () => {
-        const center = map.getCenter();
-        setCoords({ lat: center.lat, lng: center.lng });
+      // Tooltip placed cleanly BELOW the building (direction: 'bottom')
+      polygon.bindTooltip(`<b>${totalLength.toFixed(1)}m × ${totalWidth.toFixed(1)}m</b><br/>Surface: ${totalSurface} m²`, {
+        permanent: true,
+        direction: 'bottom',
+        offset: [0, 15],
+        className: 'bg-white/95 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl border border-slate-300'
       });
 
-      mapInstanceRef.current = map;
-    } else {
-      mapInstanceRef.current.setView([coords.lat, coords.lng], mapInstanceRef.current.getZoom() || 19);
-    }
+      // ==========================================
+      // ACCURATE ASYMMETRIC RIDGE LINE OFFSET MATH
+      // Calculates exact ridge line (faîtage) position matching the 3D configurator geometry!
+      // ==========================================
+      let ridgeRatioInMain = 0.5; // Symmetric by default
+      if (config.buildingType === 'asymetrique_1') ridgeRatioInMain = 0.33;
+      else if (config.buildingType === 'asymetrique_2') ridgeRatioInMain = 0.67;
 
-    const map = mapInstanceRef.current;
+      // Distance of ridge from the South/Bottom edge of the building width (in meters)
+      const ridgeYFromBottom = leftExtW + (mainWidth * ridgeRatioInMain);
+      // Offset from building width center (0)
+      const ridgeLocalY = ridgeYFromBottom - halfW;
 
-    // Remove existing layers
-    if (polygonLayerRef.current) map.removeLayer(polygonLayerRef.current);
-    if (ridgeLineLayerRef.current) map.removeLayer(ridgeLineLayerRef.current);
+      const ridgeStartMeter = { x: -halfL, y: ridgeLocalY };
+      const ridgeEndMeter = { x: halfL, y: ridgeLocalY };
 
-    // ==========================================
-    // RIGOROUS NON-DISTORTING CARTESIAN METRIC ROTATION MATH
-    // Prevents skewing into a rhombus at any angle!
-    // At 0° (Sud Plein - Image 2): Long side (Length) is along East-West (x), Short side (Width) is along North-South (y)
-    // ==========================================
-    const halfL = totalLength / 2; // meters along length (East-West at 0°)
-    const halfW = totalWidth / 2;  // meters along width (North-South at 0°)
+      const rStartRot = {
+        x: ridgeStartMeter.x * cosR - ridgeStartMeter.y * sinR,
+        y: ridgeStartMeter.x * sinR + ridgeStartMeter.y * cosR
+      };
+      const rEndRot = {
+        x: ridgeEndMeter.x * cosR - ridgeEndMeter.y * sinR,
+        y: ridgeEndMeter.x * sinR + ridgeEndMeter.y * cosR
+      };
 
-    const rad = (orientationDeg * Math.PI) / 180;
-    const cosR = Math.cos(rad);
-    const sinR = Math.sin(rad);
+      const ridgeStartLatLng = [
+        coords.lat + (rStartRot.y / metersPerLatDegree),
+        coords.lng + (rStartRot.x / metersPerLngDegree)
+      ];
+      const ridgeEndLatLng = [
+        coords.lat + (rEndRot.y / metersPerLatDegree),
+        coords.lng + (rEndRot.x / metersPerLngDegree)
+      ];
 
-    // Base corners in pure 2D Cartesian meters (Perfect 90° right angles)
-    const baseCornersMeters = [
-      { x: -halfL, y: -halfW },
-      { x: halfL, y: -halfW },
-      { x: halfL, y: halfW },
-      { x: -halfL, y: halfW }
-    ];
+      const ridgeLine = L.polyline([ridgeStartLatLng, ridgeEndLatLng], {
+        color: '#f59e0b',
+        weight: 3,
+        dashArray: '6, 6'
+      }).addTo(map);
 
-    // Rotate 2D Cartesian meter coordinates
-    const rotatedMeters = baseCornersMeters.map(c => ({
-      x: c.x * cosR - c.y * sinR,
-      y: c.x * sinR + c.y * cosR
-    }));
+      ridgeLine.bindTooltip('<b>--- Faîtage du bâtiment ---</b>', {
+        permanent: false,
+        direction: 'top',
+        className: 'bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm'
+      });
 
-    // Convert local Cartesian meters to Geodetic WGS84 Lat/Lng offsets using exact WGS84 radius
-    const R_EARTH = 6378137;
-    const latRad = (coords.lat * Math.PI) / 180;
-    const metersPerLatDegree = (Math.PI / 180) * R_EARTH;
-    const metersPerLngDegree = (Math.PI / 180) * R_EARTH * Math.cos(latRad);
+      polygonLayerRef.current = polygon;
+      ridgeLineLayerRef.current = ridgeLine;
+    }, 60);
 
-    const rotatedCorners = rotatedMeters.map(c => [
-      coords.lat + (c.y / metersPerLatDegree),
-      coords.lng + (c.x / metersPerLngDegree)
-    ]);
+    return () => clearTimeout(timer);
 
-    // Render exact 90° building footprint polygon
-    const polygon = L.polygon(rotatedCorners, {
-      color: '#2563eb',
-      weight: 3,
-      fillColor: '#3b82f6',
-      fillOpacity: 0.45
-    }).addTo(map);
-
-    // Tooltip placed cleanly BELOW the building (direction: 'bottom'), not overimposed on roof!
-    polygon.bindTooltip(`<b>${totalLength.toFixed(1)}m × ${totalWidth.toFixed(1)}m</b><br/>Surface: ${totalSurface} m²`, {
-      permanent: true,
-      direction: 'bottom',
-      offset: [0, 15],
-      className: 'bg-white/95 text-slate-900 text-xs font-bold px-3 py-1.5 rounded-lg shadow-xl border border-slate-300'
-    });
-
-    // Draw Dashed Ridge Line (Faîtage du bâtiment) running along length at center of width
-    const ridgeStartMeter = { x: -halfL, y: 0 };
-    const ridgeEndMeter = { x: halfL, y: 0 };
-
-    const rStartRot = {
-      x: ridgeStartMeter.x * cosR - ridgeStartMeter.y * sinR,
-      y: ridgeStartMeter.x * sinR + ridgeStartMeter.y * cosR
-    };
-    const rEndRot = {
-      x: ridgeEndMeter.x * cosR - ridgeEndMeter.y * sinR,
-      y: ridgeEndMeter.x * sinR + ridgeEndMeter.y * cosR
-    };
-
-    const ridgeStartLatLng = [
-      coords.lat + (rStartRot.y / metersPerLatDegree),
-      coords.lng + (rStartRot.x / metersPerLngDegree)
-    ];
-    const ridgeEndLatLng = [
-      coords.lat + (rEndRot.y / metersPerLatDegree),
-      coords.lng + (rEndRot.x / metersPerLngDegree)
-    ];
-
-    const ridgeLine = L.polyline([ridgeStartLatLng, ridgeEndLatLng], {
-      color: '#f59e0b',
-      weight: 3,
-      dashArray: '6, 6'
-    }).addTo(map);
-
-    ridgeLine.bindTooltip('<b>--- Faîtage du bâtiment ---</b>', {
-      permanent: false,
-      direction: 'top',
-      className: 'bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm'
-    });
-
-    polygonLayerRef.current = polygon;
-    ridgeLineLayerRef.current = ridgeLine;
-
-  }, [step, coords, totalWidth, totalLength, totalSurface, orientationDeg]);
+  }, [step, coords, totalWidth, totalLength, totalSurface, mainWidth, leftExtW, rightExtW, config.buildingType, orientationDeg]);
 
   // Lead Form submission
   const handleLeadSubmit = async (e) => {
@@ -513,7 +535,7 @@ export default function StructureSurMesureSection() {
               Renseignez l'adresse de votre terrain pour simuler la disposition satellite exacte de votre bâtiment ({totalLength.toFixed(1)}m × {totalWidth.toFixed(1)}m) et calculer vos revenus photovoltaïques.
             </p>
 
-            {/* Step Indicators */}
+            {/* Step Indicators (Clickable to switch back and forth freely) */}
             <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8">
               {[
                 { num: 1, label: '1. Adresse' },
@@ -605,7 +627,7 @@ export default function StructureSurMesureSection() {
                       </p>
                     </div>
 
-                    {/* Orientation Slider (0° = Sud Plein, matching Image 2) */}
+                    {/* Orientation Slider (Range [-180°, 180°], 0° = Sud Plein) */}
                     <div className="bg-slate-50 p-4 rounded-2xl border border-gray-200 space-y-4">
                       <div className="flex justify-between items-center text-xs font-bold text-gray-700">
                         <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-blue-600" /> Orientation</span>
@@ -614,8 +636,8 @@ export default function StructureSurMesureSection() {
 
                       <input
                         type="range"
-                        min="0"
-                        max="360"
+                        min="-180"
+                        max="180"
                         step="5"
                         value={orientationDeg}
                         onChange={(e) => setOrientationDeg(Number(e.target.value))}
@@ -626,12 +648,12 @@ export default function StructureSurMesureSection() {
                         {getCardinalLabel(orientationDeg)}
                       </div>
 
-                      {/* Quick preset buttons */}
+                      {/* Quick preset buttons (Exact User Convention: Sud = 0°, Sud-Est = -45°, Sud-Ouest = 45°) */}
                       <div className="grid grid-cols-3 gap-1.5">
                         {[
                           { label: 'Sud (0°)', val: 0 },
-                          { label: 'Sud-Est (45°)', val: 45 },
-                          { label: 'Sud-Ouest (315°)', val: 315 }
+                          { label: 'Sud-Est (-45°)', val: -45 },
+                          { label: 'Sud-Ouest (45°)', val: 45 }
                         ].map(preset => (
                           <button
                             key={preset.val}
@@ -764,7 +786,7 @@ export default function StructureSurMesureSection() {
                         </div>
                       </div>
 
-                      {/* KPI 5: Taux de Placement Financier */}
+                      {/* KPI 5: Taux de Placement Financier (Phrase exact: Performance financière intéressante) */}
                       <div className="bg-amber-950 text-white p-5 rounded-2xl shadow-lg border border-amber-800 flex flex-col justify-between">
                         <div className="flex justify-between items-center text-amber-300 text-xs font-bold uppercase tracking-wider">
                           <span>Taux de Rendement</span>
@@ -772,7 +794,7 @@ export default function StructureSurMesureSection() {
                         </div>
                         <div className="mt-3">
                           <div className="text-2xl sm:text-3xl font-black text-amber-400">{financialPlacementRate} <span className="text-xs text-amber-200 font-bold">% / an</span></div>
-                          <div className="text-xs text-amber-300 mt-1">Performance supérieure au Livret A (3%)</div>
+                          <div className="text-xs text-amber-300 mt-1">Performance financière intéressante</div>
                         </div>
                       </div>
 
