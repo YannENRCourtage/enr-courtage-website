@@ -44,12 +44,23 @@ const Footer = ({ setActiveTab }) => {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
             <span className="text-sm font-semibold mb-5 block uppercase tracking-wider text-white/80">Liens Utiles</span>
-            <ul className="space-y-3 text-gray-400">
+            <ul className="space-y-3 text-gray-400 mb-8">
               <li><button onClick={() => handleNavClick('about')} className="text-sm hover:text-[#d4a843] transition-colors text-left">À propos</button></li>
               <li><a href="https://enr-courtage-energie.fr/" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-[#d4a843] transition-colors">enr-courtage-energie.fr</a></li>
-              <li><a href="https://batimentneufgratuit.fr/" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-[#d4a843] transition-colors">batimentneufgratuit.fr</a></li>
-              <li><a href="https://monelectricitelocale.fr/" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-[#d4a843] transition-colors">monelectricitelocale.fr</a></li>
             </ul>
+
+            {/* Adhérent ENERPLAN */}
+            <div className="flex flex-col items-start space-y-2 mt-8">
+              <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Adhérent ENERPLAN</span>
+              <a href="https://www.enerplan.asso.fr/" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Visiter ENERPLAN">
+                <img
+                  src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/bf96a9a79f75957ad5e9282e568c3f14.jpg"
+                  alt="Logo ENERPLAN - Syndicat des professionnels de l'énergie solaire"
+                  className="h-9 w-auto object-contain rounded-lg bg-white p-1"
+                  loading="lazy" decoding="async"
+                />
+              </a>
+            </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col items-start md:items-start justify-between">
@@ -73,19 +84,6 @@ const Footer = ({ setActiveTab }) => {
                     loading="lazy" decoding="async"
                   />
                 </a>
-
-                {/* Adhérent ENERPLAN */}
-                <div className="flex flex-col items-start space-y-2">
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Adhérent ENERPLAN</span>
-                  <a href="https://www.enerplan.asso.fr/" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Visiter ENERPLAN">
-                    <img
-                      src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/bf96a9a79f75957ad5e9282e568c3f14.jpg"
-                      alt="Logo ENERPLAN - Syndicat des professionnels de l'énergie solaire"
-                      className="h-9 w-auto object-contain rounded-lg bg-white p-1"
-                      loading="lazy" decoding="async"
-                    />
-                  </a>
-                </div>
             </div>
           </motion.div>
         </div>
