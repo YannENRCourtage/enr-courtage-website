@@ -38,20 +38,15 @@ const BuildingScene = forwardRef(({ viewMode = '3D', isCapturing = false, transp
             />
             <Environment preset="city" />
 
-            {/* Camera Handling */}
+            {/* Camera Handling - Exact Isometric Angle matching Screenshot 2 */}
             {viewMode === '3D' && (
-        <>
-                    <PerspectiveCamera makeDefault position={[20, 15, 30]} fov={50} near={0.1} far={2000} />
-                    {/* Target optimization for PDF Capture: Center on the building mass */}
-                    {/* Normal mode: X=8 shifts building to the Left visually. Y=4 lowers building in view. */}
+                <>
+                    <PerspectiveCamera makeDefault position={[28, 20, 30]} fov={42} near={0.1} far={2000} />
                     <OrbitControls
-                        maxPolarAngle={Math.PI}
+                        maxPolarAngle={Math.PI / 2 - 0.01}
                         minDistance={2}
                         maxDistance={300}
-                        target={isCapturing
-                            ? [0, config.eaveHeight / 2, -config.length / 2]
-                            : [8, 4, 0]
-                        }
+                        target={[0, 3, -config.length / 2]}
                     />
                 </>
             )}
@@ -59,13 +54,12 @@ const BuildingScene = forwardRef(({ viewMode = '3D', isCapturing = false, transp
             {viewMode === '2D_FRONT' && (
                 <>
                     {/* Technical Isometric View (Fake 2D) */}
-                    {/* Position at corner [100, 100, 100] gives standard Isometric angle */}
                     <OrthographicCamera
                         makeDefault
                         position={[100, 100, 100]}
                         near={-500}
                         far={1000}
-                        zoom={30} // Bounds will likely override this
+                        zoom={30}
                         onUpdate={c => c.lookAt(0, config.eaveHeight / 2, -config.length / 2)}
                     />
                     <OrbitControls
@@ -76,12 +70,8 @@ const BuildingScene = forwardRef(({ viewMode = '3D', isCapturing = false, transp
                 </>
             )}
 
-            {/* Auto-Centering logic: Fits structure on mount */}
-            {/* Capture: margin=0.8 (Zoomed in). Normal: margin=1.1 (Breathable) */}
-            <Bounds fit clip margin={isCapturing ? 0.8 : 1.1}>
-                <Structure />
-                {/* Add Cladding/Doors here later */}
-            </Bounds>
+            {/* 3D Structure Assembly */}
+            <Structure />
 
             {/* Ground / Shadows */}
             {!isCapturing && (

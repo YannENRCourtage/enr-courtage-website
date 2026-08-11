@@ -93,18 +93,20 @@ export default function ConfigurateurCharpente() {
   }, []);
 
   return (
-    <section id="configurateur-charpente" className="py-12 bg-white text-slate-900 font-sans relative">
+    <section id="configurateur-charpente" className="py-6 bg-white text-slate-900 font-sans relative">
       <div className="max-w-[1440px] mx-auto px-4">
         
         {/* SECTION HEADER */}
-        <div className="text-center max-w-3xl mx-auto mb-8">
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-            Votre structure métallique <span className="text-blue-600">sur-mesure</span>
-          </h2>
-          <p className="text-slate-600 text-base font-normal leading-relaxed">
-            Configurez votre bâtiment ou ombrière métallique étape par étape, visualisez la structure en 3D dynamique et obtenez votre chiffrage immédiat.
-          </p>
-        </div>
+        {!hideHeader && (
+          <div className="text-center max-w-3xl mx-auto mb-8">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
+              Votre structure métallique <span className="enr-gradient-text-gold">sur-mesure</span>
+            </h2>
+            <p className="text-slate-600 text-base font-normal leading-relaxed">
+              Configurez votre bâtiment ou ombrière métallique étape par étape, visualisez la structure en 3D dynamique et obtenez votre chiffrage immédiat.
+            </p>
+          </div>
+        )}
 
         {/* CONFIGURATOR MAIN WRAPPER (NELSON EXACT LAYOUT) */}
         <div id="configurateur-main-wrapper" className="h-[760px] max-h-[calc(100vh-100px)] w-full bg-white rounded-3xl border border-slate-200 shadow-xl relative flex flex-col lg:flex-row overflow-hidden isolate">

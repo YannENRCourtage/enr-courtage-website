@@ -368,9 +368,9 @@ export default function StructureSurMesureSection() {
       </section>
 
       {/* SECTION 1: 3D CONFIGURATOR MODULE */}
-      <section className="py-12 bg-white">
+      <section className="py-8 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <ConfigurateurCharpente />
+          <ConfigurateurCharpente hideHeader={true} />
         </div>
       </section>
 
