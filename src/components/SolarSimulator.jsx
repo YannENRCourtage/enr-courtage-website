@@ -1052,7 +1052,7 @@ OPTIONS CHOISIES :
                     value={addressInput}
                     onChange={(e) => setAddressInput(e.target.value)}
                     placeholder="Saisissez votre adresse postale..."
-                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 focus:border-[#0f9b8e] focus:ring-2 focus:ring-[#0f9b8e]/20 outline-none text-gray-800 text-lg shadow-sm transition-all"
+                    className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 dark:border-slate-700 focus:border-[#0f9b8e] focus:ring-2 focus:ring-[#0f9b8e]/20 outline-none text-gray-900 dark:text-white bg-white dark:bg-slate-800 text-lg shadow-sm transition-all placeholder:text-gray-400"
                   />
                 </div>
 

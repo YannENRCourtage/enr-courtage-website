@@ -267,6 +267,39 @@ img {
   }
 }
 
+/* Force bright white text color in dark input fields / dark mode to ensure clear visibility */
+@media (prefers-color-scheme: dark) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: #94a3b8 !important;
+    -webkit-text-fill-color: #94a3b8 !important;
+  }
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+input.dark-input,
+.dark-input input,
+input[class*="bg-slate-800"],
+input[class*="bg-gray-800"],
+input[class*="bg-slate-900"],
+input[class*="bg-black"],
+input[class*="bg-white/10"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
 .dark .enr-gradient-text-gold {
   color: #FFE600 !important;
   -webkit-text-fill-color: #FFE600 !important;
