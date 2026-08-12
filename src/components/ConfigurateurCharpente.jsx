@@ -117,86 +117,115 @@ export default function ConfigurateurCharpente({ hideHeader = false }) {
           </div>
 
           {/* ========== ZONE 2: 3D VISUALIZER (VISIONNEUSE 3D) ========== */}
-          <div id="3d-view-container" className="w-full flex-1 relative h-[380px] sm:h-[500px] lg:h-full bg-white isolate border-b lg:border-b-0 border-slate-200 overflow-hidden">
+          <div id="3d-view-container" className="w-full flex-1 flex flex-col relative h-auto lg:h-full bg-white isolate border-b lg:border-b-0 border-slate-200 overflow-hidden">
             
-            {/* 3D R3F Canvas */}
-            <div className="w-full h-full">
+            {/* MOBILE ONLY: ACTION BUTTONS ("Télécharger" & "Plein écran") ABOVE 3D CANVAS */}
+            <div className="flex lg:hidden items-center justify-end gap-2.5 p-3 bg-slate-100/90 border-b border-slate-200 w-full">
+              <button
+                onClick={handleScreenshot}
+                className="bg-white text-slate-700 font-bold py-2 px-3.5 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 text-xs"
+                title="Télécharger l'image"
+              >
+                <Download className="w-4 h-4 text-slate-600" />
+                <span>Télécharger</span>
+              </button>
+
+              <button
+                onClick={handleFullscreen}
+                className="bg-white text-slate-700 font-bold py-2 px-3.5 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 text-xs"
+                title="Plein écran"
+              >
+                <Maximize className="w-4 h-4 text-slate-600" />
+                <span>Plein écran</span>
+              </button>
+            </div>
+
+            {/* 3D R3F Viewport Canvas */}
+            <div className="w-full h-[340px] sm:h-[450px] lg:h-full relative">
               <BuildingScene
                 ref={canvasRef}
                 viewMode={viewMode}
                 isCapturing={isCapturing}
                 transparent={false}
               />
-            </div>
 
-            {/* Exit Fullscreen Button */}
-            {document.fullscreenElement && (
-              <button
-                onClick={() => document.exitFullscreen()}
-                className="absolute top-4 right-4 z-[200] bg-white/90 p-2 rounded-full shadow-lg border border-slate-200 hover:bg-slate-100"
-              >
-                <X className="w-6 h-6 text-slate-800" />
-              </button>
-            )}
-
-            {/* TOP-LEFT OVERLAY BADGES & DIMENSIONS TOGGLE */}
-            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 flex flex-col gap-2 w-fit pointer-events-auto max-w-[calc(100%-140px)] sm:max-w-none">
-              {/* Dimensions Badge */}
-              <div className="bg-white/95 backdrop-blur px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md border border-slate-200">
-                <span className="text-slate-900 font-bold text-xs sm:text-base whitespace-nowrap">
-                  {totalLength.toFixed(2)}m x {totalWidth.toFixed(2)}m - {totalSurface}m²
-                </span>
-              </div>
-
-              {/* Solar Badge (If Solar Option Active) */}
-              {config.hasSolar && (
-                <div className="bg-amber-50/95 backdrop-blur px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md border border-amber-200">
-                  <span className="text-amber-800 font-extrabold text-xs sm:text-base whitespace-nowrap">
-                    ⚡ {solarPowerKwc.toFixed(2)} kWc
-                  </span>
-                </div>
+              {/* Exit Fullscreen Button */}
+              {document.fullscreenElement && (
+                <button
+                  onClick={() => document.exitFullscreen()}
+                  className="absolute top-4 right-4 z-[200] bg-white/90 p-2 rounded-full shadow-lg border border-slate-200 hover:bg-slate-100"
+                >
+                  <X className="w-6 h-6 text-slate-800" />
+                </button>
               )}
 
-              {/* Toggle Dimensions Blue Pill Button (Nelson Style) */}
-              <button
-                onClick={actions.toggleDimensions}
-                className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-bold text-xs sm:text-sm shadow-md border transition-all flex items-center justify-between gap-2 sm:gap-4 bg-blue-600 text-white border-blue-700 hover:bg-blue-700"
-              >
-                <span>Afficher les côtes</span>
-                <div className="w-8 h-4 sm:w-9 sm:h-5 rounded-full relative bg-white/30 transition-colors">
-                  <div className={`absolute top-0.5 sm:top-1 w-3 h-3 rounded-full bg-white transition-all ${config.showDimensions ? 'left-4 sm:left-5' : 'left-1'}`} />
+              {/* DESKTOP ONLY: TOP-LEFT OVERLAY BADGES & DIMENSIONS TOGGLE */}
+              <div className="hidden lg:flex absolute top-4 left-4 z-20 flex-col gap-2.5 w-fit pointer-events-auto">
+                {/* Dimensions Badge */}
+                <div className="bg-white/95 backdrop-blur px-4 py-2 rounded-xl shadow-md border border-slate-200">
+                  <span className="text-slate-900 font-bold text-base whitespace-nowrap">
+                    {totalLength.toFixed(2)}m x {totalWidth.toFixed(2)}m - {totalSurface}m²
+                  </span>
                 </div>
-              </button>
+
+                {/* Solar Badge (If Solar Option Active) */}
+                {config.hasSolar && (
+                  <div className="bg-amber-50/95 backdrop-blur px-4 py-2 rounded-xl shadow-md border border-amber-200">
+                    <span className="text-amber-800 font-extrabold text-base whitespace-nowrap">
+                      ⚡ {solarPowerKwc.toFixed(2)} kWc
+                    </span>
+                  </div>
+                )}
+
+                {/* Toggle Dimensions Blue Pill Button (Nelson Style) */}
+                <button
+                  onClick={actions.toggleDimensions}
+                  className="px-4 py-2 rounded-xl font-bold text-sm shadow-md border transition-all flex items-center justify-between gap-4 bg-blue-600 text-white border-blue-700 hover:bg-blue-700"
+                >
+                  <span>Afficher les côtes</span>
+                  <div className="w-9 h-5 rounded-full relative bg-white/30 transition-colors">
+                    <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${config.showDimensions ? 'left-5' : 'left-1'}`} />
+                  </div>
+                </button>
+              </div>
+
+              {/* DESKTOP ONLY: TOP-RIGHT ACTION BUTTONS */}
+              <div className="hidden lg:flex absolute top-4 right-4 z-20 flex-col gap-2 p-2 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 pointer-events-auto w-44">
+                <button
+                  onClick={handleScreenshot}
+                  className="w-full bg-white text-slate-700 font-bold py-2.5 px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs"
+                  title="Télécharger l'image"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Télécharger image</span>
+                </button>
+
+                <button
+                  onClick={handleFullscreen}
+                  className="w-full bg-white text-slate-700 font-bold py-2.5 px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs"
+                  title="Plein écran"
+                >
+                  <Maximize className="w-4 h-4" />
+                  <span>Plein écran</span>
+                </button>
+              </div>
+
+              {/* DESKTOP ONLY: Mouse Drag Hint */}
+              <div className="hidden lg:block absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 text-[11px] font-medium pointer-events-none">
+                💡 Maintenez le clic gauche et glissez pour faire pivoter la structure en 3D
+              </div>
             </div>
 
-            {/* TOP-RIGHT ACTION BUTTONS */}
-            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 pointer-events-auto w-32 sm:w-44">
-              {/* Screenshot Button */}
-              <button
-                onClick={handleScreenshot}
-                className="w-full bg-white text-slate-700 font-bold py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs"
-                title="Télécharger l'image"
-              >
-                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Télécharger image</span>
-                <span className="sm:hidden">Télécharger</span>
-              </button>
-
-              {/* Fullscreen Button */}
-              <button
-                onClick={handleFullscreen}
-                className="w-full bg-white text-slate-700 font-bold py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs"
-                title="Plein écran"
-              >
-                <Maximize className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Plein écran</span>
-                <span className="sm:hidden">Plein écran</span>
-              </button>
-            </div>
-
-            {/* Mouse Drag Hint */}
-            <div className="hidden sm:block absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 text-[11px] font-medium pointer-events-none">
-              💡 Maintenez le clic gauche et glissez pour faire pivoter la structure en 3D
+            {/* MOBILE ONLY: DIMENSIONS INDICATIONS BELOW 3D CANVAS */}
+            <div className="flex lg:hidden flex-wrap items-center justify-between gap-2 p-3 bg-slate-100/90 border-t border-slate-200 w-full">
+              <div className="bg-white px-3 py-1.5 rounded-xl shadow-sm border border-slate-200 text-slate-900 font-bold text-xs sm:text-sm">
+                {totalLength.toFixed(2)}m x {totalWidth.toFixed(2)}m – {totalSurface}m²
+              </div>
+              {config.hasSolar && (
+                <div className="bg-amber-50 px-3 py-1.5 rounded-xl shadow-sm border border-amber-200 text-amber-800 font-extrabold text-xs sm:text-sm">
+                  ⚡ {solarPowerKwc.toFixed(2)} kWc
+                </div>
+              )}
             </div>
 
           </div>

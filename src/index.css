@@ -222,36 +222,39 @@ img {
 }
 
 .enr-gradient-text-gold {
-  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #facc15 100%) !important;
+  color: #fde047 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fde047 40%, #facc15 100%) !important;
   -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
-  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
   forced-color-adjust: none !important;
+  color-scheme: only light !important;
   -webkit-text-size-adjust: 100% !important;
 }
 
-/* Force bright vibrant yellow under dark mode & system dark theme */
+/* Force bright light yellow text under dark mode & system dark theme */
 @media (prefers-color-scheme: dark) {
   .enr-gradient-text-gold {
-    background: linear-gradient(135deg, #fbbf24 0%, #facc15 50%, #fef08a 100%) !important;
+    color: #fde047 !important;
+    background: linear-gradient(135deg, #ffffff 0%, #fde047 50%, #facc15 100%) !important;
     -webkit-background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
     background-clip: text !important;
-    color: transparent !important;
-    filter: none !important;
+    -webkit-text-fill-color: transparent !important;
     forced-color-adjust: none !important;
+    color-scheme: only light !important;
+    filter: none !important;
   }
 }
 
 .dark .enr-gradient-text-gold {
-  background: linear-gradient(135deg, #fbbf24 0%, #facc15 50%, #fef08a 100%) !important;
+  color: #fde047 !important;
+  background: linear-gradient(135deg, #ffffff 0%, #fde047 50%, #facc15 100%) !important;
   -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
   background-clip: text !important;
-  color: transparent !important;
-  filter: none !important;
+  -webkit-text-fill-color: transparent !important;
   forced-color-adjust: none !important;
+  color-scheme: only light !important;
+  filter: none !important;
 }
 
 /* --- Button Variants --- */
