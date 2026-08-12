@@ -222,10 +222,36 @@ img {
 }
 
 .enr-gradient-text-gold {
-  background: linear-gradient(135deg, #d4a843 0%, #e8c547 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #facc15 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  forced-color-adjust: none !important;
+  -webkit-text-size-adjust: 100% !important;
+}
+
+/* Force bright vibrant yellow under dark mode & system dark theme */
+@media (prefers-color-scheme: dark) {
+  .enr-gradient-text-gold {
+    background: linear-gradient(135deg, #fbbf24 0%, #facc15 50%, #fef08a 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    color: transparent !important;
+    filter: none !important;
+    forced-color-adjust: none !important;
+  }
+}
+
+.dark .enr-gradient-text-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #facc15 50%, #fef08a 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+  color: transparent !important;
+  filter: none !important;
+  forced-color-adjust: none !important;
 }
 
 /* --- Button Variants --- */

@@ -109,15 +109,15 @@ export default function ConfigurateurCharpente({ hideHeader = false }) {
         )}
 
         {/* CONFIGURATOR MAIN WRAPPER (NELSON EXACT LAYOUT) */}
-        <div id="configurateur-main-wrapper" className="h-[760px] max-h-[calc(100vh-100px)] w-full bg-white rounded-3xl border border-slate-200 shadow-xl relative flex flex-col lg:flex-row overflow-hidden isolate">
+        <div id="configurateur-main-wrapper" className="w-full bg-white rounded-3xl border border-slate-200 shadow-xl relative flex flex-col lg:flex-row h-auto lg:h-[760px] lg:max-h-[calc(100vh-100px)] overflow-visible lg:overflow-hidden isolate">
           
-          {/* ========== CONTROL PANEL (LEFT) ========== */}
-          <div className="relative z-20 w-full lg:w-[380px] h-full overflow-y-auto bg-white border-r border-slate-200">
+          {/* ========== ZONE 1: CONTROL PANEL (PARAMÉTRAGE) ========== */}
+          <div className="relative z-20 w-full lg:w-[380px] h-auto max-h-[480px] sm:max-h-[550px] lg:max-h-none overflow-y-auto lg:h-full bg-white border-b lg:border-b-0 lg:border-r border-slate-200">
             <ControlPanel isAcama={false} />
           </div>
 
-          {/* ========== 3D VISUALIZER (CENTER / RIGHT) ========== */}
-          <div id="3d-view-container" className="flex-1 relative h-full bg-white isolate">
+          {/* ========== ZONE 2: 3D VISUALIZER (VISIONNEUSE 3D) ========== */}
+          <div id="3d-view-container" className="w-full flex-1 relative h-[380px] sm:h-[500px] lg:h-full bg-white isolate border-b lg:border-b-0 border-slate-200 overflow-hidden">
             
             {/* 3D R3F Canvas */}
             <div className="w-full h-full">
@@ -140,18 +140,18 @@ export default function ConfigurateurCharpente({ hideHeader = false }) {
             )}
 
             {/* TOP-LEFT OVERLAY BADGES & DIMENSIONS TOGGLE */}
-            <div className="absolute top-4 left-4 z-20 flex flex-col gap-2.5 w-fit pointer-events-auto">
+            <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-20 flex flex-col gap-2 w-fit pointer-events-auto max-w-[calc(100%-140px)] sm:max-w-none">
               {/* Dimensions Badge */}
-              <div className="bg-white/95 backdrop-blur px-4 py-2 rounded-xl shadow-md border border-slate-200">
-                <span className="text-slate-900 font-bold text-base whitespace-nowrap">
+              <div className="bg-white/95 backdrop-blur px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md border border-slate-200">
+                <span className="text-slate-900 font-bold text-xs sm:text-base whitespace-nowrap">
                   {totalLength.toFixed(2)}m x {totalWidth.toFixed(2)}m - {totalSurface}m²
                 </span>
               </div>
 
               {/* Solar Badge (If Solar Option Active) */}
               {config.hasSolar && (
-                <div className="bg-amber-50/95 backdrop-blur px-4 py-2 rounded-xl shadow-md border border-amber-200">
-                  <span className="text-amber-800 font-extrabold text-base whitespace-nowrap">
+                <div className="bg-amber-50/95 backdrop-blur px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md border border-amber-200">
+                  <span className="text-amber-800 font-extrabold text-xs sm:text-base whitespace-nowrap">
                     ⚡ {solarPowerKwc.toFixed(2)} kWc
                   </span>
                 </div>
@@ -160,84 +160,86 @@ export default function ConfigurateurCharpente({ hideHeader = false }) {
               {/* Toggle Dimensions Blue Pill Button (Nelson Style) */}
               <button
                 onClick={actions.toggleDimensions}
-                className="px-4 py-2 rounded-xl font-bold text-sm shadow-md border transition-all flex items-center justify-between gap-4 bg-blue-600 text-white border-blue-700 hover:bg-blue-700"
+                className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl font-bold text-xs sm:text-sm shadow-md border transition-all flex items-center justify-between gap-2 sm:gap-4 bg-blue-600 text-white border-blue-700 hover:bg-blue-700"
               >
                 <span>Afficher les côtes</span>
-                <div className="w-9 h-5 rounded-full relative bg-white/30 transition-colors">
-                  <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all ${config.showDimensions ? 'left-5' : 'left-1'}`} />
+                <div className="w-8 h-4 sm:w-9 sm:h-5 rounded-full relative bg-white/30 transition-colors">
+                  <div className={`absolute top-0.5 sm:top-1 w-3 h-3 rounded-full bg-white transition-all ${config.showDimensions ? 'left-4 sm:left-5' : 'left-1'}`} />
                 </div>
               </button>
             </div>
 
             {/* TOP-RIGHT ACTION BUTTONS */}
-            <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 p-2 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 pointer-events-auto w-44">
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col gap-1.5 sm:gap-2 p-1.5 sm:p-2 bg-white/90 backdrop-blur rounded-2xl shadow-lg border border-slate-200 pointer-events-auto w-32 sm:w-44">
               {/* Screenshot Button */}
               <button
                 onClick={handleScreenshot}
-                className="w-full bg-white text-slate-700 font-bold py-2.5 px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs"
+                className="w-full bg-white text-slate-700 font-bold py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs"
                 title="Télécharger l'image"
               >
-                <Download className="w-4 h-4" />
-                <span>Télécharger image</span>
+                <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Télécharger image</span>
+                <span className="sm:hidden">Télécharger</span>
               </button>
 
               {/* Fullscreen Button */}
               <button
                 onClick={handleFullscreen}
-                className="w-full bg-white text-slate-700 font-bold py-2.5 px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-2 text-xs"
+                className="w-full bg-white text-slate-700 font-bold py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl shadow-sm border border-slate-200 hover:bg-slate-50 transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-[10px] sm:text-xs"
                 title="Plein écran"
               >
-                <Maximize className="w-4 h-4" />
-                <span>Plein écran</span>
+                <Maximize className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Plein écran</span>
+                <span className="sm:hidden">Plein écran</span>
               </button>
             </div>
 
-            {/* BOTTOM-RIGHT SYNTHÈSE CARD (ALIGNED HORIZONTALLY WITH TOP-RIGHT CONTROLS) */}
-            <div className="absolute bottom-4 right-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-2xl shadow-xl border border-slate-200 w-72 flex flex-col gap-2.5 font-sans pointer-events-auto">
-              <div className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">
-                Synthèse de la structure
-              </div>
-              
-              <div className="flex justify-between items-center text-xs text-slate-700">
-                <span className="text-slate-500 font-medium">Dimensions :</span>
-                <span className="font-bold text-slate-900">{totalLength.toFixed(2)}m x {totalWidth.toFixed(2)}m</span>
-              </div>
-
-              <div className="flex justify-between items-center text-xs text-slate-700">
-                <span className="text-slate-500 font-medium">Surface au sol :</span>
-                <span className="font-bold text-blue-600">{totalSurface} m²</span>
-              </div>
-
-              <div className="flex justify-between items-center text-xs pt-1.5 border-t border-slate-100">
-                <span className="text-slate-600 font-medium">Charpente métallique :</span>
-                <span className="font-extrabold text-blue-600">{charpentePriceHT.toLocaleString('fr-FR')} € HT</span>
-              </div>
-
-              {config.hasSolar && (
-                <>
-                  <div className="flex justify-between items-center text-xs text-amber-800 pt-1.5 border-t border-slate-100">
-                    <span className="text-slate-600 font-medium">Puissance installée :</span>
-                    <span className="font-bold text-amber-600">{solarPowerKwc.toFixed(2)} kWc</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs text-amber-800">
-                    <span className="text-slate-600 font-medium">Installation solaire :</span>
-                    <span className="font-extrabold text-amber-600">{solarPriceHT.toLocaleString('fr-FR')} € HT</span>
-                  </div>
-                </>
-              )}
-
-              {/* TOTAL HT ROW */}
-              <div className="flex justify-between items-center text-xs pt-2 border-t-2 border-slate-200 mt-1">
-                <span className="text-slate-900 font-extrabold uppercase">Total HT :</span>
-                <span className="font-extrabold text-emerald-600 text-sm">{totalPriceHT.toLocaleString('fr-FR')} € HT</span>
-              </div>
-            </div>
-
             {/* Mouse Drag Hint */}
-            <div className="absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 text-[11px] font-medium pointer-events-none">
+            <div className="hidden sm:block absolute bottom-4 left-4 z-10 bg-white/80 backdrop-blur px-3 py-1.5 rounded-full border border-slate-200 text-slate-500 text-[11px] font-medium pointer-events-none">
               💡 Maintenez le clic gauche et glissez pour faire pivoter la structure en 3D
             </div>
 
+          </div>
+
+          {/* ========== ZONE 3: SYNTHÈSE CARD (RECAP) ========== */}
+          <div className="static lg:absolute lg:bottom-4 lg:right-4 z-10 lg:z-20 bg-white lg:bg-white/95 lg:backdrop-blur-md p-4 rounded-b-3xl lg:rounded-2xl shadow-none lg:shadow-xl border-t lg:border border-slate-200 w-full lg:w-72 flex flex-col gap-2.5 font-sans pointer-events-auto">
+            <div className="text-xs font-bold text-slate-500 uppercase tracking-wider border-b border-slate-100 pb-2">
+              Synthèse de la structure
+            </div>
+            
+            <div className="flex justify-between items-center text-xs text-slate-700">
+              <span className="text-slate-500 font-medium">Dimensions :</span>
+              <span className="font-bold text-slate-900">{totalLength.toFixed(2)}m x {totalWidth.toFixed(2)}m</span>
+            </div>
+
+            <div className="flex justify-between items-center text-xs text-slate-700">
+              <span className="text-slate-500 font-medium">Surface au sol :</span>
+              <span className="font-bold text-blue-600">{totalSurface} m²</span>
+            </div>
+
+            <div className="flex justify-between items-center text-xs pt-1.5 border-t border-slate-100">
+              <span className="text-slate-600 font-medium">Charpente métallique :</span>
+              <span className="font-extrabold text-blue-600">{charpentePriceHT.toLocaleString('fr-FR')} € HT</span>
+            </div>
+
+            {config.hasSolar && (
+              <>
+                <div className="flex justify-between items-center text-xs text-amber-800 pt-1.5 border-t border-slate-100">
+                  <span className="text-slate-600 font-medium">Puissance installée :</span>
+                  <span className="font-bold text-amber-600">{solarPowerKwc.toFixed(2)} kWc</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-amber-800">
+                  <span className="text-slate-600 font-medium">Installation solaire :</span>
+                  <span className="font-extrabold text-amber-600">{solarPriceHT.toLocaleString('fr-FR')} € HT</span>
+                </div>
+              </>
+            )}
+
+            {/* TOTAL HT ROW */}
+            <div className="flex justify-between items-center text-xs pt-2 border-t-2 border-slate-200 mt-1">
+              <span className="text-slate-900 font-extrabold uppercase">Total HT :</span>
+              <span className="font-extrabold text-emerald-600 text-sm">{totalPriceHT.toLocaleString('fr-FR')} € HT</span>
+            </div>
           </div>
 
         </div>
