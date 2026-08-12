@@ -54,7 +54,7 @@ const BatterieDetailPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900 w-full max-w-full overflow-x-hidden relative">
       <Helmet>
         <title>Batterie de soutien réseau - Percevez une rente sans rien faire | ENR COURTAGE</title>
         <meta name="description" content="Solution innovante de batterie de soutien réseau 100% financée. Percevez une rente annuelle garantie sans investissement ni maintenance. Installation et gestion complète par ENR COURTAGE." />
@@ -66,9 +66,9 @@ const BatterieDetailPage = () => {
         scrollToContact={scrollToContact} 
       />
 
-      <main role="main" className="pt-16 md:pt-20">
+      <main role="main" className="pt-16 md:pt-20 w-full max-w-full overflow-x-hidden">
         {/* Hero Section avec vidéo "8.mp4" sous-imposée */}
-        <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="hero-title">
+        <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847] w-full max-w-full" aria-labelledby="hero-title">
           {/* Vidéo 8.mp4 en arrière-plan avec sous-imposition légère */}
           <div className="absolute inset-0 z-0 overflow-hidden">
             <video
@@ -98,7 +98,7 @@ const BatterieDetailPage = () => {
               <Button 
                 onClick={scrollToContact}
                 size="lg"
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-xl px-12 py-8 shadow-2xl transform hover:scale-105 transition-all duration-300 rounded-full"
+                className="bg-orange-500 hover:bg-orange-600 text-white font-bold text-base sm:text-xl px-6 sm:px-12 py-5 sm:py-8 shadow-2xl transform hover:scale-105 transition-all duration-300 rounded-full max-w-full h-auto text-center whitespace-normal"
               >
                 Vérifier votre éligibilité
               </Button>
@@ -106,7 +106,7 @@ const BatterieDetailPage = () => {
           </div>
         </section>
 
-        <section className="section-padding bg-gradient-to-br from-gray-50 to-blue-50" aria-labelledby="concept-title">
+        <section className="section-padding bg-gradient-to-br from-gray-50 to-blue-50 w-full max-w-full overflow-hidden" aria-labelledby="concept-title">
           <div className="max-w-7xl mx-auto container-padding">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -126,7 +126,7 @@ const BatterieDetailPage = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7 }}
-                className="bg-white p-12 rounded-2xl shadow-2xl border-4 border-blue-500 relative overflow-hidden"
+                className="bg-white p-6 sm:p-8 md:p-12 rounded-2xl shadow-2xl border-4 border-blue-500 relative overflow-hidden"
               >
                 <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500 rounded-bl-full opacity-10"></div>
                 <div className="relative z-10">
@@ -156,7 +156,7 @@ const BatterieDetailPage = () => {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7 }}
-                className="bg-white p-12 rounded-2xl shadow-2xl border-4 border-green-500 relative overflow-hidden"
+                className="bg-white p-6 sm:p-8 md:p-12 rounded-2xl shadow-2xl border-4 border-green-500 relative overflow-hidden"
               >
                 <div className="absolute top-0 left-0 w-32 h-32 bg-green-500 rounded-br-full opacity-10"></div>
                 <div className="relative z-10">
@@ -189,14 +189,14 @@ const BatterieDetailPage = () => {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="text-center"
             >
-              <p className="text-4xl md:text-5xl font-black text-gray-900 inline-block px-8 py-4 bg-yellow-300 rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300">
+              <p className="text-2xl sm:text-4xl md:text-5xl font-black text-gray-900 inline-block max-w-full px-5 sm:px-8 py-3 sm:py-4 bg-yellow-300 rounded-2xl shadow-xl transform hover:scale-105 transition-transform duration-300 break-words">
                 Rien de plus simple.
               </p>
             </motion.div>
           </div>
         </section>
 
-        <section className="section-padding bg-white" aria-labelledby="no-solar-title">
+        <section className="section-padding bg-white w-full max-w-full overflow-hidden" aria-labelledby="no-solar-title">
           <div className="max-w-7xl mx-auto container-padding">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <motion.div
@@ -240,7 +240,7 @@ const BatterieDetailPage = () => {
           </div>
         </section>
 
-        <section className="section-padding bg-gradient-to-br from-blue-900 to-teal-800 text-white" aria-labelledby="financing-title">
+        <section className="section-padding bg-gradient-to-br from-blue-900 to-teal-800 text-white w-full max-w-full overflow-hidden" aria-labelledby="financing-title">
           <div className="max-w-7xl mx-auto container-padding">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -309,7 +309,7 @@ const BatterieDetailPage = () => {
           </div>
         </section>
 
-        <section className="section-padding bg-white" aria-labelledby="for-whom-title">
+        <section className="section-padding bg-white w-full max-w-full overflow-hidden" aria-labelledby="for-whom-title">
           <div className="max-w-7xl mx-auto container-padding">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -439,7 +439,7 @@ const BatterieDetailPage = () => {
           </div>
         </section>
 
-        <section className="section-padding bg-gradient-to-br from-gray-50 to-blue-50" aria-labelledby="benefits-title">
+        <section className="section-padding bg-gradient-to-br from-gray-50 to-blue-50 w-full max-w-full overflow-hidden" aria-labelledby="benefits-title">
           <div className="max-w-6xl mx-auto container-padding">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -502,7 +502,7 @@ const BatterieDetailPage = () => {
           </div>
         </section>
 
-        <section className="section-padding bg-gradient-to-r from-blue-600 via-teal-600 to-blue-700" aria-labelledby="cta-title">
+        <section className="section-padding bg-gradient-to-r from-blue-600 via-teal-600 to-blue-700 w-full max-w-full overflow-hidden" aria-labelledby="cta-title">
           <div className="max-w-7xl mx-auto container-padding">
             <div className="grid md:grid-cols-2 gap-12 items-center">
               <motion.div
@@ -538,7 +538,7 @@ const BatterieDetailPage = () => {
                 <Button 
                   onClick={scrollToContact}
                   size="lg"
-                  className="bg-white text-blue-700 hover:bg-gray-100 font-bold text-xl px-12 py-8 shadow-2xl transform hover:scale-105 transition-all duration-300 rounded-full"
+                  className="bg-white text-blue-700 hover:bg-gray-100 font-bold text-base sm:text-xl px-6 sm:px-12 py-5 sm:py-8 shadow-2xl transform hover:scale-105 transition-all duration-300 rounded-full max-w-full h-auto text-center whitespace-normal"
                 >
                   Demander plus d'informations
                 </Button>

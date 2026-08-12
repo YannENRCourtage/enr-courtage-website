@@ -218,7 +218,7 @@ function MainPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden relative">
       <Helmet>
         <title>ENR COURTAGE – Courtier en énergies renouvelables | Bâtiment gratuit, IRVE, Autoconsommation</title>
         <meta name="description" content="ENR COURTAGE, courtier en énergies renouvelables. Batterie de soutien réseau, bornes IRVE, bâtiments & ombrières tiers financées, autoconsommation solaire en abonnement." />
@@ -227,7 +227,7 @@ function MainPage() {
 
       <Header activeTab={activeTab} setActiveTab={handleSetActiveTab} scrollToContact={scrollToContact} />
 
-      <main role="main">
+      <main role="main" className="w-full max-w-full overflow-x-hidden">
         <AnimatePresence mode="wait">{renderContent()}</AnimatePresence>
       </main>
 

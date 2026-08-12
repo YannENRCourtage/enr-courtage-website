@@ -64,7 +64,7 @@ const BatterieSection = ({ scrollToContact }) => {
   ];
 
   return (
-    <div className="bg-white">
+    <div className="bg-white w-full max-w-full overflow-x-hidden relative">
       {/* Hero Section avec vidéo "8.mp4" sous-imposée */}
       <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="batterie-hero-title">
         {/* Vidéo 8.mp4 en arrière-plan avec sous-imposition légère */}
