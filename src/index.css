@@ -222,24 +222,45 @@ img {
 }
 
 .enr-gradient-text-gold {
-  color: #fde047 !important;
-  background: linear-gradient(135deg, #ffffff 0%, #fde047 40%, #facc15 100%) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
+  color: #FFE600 !important;
+  -webkit-text-fill-color: #FFE600 !important;
   forced-color-adjust: none !important;
   color-scheme: only light !important;
   -webkit-text-size-adjust: 100% !important;
 }
 
-/* Force bright light yellow text under dark mode & system dark theme */
-@media (prefers-color-scheme: dark) {
+/* Desktop screen (min-width: 1024px): Metallic gold gradient */
+@media (min-width: 1024px) {
   .enr-gradient-text-gold {
-    color: #fde047 !important;
-    background: linear-gradient(135deg, #ffffff 0%, #fde047 50%, #facc15 100%) !important;
+    color: #FFE600 !important;
+    background: linear-gradient(135deg, #FFF066 0%, #FFDF00 50%, #EAB308 100%) !important;
     -webkit-background-clip: text !important;
     background-clip: text !important;
     -webkit-text-fill-color: transparent !important;
+    forced-color-adjust: none !important;
+    color-scheme: only light !important;
+  }
+}
+
+/* Mobile & Dark Mode: Force solid ultra-vibrant bright yellow (#FFE600) to defeat forced dark mode browning */
+@media (max-width: 1023px) {
+  .enr-gradient-text-gold {
+    color: #FFE600 !important;
+    -webkit-text-fill-color: #FFE600 !important;
+    background: transparent !important;
+    background-image: none !important;
+    -webkit-background-clip: initial !important;
+    background-clip: initial !important;
+    forced-color-adjust: none !important;
+    color-scheme: only light !important;
+    filter: none !important;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .enr-gradient-text-gold {
+    color: #FFE600 !important;
+    -webkit-text-fill-color: #FFE600 !important;
     forced-color-adjust: none !important;
     color-scheme: only light !important;
     filter: none !important;
@@ -247,11 +268,8 @@ img {
 }
 
 .dark .enr-gradient-text-gold {
-  color: #fde047 !important;
-  background: linear-gradient(135deg, #ffffff 0%, #fde047 50%, #facc15 100%) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
+  color: #FFE600 !important;
+  -webkit-text-fill-color: #FFE600 !important;
   forced-color-adjust: none !important;
   color-scheme: only light !important;
   filter: none !important;
