@@ -43,7 +43,7 @@ const BuildingScene = forwardRef(({ viewMode = '3D', isCapturing = false, transp
                 <>
                     <PerspectiveCamera makeDefault position={[28, 20, 30]} fov={42} near={0.1} far={2000} />
                     <OrbitControls
-                        maxPolarAngle={Math.PI / 2 - 0.01}
+                        maxPolarAngle={Math.PI - 0.01}
                         minDistance={2}
                         maxDistance={300}
                         target={[0, 3, -config.length / 2]}
