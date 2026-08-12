@@ -864,7 +864,7 @@ export default function ToitureSimulator() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Saisissez votre adresse postale (ex: 52 Rue de la Victoire, Paris)..."
-                  className="w-full bg-gray-50 dark:bg-slate-800 border-2 border-gray-200 dark:border-slate-700 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#84cc16] focus:bg-white dark:focus:bg-slate-800 shadow-sm transition-all text-[#0f2847] dark:text-white font-medium"
+                  className="w-full bg-white border-2 border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#84cc16] focus:bg-white shadow-sm transition-all text-[#0f2847] font-medium"
                 />
                 <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
               </div>

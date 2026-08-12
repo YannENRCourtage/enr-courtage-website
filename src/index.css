@@ -267,35 +267,73 @@ img {
   }
 }
 
-/* Force bright white text color in dark input fields / dark mode to ensure clear visibility */
-@media (prefers-color-scheme: dark) {
-  input:not([type="checkbox"]):not([type="radio"]),
-  select,
-  textarea {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-  }
-  input::placeholder,
-  textarea::placeholder {
-    color: #94a3b8 !important;
-    -webkit-text-fill-color: #94a3b8 !important;
-  }
+/* ==========================================================================
+   FORM CONTROLS & DROPDOWN STYLING
+   Règle générale : 
+   - Champs clairs (fond blanc/clair) = police sombre (#0f2847)
+   - Champs sombres (fond sombre/semi-transparent) = police claire (#ffffff)
+   ========================================================================== */
+
+/* 1. Règle par défaut pour TOUS les champs clairs (inputs, selects, textareas) */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  color: #0f2847 !important;
+  -webkit-text-fill-color: #0f2847 !important;
+  color-scheme: light !important;
 }
 
-.dark input:not([type="checkbox"]):not([type="radio"]),
-.dark select,
-.dark textarea {
-  color: #ffffff !important;
-  -webkit-text-fill-color: #ffffff !important;
+input:not([type="checkbox"]):not([type="radio"])::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+  -webkit-text-fill-color: #64748b !important;
+  opacity: 1;
 }
 
+/* Options des menus déroulants <select> pour les champs clairs */
+select option {
+  background-color: #ffffff !important;
+  color: #0f2847 !important;
+  -webkit-text-fill-color: #0f2847 !important;
+}
+
+/* 2. Exceptions explicites pour les CHAMPS SOMBRES */
 input.dark-input,
 .dark-input input,
+select.dark-input,
+.dark-input select,
+textarea.dark-input,
+.dark-input textarea,
 input[class*="bg-slate-800"],
 input[class*="bg-gray-800"],
 input[class*="bg-slate-900"],
 input[class*="bg-black"],
-input[class*="bg-white/10"] {
+input[class*="bg-white/10"],
+select[class*="bg-slate-800"],
+select[class*="bg-gray-800"],
+select[class*="bg-slate-900"],
+select[class*="bg-black"],
+select[class*="bg-white/10"] {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color-scheme: dark !important;
+}
+
+input.dark-input::placeholder,
+.dark-input input::placeholder,
+input[class*="bg-slate-800"]::placeholder,
+input[class*="bg-gray-800"]::placeholder,
+input[class*="bg-white/10"]::placeholder {
+  color: #cbd5e1 !important;
+  -webkit-text-fill-color: #cbd5e1 !important;
+}
+
+select.dark-input option,
+.dark-input select option,
+select[class*="bg-slate-800"] option,
+select[class*="bg-gray-800"] option,
+select[class*="bg-slate-900"] option {
+  background-color: #1e293b !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }

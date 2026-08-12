@@ -641,7 +641,7 @@ export default function StructureSurMesureSection() {
                         value={addressInput}
                         onChange={(e) => handleAddressSearch(e.target.value)}
                         placeholder="Ex: 52 Rue de la Victoire, Paris ou Rue de la Paix, Lyon..."
-                        className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-200 dark:border-slate-700 focus:border-[#0f2847] focus:ring-4 focus:ring-blue-100 outline-none text-base font-semibold text-gray-900 dark:text-white bg-white dark:bg-slate-800 transition-all shadow-sm"
+                        className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-200 focus:border-[#0f2847] focus:ring-4 focus:ring-blue-100 outline-none text-base font-semibold text-[#0f2847] bg-white transition-all shadow-sm"
                       />
                     </div>
 
