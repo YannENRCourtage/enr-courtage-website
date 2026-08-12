@@ -269,6 +269,9 @@ export default function ConfigurateurCharpente({ hideHeader = false }) {
               <span className="text-slate-900 font-extrabold uppercase">Total HT :</span>
               <span className="font-extrabold text-emerald-600 text-sm">{totalPriceHT.toLocaleString('fr-FR')} € HT</span>
             </div>
+            <div className="text-[11px] text-slate-500 font-medium text-right pt-1 leading-tight">
+              * Fondations et couverture bac acier incluses
+            </div>
           </div>
 
         </div>
