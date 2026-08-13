@@ -111,13 +111,16 @@ const Hero = ({ setActiveTab }) => {
 
           {/* Action CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <button
-              onClick={scrollToContact}
-              className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-extrabold rounded-full shadow-2xl text-base transition-all transform hover:scale-105 flex items-center justify-center space-x-3"
-            >
-              <span>Nous contacter</span>
-              <ArrowRight className="w-5 h-5" />
-            </button>
+            <div className="relative group w-full sm:w-auto">
+              <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 rounded-full blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 group-hover:scale-105 animate-pulse" />
+              <button
+                onClick={scrollToContact}
+                className="relative w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-extrabold rounded-full shadow-2xl text-base transition-all transform group-hover:scale-105 flex items-center justify-center space-x-3"
+              >
+                <span>Nous contacter</span>
+                <ArrowRight className="w-5 h-5 text-amber-500" />
+              </button>
+            </div>
             <a
               href="#solutions-bento"
               className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 backdrop-blur-md text-base transition-all text-center"

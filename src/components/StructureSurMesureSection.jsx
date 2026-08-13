@@ -626,9 +626,7 @@ export default function StructureSurMesureSection() {
           </motion.div>
 
           {/* 3D Configurator Module */}
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl">
-            <ConfigurateurCharpente hideHeader={true} />
-          </div>
+          <ConfigurateurCharpente hideHeader={true} />
         </div>
       </section>
 

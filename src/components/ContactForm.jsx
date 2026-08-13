@@ -135,8 +135,11 @@ export default function ContactForm() {
 
   return (
     <section id="contact-form" data-contact-form className="py-16 bg-[#070b12] text-white">
-      <div className="max-w-4xl mx-auto px-4">
-        <div className="bg-[#0a1628] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl">
+      <div className="max-w-4xl mx-auto px-4 relative group">
+        {/* Animated colorful glowing halo backdrop */}
+        <div className="absolute -inset-1.5 bg-gradient-to-r from-blue-600 via-amber-400 to-indigo-600 rounded-[34px] blur-xl opacity-60 group-hover:opacity-100 group-hover:blur-2xl transition-all duration-500 group-hover:scale-[1.02] animate-pulse pointer-events-none" />
+
+        <div className="relative bg-[#0a1628] rounded-3xl p-8 sm:p-12 border border-white/15 shadow-2xl transition-all duration-500 group-hover:border-amber-400/50 group-hover:shadow-[0_0_50px_rgba(245,158,11,0.25)] group-hover:-translate-y-1">
           <div className="text-center mb-10">
             <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3 tracking-tight">
               Nous contacter
