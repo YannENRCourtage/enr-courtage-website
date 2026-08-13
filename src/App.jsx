@@ -110,6 +110,12 @@ function MainPage() {
     const contactEl = document.querySelector('#contact-form') || document.querySelector('[data-contact-form]') || contactFormRef.current;
     if (contactEl) {
       contactEl.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      handleSetActiveTab('toiture');
+      setTimeout(() => {
+        const el = document.querySelector('#contact-form') || document.querySelector('[data-contact-form]');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
     }
   };
 
@@ -191,7 +197,6 @@ function MainPage() {
             <div className="pt-20">
               <AboutSection />
               <TestimonialsCarousel />
-              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );
@@ -210,7 +215,6 @@ function MainPage() {
               <ConfigurateurCharpente />
               <WhyUsBentoSection scrollToContact={scrollToContact} />
               <TestimonialsCarousel />
-              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
         );

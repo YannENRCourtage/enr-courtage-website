@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building2, Sun, Battery, Car, Building, Zap, ShieldCheck, Award, RefreshCw, ArrowRight, Phone, PhoneCall, Send, CheckCircle2 } from 'lucide-react';
+import ContactForm from './ContactForm';
 
 const AboutSection = () => {
   const navigate = useNavigate();
@@ -265,114 +266,12 @@ const AboutSection = () => {
           </div>
         </motion.div>
 
-        {/* Section 4: Nous contacter (Style enr-courtage-energie.fr Image 4) */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          id="contact-form"
-          className="max-w-4xl mx-auto"
-        >
-          <div className="bg-[#0a1628] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl">
-            <div className="text-center mb-10">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-3 tracking-tight">
-                Nous contacter
-              </h2>
-              <p className="text-gray-400 text-sm sm:text-base">
-                Une question ? Un projet solaire ? Notre équipe vous répond sous 24h.
-              </p>
-            </div>
-
-            <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                    Votre nom & prénom
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Jean Dupont"
-                    className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                    Votre adresse email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="jean.dupont@entreprise.fr"
-                    className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                  Sujet de votre demande
-                </label>
-                <input
-                  type="text"
-                  value={formData.subject}
-                  onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                  placeholder="Étude de toiture / Autoconsommation / Batterie"
-                  className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
-                  Votre message
-                </label>
-                <textarea
-                  rows={4}
-                  value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="Décrivez votre bâtiment, adresse ou terrain..."
-                  className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all resize-none"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-base shadow-lg hover:shadow-blue-500/25 transition-all duration-300 flex items-center justify-center space-x-2"
-              >
-                <span>Envoyer le message</span>
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-
-            {/* Bottom Rappel section matching Image 4 */}
-            <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#070d18]/60 p-4 sm:p-5 rounded-2xl border border-white/5">
-              <div className="flex items-center space-x-3 text-sm text-gray-300 w-full sm:w-auto">
-                <Phone className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                <input
-                  type="tel"
-                  value={callbackPhone}
-                  onChange={(e) => setCallbackPhone(e.target.value)}
-                  placeholder="Laissez votre numéro pour être rappelé..."
-                  className="bg-transparent border-none text-white text-sm placeholder-gray-500 focus:outline-none w-full"
-                />
-              </div>
-              <button
-                type="button"
-                className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all flex items-center justify-center space-x-2 flex-shrink-0 shadow-md"
-              >
-                <PhoneCall className="w-4 h-4" />
-                <span>Rappeler</span>
-              </button>
-            </div>
-          </div>
-        </motion.div>
-
+        {/* Section 4: Nous contacter */}
+        <ContactForm />
       </div>
     </div>
   );
+};
 };
 
 export default AboutSection;
