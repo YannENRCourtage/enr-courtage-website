@@ -99,33 +99,13 @@ const Hero = ({ setActiveTab }) => {
             Une offre complète pour valoriser vos toitures et terrains partout en France : bâtiments neufs, batteries réseau, IRVE & autoconsommation.
           </p>
 
-          {/* Key Checkmarks List */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl mx-auto text-left mb-10 text-sm text-gray-200">
-            <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl backdrop-blur-sm">
-              <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <span>Étude de faisabilité & rentabilité offerte</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl backdrop-blur-sm">
-              <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <span>Financement à 100% sans aucun coût</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl backdrop-blur-sm">
-              <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <span>Rente annuelle garantie & économies</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl backdrop-blur-sm">
-              <CheckCircle2 className="w-4 h-4 text-amber-400 flex-shrink-0" />
-              <span>Accompagnement d'expert de A à Z</span>
-            </div>
-          </div>
-
           {/* Action CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <button
               onClick={scrollToContact}
               className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-extrabold rounded-full shadow-2xl text-base transition-all transform hover:scale-105 flex items-center justify-center space-x-3"
             >
-              <span>Estimer mes économies</span>
+              <span>Nous contacter</span>
               <ArrowRight className="w-5 h-5" />
             </button>
             <a

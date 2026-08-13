@@ -214,6 +214,7 @@ function MainPage() {
               </div>
               <ConfigurateurCharpente />
               <WhyUsBentoSection scrollToContact={scrollToContact} />
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
               <TestimonialsCarousel />
             </div>
           </motion.div>
