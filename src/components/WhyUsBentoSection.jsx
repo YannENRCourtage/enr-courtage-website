@@ -20,7 +20,7 @@ const WhyUsBentoSection = ({ scrollToContact }) => {
           <h2 id="why-us-title" className="text-3xl sm:text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">
             Pourquoi choisir <span className="enr-gradient-text-gold">ENR COURTAGE</span> ?
           </h2>
-          <p className="text-gray-400 text-lg max-w-3xl mx-auto leading-relaxed">
+          <p className="text-gray-400 text-base md:text-lg max-w-5xl mx-auto leading-relaxed whitespace-normal lg:whitespace-nowrap">
             Une approche innovante et sécurisée pour valoriser votre patrimoine immobilier et foncier sans investissement.
           </p>
         </motion.div>

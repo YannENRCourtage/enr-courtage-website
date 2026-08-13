@@ -63,27 +63,18 @@ const Footer = ({ setActiveTab }) => {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col items-start md:items-start justify-between">
-             <div className="flex flex-col items-start space-y-6">
-                {/* Google Avis logo */}
-                <a href="#" className="inline-block hover:opacity-80 transition-opacity" aria-label="Avis Google">
-                  <img
-                    src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/ee5a02128bc9c28d6982fb6b8f4b73e6.png"
-                    alt="Avis Google"
-                    className="h-11 w-auto rounded-lg object-contain bg-white/5 p-1.5"
-                    loading="lazy" decoding="async"
-                  />
-                </a>
-                
-                {/* Nelson logo */}
-                <a href="https://nelsonpv.fr" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Visiter Nelson PV">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col items-start justify-start">
+             <div className="flex flex-col items-start space-y-2">
+                {/* Nelson logo & Accès CRM */}
+                <a href="https://nelsonpv.fr" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Accès CRM Nelson PV">
                   <img
                     src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/bb9cff716bde1c901c58ea3f8b324b3a.png"
-                    alt="Logo Nelson"
-                    className="h-9 w-auto object-contain rounded-lg bg-white p-1"
+                    alt="Logo Nelson - Accès CRM"
+                    className="h-10 w-auto object-contain rounded-lg bg-white p-1 shadow-sm"
                     loading="lazy" decoding="async"
                   />
                 </a>
+                <span className="text-xs font-semibold text-gray-400 tracking-wide uppercase mt-1">Accès CRM</span>
             </div>
           </motion.div>
         </div>

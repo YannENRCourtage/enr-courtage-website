@@ -62,7 +62,8 @@ const TestimonialsCarousel = () => {
             Ils nous font confiance
           </h2>
           <p className="text-gray-300 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
-            Découvrez ce que nos clients pensent de nos services — <span className="text-blue-400 font-bold">Déjà plus de 700 projets accompagnés !</span>
+            Découvrez ce que nos clients pensent de nos services.<br />
+            <span className="text-blue-400 font-bold">Déjà plus de 700 projets accompagnés !</span>
           </p>
         </motion.div>
 

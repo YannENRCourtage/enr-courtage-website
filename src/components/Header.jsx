@@ -290,11 +290,6 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
           </AnimatePresence>
         </div>
       </div>
-
-      {/* Tagline Bar - Refined */}
-      <div className="relative z-10 bg-[#0f2847] text-white text-center py-2 hidden md:block">
-        <p className="text-xs tracking-wide font-light opacity-80">"Parce qu'on est jamais mieux accompagné que par un expert... surtout s'il est gratuit !"</p>
-      </div>
     </header>
   );
 };
