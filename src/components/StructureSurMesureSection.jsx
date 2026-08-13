@@ -53,15 +53,19 @@ function getOrientationMultiplier(deg) {
 
 // Cardinal direction label helper
 function getCardinalLabel(deg) {
-  if (deg >= -22.5 && deg <= 22.5) return 'Sud Plein (0°) - Idéal ☀️';
-  if (deg > 22.5 && deg <= 67.5) return 'Sud-Ouest (45°)';
-  if (deg > 67.5 && deg <= 112.5) return 'Ouest (90°)';
-  if (deg > 112.5 && deg <= 157.5) return 'Nord-Ouest (135°)';
-  if (deg < -157.5 || deg > 157.5) return 'Nord (180°)';
-  if (deg >= -157.5 && deg < -112.5) return 'Nord-Est (-135°)';
-  if (deg >= -112.5 && deg < -67.5) return 'Est (-90°)';
-  if (deg >= -67.5 && deg < -22.5) return 'Sud-Est (-45°)';
-  return `${deg}°`;
+  let d = Math.round(deg);
+  while (d > 180) d -= 360;
+  while (d < -180) d += 360;
+
+  if (d >= -22.5 && d <= 22.5) return d === 0 ? 'Sud Plein (0°) - Idéal ☀️' : `Sud (${d}°)`;
+  if (d > 22.5 && d <= 67.5) return `Sud-Ouest (${d}°)`;
+  if (d > 67.5 && d <= 112.5) return `Ouest (${d}°)`;
+  if (d > 112.5 && d <= 157.5) return `Nord-Ouest (${d}°)`;
+  if (d < -157.5 || d > 157.5) return `Nord (${d}°)`;
+  if (d >= -157.5 && d < -112.5) return `Nord-Est (${d}°)`;
+  if (d >= -112.5 && d < -67.5) return `Est (${d}°)`;
+  if (d >= -67.5 && d < -22.5) return `Sud-Est (${d}°)`;
+  return `${d}°`;
 }
 
 // ==========================================
@@ -250,9 +254,51 @@ export default function StructureSurMesureSection() {
     return Math.round((totalSurface / 2.38) * 0.465 * 100) / 100;
   }, [config.solarStats, totalSurface]);
 
+  // Orientation of the largest roof slope (toiture la plus grande)
+  const effectiveOrientationDeg = useMemo(() => {
+    let ridgeRatioInMain = 0.5;
+    if (config.buildingType === 'asymetrique_1') ridgeRatioInMain = 0.33;
+    else if (config.buildingType === 'asymetrique_2') ridgeRatioInMain = 0.67;
+    else if (config.buildingType === 'monopente') ridgeRatioInMain = 0.0;
+
+    // Slope 1 (Bottom slope, facing orientationDeg on map)
+    const slope1Width = leftExtW + (mainWidth * ridgeRatioInMain);
+    // Slope 2 (Top slope, facing orientationDeg + 180° on map)
+    const slope2Width = rightExtW + (mainWidth * (1 - ridgeRatioInMain));
+
+    // If Top slope is strictly larger than Bottom slope, the main/largest roof surface faces opposite (orientationDeg + 180°)
+    if (slope2Width > slope1Width) {
+      let angle = orientationDeg + 180;
+      if (angle > 180) angle -= 360;
+      if (angle < -180) angle += 360;
+      return angle;
+    }
+    
+    return orientationDeg;
+  }, [config.buildingType, mainWidth, leftExtW, rightExtW, orientationDeg]);
+
+  const handlePresetOrientation = (targetDeg) => {
+    let ridgeRatioInMain = 0.5;
+    if (config.buildingType === 'asymetrique_1') ridgeRatioInMain = 0.33;
+    else if (config.buildingType === 'asymetrique_2') ridgeRatioInMain = 0.67;
+    else if (config.buildingType === 'monopente') ridgeRatioInMain = 0.0;
+
+    const slope1Width = leftExtW + (mainWidth * ridgeRatioInMain);
+    const slope2Width = rightExtW + (mainWidth * (1 - ridgeRatioInMain));
+
+    if (slope2Width > slope1Width) {
+      let baseAngle = targetDeg - 180;
+      if (baseAngle < -180) baseAngle += 360;
+      if (baseAngle > 180) baseAngle -= 360;
+      setOrientationDeg(baseAngle);
+    } else {
+      setOrientationDeg(targetDeg);
+    }
+  };
+
   // Financial & Solar Calculations
   const productibleBase = useMemo(() => getRegionalProductible(selectedAddress), [selectedAddress]);
-  const orientationFactor = useMemo(() => getOrientationMultiplier(orientationDeg), [orientationDeg]);
+  const orientationFactor = useMemo(() => getOrientationMultiplier(effectiveOrientationDeg), [effectiveOrientationDeg]);
 
   const annualProductionKwh = useMemo(() => {
     return Math.round(installedKwc * productibleBase * orientationFactor);
@@ -514,7 +560,7 @@ export default function StructureSurMesureSection() {
         ...leadForm,
         projet: 'Structure métallique sur-mesure (Rentabilité & Faisabilité)',
         adresse: selectedAddress,
-        orientation: getCardinalLabel(orientationDeg),
+        orientation: getCardinalLabel(effectiveOrientationDeg),
         dimensions: `${totalLength.toFixed(1)}m x ${totalWidth.toFixed(1)}m (${totalSurface}m²)`,
         puissanceKwc: installedKwc,
         productionKwh: annualProductionKwh,
@@ -705,7 +751,7 @@ export default function StructureSurMesureSection() {
                       />
 
                       <div className="bg-blue-50 border border-blue-100 rounded-xl p-2.5 text-center text-xs font-bold text-blue-900">
-                        {getCardinalLabel(orientationDeg)}
+                        {getCardinalLabel(effectiveOrientationDeg)}
                       </div>
 
                       {/* Quick preset buttons */}
@@ -717,9 +763,9 @@ export default function StructureSurMesureSection() {
                         ].map(preset => (
                           <button
                             key={preset.val}
-                            onClick={() => setOrientationDeg(preset.val)}
+                            onClick={() => handlePresetOrientation(preset.val)}
                             className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
-                              orientationDeg === preset.val ? 'bg-[#0f2847] text-white border-[#0f2847]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                              effectiveOrientationDeg === preset.val ? 'bg-[#0f2847] text-white border-[#0f2847]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
                             }`}
                           >
                             {preset.label}
@@ -793,7 +839,7 @@ export default function StructureSurMesureSection() {
                         <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Étude de Rentabilité Solaire Validée
                       </div>
                       <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">Tableau de Bord Financier & Productible</h3>
-                      <p className="text-gray-500 text-xs mt-1">Implantation à {selectedAddress} • Orientation {getCardinalLabel(orientationDeg)}</p>
+                      <p className="text-gray-500 text-xs mt-1">Implantation à {selectedAddress} • Orientation {getCardinalLabel(effectiveOrientationDeg)}</p>
                     </div>
 
                     <button
