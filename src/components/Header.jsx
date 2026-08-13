@@ -174,14 +174,14 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
               </button>
             </nav>
 
-            {/* Contact Button - Desktop */}
+            {/* Contact / Estimer Button - Desktop */}
             <div className="hidden md:flex items-center">
               <Button 
                 onClick={scrollToContact} 
-                className="bg-[#0f2847] hover:bg-[#1a3a5c] text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all duration-300 text-sm"
+                className="bg-[#0f2847] hover:bg-[#1a3a5c] text-white rounded-full font-bold shadow-md hover:shadow-lg transition-all duration-300 text-sm px-6 py-2.5"
               >
                 <Mail className="mr-2 h-4 w-4" />
-                Contact
+                Estimer mes économies
               </Button>
             </div>
 

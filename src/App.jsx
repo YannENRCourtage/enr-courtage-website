@@ -19,8 +19,7 @@ import IrveSection from '@/components/IrveSection';
 import ToiturePhotovoltaiqueSection from '@/components/ToiturePhotovoltaiqueSection';
 import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
 import StructureSurMesureSection from '@/components/StructureSurMesureSection';
-import { isStagingOrTestEnvironment } from '@/utils/envUtils';
-
+import WhyUsBentoSection from '@/components/WhyUsBentoSection';
 
 const videos = ['/1.mp4', '/2.mp4'];
 
@@ -209,6 +208,7 @@ function MainPage() {
                 </div>
               </div>
               <ConfigurateurCharpente />
+              <WhyUsBentoSection scrollToContact={scrollToContact} />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
