@@ -737,7 +737,7 @@ export default function StructureSurMesureSection() {
                     <div className="bg-slate-50 p-4 rounded-2xl border border-gray-200 space-y-4">
                       <div className="flex justify-between items-center text-xs font-bold text-gray-700">
                         <span className="flex items-center gap-1.5"><Compass className="w-4 h-4 text-blue-600" /> Orientation</span>
-                        <span className="text-blue-600 text-sm font-extrabold">{orientationDeg}°</span>
+                        <span className="text-blue-600 text-sm font-extrabold">{effectiveOrientationDeg}°</span>
                       </div>
 
                       <input
@@ -745,8 +745,8 @@ export default function StructureSurMesureSection() {
                         min="-180"
                         max="180"
                         step="5"
-                        value={orientationDeg}
-                        onChange={(e) => setOrientationDeg(Number(e.target.value))}
+                        value={effectiveOrientationDeg}
+                        onChange={(e) => handlePresetOrientation(Number(e.target.value))}
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#0f2847]"
                       />
 
@@ -757,9 +757,9 @@ export default function StructureSurMesureSection() {
                       {/* Quick preset buttons */}
                       <div className="grid grid-cols-3 gap-1.5">
                         {[
+                          { label: 'Sud-Ouest (45°)', val: 45 },
                           { label: 'Sud (0°)', val: 0 },
-                          { label: 'Sud-Est (-45°)', val: -45 },
-                          { label: 'Sud-Ouest (45°)', val: 45 }
+                          { label: 'Sud-Est (-45°)', val: -45 }
                         ].map(preset => (
                           <button
                             key={preset.val}
