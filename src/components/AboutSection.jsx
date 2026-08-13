@@ -167,7 +167,8 @@ const AboutSection = () => {
                 loop
                 muted
                 playsInline
-                className="w-full h-auto max-h-[380px] object-cover rounded-2xl shadow-xl"
+                preload="auto"
+                className="w-full h-[260px] sm:h-[300px] md:h-[340px] object-cover rounded-2xl shadow-xl"
                 src="/Birds_perched_on_tree_branch_202608111430.mp4"
               />
               <div className="p-4 text-center">

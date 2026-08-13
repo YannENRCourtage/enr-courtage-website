@@ -21,61 +21,7 @@ import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
 import StructureSurMesureSection from '@/components/StructureSurMesureSection';
 import WhyUsBentoSection from '@/components/WhyUsBentoSection';
 
-const videos = ['/1.mp4', '/2.mp4'];
 
-function VideoBackground() {
-  const video1Ref = useRef(null);
-  const video2Ref = useRef(null);
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const handleVideoEnd = useCallback(() => {
-    setActiveIndex((prev) => (prev + 1) % videos.length);
-  }, []);
-
-  useEffect(() => {
-    const v1 = video1Ref.current;
-    const v2 = video2Ref.current;
-    if (!v1 || !v2) return;
-
-    if (activeIndex === 0) {
-      v1.currentTime = 0;
-      v1.play().catch(() => {});
-    } else {
-      v2.currentTime = 0;
-      v2.play().catch(() => {});
-    }
-  }, [activeIndex]);
-
-  return (
-    <div className="absolute inset-0 z-0 hidden md:block" aria-hidden="true">
-      <video
-        ref={video1Ref}
-        src={videos[0]}
-        autoPlay
-        muted
-        playsInline
-        onEnded={handleVideoEnd}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          opacity: activeIndex === 0 ? 1 : 0,
-          transition: 'opacity 0.8s ease-in-out',
-        }}
-      />
-      <video
-        ref={video2Ref}
-        src={videos[1]}
-        muted
-        playsInline
-        onEnded={handleVideoEnd}
-        className="absolute inset-0 w-full h-full object-cover"
-        style={{
-          opacity: activeIndex === 1 ? 1 : 0,
-          transition: 'opacity 0.8s ease-in-out',
-        }}
-      />
-    </div>
-  );
-}
 
 function MainPage() {
   const [activeTab, setActiveTab] = useState('home');
@@ -204,14 +150,7 @@ function MainPage() {
         return (
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-20">
-              <div className="relative">
-                <VideoBackground />
-                {/* Mobile fallback: dark gradient background */}
-                <div className="absolute inset-0 z-0 md:hidden gradient-bg-hero" aria-hidden="true" />
-                <div className="relative z-10">
-                  <Hero setActiveTab={handleSetActiveTab} />
-                </div>
-              </div>
+              <Hero setActiveTab={handleSetActiveTab} />
               <ConfigurateurCharpente />
               <WhyUsBentoSection scrollToContact={scrollToContact} />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>

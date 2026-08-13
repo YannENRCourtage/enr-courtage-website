@@ -609,7 +609,7 @@ export default function StructureSurMesureSection() {
             muted
             playsInline
             className="w-full h-full object-cover opacity-60 scale-105"
-            src="/1.mp4"
+            src="/6.mp4"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/70 via-[#0f2847]/60 to-[#0f2847]/90" />
         </div>

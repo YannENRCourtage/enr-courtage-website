@@ -38,9 +38,9 @@ const ConstructionSection = () => {
 
   return (
     <div className="bg-white">
-      {/* Hero Section avec vidéo "6.mp4" sous-imposée */}
+      {/* Hero Section avec vidéo "2.mp4" sous-imposée */}
       <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="construction-title">
-        {/* Vidéo 6.mp4 en arrière-plan avec sous-imposition légère */}
+        {/* Vidéo 2.mp4 en arrière-plan avec sous-imposition légère */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <video
             autoPlay
@@ -48,7 +48,7 @@ const ConstructionSection = () => {
             muted
             playsInline
             className="w-full h-full object-cover opacity-65 scale-105"
-            src="/6.mp4"
+            src="/2.mp4"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
         </div>
