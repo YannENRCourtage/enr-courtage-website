@@ -601,17 +601,17 @@ export default function StructureSurMesureSection() {
     <div className="bg-white text-slate-900 font-sans min-h-screen">
       
       {/* COMBINED HERO & 3D CONFIGURATOR SECTION WITH VIDEO /6.mp4 BACKGROUND */}
-      <section className="relative pt-24 pb-16 overflow-hidden bg-[#0f2847]">
+      <section className="relative pt-24 pb-16 overflow-hidden bg-slate-950">
         {/* Background Video /6.mp4 */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover -z-10 opacity-60 scale-105"
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 scale-105"
           src="/6.mp4"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/80 via-[#0f2847]/70 to-[#0f2847]/95 -z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-slate-950/50 z-0 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4">
           {/* Header */}

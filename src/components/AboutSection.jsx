@@ -104,10 +104,10 @@ const AboutSection = () => {
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover -z-10 opacity-35"
+          className="absolute inset-0 w-full h-full object-cover z-0 opacity-85"
           src="/3.mp4"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#070b12]/90 via-[#070b12]/80 to-[#070b12] -z-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-slate-950/50 z-0 pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none -z-10" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">

@@ -68,17 +68,17 @@ const BatterieDetailPage = () => {
 
       <main role="main" className="pt-16 md:pt-20 w-full max-w-full overflow-x-hidden">
         {/* Hero Section avec vidéo "8.mp4" sous-imposée */}
-        <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847] w-full max-w-full" aria-labelledby="hero-title">
+        <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-slate-950 w-full max-w-full" aria-labelledby="hero-title">
           {/* Vidéo /8.mp4 en arrière-plan avec sous-imposition */}
           <video
             autoPlay
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover -z-10 opacity-65 scale-105"
+            className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 scale-105"
             src="/8.mp4"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65 -z-10 pointer-events-none" />
+          <div className="absolute inset-0 bg-slate-950/50 z-0 pointer-events-none" />
 
           <div className="relative z-10 max-w-7xl mx-auto container-padding text-center">
             <motion.div

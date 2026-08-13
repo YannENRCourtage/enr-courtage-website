@@ -82,10 +82,10 @@ const Hero = ({ setActiveTab }) => {
         loop
         muted
         playsInline
-        className="absolute inset-0 w-full h-full object-cover -z-10 opacity-60 scale-105"
+        className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 scale-105"
         src="/1.mp4"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-[#090d16]/80 via-[#090d16]/70 to-[#090d16]/95 -z-10 pointer-events-none" />
+      <div className="absolute inset-0 bg-slate-950/50 z-0 pointer-events-none" />
 
       {/* Dark overlay with glowing radial gradient backdrop */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none z-[1]" />
