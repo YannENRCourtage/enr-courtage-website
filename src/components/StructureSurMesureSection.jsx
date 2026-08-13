@@ -71,7 +71,7 @@ function getCardinalLabel(deg) {
 // ==========================================
 // COMPOSANT GRAPHIQUE 30 ANS
 // ==========================================
-function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.125, paybackYears, installationCostHT }) {
+function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh = 0.085, paybackYears, installationCostHT }) {
   const data = useMemo(() => {
     const list = [];
     let sum = 0;
@@ -304,11 +304,17 @@ export default function StructureSurMesureSection() {
     return Math.round(installedKwc * productibleBase * orientationFactor);
   }, [installedKwc, productibleBase, orientationFactor]);
 
-  // EDF OA Tariff
-  const edfOaTariff = 0.125;
+  // EDF OA Tariff based on kWc range (0.085 €/kWh between 100 and 500 kWc)
+  const edfOaTariff = useMemo(() => {
+    if (!installedKwc || installedKwc <= 0) return 0.125;
+    if (installedKwc > 100 && installedKwc <= 500) return 0.085;
+    if (installedKwc > 500) return 0.078;
+    return 0.125;
+  }, [installedKwc]);
+
   const annualSolarRevenue = useMemo(() => {
     return Math.round(annualProductionKwh * edfOaTariff);
-  }, [annualProductionKwh]);
+  }, [annualProductionKwh, edfOaTariff]);
 
   // Coût Estimé (HT) ALWAYS includes Solar Installation Cost for the building solar potential!
   const estimatedInvestmentHT = useMemo(() => {
@@ -886,8 +892,8 @@ export default function StructureSurMesureSection() {
                           <DollarSign className="w-4 h-4 text-emerald-400" />
                         </div>
                         <div className="mt-3">
-                          <div className="text-2xl sm:text-3xl font-black text-emerald-400">+{annualSolarRevenue.toLocaleString('fr-FR')} <span className="text-xs text-emerald-200 font-bold">€ HT/an</span></div>
-                          <div className="text-xs text-emerald-300 mt-1">Garantis 20 ans par EDF OA</div>
+                          <div className="text-2xl sm:text-3xl font-black text-emerald-400">+{annualSolarRevenue.toLocaleString('fr-FR')} <span className="text-xs text-emerald-200 font-bold">€/an</span></div>
+                          <div className="text-xs text-emerald-300 mt-1">Tarif rachat EDF OA : {edfOaTariff} €/kWh (garanti 20 ans)</div>
                         </div>
                       </div>
 
