@@ -57,18 +57,16 @@ const IrveSection = () => {
     <div className="bg-white">
       {/* Hero Section avec vidéo "3.mp4" sous-imposée */}
       <section className="relative pt-12 md:pt-16 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="irve-title">
-        {/* Vidéo 3.mp4 en arrière-plan avec sous-imposition légère */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover opacity-65 scale-105"
-            src="/3.mp4"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
-        </div>
+        {/* Vidéo /3.mp4 en arrière-plan avec sous-imposition */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover -z-10 opacity-65 scale-105"
+          src="/3.mp4"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65 -z-10 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto container-padding">
           <motion.div 

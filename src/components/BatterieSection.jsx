@@ -67,18 +67,16 @@ const BatterieSection = ({ scrollToContact }) => {
     <div className="bg-white w-full max-w-full overflow-x-hidden relative">
       {/* Hero Section avec vidéo "8.mp4" sous-imposée */}
       <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="batterie-hero-title">
-        {/* Vidéo 8.mp4 en arrière-plan avec sous-imposition légère */}
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover opacity-65 scale-105"
-            src="/8.mp4"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65" />
-        </div>
+        {/* Vidéo /8.mp4 en arrière-plan avec sous-imposition */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover -z-10 opacity-65 scale-105"
+          src="/8.mp4"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/50 via-[#0f2847]/40 to-[#0f2847]/65 -z-10 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto container-padding">
           <motion.div

@@ -600,37 +600,35 @@ export default function StructureSurMesureSection() {
   return (
     <div className="bg-white text-slate-900 font-sans min-h-screen">
       
-      {/* HERO SECTION WITH VIDEO BACKGROUND */}
-      <section className="relative pt-24 pb-20 overflow-hidden bg-[#0f2847]">
-        <div className="absolute inset-0 z-0 overflow-hidden">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover opacity-60 scale-105"
-            src="/6.mp4"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/70 via-[#0f2847]/60 to-[#0f2847]/90" />
-        </div>
+      {/* COMBINED HERO & 3D CONFIGURATOR SECTION WITH VIDEO /6.mp4 BACKGROUND */}
+      <section className="relative pt-24 pb-16 overflow-hidden bg-[#0f2847]">
+        {/* Background Video /6.mp4 */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover -z-10 opacity-60 scale-105"
+          src="/6.mp4"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0f2847]/80 via-[#0f2847]/70 to-[#0f2847]/95 -z-10 pointer-events-none" />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 text-center">
-          <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
+        <div className="relative z-10 max-w-7xl mx-auto px-4">
+          {/* Header */}
+          <motion.div initial={{ opacity: 0, y: 25 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} className="text-center mb-10">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
               Votre structure métallique <span className="enr-gradient-text-gold">sur-mesure</span>
             </h1>
             
-            <p className="text-lg sm:text-xl text-gray-200 max-w-3xl mx-auto font-light leading-relaxed mb-4">
+            <p className="text-lg sm:text-xl text-gray-200 max-w-3xl mx-auto font-light leading-relaxed">
               Configurez votre bâtiment en 3D, simulez son implantation satellite sur votre terrain et découvrez son étude de faisabilité et de rentabilité solaire.
             </p>
           </motion.div>
-        </div>
-      </section>
 
-      {/* SECTION 1: 3D CONFIGURATOR MODULE */}
-      <section className="py-8 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <ConfigurateurCharpente hideHeader={true} />
+          {/* 3D Configurator Module */}
+          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-4 sm:p-6 border border-white/20 shadow-2xl">
+            <ConfigurateurCharpente hideHeader={true} />
+          </div>
         </div>
       </section>
 

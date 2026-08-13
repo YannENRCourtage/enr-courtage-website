@@ -76,18 +76,16 @@ const Hero = ({ setActiveTab }) => {
 
   return (
     <div className="relative pt-20 pb-24 flex flex-col items-center justify-center min-h-[90vh] overflow-hidden bg-[#090d16]">
-      {/* Background Video 1.mp4 */}
-      <div className="absolute inset-0 z-0 overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover opacity-60 scale-105"
-          src="/1.mp4"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#090d16]/80 via-[#090d16]/70 to-[#090d16]/95" />
-      </div>
+      {/* Background Video /1.mp4 */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover -z-10 opacity-60 scale-105"
+        src="/1.mp4"
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#090d16]/80 via-[#090d16]/70 to-[#090d16]/95 -z-10 pointer-events-none" />
 
       {/* Dark overlay with glowing radial gradient backdrop */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none z-[1]" />

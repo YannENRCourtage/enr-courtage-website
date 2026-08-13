@@ -1,6 +1,6 @@
-.vercel
-.env*.local
-07082026
-dist
 node_modules
+dist
+.git
 *.xlsx
+NELSON
+*.log

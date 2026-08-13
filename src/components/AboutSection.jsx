@@ -104,11 +104,11 @@ const AboutSection = () => {
           muted
           loop
           playsInline
-          className="absolute inset-0 w-full h-full object-cover z-0 opacity-35"
+          className="absolute inset-0 w-full h-full object-cover -z-10 opacity-35"
           src="/3.mp4"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#070b12]/90 via-[#070b12]/80 to-[#070b12] z-0" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none z-0" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#070b12]/90 via-[#070b12]/80 to-[#070b12] -z-10 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[400px] bg-blue-600/15 rounded-full blur-[140px] pointer-events-none -z-10" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <motion.div
@@ -161,16 +161,18 @@ const AboutSection = () => {
             transition={{ duration: 0.8 }}
             className="relative"
           >
-            <div className="bg-gradient-to-b from-[#0f192c] to-[#0a1220] p-3 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-              <video
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                className="w-full h-[260px] sm:h-[300px] md:h-[340px] object-cover rounded-2xl shadow-xl"
-                src="/Birds_perched_on_tree_branch_202608111430.mp4"
-              />
+            <div className="bg-gradient-to-b from-[#0f192c] to-[#0a1220] p-3 rounded-3xl border border-white/10 shadow-2xl overflow-hidden relative flex flex-col justify-between h-full min-h-[320px]">
+              <div className="relative w-full h-[260px] sm:h-[300px] md:h-[340px] rounded-2xl overflow-hidden">
+                <video
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload="auto"
+                  className="w-full h-full object-cover rounded-2xl shadow-xl"
+                  src="/Birds_perched_on_tree_branch_202608111430.mp4"
+                />
+              </div>
               <div className="p-4 text-center">
                 <p className="text-xs font-semibold text-amber-300 uppercase tracking-wider">
                   Plus de 700 projets solaires & bâtiments accompagnés en France
