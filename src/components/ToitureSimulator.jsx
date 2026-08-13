@@ -584,9 +584,9 @@ export default function ToitureSimulator() {
 
   const tariffPerKwh = useMemo(() => {
     if (installableKwc <= 9) return 0;
-    if (installableKwc < 100) return 0.011; // 1,1 c€/kWh HT
-    if (installableKwc <= 250) return 0.098;
-    return 0.085;
+    if (installableKwc < 100) return 0.125;
+    if (installableKwc <= 500) return 0.085;
+    return 0.078;
   }, [installableKwc]);
 
   const annualRevenueEuros = useMemo(() => {
@@ -1106,6 +1106,9 @@ export default function ToitureSimulator() {
                   </div>
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider mb-1">Revenus 1ère année</span>
                   <span className="text-2xl sm:text-3xl font-extrabold text-[#0f2847]">{annualRevenueEuros.toLocaleString('fr-FR')} €</span>
+                  {tariffPerKwh > 0 && (
+                    <span className="text-[11px] font-medium text-amber-700 mt-1">Tarif rachat EDF OA : {tariffPerKwh} €/kWh</span>
+                  )}
                 </div>
               </div>
 
