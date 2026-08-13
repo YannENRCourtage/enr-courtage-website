@@ -84,9 +84,9 @@ const Hero = ({ setActiveTab }) => {
           transition={{ duration: 0.8, ease: "easeOut" }}
           className="text-center max-w-4xl mx-auto mb-16"
         >
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-8 leading-[1.08] tracking-tight">
-            La transition énergétique <br />
-            <span className="enr-gradient-text-gold">gratuite & 100% financée</span>
+          <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 leading-tight tracking-tight max-w-5xl mx-auto">
+            <span className="block">La transition énergétique</span>
+            <span className="enr-gradient-text-gold block">gratuite & 100% financée</span>
           </h1>
 
           <p className="text-lg md:text-xl text-gray-300 font-light leading-relaxed mb-10 max-w-3xl mx-auto">

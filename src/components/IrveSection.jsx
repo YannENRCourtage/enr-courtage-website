@@ -9,25 +9,29 @@ const IrveSection = () => {
       icon: <Car className="h-7 w-7" />, 
       title: "Tous types de puissances", 
       description: "Installation de bornes allant de 7.4kW à 22kW pour s'adapter à la vitesse de charge nécessaire pour votre flotte ou vos clients.",
-      accent: "#d4a843"
+      accent: "#d97706",
+      bgClass: "bg-amber-50/90 hover:bg-amber-100/90 border-amber-200 hover:border-amber-400 shadow-amber-100/50"
     },
     { 
       icon: <Zap className="h-7 w-7" />, 
       title: "Conseil sur mesure", 
       description: "Nous vous orientons vers le meilleur investissement possible en analysant précisément vos besoins d'utilisation et de fréquentation.",
-      accent: "#0f9b8e"
+      accent: "#0d9488",
+      bgClass: "bg-teal-50/90 hover:bg-teal-100/90 border-teal-200 hover:border-teal-400 shadow-teal-100/50"
     },
     { 
       icon: <BatteryCharging className="h-7 w-7" />, 
       title: "Formule Abonnement", 
       description: "Financez vos bornes de recharge par abonnement, sans investissement initial lourd, en préservant votre trésorerie.",
-      accent: "#6366f1"
+      accent: "#4f46e5",
+      bgClass: "bg-indigo-50/90 hover:bg-indigo-100/90 border-indigo-200 hover:border-indigo-400 shadow-indigo-100/50"
     },
     { 
       icon: <ShieldCheck className="h-7 w-7" />, 
       title: "Matériel certifié", 
       description: "Des infrastructures robustes, sécurisées et conformes aux dernières réglementations (qualification IRVE obligatoire).",
-      accent: "#2563eb"
+      accent: "#2563eb",
+      bgClass: "bg-blue-50/90 hover:bg-blue-100/90 border-blue-200 hover:border-blue-400 shadow-blue-100/50"
     }
   ];
 
@@ -175,16 +179,18 @@ const IrveSection = () => {
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                transition={{ duration: 0.3 }}
               >
-                <div className="bg-white rounded-2xl p-7 h-full shadow-[0_4px_20px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.08)] transition-all duration-400 group border border-gray-100/80">
+                <div className={`rounded-2xl p-7 h-full border ${advantage.bgClass} shadow-lg hover:shadow-2xl transition-all duration-300 group cursor-pointer`}>
                   <div 
-                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110"
-                    style={{ backgroundColor: advantage.accent + '15', color: advantage.accent }}
+                    className="w-14 h-14 rounded-xl flex items-center justify-center mb-5 transition-transform duration-300 group-hover:scale-110 shadow-sm"
+                    style={{ backgroundColor: advantage.accent + '25', color: advantage.accent }}
                   >
                     {advantage.icon}
                   </div>
-                  <h4 className="text-lg font-bold text-[#0f2847] mb-3">{advantage.title}</h4>
-                  <p className="text-gray-500 text-sm leading-relaxed">{advantage.description}</p>
+                  <h4 className="text-lg font-bold text-[#0f2847] mb-3 group-hover:text-black transition-colors">{advantage.title}</h4>
+                  <p className="text-gray-700 text-sm leading-relaxed font-medium">{advantage.description}</p>
                 </div>
               </motion.div>
             ))}
