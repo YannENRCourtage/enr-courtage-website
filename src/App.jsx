@@ -128,7 +128,7 @@ function MainPage() {
       case 'structure_sur_mesure':
         return (
           <motion.div key="structure_sur_mesure" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <StructureSurMesureSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
@@ -138,7 +138,7 @@ function MainPage() {
       case 'toiture':
         return (
           <motion.div key="toiture" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <ToiturePhotovoltaiqueSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
@@ -148,7 +148,7 @@ function MainPage() {
       case 'autoconsommation':
         return (
           <motion.div key="autoconsommation" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <AutoconsommationSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
@@ -158,7 +158,7 @@ function MainPage() {
       case 'irve':
         return (
           <motion.div key="irve" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <IrveSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
@@ -168,7 +168,7 @@ function MainPage() {
       case 'construction':
         return (
           <motion.div key="construction" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <ConstructionSection />
               <TestimonialsCarousel />
               {/* <EligibilitySimulator /> temporarily removed to fix blank page */}
@@ -179,7 +179,7 @@ function MainPage() {
       case 'batterie':
         return (
           <motion.div key="batterie" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <BatterieSection scrollToContact={scrollToContact} />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
@@ -188,7 +188,7 @@ function MainPage() {
       case 'about':
         return (
           <motion.div key="about" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <AboutSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
@@ -198,7 +198,7 @@ function MainPage() {
       default:
         return (
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
-            <div className="pt-28">
+            <div className="pt-20">
               <div className="relative">
                 <VideoBackground />
                 {/* Mobile fallback: dark gradient background */}

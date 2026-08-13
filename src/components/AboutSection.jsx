@@ -15,7 +15,8 @@ const AboutSection = () => {
       icon: <Building2 className="h-7 w-7 text-emerald-400" />,
       title: "Structure métallique sur-mesure",
       description: "Conception et chiffrage 3D immédiat de charpente métallique pour bâtiments agricoles, industriels et commerciaux.",
-      badge: "Configurateur 3D"
+      badge: "Configurateur 3D",
+      bgClass: "bg-gradient-to-b from-emerald-950/40 via-[#0a101d] to-[#070b14] border-emerald-500/30 hover:border-emerald-400"
     },
     {
       id: 'toiture',
@@ -23,7 +24,8 @@ const AboutSection = () => {
       icon: <Sun className="h-7 w-7 text-lime-400" />,
       title: "Toiture photovoltaïque",
       description: "Valorisation de toitures existantes et revente totale de l'électricité produite pour générer des revenus annuels.",
-      badge: "Revente Électricité"
+      badge: "Revente Électricité",
+      bgClass: "bg-gradient-to-b from-lime-950/40 via-[#0a101d] to-[#070b14] border-lime-500/30 hover:border-lime-400"
     },
     {
       id: 'batterie',
@@ -31,7 +33,8 @@ const AboutSection = () => {
       icon: <Battery className="h-7 w-7 text-teal-400" />,
       title: "Batterie de soutien réseau",
       description: "Installation de batteries de forte capacité pour la stabilisation du réseau national avec rente annuelle garantie.",
-      badge: "Rente Garantie"
+      badge: "Rente Garantie",
+      bgClass: "bg-gradient-to-b from-teal-950/40 via-[#0a101d] to-[#070b14] border-teal-500/30 hover:border-teal-400"
     },
     {
       id: 'irve',
@@ -39,7 +42,8 @@ const AboutSection = () => {
       icon: <Car className="h-7 w-7 text-amber-400" />,
       title: "Borne de recharge IRVE",
       description: "Déploiement et exploitation d'infrastructures de recharge pour véhicules électriques d'entreprises et collectivités.",
-      badge: "Mobilité Électrique"
+      badge: "Mobilité Électrique",
+      bgClass: "bg-gradient-to-b from-amber-950/40 via-[#0a101d] to-[#070b14] border-amber-500/30 hover:border-amber-400"
     },
     {
       id: 'construction',
@@ -47,7 +51,8 @@ const AboutSection = () => {
       icon: <Building className="h-7 w-7 text-indigo-400" />,
       title: "Bâtiments & Ombrières tiers financés",
       description: "Construction de hangars neufs ou d'ombrières de parking photovoltaïques 100% financés par nos investisseurs.",
-      badge: "100% Financé"
+      badge: "100% Financé",
+      bgClass: "bg-gradient-to-b from-indigo-950/40 via-[#0a101d] to-[#070b14] border-indigo-500/30 hover:border-indigo-400"
     },
     {
       id: 'autoconsommation',
@@ -55,7 +60,8 @@ const AboutSection = () => {
       icon: <Zap className="h-7 w-7 text-blue-400" />,
       title: "Autoconsommation (Individuelle & Collective)",
       description: "Production et partage local d'énergie solaire sans apport financier pour réduire immédiatement les factures d'électricité.",
-      badge: "Économies Immédiates"
+      badge: "Économies Immédiates",
+      bgClass: "bg-gradient-to-b from-blue-950/40 via-[#0a101d] to-[#070b14] border-blue-500/30 hover:border-blue-400"
     }
   ];
 
@@ -142,14 +148,9 @@ const AboutSection = () => {
               Notre expertise couvre une gamme complète de solutions : la construction sur-mesure de bâtiments à charpente métallique, la valorisation de toitures en revente totale d'électricité, le déploiement de batteries de soutien au réseau national, l'installation de bornes de recharge IRVE, les bâtiments et ombrières de parking 100% tiers financés, ainsi que l'autoconsommation solaire individuelle et collective.
             </p>
 
-            <p className="text-gray-300 text-base md:text-lg leading-relaxed mb-8">
+            <p className="text-gray-300 text-base md:text-lg leading-relaxed mb-6">
               En tant que <strong className="text-amber-400">membre de l'association ENERPLAN</strong> (le syndicat des professionnels de l'énergie solaire), nous garantissons l'excellence technique, la rigueur réglementaire et le sérieux irréprochable de toutes nos installations sur l'ensemble du territoire français.
             </p>
-
-            <div className="inline-flex items-center space-x-3 bg-amber-500/10 border border-amber-500/20 px-5 py-3 rounded-2xl text-amber-300 text-sm font-semibold">
-              <CheckCircle2 className="w-5 h-5 text-amber-400 flex-shrink-0" />
-              <span>Membre adhérent ENERPLAN — Garantie d'expertise & de conformité</span>
-            </div>
           </motion.div>
 
           <motion.div
@@ -200,7 +201,7 @@ const AboutSection = () => {
               <div
                 key={sol.id}
                 onClick={() => handleSolutionClick(sol.path)}
-                className="bg-gradient-to-b from-[#0f172a]/90 via-[#0a101d] to-[#070b14] p-7 rounded-3xl border border-white/10 hover:border-amber-400/60 transition-all duration-300 shadow-xl flex flex-col justify-between group cursor-pointer transform hover:-translate-y-1"
+                className={`p-7 rounded-3xl border ${sol.bgClass} transition-all duration-300 shadow-xl flex flex-col justify-between group cursor-pointer transform hover:-translate-y-1`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">

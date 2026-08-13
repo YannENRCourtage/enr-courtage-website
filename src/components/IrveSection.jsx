@@ -56,7 +56,7 @@ const IrveSection = () => {
   return (
     <div className="bg-white">
       {/* Hero Section avec vidéo "7.mp4" sous-imposée */}
-      <section className="relative pt-20 md:pt-28 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="irve-title">
+      <section className="relative pt-12 md:pt-16 pb-16 md:pb-24 overflow-hidden bg-[#0f2847]" aria-labelledby="irve-title">
         {/* Vidéo 7.mp4 en arrière-plan avec sous-imposition légère */}
         <div className="absolute inset-0 z-0 overflow-hidden">
           <video

@@ -12,7 +12,8 @@ const Hero = ({ setActiveTab }) => {
       icon: <Sun className="h-7 w-7" />,
       title: "Toiture photovoltaïque",
       description: "Valorisez votre toiture et générez des revenus annuels en revente d'électricité",
-      accent: "#84cc16"
+      accent: "#84cc16",
+      bgClass: "bg-gradient-to-b from-lime-950/40 via-[#0a101d] to-[#070b14] border-lime-500/30 hover:border-lime-400"
     },
     {
       id: 'batterie',
@@ -20,35 +21,40 @@ const Hero = ({ setActiveTab }) => {
       title: "Batterie de soutien réseau",
       description: "Renforcez la stabilité du réseau électrique et générez des revenus passifs",
       accent: "#0f9b8e",
-      isFeatured: true
+      isFeatured: true,
+      bgClass: "bg-gradient-to-b from-teal-950/40 via-[#0a101d] to-[#070b14] border-teal-500/30 hover:border-teal-400"
     },
     {
       id: 'irve',
       icon: <Car className="h-7 w-7" />,
       title: "Borne de recharge IRVE",
       description: "Installez des bornes de recharge pour véhicules électriques sur votre site",
-      accent: "#d4a843"
+      accent: "#d4a843",
+      bgClass: "bg-gradient-to-b from-amber-950/40 via-[#0a101d] to-[#070b14] border-amber-500/30 hover:border-amber-400"
     },
     {
       id: 'construction',
       icon: <Building className="h-7 w-7" />,
       title: "Bâtiments & Ombrières tiers financés",
       description: "Obtenez un bâtiment neuf ou une ombrière photovoltaïque 100% financé",
-      accent: "#6366f1"
+      accent: "#6366f1",
+      bgClass: "bg-gradient-to-b from-indigo-950/40 via-[#0a101d] to-[#070b14] border-indigo-500/30 hover:border-indigo-400"
     },
     {
       id: 'autoconsommation',
       icon: <Zap className="h-7 w-7" />,
       title: "Autoconsommation",
       description: "Produisez votre propre énergie et réduisez votre facture d'électricité",
-      accent: "#2563eb"
+      accent: "#2563eb",
+      bgClass: "bg-gradient-to-b from-blue-950/40 via-[#0a101d] to-[#070b14] border-blue-500/30 hover:border-blue-400"
     },
     {
       id: 'structure_sur_mesure',
       icon: <Building2 className="h-7 w-7" />,
       title: "Structure métallique sur-mesure",
       description: "Configurez votre bâtiment charpente métallique étape par étape et obtenez votre tarif immédiat en 3D",
-      accent: "#10b981"
+      accent: "#10b981",
+      bgClass: "bg-gradient-to-b from-emerald-950/40 via-[#0a101d] to-[#070b14] border-emerald-500/30 hover:border-emerald-400"
     }
   ];
 
@@ -151,7 +157,7 @@ const Hero = ({ setActiveTab }) => {
                 transition={{ duration: 0.6, delay: 0.2 + index * 0.1, ease: "easeOut" }}
               >
                 <div
-                  className="bg-gradient-to-b from-[#0f172a]/90 via-[#0a101d] to-[#070b14] p-7 rounded-3xl border border-white/10 hover:border-amber-400/50 transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group h-full flex flex-col justify-between relative overflow-hidden"
+                  className={`p-7 rounded-3xl border ${card.bgClass} transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group h-full flex flex-col justify-between relative overflow-hidden`}
                   onClick={() => handleCardClick(card.id)}
                 >
                   {card.isFeatured && (
