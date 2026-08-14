@@ -190,18 +190,18 @@ function CumulativeRevenuesBarChart({ annualProductionKwh, tariffPerKwh, payback
       </div>
 
       {/* Cartes Métriques (10 ans, 20 ans, 30 ans) */}
-      <div className="grid grid-cols-3 gap-3 sm:gap-6 mb-8 text-center">
-        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
-          <p className="text-xs text-slate-400 mb-1">sur 10 ans</p>
-          <p className="text-base sm:text-2xl font-extrabold text-[#84cc16]">{cum10} €</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6 mb-8 text-center">
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 flex flex-row md:flex-col items-center justify-between md:justify-center">
+          <p className="text-sm md:text-xs text-slate-400 font-semibold md:mb-1">sur 10 ans</p>
+          <p className="text-lg sm:text-2xl font-extrabold text-[#84cc16]">{cum10} €</p>
         </div>
-        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
-          <p className="text-xs text-slate-400 mb-1">sur 20 ans</p>
-          <p className="text-base sm:text-2xl font-extrabold text-[#84cc16]">{cum20} €</p>
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 flex flex-row md:flex-col items-center justify-between md:justify-center">
+          <p className="text-sm md:text-xs text-slate-400 font-semibold md:mb-1">sur 20 ans</p>
+          <p className="text-lg sm:text-2xl font-extrabold text-[#84cc16]">{cum20} €</p>
         </div>
-        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80">
-          <p className="text-xs text-slate-400 mb-1">sur 30 ans</p>
-          <p className="text-base sm:text-2xl font-extrabold text-[#84cc16]">{cum30} €</p>
+        <div className="bg-slate-800/80 p-4 rounded-2xl border border-slate-700/80 flex flex-row md:flex-col items-center justify-between md:justify-center">
+          <p className="text-sm md:text-xs text-slate-400 font-semibold md:mb-1">sur 30 ans</p>
+          <p className="text-lg sm:text-2xl font-extrabold text-[#84cc16]">{cum30} €</p>
         </div>
       </div>
 

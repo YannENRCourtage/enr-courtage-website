@@ -81,8 +81,11 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-      <div className="relative z-20 bg-white/95 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-gray-100/80">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" role="navigation" aria-label="Navigation principale">
+      <div 
+        className="relative z-20 bg-white/95 dark:bg-white/95 backdrop-blur-xl shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-gray-100/80"
+        style={{ colorScheme: 'light', forcedColorAdjust: 'none' }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-slate-900 dark:text-slate-900" role="navigation" aria-label="Navigation principale">
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
@@ -211,7 +214,8 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
-                className="md:hidden bg-white border-t border-gray-100 overflow-hidden"
+                className="md:hidden bg-white dark:bg-white border-t border-gray-100 overflow-hidden"
+                style={{ colorScheme: 'light', forcedColorAdjust: 'none' }}
               >
                 <div className="px-2 pt-2 pb-3 space-y-1">
                   {/* Accueil */}
