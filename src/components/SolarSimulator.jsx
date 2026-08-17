@@ -1544,17 +1544,17 @@ OPTIONS CHOISIES :
                 {/* PROJECTION ÉCONOMIES CUMULÉES SUR 10, 20, 30 ANS */}
                 <div className="pt-6 border-t border-gray-100 text-center">
                   <h4 className="text-lg font-bold text-[#0f2847] mb-6">Économies cumulées</h4>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="bg-gray-50 p-4 rounded-xl">
-                      <p className="text-xs text-gray-400 mb-1">sur 10 ans</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 mb-4">
+                    <div className="bg-gray-50 p-4 rounded-xl flex flex-row md:flex-col items-center justify-between md:justify-center">
+                      <p className="text-sm md:text-xs text-gray-400 font-semibold md:mb-1">sur 10 ans</p>
                       <p className="text-lg md:text-xl font-extrabold text-[#0f9b8e]">{activeMetrics.cum10} €</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-xl">
-                      <p className="text-xs text-gray-400 mb-1">sur 20 ans</p>
+                    <div className="bg-gray-50 p-4 rounded-xl flex flex-row md:flex-col items-center justify-between md:justify-center">
+                      <p className="text-sm md:text-xs text-gray-400 font-semibold md:mb-1">sur 20 ans</p>
                       <p className="text-lg md:text-xl font-extrabold text-[#0f9b8e]">{activeMetrics.cum20} €</p>
                     </div>
-                    <div className="bg-gray-50 p-4 rounded-xl">
-                      <p className="text-xs text-gray-400 mb-1">sur 30 ans</p>
+                    <div className="bg-gray-50 p-4 rounded-xl flex flex-row md:flex-col items-center justify-between md:justify-center">
+                      <p className="text-sm md:text-xs text-gray-400 font-semibold md:mb-1">sur 30 ans</p>
                       <p className="text-lg md:text-xl font-extrabold text-[#0f9b8e]">{activeMetrics.cum30} €</p>
                     </div>
                   </div>
