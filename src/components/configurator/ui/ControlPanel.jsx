@@ -280,7 +280,7 @@ export function ControlPanel({ isAcama = false, selectedProject = null }) {
                                     </button>
                                     <button
                                         onClick={() => setLeftSide(leftSide === 'appentis' ? 'none' : 'appentis')}
-                                        disabled={buildingType === 'monopente'}
+                                        disabled={buildingType === 'monopente' || buildingType.startsWith('asymetrique')}
 
                                         className={`flex-1 py-1 rounded-md text-[10px] font-bold uppercase border transition-all ${leftSide === 'appentis'
                                             ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
@@ -308,7 +308,7 @@ export function ControlPanel({ isAcama = false, selectedProject = null }) {
                                     </button>
                                     <button
                                         onClick={() => setRightSide(rightSide === 'appentis' ? 'none' : 'appentis')}
-                                        disabled={buildingType === 'monopente'}
+                                        disabled={buildingType === 'monopente' || buildingType.startsWith('asymetrique')}
 
                                         className={`flex-1 py-1 rounded-md text-[10px] font-bold uppercase border transition-all ${rightSide === 'appentis'
                                             ? 'bg-purple-600 text-white border-purple-600 shadow-sm'
