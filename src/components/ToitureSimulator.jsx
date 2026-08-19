@@ -485,7 +485,7 @@ export default function ToitureSimulator() {
 
   // Autocomplétion BAN (api-adresse.data.gouv.fr)
   useEffect(() => {
-    if (searchQuery.trim().length < 3) {
+    if (searchQuery.trim().length < 3 || searchQuery === selectedAddress) {
       setSuggestions([]);
       return;
     }
@@ -503,7 +503,7 @@ export default function ToitureSimulator() {
         .catch(err => console.error("Erreur BAN autocompletion:", err));
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, [searchQuery, selectedAddress]);
 
   const handleSelectAddress = (sugg) => {
     setSelectedAddress(sugg.label);
@@ -584,7 +584,7 @@ export default function ToitureSimulator() {
 
   const tariffPerKwh = useMemo(() => {
     if (installableKwc <= 9) return 0;
-    if (installableKwc < 100) return 0.125;
+    if (installableKwc < 100) return 0.011;
     if (installableKwc <= 500) return 0.085;
     return 0.078;
   }, [installableKwc]);

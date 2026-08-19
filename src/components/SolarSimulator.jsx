@@ -467,7 +467,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
 
   // Autocomplétion API BAN / Adresse Gouv
   useEffect(() => {
-    if (addressInput.trim().length > 3) {
+    if (addressInput.trim().length > 3 && addressInput !== selectedAddress) {
       const timer = setTimeout(async () => {
         try {
           const res = await fetch(`https://api-adresse.data.gouv.fr/search/?q=${encodeURIComponent(addressInput)}&limit=5`);
@@ -483,7 +483,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
     } else {
       setSuggestions([]);
     }
-  }, [addressInput]);
+  }, [addressInput, selectedAddress]);
 
   const handleSelectSuggestion = (feature) => {
     const label = feature.properties.label;
@@ -654,7 +654,7 @@ const SolarSimulator = ({ onCompleteLead }) => {
       if (electricVehicles > 0) autoRate = Math.min(0.95, autoRate + electricVehicles * 0.08);
 
       const autoconsumedProdKwh = Math.round(annualProdKwh * autoRate);
-      const firstYearSavings = Math.round(autoconsumedProdKwh * 0.26 + (annualProdKwh - autoconsumedProdKwh) * 0.13);
+      const firstYearSavings = Math.round(autoconsumedProdKwh * 0.26 + (annualProdKwh - autoconsumedProdKwh) * 0.011);
 
       let cum10 = 0, cum20 = 0, cum30 = 0;
       let currentYearSavings = firstYearSavings;
