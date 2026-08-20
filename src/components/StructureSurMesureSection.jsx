@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Search, CheckCircle2, ArrowRight, ArrowLeft, Sun, Zap, 
   Leaf, Home, ShieldCheck, Sparkles, Building, DollarSign, TrendingUp, 
-  Clock, Wallet, RotateCcw, Compass, Check, PhoneCall, FileText, Send, Move, Percent
+  Clock, Wallet, RotateCcw, Compass, Check, PhoneCall, FileText, Send, Move, Percent, AlertTriangle
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -304,12 +304,12 @@ export default function StructureSurMesureSection() {
     return Math.round(installedKwc * productibleBase * orientationFactor);
   }, [installedKwc, productibleBase, orientationFactor]);
 
-  // EDF OA Tariff based on kWc range (0.085 €/kWh between 100 and 500 kWc)
+  // EDF OA Tariff based on kWc range
   const edfOaTariff = useMemo(() => {
-    if (!installedKwc || installedKwc <= 0) return 0.125;
-    if (installedKwc > 100 && installedKwc <= 500) return 0.085;
-    if (installedKwc > 500) return 0.078;
-    return 0.125;
+    if (!installedKwc || installedKwc <= 0) return 0;
+    if (installedKwc < 100) return 0.011;
+    if (installedKwc <= 500) return 0.085;
+    return 0.078;
   }, [installedKwc]);
 
   const annualSolarRevenue = useMemo(() => {
@@ -851,6 +851,28 @@ export default function StructureSurMesureSection() {
                       <RotateCcw className="w-4 h-4" /> Modifier l'orientation
                     </button>
                   </div>
+
+                  {installedKwc > 0 && installedKwc < 100 && (
+                    <div className="mb-6 p-5 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-4">
+                      <div className="flex-shrink-0 mt-1">
+                        <AlertTriangle className="w-6 h-6 text-red-600" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-red-600 text-white font-extrabold text-xs px-3 py-1 rounded-full uppercase tracking-wider">
+                            Investissement déconseillé
+                          </span>
+                        </div>
+                        <p className="text-sm font-bold text-red-900 mt-2">
+                          Puissance installable inférieure à 100 kWc ({installedKwc} kWc)
+                        </p>
+                        <div className="text-xs text-red-800 mt-1 leading-relaxed">
+                          <div>En revente totale d'électricité, le tarif de rachat pour les installations de moins de 100 kWc est très faible (1,1 c€/kWh HT).</div>
+                          <div>Vos revenus estimés sont de seulement {annualSolarRevenue.toLocaleString('fr-FR')} €/an. La rentabilité de la structure n'est donc pas assurée.</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* 6 KPI CARDS ARRANGED ON 2 NEAT ROWS */}
                   <div className="space-y-4">
