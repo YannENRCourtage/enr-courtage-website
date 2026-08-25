@@ -32,30 +32,30 @@ const formatEuros = (value) => {
 };
 
 // ==========================================
-// ROI BAR CHART COMPONENT
+// ROI BAR CHART COMPONENT (30 ANS)
 // ==========================================
 function RoiBarChart({ investmentNet, annualGain }) {
-  const years = Array.from({ length: 20 }, (_, i) => i + 1);
+  const years = Array.from({ length: 30 }, (_, i) => i + 1);
   const cost = investmentNet;
   const firstYearSavings = annualGain;
 
   const data = useMemo(() => {
     let cumSavings = 0;
     return years.map(y => {
-      cumSavings += firstYearSavings; // simplified linear progression for this chart
+      cumSavings += firstYearSavings; // linear progression
       const netBalance = Math.round(cumSavings - cost);
       return { year: y, netBalance };
     });
   }, [cost, firstYearSavings]);
 
-  const maxVal = Math.max(...data.map(d => d.netBalance), 25000);
+  const maxVal = Math.max(...data.map(d => d.netBalance), 50000);
   const minVal = Math.min(...data.map(d => d.netBalance), -cost);
 
   const paybackYears = (cost / firstYearSavings).toFixed(1);
   const pbYearFloat = parseFloat(paybackYears) || 10;
-  const roiLinePct = ((pbYearFloat - 0.5) / 20) * 100;
+  const roiLinePct = ((pbYearFloat - 0.5) / 30) * 100;
 
-  const targetYears = [1, 5, 10, 15, 20];
+  const targetYears = [1, 5, 10, 15, 20, 25, 30];
 
   return (
     <div className="bg-[#162238] rounded-2xl p-6 text-white my-8 border border-slate-700 shadow-xl">
@@ -63,13 +63,13 @@ function RoiBarChart({ investmentNet, annualGain }) {
         <div>
           <h4 className="text-lg font-bold text-white flex items-center space-x-2">
             <BarChart3 className="w-5 h-5 text-amber-500" />
-            <span>Économies cumulées & Amortissement</span>
+            <span>Économies cumulées & Amortissement sur 30 ans</span>
           </h4>
           <p className="text-xs text-slate-400 mt-1">
-            Projection sur 20 ans du solde net (Revenus - Coûts d'exploitation - Investissement)
+            Projection sur 30 ans du solde net (Revenus EDF OA - Coûts ventilation - Investissement net)
           </p>
         </div>
-        <div className="mt-2 sm:mt-0 px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-xs font-bold">
+        <div className="mt-2 sm:mt-0 px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-xs font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)]">
           Amorti en {paybackYears} ans
         </div>
       </div>
@@ -91,19 +91,19 @@ function RoiBarChart({ investmentNet, annualGain }) {
           {data.map((d) => {
             const isPositive = d.netBalance >= 0;
             const heightPct = isPositive 
-              ? Math.min(100, Math.max(8, (d.netBalance / maxVal) * 55))
-              : Math.min(40, Math.max(10, (Math.abs(d.netBalance) / Math.abs(minVal)) * 35));
+              ? Math.min(100, Math.max(6, (d.netBalance / maxVal) * 55))
+              : Math.min(40, Math.max(8, (Math.abs(d.netBalance) / Math.abs(minVal)) * 35));
 
             return (
               <div key={d.year} className="flex-1 flex flex-col items-center group relative h-full justify-end">
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 bg-slate-900 text-white text-[10px] py-1 px-2 rounded border border-slate-700 whitespace-nowrap z-30 pointer-events-none">
-                  Année {d.year} : {d.netBalance > 0 ? `+${d.netBalance} €` : `${d.netBalance} €`}
+                  Année {d.year} : {d.netBalance > 0 ? `+${d.netBalance.toLocaleString('fr-FR')} €` : `${d.netBalance.toLocaleString('fr-FR')} €`}
                 </div>
 
                 <div 
-                  className={`w-[75%] max-w-[14px] rounded-t-sm transition-all duration-300 ${
+                  className={`w-[80%] max-w-[10px] rounded-t-sm transition-all duration-300 ${
                     isPositive 
-                      ? 'bg-amber-500 group-hover:bg-amber-400' 
+                      ? 'bg-amber-500 group-hover:bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,0.3)]' 
                       : 'bg-blue-500 group-hover:bg-blue-400'
                   }`}
                   style={{ height: `${heightPct}%` }}
@@ -503,7 +503,7 @@ const BatitechSimulator = () => {
       <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
         <label className="block text-sm font-semibold text-white mb-3 flex items-center">
           <MapPin className="w-4 h-4 mr-2 text-amber-500" />
-          Adresse de l'exploitation
+          Adresse du site
         </label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -511,8 +511,9 @@ const BatitechSimulator = () => {
           </div>
           <input
             type="text"
-            className="w-full bg-slate-950 border border-slate-700 text-white text-lg rounded-xl pl-10 pr-4 py-4 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark-input"
-            placeholder="Saisissez votre adresse..."
+            style={{ color: '#ffffff' }}
+            className="w-full bg-slate-950 border border-slate-700 !text-white text-lg rounded-xl pl-10 pr-4 py-4 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark-input placeholder-slate-500 font-medium"
+            placeholder="Saisissez l'adresse du site..."
             value={addressInput}
             onChange={(e) => setAddressInput(e.target.value)}
           />
@@ -534,12 +535,16 @@ const BatitechSimulator = () => {
         {selectedAddress && (
           <div className="mt-6 flex flex-wrap gap-4">
             <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center">
-              <span className="text-slate-400 text-sm mr-2">Zone Climatique:</span>
+              <span className="text-slate-400 text-sm mr-2">Zone Climatique CEE:</span>
               <span className="text-white font-bold">{climateZone}</span>
             </div>
             <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center">
               <span className="text-slate-400 text-sm mr-2">Zone Séchage:</span>
               <span className="text-white font-bold">{dryingZone}</span>
+            </div>
+            <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center">
+              <span className="text-slate-400 text-sm mr-2">Fiche CEE :</span>
+              <span className="text-amber-400 font-bold">AGRI-EQ-110</span>
             </div>
           </div>
         )}
@@ -563,7 +568,7 @@ const BatitechSimulator = () => {
               onClick={() => setOrientation(opt.id)}
               className={`py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
                 orientation === opt.id
-                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30'
+                  ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/30 font-bold'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
               }`}
             >
@@ -582,7 +587,7 @@ const BatitechSimulator = () => {
                   onClick={() => setInclination(deg)}
                   className={`py-2 px-3 rounded-xl text-sm font-semibold transition-all ${
                     inclination === deg
-                      ? 'bg-amber-500 text-white'
+                      ? 'bg-amber-500 text-white font-bold'
                       : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
@@ -594,7 +599,7 @@ const BatitechSimulator = () => {
         )}
         {!detailedMode && (
           <div className="mt-6 text-sm text-slate-400 flex items-center">
-            <InfoIcon className="w-4 h-4 mr-2" />
+            <InfoIcon className="w-4 h-4 mr-2 text-amber-500" />
             Inclinaison fixe à 15° (Charpente Barconnière AS9.2)
           </div>
         )}
@@ -610,17 +615,17 @@ const BatitechSimulator = () => {
       className="space-y-6"
     >
       <div>
-        <h3 className="text-2xl font-bold text-white mb-2">Vos Besoils en Séchage</h3>
+        <h3 className="text-2xl font-bold text-white mb-2">Vos Besoins en Séchage</h3>
         <p className="text-slate-400">Sélectionnez les matières et les volumes annuels</p>
       </div>
 
       <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
-        <label className="block text-sm font-semibold text-white mb-4">Type d'activité (impacte les CEE)</label>
+        <label className="block text-sm font-semibold text-white mb-4">Type d'activité (Fiche CEE AGRI-EQ-110)</label>
         <div className="flex space-x-4">
           <button
             onClick={() => setActivityType('Agricole')}
             className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all ${
-              activityType === 'Agricole' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              activityType === 'Agricole' ? 'bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
             <Wheat className="w-5 h-5 mr-2" />
@@ -629,7 +634,7 @@ const BatitechSimulator = () => {
           <button
             onClick={() => setActivityType('Forestière')}
             className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all ${
-              activityType === 'Forestière' ? 'bg-amber-500 text-white' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              activityType === 'Forestière' ? 'bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
             }`}
           >
             <TreePine className="w-5 h-5 mr-2" />
@@ -665,7 +670,8 @@ const BatitechSimulator = () => {
                     type="number"
                     min="1"
                     placeholder="Tonnes/an"
-                    className="w-32 bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 dark-input"
+                    style={{ color: '#ffffff' }}
+                    className="w-32 bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input font-bold"
                     value={materials[mat.id].qty}
                     onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
                   />
@@ -677,34 +683,37 @@ const BatitechSimulator = () => {
               <div className="mt-4 pt-4 border-t border-slate-800 pl-8">
                 {mat.id === 'fourrage' && (
                   <select 
-                    className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto"
+                    style={{ color: '#ffffff' }}
+                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto font-medium"
                     value={materials[mat.id].hr}
                     onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
                   >
-                    <option value="50-15">Séchage 50% HR vers 15% HR</option>
-                    <option value="45-15">Séchage 45% HR vers 15% HR</option>
-                    <option value="40-15">Séchage 40% HR vers 15% HR</option>
+                    <option value="50-15" className="bg-slate-900 text-white">Séchage 50% HR vers 15% HR</option>
+                    <option value="45-15" className="bg-slate-900 text-white">Séchage 45% HR vers 15% HR</option>
+                    <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
                   </select>
                 )}
                 {mat.id === 'bottes' && (
                   <select 
-                    className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto"
+                    style={{ color: '#ffffff' }}
+                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto font-medium"
                     value={materials[mat.id].duration}
                     onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
                   >
-                    <option value="50j">Durée 50 jours</option>
-                    <option value="81j">Durée 81 jours</option>
+                    <option value="50j" className="bg-slate-900 text-white">Durée 50 jours</option>
+                    <option value="81j" className="bg-slate-900 text-white">Durée 81 jours</option>
                   </select>
                 )}
                 {mat.id === 'plaquettes' && (
                   <select 
-                    className="bg-slate-950 border border-slate-700 text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto"
+                    style={{ color: '#ffffff' }}
+                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto font-medium"
                     value={materials[mat.id].hr}
                     onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
                   >
-                    <option value="50-30">Séchage 50% HR vers 30% HR</option>
-                    <option value="45-25">Séchage 45% HR vers 25% HR</option>
-                    <option value="40-15">Séchage 40% HR vers 15% HR</option>
+                    <option value="50-30" className="bg-slate-900 text-white">Séchage 50% HR vers 30% HR</option>
+                    <option value="45-25" className="bg-slate-900 text-white">Séchage 45% HR vers 25% HR</option>
+                    <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
                   </select>
                 )}
               </div>
