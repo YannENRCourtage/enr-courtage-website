@@ -449,7 +449,7 @@ const BatitechSection = () => {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 items-stretch">
             
             {/* YouTube Video Embed */}
             <motion.div
@@ -477,7 +477,7 @@ const BatitechSection = () => {
                 </div>
               </div>
               <p className="mt-4 text-xs text-slate-400 leading-relaxed">
-                Vidéo explicative du principe Cogen'Air® : captation solaire hybride et augmentation de rendement.
+                Vidéo explicative du principe Cogen'Air® : captation solaire hybride et augmentation du rendement électrique.
               </p>
             </motion.div>
 
@@ -494,7 +494,7 @@ const BatitechSection = () => {
                   <span className="text-sm font-bold text-blue-400 flex items-center">
                     <Wind className="w-4 h-4 mr-2" /> Animation 3D Flux d'Air (36 kWc)
                   </span>
-                  <span className="text-xs text-slate-500">Animation Technique</span>
+                  <span className="text-xs text-slate-500">Animation 3D</span>
                 </div>
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video border border-slate-800">
                   <video 
@@ -509,6 +509,36 @@ const BatitechSection = () => {
               </div>
               <p className="mt-4 text-xs text-slate-400 leading-relaxed">
                 Circulation d'air chaud canalisé de la toiture vers le caisson de refoulement et le plancher perforé.
+              </p>
+            </motion.div>
+
+            {/* Wood Chip Dryer Video */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="bg-slate-900 rounded-3xl p-4 md:p-6 border border-slate-800 flex flex-col justify-between shadow-2xl"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-bold text-emerald-400 flex items-center">
+                    <TreePine className="w-4 h-4 mr-2" /> Séchoir Bois & Plaquettes
+                  </span>
+                  <span className="text-xs text-slate-500">Vidéo Réelle</span>
+                </div>
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video border border-slate-800">
+                  <video 
+                    controls 
+                    className="w-full h-full object-cover"
+                  >
+                    <source src="https://www.base-innovation.com/wp-content/uploads/2019/04/S%C3%A9choir-bois-compress%C3%A9-190423.mp4" type="video/mp4" />
+                    Votre navigateur ne supporte pas la lecture de cette vidéo.
+                  </video>
+                </div>
+              </div>
+              <p className="mt-4 text-xs text-slate-400 leading-relaxed">
+                Démonstration en exploitation réelle du séchage de bois et plaquettes forestières (séchage 324 jours/an).
               </p>
             </motion.div>
           </div>
@@ -735,6 +765,50 @@ const BatitechSection = () => {
               </motion.div>
             ))}
           </div>
+
+          {/* Real Built Installation Showcase Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="mt-12 bg-slate-900 rounded-3xl border border-slate-800 p-6 md:p-8 shadow-2xl overflow-hidden"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div className="relative rounded-2xl overflow-hidden shadow-xl aspect-video sm:aspect-[16/10] bg-slate-950">
+                <img 
+                  src="https://www.base-innovation.com/wp-content/uploads/2020/09/sechage-multi-matieres.jpg" 
+                  alt="Bâtiment séchoir multi-matières réalisé"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-3 left-3 px-3 py-1 bg-slate-950/80 backdrop-blur-md rounded-lg text-xs font-bold text-emerald-400 border border-emerald-500/30">
+                  Installation Réalisée
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
+                  <Building2 className="w-4 h-4 text-amber-400" />
+                  Bâtiment Construit en Exploitation
+                </div>
+                <h3 className="text-2xl md:text-3xl font-extrabold text-white">
+                  Une rentabilité démontrée sur le terrain
+                </h3>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  L'association d'une toiture thermovoltaïque Cogen'Air® et d'une charpente métallique Barconnière permet d'obtenir un outil de production durable, finançable par les économies d'aliments et la vente d'électricité.
+                </p>
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                    <div className="text-xs text-slate-400">Autonomie protéique</div>
+                    <div className="text-emerald-400 font-bold text-base">+2 à +4 pts MAT</div>
+                  </div>
+                  <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+                    <div className="text-xs text-slate-400">Énergie verte</div>
+                    <div className="text-amber-400 font-bold text-base">Revente EDF OA 20 ans</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
         </div>
       </section>
 

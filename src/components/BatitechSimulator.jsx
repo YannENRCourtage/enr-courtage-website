@@ -3,13 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sun, Wind, Wheat, TreePine, DollarSign, MapPin, ChevronRight, ChevronLeft, 
   BarChart3, Calculator, Zap, Factory, Leaf, CheckCircle2, AlertCircle, RotateCcw,
-  RefreshCw, Check, Search, ShieldCheck, FileText, Send, Building2, Plus, Minus
+  RefreshCw, Check, Search, ShieldCheck, FileText, Send, Building2, Plus, Minus,
+  Sparkles, Flame, TrendingUp, Info
 } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
 // We import data from the batitechData file. 
-// Using fallback objects to prevent crashes if the file doesn't exist yet or is incomplete.
 import * as BatitechData from '@/data/batitechData';
+import { getAgriculturalValuationConfig } from '@/services/batitechConfigService';
 
 const BATITECH_MODELS = BatitechData.BATITECH_MODELS || {
   "3.1.15": { id: "3.1.15", name: "BatiTech 3.1.15", travees: 3, cells: 1, kwc: 82.5, panels: 192, investment: { total: 115000 } },
@@ -25,6 +26,7 @@ const PRODUCTIBLE_BY_POSTAL_PREFIX = BatitechData.PRODUCTIBLE_BY_POSTAL_PREFIX |
 const STORAGE_CAPACITIES = BatitechData.STORAGE_CAPACITIES || {};
 const ELECTRICITY_RATE = BatitechData.ELECTRICITY_RATE || 0.16; // €/kWh for ventilator costs
 const TARIF_RACHAT = BatitechData.TARIF_RACHAT_EDF_OA || 0.085; // €/kWh for electricity sale (EDF OA)
+const AGRICULTURAL_VALUATION_DEFAULTS = BatitechData.AGRICULTURAL_VALUATION_DEFAULTS || {};
 
 // Helper to format currency
 const formatEuros = (value) => {
@@ -51,39 +53,42 @@ function RoiBarChart({ investmentNet, annualGain }) {
   const maxVal = Math.max(...data.map(d => d.netBalance), 50000);
   const minVal = Math.min(...data.map(d => d.netBalance), -cost);
 
-  const paybackYears = (cost / firstYearSavings).toFixed(1);
-  const pbYearFloat = parseFloat(paybackYears) || 10;
-  const roiLinePct = ((pbYearFloat - 0.5) / 30) * 100;
+  const isPositiveGain = firstYearSavings > 0;
+  const paybackYears = isPositiveGain ? (cost / firstYearSavings).toFixed(1) : null;
+  const pbYearFloat = paybackYears ? parseFloat(paybackYears) : null;
+  const roiLinePct = (pbYearFloat && pbYearFloat <= 30) ? ((pbYearFloat - 0.5) / 30) * 100 : null;
 
   const targetYears = [1, 5, 10, 15, 20, 25, 30];
 
   return (
     <div className="bg-[#162238] rounded-2xl p-6 text-white my-8 border border-slate-700 shadow-xl">
-      <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
         <div>
           <h4 className="text-lg font-bold text-white flex items-center space-x-2">
             <BarChart3 className="w-5 h-5 text-amber-500" />
             <span>Économies cumulées & Amortissement sur 30 ans</span>
           </h4>
           <p className="text-xs text-slate-400 mt-1">
-            Projection sur 30 ans du solde net (Revenus EDF OA - Coûts ventilation - Investissement net)
+            Projection sur 30 ans du solde net (Revenus EDF OA + Valorisation agricole & chaleur - Coûts ventilation - Investissement net)
           </p>
         </div>
-        <div className="mt-2 sm:mt-0 px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-xs font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-          Amorti en {paybackYears} ans
+        <div className="px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-xs font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+          {paybackYears ? `Amorti en ${paybackYears} ans` : 'Non amortissable'}
         </div>
       </div>
 
       <div className="relative h-60 w-full pt-8 pb-0">
-        <div 
-          className="absolute top-8 bottom-2 z-20 flex flex-col items-center pointer-events-none"
-          style={{ left: `${Math.min(100, Math.max(0, roiLinePct))}%` }}
-        >
-          <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded shadow mt-1 whitespace-nowrap">
-            ROI ({paybackYears} ans)
-          </span>
-          <div className="w-px h-full border-r-2 border-dashed border-blue-400"></div>
-        </div>
+        {roiLinePct !== null && (
+          <div 
+            className="absolute top-8 bottom-2 z-20 flex flex-col items-center pointer-events-none"
+            style={{ left: `${Math.min(100, Math.max(0, roiLinePct))}%` }}
+          >
+            <span className="text-[10px] font-extrabold bg-blue-600 text-white px-2 py-0.5 rounded shadow mt-1 whitespace-nowrap">
+              ROI ({paybackYears} ans)
+            </span>
+            <div className="w-px h-full border-r-2 border-dashed border-blue-400"></div>
+          </div>
+        )}
 
         <div className="absolute left-6 right-2 top-[58%] h-px bg-slate-600 z-0"></div>
 
@@ -152,16 +157,71 @@ const BatitechSimulator = () => {
   const [orientation, setOrientation] = useState('S');
   const [inclination, setInclination] = useState(15);
 
-  // Step 3: Needs
+  // Step 3: Needs & Agricultural Valuation
   const [activityType, setActivityType] = useState('Agricole');
   
   const [materials, setMaterials] = useState({
-    fourrage: { active: false, qty: '', hr: '45-15' },
-    bottes: { active: false, qty: '', duration: '50j' },
-    ble: { active: false, qty: '' },
-    mais: { active: false, qty: '' },
-    plaquettes: { active: false, qty: '', hr: '45-25' }
+    fourrage: { 
+      active: false, 
+      qty: '', 
+      hr: '45-15',
+      gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.fourrage?.defaultGainPerTon || 55,
+      energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.fourrage?.defaultEnergySavingsPerTon || 10
+    },
+    bottes: { 
+      active: false, 
+      qty: '', 
+      duration: '50j',
+      gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.bottes?.defaultGainPerTon || 50,
+      energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.bottes?.defaultEnergySavingsPerTon || 10
+    },
+    ble: { 
+      active: false, 
+      qty: '',
+      gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.ble?.defaultGainPerTon || 25,
+      energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.ble?.defaultEnergySavingsPerTon || 15
+    },
+    mais: { 
+      active: false, 
+      qty: '',
+      gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.mais?.defaultGainPerTon || 35,
+      energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.mais?.defaultEnergySavingsPerTon || 25
+    },
+    plaquettes: { 
+      active: false, 
+      qty: '', 
+      hr: '45-25',
+      gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.plaquettes?.defaultGainPerTon || 30,
+      energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.plaquettes?.defaultEnergySavingsPerTon || 20
+    }
   });
+
+  // Charger la configuration par défaut (Firestore / async store) au montage
+  useEffect(() => {
+    async function loadConfig() {
+      try {
+        const config = await getAgriculturalValuationConfig();
+        if (config) {
+          setMaterials(prev => {
+            const updated = { ...prev };
+            Object.keys(config).forEach(key => {
+              if (updated[key]) {
+                updated[key] = {
+                  ...updated[key],
+                  gainPerTon: config[key].defaultGainPerTon,
+                  energySavingsPerTon: config[key].defaultEnergySavingsPerTon
+                };
+              }
+            });
+            return updated;
+          });
+        }
+      } catch (err) {
+        console.warn("Utilisation des paramètres agronomiques locaux :", err);
+      }
+    }
+    loadConfig();
+  }, []);
 
   // Step 4: Loading
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -311,16 +371,16 @@ const BatitechSimulator = () => {
       ? BatitechData.getOrientationCoefficient(inclination, orientation) 
       : 1.0;
     
-    // A. Electric Production (Revente totale EDF OA @ 0.085 €/kWh)
+    // A. Production Électrique (Revente totale EDF OA @ 0.085 €/kWh)
     const annualProduction = Math.round((model.kwc || model.kWc) * productible * orientCoef);
     const electricityRevenue = Math.round(annualProduction * TARIF_RACHAT);
 
-    // C. CEE Premium (exact calculation from grid)
+    // B. Prime CEE (Fiche AGRI-EQ-110)
     const actKey = activityType.toLowerCase().startsWith('for') ? 'forestiere' : 'agricole';
     const ceePremium = BatitechData.CEE_PREMIUMS?.[selectedModel]?.[actKey]?.[climateZone] || 
                        BatitechData.CEE_PREMIUMS?.[model.id]?.[actKey]?.[climateZone] || 0;
 
-    // D. Ventilation Costs & Capacities
+    // C. Coûts de Ventilation & Capacités
     let ventilatorCosts = 0;
     let capacities = [];
     const modelCaps = BatitechData.DRYING_CAPACITIES?.[selectedModel] || 
@@ -402,7 +462,48 @@ const BatitechSimulator = () => {
       });
     }
 
-    // Pricing calculation with Auvents & Extra Travées
+    // D. VALORISATION AGRICOLE & ÉCONOMIES D'ÉNERGIE (Modèle économique complet)
+    let totalTonnage = 0;
+    let totalAgriQualityGain = 0;
+    let totalEnergySavings = 0;
+    const materialValuationBreakdown = [];
+
+    Object.entries(materials).forEach(([matKey, matVal]) => {
+      if (matVal.active) {
+        const qty = parseFloat(matVal.qty) || 0;
+        totalTonnage += qty;
+
+        const gainPerTon = (matVal.gainPerTon !== '' && !isNaN(parseFloat(matVal.gainPerTon)))
+          ? parseFloat(matVal.gainPerTon)
+          : (AGRICULTURAL_VALUATION_DEFAULTS[matKey]?.defaultGainPerTon || 0);
+
+        const energySavingsPerTon = (matVal.energySavingsPerTon !== '' && !isNaN(parseFloat(matVal.energySavingsPerTon)))
+          ? parseFloat(matVal.energySavingsPerTon)
+          : (AGRICULTURAL_VALUATION_DEFAULTS[matKey]?.defaultEnergySavingsPerTon || 0);
+
+        const cropQualityGain = qty * gainPerTon;
+        const cropEnergySavings = qty * energySavingsPerTon;
+        const cropTotalValuation = cropQualityGain + cropEnergySavings;
+
+        totalAgriQualityGain += cropQualityGain;
+        totalEnergySavings += cropEnergySavings;
+
+        materialValuationBreakdown.push({
+          key: matKey,
+          label: AGRICULTURAL_VALUATION_DEFAULTS[matKey]?.label || matKey,
+          qty,
+          gainPerTon,
+          energySavingsPerTon,
+          cropQualityGain,
+          cropEnergySavings,
+          cropTotalValuation
+        });
+      }
+    });
+
+    const totalAgriculturalValuation = totalAgriQualityGain + totalEnergySavings;
+
+    // E. Calcul de l'Investissement et Options Auvents / Travées
     const getAuventUnitCost = (mId) => {
       if (mId === '3.1.15' || mId === 'batitech_3_1_15') return 4500; // 3 travées
       if (mId === '6.2.15' || mId === 'batitech_6_2_15') return 9000; // 6 travées
@@ -419,8 +520,18 @@ const BatitechSimulator = () => {
     const baseInvestment = model.investment.total;
     const investmentBrut = baseInvestment + totalOptionsCost;
     const investmentNet = Math.max(0, investmentBrut - ceePremium);
-    const annualGain = electricityRevenue - ventilatorCosts;
-    const roi = annualGain > 0 ? (investmentNet / annualGain).toFixed(1) : "-";
+
+    // F. NOUVELLE FORMULE DU GAIN NET ANNUEL :
+    // Gain Net = (Revenus Vente Électricité) - (Coûts Ventilation) + (Plus-value agricole) + (Économies énergies fossiles substituées)
+    const annualGain = (electricityRevenue - ventilatorCosts) + totalAgriculturalValuation;
+
+    // G. TEMPS DE RETOUR (ROI) AVEC GESTION DE DIVISION PAR ZÉRO / GAIN NÉGATIF
+    let roi = "-";
+    if (annualGain > 0) {
+      roi = (investmentNet / annualGain).toFixed(1);
+    } else {
+      roi = "Non amortissable";
+    }
 
     const optionsDetails = [];
     if (auventSud) optionsDetails.push(`Auvent Sud (+${formatEuros(auventUnitCost)})`);
@@ -438,11 +549,17 @@ const BatitechSimulator = () => {
       optionsDetails,
       investmentBrut,
       investmentNet,
+      totalTonnage,
+      totalAgriQualityGain,
+      totalEnergySavings,
+      totalAgriculturalValuation,
+      materialValuationBreakdown,
       annualGain,
       roi,
       capacities
     };
   }, [step, selectedModel, productible, orientation, inclination, activityType, climateZone, dryingZone, materials, auventSud, auventNord, extraTravees]);
+
 
 
   // ==========================================
@@ -747,122 +864,244 @@ const BatitechSimulator = () => {
     </motion.div>
   );
 
-  const renderStep3 = () => (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      className="space-y-6"
-    >
-      <div>
-        <h3 className="text-2xl font-bold text-white mb-2">Vos Besoins en Séchage</h3>
-        <p className="text-slate-400">Sélectionnez les matières et les volumes annuels</p>
-      </div>
+  const renderStep3 = () => {
+    const cropsList = [
+      { id: 'fourrage', label: 'Fourrage vrac (Séchage en grange)', icon: <Leaf className="w-5 h-5" />, unitLabel: 't MS/an', defaultGain: 55, defaultEnergy: 10, hint: 'Gain MAT +2 à +4 pts, économie d\'achat de concentrés/soja' },
+      { id: 'bottes', label: 'Bottes carrées (Foin conditionné)', icon: <PackageIcon className="w-5 h-5" />, unitLabel: 't MS/an', defaultGain: 50, defaultEnergy: 10, hint: 'Conservation des feuilles, haute digestibilité, zéro poussière' },
+      { id: 'ble', label: 'Céréales - Blé tendre', icon: <Wheat className="w-5 h-5" />, unitLabel: 't/an', defaultGain: 25, defaultEnergy: 15, hint: 'Économie des taxes de séchage OS et maîtrise de récolte' },
+      { id: 'mais', label: 'Céréales - Maïs grain', icon: <Wheat className="w-5 h-5" />, unitLabel: 't/an', defaultGain: 35, defaultEnergy: 25, hint: 'Substitution du séchage fossile à flamme directe (gaz propane)' },
+      { id: 'plaquettes', label: 'Plaquettes forestières (Bois énergie)', icon: <TreePine className="w-5 h-5" />, unitLabel: 't/an', defaultGain: 30, defaultEnergy: 20, hint: 'Valorisation bois sec classe M20/M25 (PCI doublé de 2 à 4 kWh/kg)' }
+    ];
 
-      <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
-        <label className="block text-sm font-semibold text-white mb-4">Type d'activité (Fiche CEE AGRI-EQ-110)</label>
-        <div className="flex space-x-4">
-          <button
-            onClick={() => setActivityType('Agricole')}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all ${
-              activityType === 'Agricole' ? 'bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <Wheat className="w-5 h-5 mr-2" />
-            Agricole
-          </button>
-          <button
-            onClick={() => setActivityType('Forestière')}
-            className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all ${
-              activityType === 'Forestière' ? 'bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-            }`}
-          >
-            <TreePine className="w-5 h-5 mr-2" />
-            Forestière
-          </button>
+    const currentTotalValuation = Object.entries(materials).reduce((acc, [k, m]) => {
+      if (!m.active) return acc;
+      const q = parseFloat(m.qty) || 0;
+      const g = (m.gainPerTon !== '' && !isNaN(parseFloat(m.gainPerTon))) ? parseFloat(m.gainPerTon) : (AGRICULTURAL_VALUATION_DEFAULTS[k]?.defaultGainPerTon || 0);
+      const e = (m.energySavingsPerTon !== '' && !isNaN(parseFloat(m.energySavingsPerTon))) ? parseFloat(m.energySavingsPerTon) : (AGRICULTURAL_VALUATION_DEFAULTS[k]?.defaultEnergySavingsPerTon || 0);
+      return acc + q * (g + e);
+    }, 0);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="space-y-6"
+      >
+        <div>
+          <h3 className="text-2xl font-bold text-white mb-2">Vos Besoins en Séchage & Valorisation Agricole</h3>
+          <p className="text-slate-400">Sélectionnez les matières, indiquez vos volumes et ajustez vos gains agronomiques</p>
         </div>
-      </div>
 
-      <div className="space-y-4">
-        {[
-          { id: 'fourrage', label: 'Fourrage vrac', icon: <Leaf className="w-5 h-5" /> },
-          { id: 'bottes', label: 'Bottes carrées', icon: <PackageIcon className="w-5 h-5" /> },
-          { id: 'ble', label: 'Céréales - Blé tendre', icon: <Wheat className="w-5 h-5" /> },
-          { id: 'mais', label: 'Céréales - Maïs', icon: <Wheat className="w-5 h-5" /> },
-          { id: 'plaquettes', label: 'Plaquettes forestières', icon: <TreePine className="w-5 h-5" /> }
-        ].map((mat) => (
-          <div key={mat.id} className={`bg-slate-900 rounded-2xl p-4 border transition-colors ${materials[mat.id].active ? 'border-amber-500/50' : 'border-slate-800'}`}>
-            <div className="flex items-center justify-between">
-              <label className="flex items-center space-x-3 cursor-pointer select-none text-white font-medium">
-                <input 
-                  type="checkbox" 
-                  className="w-5 h-5 rounded border-slate-600 text-amber-500 focus:ring-amber-500 bg-slate-800" 
-                  checked={materials[mat.id].active}
-                  onChange={() => handleToggleMaterial(mat.id)}
-                />
-                <span className="flex items-center text-amber-400 mr-2">{mat.icon}</span>
-                {mat.label}
-              </label>
-              
-              {materials[mat.id].active && (
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="Tonnes/an"
-                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                    className="w-32 bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input font-bold"
-                    value={materials[mat.id].qty}
-                    onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
-                  />
+        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
+          <label className="block text-sm font-semibold text-white mb-4">Type d'activité (Fiche CEE AGRI-EQ-110)</label>
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setActivityType('Agricole')}
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all ${
+                activityType === 'Agricole' ? 'bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              <Wheat className="w-5 h-5 mr-2" />
+              Agricole
+            </button>
+            <button
+              onClick={() => setActivityType('Forestière')}
+              className={`flex-1 py-3 px-4 rounded-xl font-semibold flex items-center justify-center transition-all ${
+                activityType === 'Forestière' ? 'bg-amber-500 text-slate-900 font-bold shadow-lg shadow-amber-500/20' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+            >
+              <TreePine className="w-5 h-5 mr-2" />
+              Forestière
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {cropsList.map((mat) => {
+            const isMatActive = materials[mat.id]?.active;
+            const matQty = parseFloat(materials[mat.id]?.qty) || 0;
+            const matGain = (materials[mat.id]?.gainPerTon !== '' && !isNaN(parseFloat(materials[mat.id]?.gainPerTon))) 
+              ? parseFloat(materials[mat.id]?.gainPerTon) 
+              : mat.defaultGain;
+            const matEnergy = (materials[mat.id]?.energySavingsPerTon !== '' && !isNaN(parseFloat(materials[mat.id]?.energySavingsPerTon))) 
+              ? parseFloat(materials[mat.id]?.energySavingsPerTon) 
+              : mat.defaultEnergy;
+            const matEstAnnualGain = matQty * (matGain + matEnergy);
+
+            return (
+              <div 
+                key={mat.id} 
+                className={`bg-slate-900 rounded-2xl p-5 border transition-all ${isMatActive ? 'border-amber-500/60 shadow-lg' : 'border-slate-800'}`}
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <label className="flex items-center space-x-3 cursor-pointer select-none text-white font-semibold text-base">
+                    <input 
+                      type="checkbox" 
+                      className="w-5 h-5 rounded border-slate-600 text-amber-500 focus:ring-amber-500 bg-slate-800" 
+                      checked={isMatActive}
+                      onChange={() => handleToggleMaterial(mat.id)}
+                    />
+                    <span className="flex items-center text-amber-400 mr-1">{mat.icon}</span>
+                    <span>{mat.label}</span>
+                  </label>
+                  
+                  {isMatActive && (
+                    <div className="flex items-center space-x-2 pl-8 sm:pl-0">
+                      <input
+                        type="number"
+                        min="1"
+                        placeholder={mat.unitLabel}
+                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                        className="w-36 bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2.5 batitech-input dark-input font-bold"
+                        value={materials[mat.id].qty}
+                        onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
+                      />
+                      <span className="text-xs text-slate-400 font-semibold">{mat.unitLabel}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {detailedMode && materials[mat.id].active && (
-              <div className="mt-4 pt-4 border-t border-slate-800 pl-8">
-                {mat.id === 'fourrage' && (
-                  <select 
-                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input w-full md:w-auto font-medium"
-                    value={materials[mat.id].hr}
-                    onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
+                {/* Section Valorisation Agricole & Économies intégrée */}
+                {isMatActive && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="mt-4 pt-4 border-t border-slate-800 space-y-4"
                   >
-                    <option value="50-15" className="bg-slate-900 text-white">Séchage 50% HR vers 15% HR</option>
-                    <option value="45-15" className="bg-slate-900 text-white">Séchage 45% HR vers 15% HR</option>
-                    <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
-                  </select>
-                )}
-                {mat.id === 'bottes' && (
-                  <select 
-                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input w-full md:w-auto font-medium"
-                    value={materials[mat.id].duration}
-                    onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
-                  >
-                    <option value="50j" className="bg-slate-900 text-white">Durée 50 jours</option>
-                    <option value="81j" className="bg-slate-900 text-white">Durée 81 jours</option>
-                  </select>
-                )}
-                {mat.id === 'plaquettes' && (
-                  <select 
-                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input w-full md:w-auto font-medium"
-                    value={materials[mat.id].hr}
-                    onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
-                  >
-                    <option value="50-30" className="bg-slate-900 text-white">Séchage 50% HR vers 30% HR</option>
-                    <option value="45-25" className="bg-slate-900 text-white">Séchage 45% HR vers 25% HR</option>
-                    <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
-                  </select>
+                    <div className="bg-slate-950/80 rounded-xl p-4 border border-emerald-500/30">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 border-b border-slate-800 pb-2">
+                        <div className="flex items-center text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                          <Sparkles className="w-4 h-4 mr-1.5 text-emerald-400" />
+                          Valorisation Agricole & Économies Thermiques
+                        </div>
+                        {matQty > 0 && (
+                          <div className="text-xs font-bold px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg border border-emerald-500/40">
+                            Gain généré : + {formatEuros(matEstAnnualGain)} / an
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {/* Plus-value agronomique & qualité */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+                            <span>Plus-value qualité / concentrés</span>
+                            <span className="text-[11px] text-amber-400 font-semibold">(Réf. : {mat.defaultGain} €/t)</span>
+                          </label>
+                          <div className="relative flex items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={materials[mat.id].gainPerTon}
+                              onChange={(e) => handleMaterialChange(mat.id, 'gainPerTon', e.target.value)}
+                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                              className="w-full bg-slate-900 border border-slate-700 !text-white text-sm rounded-lg pl-3 pr-12 py-2 batitech-input font-bold"
+                            />
+                            <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">€/t</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-1 leading-tight">{mat.hint}</p>
+                        </div>
+
+                        {/* Économie d'énergie fossile substituée */}
+                        <div>
+                          <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+                            <span>Économie énergie fossile substituée</span>
+                            <span className="text-[11px] text-amber-400 font-semibold">(Réf. : {mat.defaultEnergy} €/t)</span>
+                          </label>
+                          <div className="relative flex items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={materials[mat.id].energySavingsPerTon}
+                              onChange={(e) => handleMaterialChange(mat.id, 'energySavingsPerTon', e.target.value)}
+                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                              className="w-full bg-slate-900 border border-slate-700 !text-white text-sm rounded-lg pl-3 pr-12 py-2 batitech-input font-bold"
+                            />
+                            <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">€/t</span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-1 leading-tight">Économie de combustible (gaz propane / fioul) sur séchoir thermique</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Mode détaillé selectors */}
+                    {detailedMode && (
+                      <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center gap-3">
+                        <span className="text-xs text-slate-400 font-medium">Paramètre hygrométrique / durée :</span>
+                        {mat.id === 'fourrage' && (
+                          <select 
+                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                            className="bg-slate-900 border border-slate-700 !text-white text-xs rounded-lg px-3 py-1.5 batitech-input dark-input font-medium"
+                            value={materials[mat.id].hr}
+                            onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
+                          >
+                            <option value="50-15" className="bg-slate-900 text-white">Séchage 50% HR vers 15% HR</option>
+                            <option value="45-15" className="bg-slate-900 text-white">Séchage 45% HR vers 15% HR</option>
+                            <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
+                          </select>
+                        )}
+                        {mat.id === 'bottes' && (
+                          <select 
+                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                            className="bg-slate-900 border border-slate-700 !text-white text-xs rounded-lg px-3 py-1.5 batitech-input dark-input font-medium"
+                            value={materials[mat.id].duration}
+                            onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
+                          >
+                            <option value="50j" className="bg-slate-900 text-white">Durée 50 jours</option>
+                            <option value="81j" className="bg-slate-900 text-white">Durée 81 jours</option>
+                          </select>
+                        )}
+                        {mat.id === 'plaquettes' && (
+                          <select 
+                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                            className="bg-slate-900 border border-slate-700 !text-white text-xs rounded-lg px-3 py-1.5 batitech-input dark-input font-medium"
+                            value={materials[mat.id].hr}
+                            onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
+                          >
+                            <option value="50-30" className="bg-slate-900 text-white">Séchage 50% HR vers 30% HR</option>
+                            <option value="45-25" className="bg-slate-900 text-white">Séchage 45% HR vers 25% HR</option>
+                            <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
+                          </select>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
                 )}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </motion.div>
-  );
+            );
+          })}
+        </div>
+
+        {/* Global Agricultural Valuation Live Box */}
+        {currentTotalValuation > 0 && (
+          <motion.div 
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gradient-to-r from-emerald-950/40 via-slate-900 to-amber-950/30 rounded-2xl p-5 border border-emerald-500/40 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 mt-6"
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold flex-shrink-0">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-white font-extrabold text-base">Valorisation Agricole & Chaleur Solaire Totale</div>
+                <div className="text-xs text-slate-300">Gains protéiques, digestibilité, économies d'aliments et de séchage fossile</div>
+              </div>
+            </div>
+            <div className="text-right sm:flex-shrink-0">
+              <div className="text-2xl font-black text-emerald-400">
+                + {formatEuros(currentTotalValuation)} / an
+              </div>
+              <div className="text-[11px] text-slate-400 font-medium">Injecté dans le calcul de rentabilité</div>
+            </div>
+          </motion.div>
+        )}
+      </motion.div>
+    );
+  };
 
   const renderLoading = () => (
     <motion.div
@@ -886,7 +1125,7 @@ const BatitechSimulator = () => {
         </div>
       </div>
       <h3 className="text-xl font-bold text-white mb-2">Calcul de votre projet BatiTech...</h3>
-      <p className="text-slate-400">Analyse de la production solaire et des capacités de séchage.</p>
+      <p className="text-slate-400">Analyse de la production solaire, valorisation agricole et temps de retour.</p>
     </motion.div>
   );
 
@@ -900,7 +1139,7 @@ const BatitechSimulator = () => {
       >
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-white mb-2">Votre Simulation <span className="text-amber-500">{results.model.name}</span></h2>
-          <p className="text-slate-400">Voici l'estimation détaillée pour votre projet</p>
+          <p className="text-slate-400">Voici l'estimation économique et agronomique complète de votre projet</p>
         </div>
 
         {/* Top KPI Cards */}
@@ -909,21 +1148,21 @@ const BatitechSimulator = () => {
             <div className="absolute top-0 right-0 p-4 opacity-20"><Zap className="w-16 h-16 text-emerald-400" /></div>
             <div className="text-emerald-400 text-sm font-bold mb-2">Production Électrique</div>
             <div className="text-3xl font-bold text-white mb-1">{new Intl.NumberFormat('fr-FR').format(results.annualProduction)} <span className="text-lg text-slate-400 font-normal">kWh/an</span></div>
-            <div className="text-emerald-500 font-semibold">{formatEuros(results.electricityRevenue)} / an</div>
+            <div className="text-emerald-500 font-semibold">{formatEuros(results.electricityRevenue)} / an (EDF OA)</div>
           </div>
           
           <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-20"><ShieldCheck className="w-16 h-16 text-amber-500" /></div>
-            <div className="text-amber-500 text-sm font-bold mb-2">Prime CEE Estimée</div>
-            <div className="text-3xl font-bold text-white mb-1">{formatEuros(results.ceePremium)}</div>
-            <div className="text-slate-400 text-sm">Déduite de l'investissement (AGRI-EQ-110)</div>
+            <div className="absolute top-0 right-0 p-4 opacity-20"><TrendingUp className="w-16 h-16 text-amber-500" /></div>
+            <div className="text-amber-500 text-sm font-bold mb-2">Valorisation Agricole & Chaleur</div>
+            <div className="text-3xl font-bold text-white mb-1">+ {formatEuros(results.totalAgriculturalValuation)} <span className="text-lg text-slate-400 font-normal">/an</span></div>
+            <div className="text-slate-400 text-xs">Qualité ({formatEuros(results.totalAgriQualityGain)}) + Énergie ({formatEuros(results.totalEnergySavings)})</div>
           </div>
 
           <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 p-4 opacity-20"><Calculator className="w-16 h-16 text-blue-400" /></div>
-            <div className="text-blue-400 text-sm font-bold mb-2">Temps de Retour</div>
-            <div className="text-3xl font-bold text-white mb-1">{results.roi} <span className="text-lg text-slate-400 font-normal">ans</span></div>
-            <div className="text-blue-400 text-sm font-semibold">Gain net : {formatEuros(results.annualGain)}/an</div>
+            <div className="text-blue-400 text-sm font-bold mb-2">Temps de Retour (ROI)</div>
+            <div className="text-3xl font-bold text-white mb-1">{results.roi} {results.roi !== "Non amortissable" && <span className="text-lg text-slate-400 font-normal">ans</span>}</div>
+            <div className="text-blue-400 text-sm font-semibold">Gain net annuel : {formatEuros(results.annualGain)}/an</div>
           </div>
         </div>
 
@@ -931,7 +1170,7 @@ const BatitechSimulator = () => {
         <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
           <h3 className="text-xl font-bold text-white mb-4 flex items-center">
             <Wind className="w-6 h-6 mr-3 text-amber-500" />
-            Capacité de Séchage
+            Capacité de Séchage & Volumes Annuels
           </h3>
           <div className="space-y-4">
             {results.capacities.map((cap, i) => (
@@ -939,7 +1178,7 @@ const BatitechSimulator = () => {
                 <div className="font-semibold text-white text-lg mb-2 md:mb-0">{cap.name}</div>
                 <div className="flex items-center space-x-6 w-full md:w-auto">
                   <div className="flex-1 md:flex-none text-center">
-                    <div className="text-xs text-slate-400 mb-1">Besoin</div>
+                    <div className="text-xs text-slate-400 mb-1">Besoin annuel</div>
                     <div className="text-lg text-white font-bold">{cap.needed} t</div>
                   </div>
                   <div className="text-slate-600 text-xl">/</div>
@@ -963,14 +1202,56 @@ const BatitechSimulator = () => {
           </div>
         </div>
 
+        {/* Détail Valorisation Agricole */}
+        {results.materialValuationBreakdown.length > 0 && (
+          <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
+            <h3 className="text-xl font-bold text-white mb-4 flex items-center">
+              <Sparkles className="w-6 h-6 mr-3 text-emerald-400" />
+              Détail de la Plus-Value Agronomique & Économies d'Énergie
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm text-slate-300">
+                <thead className="bg-slate-950 text-slate-400 text-xs uppercase border-b border-slate-800">
+                  <tr>
+                    <th className="py-3 px-4">Culture / Matière</th>
+                    <th className="py-3 px-4 text-center">Volume</th>
+                    <th className="py-3 px-4 text-center">Plus-value qualité</th>
+                    <th className="py-3 px-4 text-center">Éco. Énergie fossile</th>
+                    <th className="py-3 px-4 text-right">Gain Annuel Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {results.materialValuationBreakdown.map((row, idx) => (
+                    <tr key={idx} className="hover:bg-slate-800/40">
+                      <td className="py-3 px-4 font-semibold text-white">{row.label}</td>
+                      <td className="py-3 px-4 text-center">{row.qty} t</td>
+                      <td className="py-3 px-4 text-center text-emerald-400 font-medium">+{row.gainPerTon} €/t ({formatEuros(row.cropQualityGain)})</td>
+                      <td className="py-3 px-4 text-center text-blue-400 font-medium">+{row.energySavingsPerTon} €/t ({formatEuros(row.cropEnergySavings)})</td>
+                      <td className="py-3 px-4 text-right font-bold text-amber-400">+{formatEuros(row.cropTotalValuation)}/an</td>
+                    </tr>
+                  ))}
+                  <tr className="bg-slate-950/80 font-bold text-white">
+                    <td className="py-3 px-4">TOTAL VALORISATION</td>
+                    <td className="py-3 px-4 text-center">{results.totalTonnage} t</td>
+                    <td className="py-3 px-4 text-center text-emerald-400">+{formatEuros(results.totalAgriQualityGain)}</td>
+                    <td className="py-3 px-4 text-center text-blue-400">+{formatEuros(results.totalEnergySavings)}</td>
+                    <td className="py-3 px-4 text-right text-emerald-400 text-base">+{formatEuros(results.totalAgriculturalValuation)}/an</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Financial Details */}
         <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center">
             <DollarSign className="w-6 h-6 mr-3 text-amber-500" />
-            Bilan Financier & Investissement
+            Bilan Financier & Modèle Économique Global
           </h3>
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-3">
+              <div className="text-xs uppercase font-bold text-amber-400 tracking-wider mb-2">Investissement Initial</div>
               <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
                 <span className="text-slate-400">Séchoir de base {results.model.name}</span>
                 <span className="text-white font-semibold">{formatEuros(results.baseInvestment)}</span>
@@ -986,27 +1267,36 @@ const BatitechSimulator = () => {
                 <span className="text-white font-bold">{formatEuros(results.investmentBrut)}</span>
               </div>
               <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
-                <span className="text-slate-400">Prime CEE (AGRI-EQ-110)</span>
+                <span className="text-slate-400">Prime CEE (Fiche AGRI-EQ-110)</span>
                 <span className="text-emerald-400 font-semibold">- {formatEuros(results.ceePremium)}</span>
               </div>
               <div className="flex justify-between items-center py-3 bg-slate-800 px-4 rounded-xl font-bold text-lg">
-                <span className="text-white">Investissement Net</span>
+                <span className="text-white">Investissement Net à Financer</span>
                 <span className="text-amber-500">{formatEuros(results.investmentNet)}</span>
               </div>
             </div>
             
             <div className="space-y-3">
-              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
-                <span className="text-slate-400">Revenus Vente Électricité (Annuel)</span>
+              <div className="text-xs uppercase font-bold text-emerald-400 tracking-wider mb-2">Flux de Trésorerie Annuels</div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                <span className="text-slate-400">Revenus Vente Électricité (EDF OA)</span>
                 <span className="text-emerald-400 font-semibold">+ {formatEuros(results.electricityRevenue)}</span>
               </div>
-              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
-                <span className="text-slate-400">Coût Ventilation (Annuel)</span>
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                <span className="text-slate-400">Plus-value qualité agricole & concentrés</span>
+                <span className="text-emerald-400 font-semibold">+ {formatEuros(results.totalAgriQualityGain)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                <span className="text-slate-400">Économies énergies fossiles substituées</span>
+                <span className="text-emerald-400 font-semibold">+ {formatEuros(results.totalEnergySavings)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b border-slate-800">
+                <span className="text-slate-400">Coûts de Ventilation (Électricité)</span>
                 <span className="text-red-400 font-semibold">- {formatEuros(results.ventilatorCosts)}</span>
               </div>
-              <div className="flex justify-between items-center py-3 bg-slate-800 px-4 rounded-xl font-bold text-lg mt-auto">
-                <span className="text-white">Gain Net Annuel</span>
-                <span className="text-emerald-500">{formatEuros(results.annualGain)}</span>
+              <div className="flex justify-between items-center py-3 bg-gradient-to-r from-emerald-950/60 to-slate-800 px-4 rounded-xl font-bold text-lg border border-emerald-500/30">
+                <span className="text-white">Gain Net Annuel Global</span>
+                <span className="text-emerald-400">+ {formatEuros(results.annualGain)} / an</span>
               </div>
             </div>
           </div>

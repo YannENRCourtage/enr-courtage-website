@@ -330,3 +330,64 @@ export function getDryingZone(dept) {
 export function getClimateZone(dept) {
   return CLIMATE_ZONES_BY_DEPARTMENT[dept] || 'H1';
 }
+
+/**
+ * Valeurs moyennes par défaut de valorisation agricole et économies thermiques par tonne séchée
+ * Basées sur les études agronomiques (INRAE, Chambre d'Agriculture, BASE Innovation) :
+ * - Gain protéique (+2 à +4 pts MAT)
+ * - Réduction des pertes mécaniques au champ (-15% à -20%)
+ * - Économies d'achats d'aliments concentrés / tourteaux
+ * - Économies de frais de séchage en organisme stockeur ou combustible fossile (gaz, fioul)
+ */
+export const AGRICULTURAL_VALUATION_DEFAULTS = {
+  fourrage: {
+    id: 'fourrage',
+    label: 'Fourrage vrac (Séchage en grange)',
+    defaultGainPerTon: 55, // € / tonne MS (gain qualité, digestibilité & économie concentrés)
+    defaultEnergySavingsPerTon: 10, // € / tonne MS (économie fauchage/re-fauchage/énergie)
+    minGain: 0,
+    maxGain: 150,
+    unit: '€/t MS',
+    tooltip: 'Gain protéique (+2 à +4 pts MAT), réduction des pertes au champ (15-20%), économie d\'achats de tourteaux et concentrés.'
+  },
+  bottes: {
+    id: 'bottes',
+    label: 'Bottes carrées (Foin conditionné)',
+    defaultGainPerTon: 50, // € / tonne MS
+    defaultEnergySavingsPerTon: 10, // € / tonne MS
+    minGain: 0,
+    maxGain: 150,
+    unit: '€/t MS',
+    tooltip: 'Conservation intégrale des feuilles, valeur nutritive supérieure, sécurité sanitaire sans moisissures ni poussières.'
+  },
+  ble: {
+    id: 'ble',
+    label: 'Céréales - Blé tendre',
+    defaultGainPerTon: 25, // € / tonne (barème OS & marge qualité)
+    defaultEnergySavingsPerTon: 15, // € / tonne (substitution séchoir gaz/fioul)
+    minGain: 0,
+    maxGain: 100,
+    unit: '€/t',
+    tooltip: 'Économie des taxes et frais de séchage organisme stockeur (OS), valorisation directe du grain stocké à la ferme.'
+  },
+  mais: {
+    id: 'mais',
+    label: 'Céréales - Maïs grain',
+    defaultGainPerTon: 35, // € / tonne (réduction forte humidité 30% -> 15%)
+    defaultEnergySavingsPerTon: 25, // € / tonne (forte économie de propane/gaz fossile)
+    minGain: 0,
+    maxGain: 120,
+    unit: '€/t',
+    tooltip: 'Substitution massive de combustible propane sur maïs humide, récolte précoce sécurisée.'
+  },
+  plaquettes: {
+    id: 'plaquettes',
+    label: 'Plaquettes forestières (Bois énergie)',
+    defaultGainPerTon: 30, // € / tonne (survaleur classe M20/M25 sèche)
+    defaultEnergySavingsPerTon: 20, // € / tonne (économie sur combustible substitué)
+    minGain: 0,
+    maxGain: 100,
+    unit: '€/t',
+    tooltip: 'Valorisation du bois déchiqueté sec normé M20 (PCI doublé de 2 à 4 kWh/kg), surprix à la vente et meilleur rendement chaufferie.'
+  }
+};
