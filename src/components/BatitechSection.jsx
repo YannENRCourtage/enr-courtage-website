@@ -143,31 +143,10 @@ const BatitechSection = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/95 to-slate-900 z-0 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto container-padding">
-          {/* Header Badges */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.7 }}
-            className="flex flex-wrap justify-center items-center gap-3 mb-6"
-          >
-            <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center shadow-[0_0_15px_rgba(245,158,11,0.25)]">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
-              Fiche CEE AGRI-EQ-110 Éligible
-            </span>
-            <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-500/40 flex items-center">
-              <Sun className="w-3.5 h-3.5 mr-1.5 text-blue-400" />
-              Panneaux Hybrides Cogen'Air® 1079 W
-            </span>
-            <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center">
-              <Building2 className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
-              Charpente Barconnière AS9.2
-            </span>
-          </motion.div>
-
           <motion.div 
             initial={{ opacity: 0, y: 30 }} 
             animate={{ opacity: 1, y: 0 }} 
-            transition={{ duration: 0.8, delay: 0.1 }} 
+            transition={{ duration: 0.8 }} 
             className="text-center mb-10"
           >
             <h1 id="batitech-title" className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight">
@@ -772,10 +751,6 @@ const BatitechSection = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-4">
-              <Building2 className="w-4 h-4 text-amber-400" />
-              Gamme BatiTech® ECO EVO
-            </div>
             <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
               3 Configurations de Référence
             </h2>
@@ -845,9 +820,6 @@ const BatitechSection = () => {
                   <div className="pt-4 flex justify-between items-baseline">
                     <span className="text-xs text-slate-400 font-medium">Investissement brut clé en main :</span>
                     <span className="text-xl font-extrabold text-amber-400">{model.investment}</span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 leading-tight">
-                    {model.breakdown}
                   </div>
 
                   <button 
@@ -923,13 +895,6 @@ const BatitechSection = () => {
                   <div className="text-base font-extrabold text-white mt-1">21 k€ à 156 k€</div>
                 </div>
               </div>
-
-              <div className="bg-amber-500/10 p-4 rounded-xl border border-amber-500/30 flex items-center">
-                <FileText className="w-5 h-5 text-amber-400 mr-3 flex-shrink-0" />
-                <p className="text-xs font-semibold text-amber-200">
-                  ENR COURTAGE prend en charge l'intégralité du montage administratif et de la valorisation de votre prime CEE AGRI-EQ-110.
-                </p>
-              </div>
             </motion.div>
 
             {/* CEE Visuals Right */}
@@ -948,23 +913,13 @@ const BatitechSection = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white p-3 rounded-2xl border border-slate-800 shadow-md">
-                  <div className="text-[11px] font-bold text-slate-600 mb-1 text-center">Carte Zones H1 / H2 / H3</div>
-                  <img 
-                    src="/images/batitech/zones-climatiques-h1h2h3.png" 
-                    alt="Carte des zones climatiques" 
-                    className="w-full h-36 object-contain"
-                  />
-                </div>
-                <div className="bg-white p-3 rounded-2xl border border-slate-800 shadow-md">
-                  <div className="text-[11px] font-bold text-slate-600 mb-1 text-center">Tableau Départements</div>
-                  <img 
-                    src="/images/batitech/table-departements-zones.png" 
-                    alt="Tableau des départements par zone" 
-                    className="w-full h-36 object-contain"
-                  />
-                </div>
+              <div className="bg-white p-4 rounded-2xl border border-slate-800 shadow-md">
+                <div className="text-xs font-bold text-slate-700 mb-2 text-center">Carte Officielle des Zones Climatiques H1 / H2 / H3</div>
+                <img 
+                  src="/images/batitech/zones-climatiques-h1h2h3.png" 
+                  alt="Carte des zones climatiques" 
+                  className="w-full h-52 object-contain"
+                />
               </div>
             </motion.div>
           </div>

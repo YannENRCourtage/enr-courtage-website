@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Sun, Wind, Wheat, TreePine, DollarSign, MapPin, ChevronRight, ChevronLeft, 
   BarChart3, Calculator, Zap, Factory, Leaf, CheckCircle2, AlertCircle, RotateCcw,
-  RefreshCw, Check, Search, ShieldCheck, FileText, Send
+  RefreshCw, Check, Search, ShieldCheck, FileText, Send, Building2, Plus, Minus
 } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
@@ -134,8 +134,11 @@ const BatitechSimulator = () => {
   const [step, setStep] = useState(1);
   const [detailedMode, setDetailedMode] = useState(false);
 
-  // Step 1: Model Selection
+  // Step 1: Model Selection & Options
   const [selectedModel, setSelectedModel] = useState("3.1.15");
+  const [auventSud, setAuventSud] = useState(false);
+  const [auventNord, setAuventNord] = useState(false);
+  const [extraTravees, setExtraTravees] = useState(0);
 
   // Step 2: Location & Orientation
   const [addressInput, setAddressInput] = useState('');
@@ -399,10 +402,30 @@ const BatitechSimulator = () => {
       });
     }
 
-    const investmentBrut = model.investment.total;
+    // Pricing calculation with Auvents & Extra Travées
+    const getAuventUnitCost = (mId) => {
+      if (mId === '3.1.15' || mId === 'batitech_3_1_15') return 4500; // 3 travées
+      if (mId === '6.2.15' || mId === 'batitech_6_2_15') return 9000; // 6 travées
+      if (mId === '8.3.15' || mId === 'batitech_8_3_15') return 12000; // 8 travées
+      return 4500;
+    };
+
+    const auventUnitCost = getAuventUnitCost(selectedModel);
+    const totalAuventCost = (auventSud ? auventUnitCost : 0) + (auventNord ? auventUnitCost : 0);
+    const numExtraTravees = parseInt(extraTravees, 10) || 0;
+    const totalExtraTraveesCost = numExtraTravees * 20250;
+    const totalOptionsCost = totalAuventCost + totalExtraTraveesCost;
+
+    const baseInvestment = model.investment.total;
+    const investmentBrut = baseInvestment + totalOptionsCost;
     const investmentNet = Math.max(0, investmentBrut - ceePremium);
     const annualGain = electricityRevenue - ventilatorCosts;
     const roi = annualGain > 0 ? (investmentNet / annualGain).toFixed(1) : "-";
+
+    const optionsDetails = [];
+    if (auventSud) optionsDetails.push(`Auvent Sud (+${formatEuros(auventUnitCost)})`);
+    if (auventNord) optionsDetails.push(`Auvent Nord (+${formatEuros(auventUnitCost)})`);
+    if (numExtraTravees > 0) optionsDetails.push(`${numExtraTravees} travée${numExtraTravees > 1 ? 's' : ''} sup. 6m (+${formatEuros(totalExtraTraveesCost)})`);
 
     return {
       model,
@@ -410,18 +433,30 @@ const BatitechSimulator = () => {
       electricityRevenue,
       ceePremium,
       ventilatorCosts,
+      baseInvestment,
+      totalOptionsCost,
+      optionsDetails,
       investmentBrut,
       investmentNet,
       annualGain,
       roi,
       capacities
     };
-  }, [step, selectedModel, productible, orientation, inclination, activityType, climateZone, dryingZone, materials]);
+  }, [step, selectedModel, productible, orientation, inclination, activityType, climateZone, dryingZone, materials, auventSud, auventNord, extraTravees]);
 
 
   // ==========================================
   // STEP COMPONENTS
   // ==========================================
+
+  const getAuventUnitCostForDisplay = (mId) => {
+    if (mId === '3.1.15' || mId === 'batitech_3_1_15') return 4500;
+    if (mId === '6.2.15' || mId === 'batitech_6_2_15') return 9000;
+    if (mId === '8.3.15' || mId === 'batitech_8_3_15') return 12000;
+    return 4500;
+  };
+  const currentAuventUnitCost = getAuventUnitCostForDisplay(selectedModel);
+  const currentTotalOptionsCost = (auventSud ? currentAuventUnitCost : 0) + (auventNord ? currentAuventUnitCost : 0) + (parseInt(extraTravees, 10) || 0) * 20250;
 
   const renderStep1 = () => (
     <motion.div
@@ -485,6 +520,111 @@ const BatitechSimulator = () => {
           </div>
         ))}
       </div>
+
+      {/* Mode Détaillé : Options Auvents et Travées Supplémentaires */}
+      {detailedMode && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-slate-900/90 rounded-2xl p-6 border border-slate-800 space-y-5 mt-6"
+        >
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="flex items-center space-x-2 text-amber-400 font-bold">
+              <Building2 className="w-5 h-5" />
+              <span>Options Charpente & Extensions (Mode Détaillé)</span>
+            </div>
+            {currentTotalOptionsCost > 0 && (
+              <span className="text-xs font-bold px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full border border-amber-500/30">
+                + {formatEuros(currentTotalOptionsCost)} HT
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Auvent Sud */}
+            <div 
+              onClick={() => setAuventSud(!auventSud)}
+              className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                auventSud 
+                  ? 'bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]' 
+                  : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <div className="text-white font-bold text-sm flex items-center">
+                  <span>Rajout Auvent Sud (4m de rampant)</span>
+                </div>
+                <div className="text-xs text-slate-400 mt-1">Structure + couverture bac acier ({selectedModel === '3.1.15' ? '3 travées de 6m' : selectedModel === '6.2.15' ? '6 travées de 6m' : '8 travées de 6m'})</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-amber-400">+{formatEuros(currentAuventUnitCost)} HT</div>
+                <div className={`text-xs mt-0.5 font-semibold ${auventSud ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {auventSud ? 'Inclus ✓' : 'Option'}
+                </div>
+              </div>
+            </div>
+
+            {/* Auvent Nord */}
+            <div 
+              onClick={() => setAuventNord(!auventNord)}
+              className={`p-4 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
+                auventNord 
+                  ? 'bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.15)]' 
+                  : 'bg-slate-950 border-slate-800 hover:border-slate-700'
+              }`}
+            >
+              <div>
+                <div className="text-white font-bold text-sm flex items-center">
+                  <span>Rajout Auvent Nord (4m de rampant)</span>
+                </div>
+                <div className="text-xs text-slate-400 mt-1">Structure + couverture bac acier ({selectedModel === '3.1.15' ? '3 travées de 6m' : selectedModel === '6.2.15' ? '6 travées de 6m' : '8 travées de 6m'})</div>
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-amber-400">+{formatEuros(currentAuventUnitCost)} HT</div>
+                <div className={`text-xs mt-0.5 font-semibold ${auventNord ? 'text-emerald-400' : 'text-slate-500'}`}>
+                  {auventNord ? 'Inclus ✓' : 'Option'}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Travées Supplémentaires */}
+          <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <div className="text-white font-bold text-sm">Ajouter une ou plusieurs travées supplémentaires de 6m (sans auvent)</div>
+              <div className="text-xs text-slate-400 mt-1">
+                Comprend les fondations principales (2u), charpente métallique, couverture et bardage façade Sud sur 6m.
+              </div>
+              <div className="text-xs text-amber-400 font-semibold mt-1">+ 20 250,00 € HT / travée de 6m</div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button 
+                type="button"
+                onClick={() => setExtraTravees(Math.max(0, extraTravees - 1))}
+                className="w-9 h-9 rounded-lg bg-slate-800 text-white font-bold hover:bg-slate-700 transition-colors flex items-center justify-center border border-slate-700"
+              >
+                -
+              </button>
+              <input 
+                type="number"
+                min="0"
+                max="10"
+                value={extraTravees}
+                onChange={(e) => setExtraTravees(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                className="w-16 bg-slate-900 border border-slate-700 !text-white text-center font-bold rounded-lg py-1.5 batitech-input text-base"
+              />
+              <button 
+                type="button"
+                onClick={() => setExtraTravees(extraTravees + 1)}
+                className="w-9 h-9 rounded-lg bg-slate-800 text-white font-bold hover:bg-slate-700 transition-colors flex items-center justify-center border border-slate-700"
+              >
+                +
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 
@@ -511,8 +651,8 @@ const BatitechSimulator = () => {
           </div>
           <input
             type="text"
-            style={{ color: '#ffffff' }}
-            className="w-full bg-slate-950 border border-slate-700 !text-white text-lg rounded-xl pl-10 pr-4 py-4 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 dark-input placeholder-slate-500 font-medium"
+            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+            className="w-full bg-slate-950 border border-slate-700 !text-white text-lg rounded-xl pl-10 pr-4 py-4 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 batitech-input dark-input placeholder-slate-500 font-medium"
             placeholder="Saisissez l'adresse du site..."
             value={addressInput}
             onChange={(e) => setAddressInput(e.target.value)}
@@ -670,8 +810,8 @@ const BatitechSimulator = () => {
                     type="number"
                     min="1"
                     placeholder="Tonnes/an"
-                    style={{ color: '#ffffff' }}
-                    className="w-32 bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input font-bold"
+                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                    className="w-32 bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input font-bold"
                     value={materials[mat.id].qty}
                     onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
                   />
@@ -683,8 +823,8 @@ const BatitechSimulator = () => {
               <div className="mt-4 pt-4 border-t border-slate-800 pl-8">
                 {mat.id === 'fourrage' && (
                   <select 
-                    style={{ color: '#ffffff' }}
-                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto font-medium"
+                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input w-full md:w-auto font-medium"
                     value={materials[mat.id].hr}
                     onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
                   >
@@ -695,8 +835,8 @@ const BatitechSimulator = () => {
                 )}
                 {mat.id === 'bottes' && (
                   <select 
-                    style={{ color: '#ffffff' }}
-                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto font-medium"
+                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input w-full md:w-auto font-medium"
                     value={materials[mat.id].duration}
                     onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
                   >
@@ -706,8 +846,8 @@ const BatitechSimulator = () => {
                 )}
                 {mat.id === 'plaquettes' && (
                   <select 
-                    style={{ color: '#ffffff' }}
-                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 dark-input w-full md:w-auto font-medium"
+                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
+                    className="bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2 batitech-input dark-input w-full md:w-auto font-medium"
                     value={materials[mat.id].hr}
                     onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
                   >
@@ -776,7 +916,7 @@ const BatitechSimulator = () => {
             <div className="absolute top-0 right-0 p-4 opacity-20"><ShieldCheck className="w-16 h-16 text-amber-500" /></div>
             <div className="text-amber-500 text-sm font-bold mb-2">Prime CEE Estimée</div>
             <div className="text-3xl font-bold text-white mb-1">{formatEuros(results.ceePremium)}</div>
-            <div className="text-slate-400 text-sm">Déduite de l'investissement</div>
+            <div className="text-slate-400 text-sm">Déduite de l'investissement (AGRI-EQ-110)</div>
           </div>
 
           <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
@@ -827,16 +967,26 @@ const BatitechSimulator = () => {
         <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl">
           <h3 className="text-xl font-bold text-white mb-6 flex items-center">
             <DollarSign className="w-6 h-6 mr-3 text-amber-500" />
-            Bilan Financier
+            Bilan Financier & Investissement
           </h3>
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-slate-800">
-                <span className="text-slate-400">Investissement Brut</span>
-                <span className="text-white font-semibold">{formatEuros(results.investmentBrut)}</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
+                <span className="text-slate-400">Séchoir de base {results.model.name}</span>
+                <span className="text-white font-semibold">{formatEuros(results.baseInvestment)}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-slate-800">
-                <span className="text-slate-400">Prime CEE</span>
+              {results.totalOptionsCost > 0 && (
+                <div className="flex justify-between items-center py-2.5 border-b border-slate-800 text-amber-300">
+                  <span className="text-slate-400 text-sm">Options ({results.optionsDetails.join(', ')})</span>
+                  <span className="font-semibold">+ {formatEuros(results.totalOptionsCost)}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
+                <span className="text-slate-300 font-medium">Investissement Brut Total</span>
+                <span className="text-white font-bold">{formatEuros(results.investmentBrut)}</span>
+              </div>
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
+                <span className="text-slate-400">Prime CEE (AGRI-EQ-110)</span>
                 <span className="text-emerald-400 font-semibold">- {formatEuros(results.ceePremium)}</span>
               </div>
               <div className="flex justify-between items-center py-3 bg-slate-800 px-4 rounded-xl font-bold text-lg">
@@ -845,16 +995,16 @@ const BatitechSimulator = () => {
               </div>
             </div>
             
-            <div className="space-y-4">
-              <div className="flex justify-between items-center py-3 border-b border-slate-800">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
                 <span className="text-slate-400">Revenus Vente Électricité (Annuel)</span>
                 <span className="text-emerald-400 font-semibold">+ {formatEuros(results.electricityRevenue)}</span>
               </div>
-              <div className="flex justify-between items-center py-3 border-b border-slate-800">
+              <div className="flex justify-between items-center py-2.5 border-b border-slate-800">
                 <span className="text-slate-400">Coût Ventilation (Annuel)</span>
                 <span className="text-red-400 font-semibold">- {formatEuros(results.ventilatorCosts)}</span>
               </div>
-              <div className="flex justify-between items-center py-3 bg-slate-800 px-4 rounded-xl font-bold text-lg">
+              <div className="flex justify-between items-center py-3 bg-slate-800 px-4 rounded-xl font-bold text-lg mt-auto">
                 <span className="text-white">Gain Net Annuel</span>
                 <span className="text-emerald-500">{formatEuros(results.annualGain)}</span>
               </div>

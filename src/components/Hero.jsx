@@ -143,13 +143,14 @@ const Hero = ({ setActiveTab }) => {
             </p>
           </div>
 
+          {/* 6 Solution Cards (2 rows of 3) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cards.slice(0, 3).map((card, index) => (
+            {cards.map((card, index) => (
               <motion.div
                 key={card.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 + index * 0.1, ease: "easeOut" }}
+                transition={{ duration: 0.6, delay: 0.2 + index * 0.08, ease: "easeOut" }}
               >
                 <div
                   className={`p-7 rounded-3xl border ${card.bgClass} transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group h-full flex flex-col justify-between relative overflow-hidden`}
@@ -193,11 +194,11 @@ const Hero = ({ setActiveTab }) => {
             ))}
           </div>
 
-          {/* BatiTech Séchoir Full-Width Banner */}
+          {/* BatiTech Séchoir Full-Width Banner (Positionné sous la 2ème ligne des solutions) */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.7, delay: 0.7, ease: "easeOut" }}
             className="mt-6"
           >
             <div
@@ -246,57 +247,6 @@ const Hero = ({ setActiveTab }) => {
               </div>
             </div>
           </motion.div>
-
-          {/* Second row of solutions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-            {cards.slice(3).map((card, index) => (
-              <motion.div
-                key={card.id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.7 + index * 0.1, ease: "easeOut" }}
-              >
-                <div
-                  className={`p-7 rounded-3xl border ${card.bgClass} transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group h-full flex flex-col justify-between relative overflow-hidden`}
-                  onClick={() => handleCardClick(card.id)}
-                >
-                  {card.isFeatured && (
-                    <div className="absolute top-4 right-4 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
-                      Nouveau
-                    </div>
-                  )}
-
-                  <div>
-                    <div 
-                      className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 border"
-                      style={{ 
-                        backgroundColor: card.accent + '15', 
-                        color: card.accent,
-                        borderColor: card.accent + '30'
-                      }}
-                    >
-                      {card.icon}
-                    </div>
-
-                    <h3 className="text-xl font-bold text-white mb-3 leading-snug group-hover:text-amber-300 transition-colors">
-                      {card.title}
-                    </h3>
-                    <p className="text-gray-400 text-sm leading-relaxed mb-6">
-                      {card.description}
-                    </p>
-                  </div>
-
-                  <div 
-                    className="flex items-center text-xs font-extrabold uppercase tracking-wider transition-all duration-300 group-hover:translate-x-1 border-t border-white/5 pt-4"
-                    style={{ color: card.accent }}
-                  >
-                    <span>Accéder à la solution</span>
-                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
 
       </div>

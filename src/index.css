@@ -298,6 +298,16 @@ select option {
 }
 
 /* 2. Exceptions explicites pour les CHAMPS SOMBRES */
+.bg-slate-900 input,
+.bg-slate-950 input,
+.bg-slate-900 select,
+.bg-slate-950 select,
+.bg-slate-900 textarea,
+.bg-slate-950 textarea,
+.bg-slate-900 input:not([type="checkbox"]):not([type="radio"]),
+.bg-slate-950 input:not([type="checkbox"]):not([type="radio"]),
+input.batitech-input,
+.batitech-input,
 input.dark-input,
 .dark-input input,
 select.dark-input,
