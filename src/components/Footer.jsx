@@ -39,6 +39,7 @@ const Footer = ({ setActiveTab }) => {
               <li><button onClick={() => handleNavClick('irve')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Borne de recharge IRVE</button></li>
               <li><button onClick={() => handleNavClick('construction')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Bâtiments & Ombrières</button></li>
               <li><button onClick={() => handleNavClick('autoconsommation')} className="text-sm hover:text-[#d4a843] transition-colors text-left">Autoconsommation</button></li>
+              <li><button onClick={() => handleNavClick('sechoir')} className="text-sm hover:text-[#d4a843] transition-colors text-left font-medium text-orange-300">Séchoir BatiTech®</button></li>
             </ul>
           </motion.div>
 

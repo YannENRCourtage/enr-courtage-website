@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Battery, Car, Building, Zap, ArrowRight, Sun, Building2, CheckCircle2 } from 'lucide-react';
+import { Battery, Car, Building, Zap, ArrowRight, Sun, Building2, CheckCircle2, Wheat } from 'lucide-react';
 
 const Hero = ({ setActiveTab }) => {
   const navigate = useNavigate();
@@ -64,6 +64,8 @@ const Hero = ({ setActiveTab }) => {
     } else if (cardId === 'structure_sur_mesure') {
       navigate('/structure-metallique-sur-mesure');
       setActiveTab('structure_sur_mesure');
+    } else if (cardId === 'sechoir') {
+      setActiveTab('sechoir');
     } else {
       setActiveTab(cardId);
     }
@@ -142,12 +144,117 @@ const Hero = ({ setActiveTab }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {cards.map((card, index) => (
+            {cards.slice(0, 3).map((card, index) => (
               <motion.div
                 key={card.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.2 + index * 0.1, ease: "easeOut" }}
+              >
+                <div
+                  className={`p-7 rounded-3xl border ${card.bgClass} transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group h-full flex flex-col justify-between relative overflow-hidden`}
+                  onClick={() => handleCardClick(card.id)}
+                >
+                  {card.isFeatured && (
+                    <div className="absolute top-4 right-4 bg-amber-400 text-slate-900 text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg">
+                      Nouveau
+                    </div>
+                  )}
+
+                  <div>
+                    <div 
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-transform duration-300 group-hover:scale-110 border"
+                      style={{ 
+                        backgroundColor: card.accent + '15', 
+                        color: card.accent,
+                        borderColor: card.accent + '30'
+                      }}
+                    >
+                      {card.icon}
+                    </div>
+
+                    <h3 className="text-xl font-bold text-white mb-3 leading-snug group-hover:text-amber-300 transition-colors">
+                      {card.title}
+                    </h3>
+                    <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                      {card.description}
+                    </p>
+                  </div>
+
+                  <div 
+                    className="flex items-center text-xs font-extrabold uppercase tracking-wider transition-all duration-300 group-hover:translate-x-1 border-t border-white/5 pt-4"
+                    style={{ color: card.accent }}
+                  >
+                    <span>Accéder à la solution</span>
+                    <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* BatiTech Séchoir Full-Width Banner */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.6, ease: "easeOut" }}
+            className="mt-6"
+          >
+            <div
+              className="relative rounded-3xl border border-orange-500/30 hover:border-orange-400 bg-gradient-to-r from-orange-950/40 via-[#0a101d] to-amber-950/30 transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group overflow-hidden"
+              onClick={() => handleCardClick('sechoir')}
+            >
+              <div className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg z-10">
+                Nouveau
+              </div>
+              <div className="flex flex-col lg:flex-row items-center gap-6 p-7">
+                {/* Left: Image preview */}
+                <div className="w-full lg:w-1/3 rounded-2xl overflow-hidden flex-shrink-0">
+                  <img 
+                    src="/images/batitech/sechoir-hero.jpg" 
+                    alt="Séchoir BatiTech multi-matières" 
+                    className="w-full h-48 lg:h-56 object-cover rounded-2xl transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                {/* Center: Content */}
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border transition-transform duration-300 group-hover:scale-110"
+                      style={{ backgroundColor: '#f59e0b15', color: '#f59e0b', borderColor: '#f59e0b30' }}>
+                      <Wheat className="h-6 w-6" />
+                    </div>
+                    <h3 className="text-2xl lg:text-3xl font-extrabold text-white group-hover:text-amber-300 transition-colors leading-tight">
+                      Séchoir Multi-Matières BatiTech<sup>®</sup>
+                    </h3>
+                  </div>
+                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed mb-4 max-w-2xl">
+                    Séchez fourrage, céréales et plaquettes forestières grâce à la technologie thermovoltaïque Cogen'Air®. 
+                    Production d'électricité photovoltaïque + récupération de chaleur air/solaire dans un bâtiment clé en main.
+                  </p>
+                  <div className="flex flex-wrap gap-3 mb-4">
+                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">3 configurations</span>
+                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">30 à 94 kWc</span>
+                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">Primes CEE éligibles</span>
+                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">Simulateur intégré</span>
+                  </div>
+                </div>
+                {/* Right: CTA */}
+                <div className="flex items-center text-xs font-extrabold uppercase tracking-wider transition-all duration-300 group-hover:translate-x-1 text-orange-400 lg:flex-shrink-0">
+                  <span>Découvrir & Simuler</span>
+                  <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-2" />
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Second row of solutions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            {cards.slice(3).map((card, index) => (
+              <motion.div
+                key={card.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.7 + index * 0.1, ease: "easeOut" }}
               >
                 <div
                   className={`p-7 rounded-3xl border ${card.bgClass} transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group h-full flex flex-col justify-between relative overflow-hidden`}

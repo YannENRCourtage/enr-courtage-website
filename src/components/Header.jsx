@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown, Sun } from 'lucide-react';
+import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown, Sun, Wheat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
@@ -45,6 +45,13 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
       label: 'Autoconsommation', 
       icon: <Zap className="h-5 w-5" />,
       color: 'hover:bg-blue-50 hover:text-blue-700'
+    },
+    { 
+      id: 'sechoir', 
+      label: 'Séchoir BatiTech®', 
+      icon: <Wheat className="h-5 w-5" />,
+      color: 'hover:bg-orange-50 hover:text-orange-700',
+      isNew: true
     }
   ];
 
@@ -54,6 +61,9 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
     } else if (tabId === 'structure_sur_mesure') {
       navigate('/structure-metallique-sur-mesure');
       setActiveTab('structure_sur_mesure');
+    } else if (tabId === 'sechoir') {
+      navigate('/sechoir-batitech');
+      setActiveTab('sechoir');
     } else if (tabId === 'home') {
       navigate('/');
       setActiveTab('home');
@@ -71,6 +81,9 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
     } else if (solutionId === 'structure_sur_mesure') {
       navigate('/structure-metallique-sur-mesure');
       setActiveTab('structure_sur_mesure');
+    } else if (solutionId === 'sechoir') {
+      navigate('/sechoir-batitech');
+      setActiveTab('sechoir');
     } else {
       navigate(`/?tab=${solutionId}`);
       setActiveTab(solutionId);
@@ -156,6 +169,9 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                             {solution.icon}
                           </span>
                           <span className="ml-3 text-sm">{solution.label}</span>
+                          {solution.isNew && (
+                            <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-extrabold rounded-full uppercase">Nouveau</span>
+                          )}
                         </button>
                       ))}
                     </motion.div>
@@ -262,6 +278,9 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                                 {solution.icon}
                               </span>
                               <span className="ml-3">{solution.label}</span>
+                              {solution.isNew && (
+                                <span className="ml-2 px-2 py-0.5 bg-orange-500 text-white text-[9px] font-extrabold rounded-full uppercase">Nouveau</span>
+                              )}
                             </button>
                           ))}
                         </motion.div>

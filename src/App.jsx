@@ -20,6 +20,7 @@ import ToiturePhotovoltaiqueSection from '@/components/ToiturePhotovoltaiqueSect
 import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
 import StructureSurMesureSection from '@/components/StructureSurMesureSection';
 import WhyUsBentoSection from '@/components/WhyUsBentoSection';
+import BatitechSection from '@/components/BatitechSection';
 
 
 
@@ -31,10 +32,12 @@ function MainPage() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (tabParam && ['toiture', 'autoconsommation', 'irve', 'construction', 'batterie', 'about', 'structure_sur_mesure', 'home'].includes(tabParam)) {
+    if (tabParam && ['toiture', 'autoconsommation', 'irve', 'construction', 'batterie', 'about', 'structure_sur_mesure', 'sechoir', 'home'].includes(tabParam)) {
       setActiveTab(tabParam);
     } else if (location.pathname === '/structure-metallique-sur-mesure') {
       setActiveTab('structure_sur_mesure');
+    } else if (location.pathname === '/sechoir-batitech' || location.pathname === '/sechoir-multimatieres-batitech') {
+      setActiveTab('sechoir');
     } else if (!tabParam && location.pathname === '/') {
       setActiveTab('home');
     }
@@ -46,6 +49,8 @@ function MainPage() {
       window.history.pushState({}, '', '/');
     } else if (tab === 'structure_sur_mesure') {
       window.history.pushState({}, '', '/structure-metallique-sur-mesure');
+    } else if (tab === 'sechoir') {
+      window.history.pushState({}, '', '/sechoir-batitech');
     } else {
       window.history.pushState({}, '', `/?tab=${tab}`);
     }
@@ -82,6 +87,16 @@ function MainPage() {
           <motion.div key="structure_sur_mesure" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-20">
               <StructureSurMesureSection />
+              <TestimonialsCarousel />
+              <div ref={contactFormRef} data-contact-form><ContactForm /></div>
+            </div>
+          </motion.div>
+        );
+      case 'sechoir':
+        return (
+          <motion.div key="sechoir" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
+            <div className="pt-20">
+              <BatitechSection />
               <TestimonialsCarousel />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
@@ -186,6 +201,8 @@ function App() {
       <Routes>
         <Route path="/" element={<MainPage />} />
         <Route path="/structure-metallique-sur-mesure" element={<MainPage />} />
+        <Route path="/sechoir-batitech" element={<MainPage />} />
+        <Route path="/sechoir-multimatieres-batitech" element={<MainPage />} />
         <Route path="/batterie-soutien-reseau" element={<BatterieDetailPage />} />
       </Routes>
       <Toaster />
