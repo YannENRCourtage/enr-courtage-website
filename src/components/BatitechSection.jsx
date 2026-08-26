@@ -71,7 +71,8 @@ const BatitechSection = () => {
       id: "3.1.15",
       name: "BatiTech 3.1.15",
       tagline: "Le modèle compact polyvalent",
-      details: ["3 Travées de 6m (18m de façade)", "1 Cellule 6×15m (90 m² utiles)", "1 Ventilateur centrifuge 18,5 kW"],
+      dimensions: "18m × 20m",
+      details: ["Dimensions : 18m × 20m (360 m²)", "3 Travées de 6m (18m de façade)", "1 Cellule 6×15m (90 m² utiles)", "1 Ventilateur centrifuge 18,5 kW"],
       power: "30,15 kWc",
       panels: "90 modules Cogen'Air® (9×10)",
       investment: "327 053 €",
@@ -83,7 +84,8 @@ const BatitechSection = () => {
       id: "6.2.15",
       name: "BatiTech 6.2.15",
       tagline: "Le modèle d'exploitation de référence",
-      details: ["6 Travées de 6m (36m de façade)", "2 Cellules 6×15m (180 m² utiles)", "2 Ventilateurs centrifuges 18,5 kW"],
+      dimensions: "36m × 20m",
+      details: ["Dimensions : 36m × 20m (720 m²)", "6 Travées de 6m (36m de façade)", "2 Cellules 6×15m (180 m² utiles)", "2 Ventilateurs centrifuges 18,5 kW"],
       power: "63,3 kWc",
       panels: "189 modules Cogen'Air® (9×21)",
       investment: "564 986 €",
@@ -95,7 +97,8 @@ const BatitechSection = () => {
       id: "8.3.15",
       name: "BatiTech 8.3.15",
       tagline: "La grande capacité multi-filières",
-      details: ["8 Travées de 6m (48m de façade)", "3 Cellules 6×15m (270 m² utiles)", "3 Ventilateurs centrifuges 18,5 kW"],
+      dimensions: "48m × 20m",
+      details: ["Dimensions : 48m × 20m (960 m²)", "8 Travées de 6m (48m de façade)", "3 Cellules 6×15m (270 m² utiles)", "3 Ventilateurs centrifuges 18,5 kW"],
       power: "93,8 kWc",
       panels: "280 modules Cogen'Air® (10×28)",
       investment: "764 501 €",
@@ -115,8 +118,14 @@ const BatitechSection = () => {
   };
 
   const scrollToSimulator = () => {
-    const simulator = document.getElementById('batitech-simulator-section');
-    if (simulator) simulator.scrollIntoView({ behavior: 'smooth' });
+    const simulator = document.getElementById('batitech-title') || document.getElementById('batitech-simulator-section');
+    if (simulator) {
+      const yOffset = -90;
+      const y = simulator.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (

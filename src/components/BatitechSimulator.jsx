@@ -326,19 +326,33 @@ const BatitechSimulator = () => {
     return true;
   };
 
+  const scrollToSimulatorTop = () => {
+    const target = document.getElementById('batitech-title') || document.getElementById('batitech-simulator-section');
+    if (target) {
+      const yOffset = -90; // offset to align title just below fixed header
+      const y = target.getBoundingClientRect().top + window.pageYOffset + yOffset;
+      window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   const handleNext = () => {
     if (step === 2 && !validateStep2()) return;
     if (step === 3 && !validateStep3()) return;
     
     if (step === 3) {
       setStep(3.5); // Loading step
+      scrollToSimulatorTop();
       return;
     }
     setStep(prev => prev + 1);
+    scrollToSimulatorTop();
   };
 
   const handlePrev = () => {
     setStep(prev => prev - 1);
+    scrollToSimulatorTop();
   };
 
   useEffect(() => {
@@ -349,6 +363,7 @@ const BatitechSimulator = () => {
           if (prev >= 100) {
             clearInterval(interval);
             setStep(4);
+            scrollToSimulatorTop();
             return 100;
           }
           return prev + 15;
@@ -614,6 +629,12 @@ const BatitechSimulator = () => {
             </div>
             
             <div className="space-y-3 mb-6">
+              <div className="flex justify-between text-sm">
+                <span className="text-slate-400">Dimensions</span>
+                <span className="text-white font-bold text-amber-400">
+                  {model.id === '3.1.15' ? '18m × 20m' : model.id === '6.2.15' ? '36m × 20m' : '48m × 20m'}
+                </span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-slate-400">Structure</span>
                 <span className="text-white font-semibold">{model.travees} travées, {model.cells} cellule{model.cells > 1 ? 's' : ''}</span>
@@ -1115,7 +1136,9 @@ const BatitechSimulator = () => {
       >
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-white mb-2">Votre Simulation <span className="text-amber-500">{results.model.name}</span></h2>
-          <p className="text-slate-400">Voici l'estimation économique et agronomique complète de votre projet</p>
+          <p className="text-slate-400">
+            Voici l'estimation économique et agronomique complète de votre projet • Dimensions : <strong className="text-amber-400">{results.model.id === '3.1.15' ? '18m × 20m' : results.model.id === '6.2.15' ? '36m × 20m' : '48m × 20m'}</strong>
+          </p>
         </div>
 
         {/* Top KPI Cards */}
@@ -1288,8 +1311,11 @@ const BatitechSimulator = () => {
             Demander un devis personnalisé
           </button>
           <button 
-            onClick={() => setStep(1)}
-            className="mt-6 text-slate-400 hover:text-white flex items-center justify-center mx-auto transition-colors"
+            onClick={() => {
+              setStep(1);
+              scrollToSimulatorTop();
+            }}
+            className="mt-6 text-slate-400 hover:text-white flex items-center justify-center mx-auto transition-colors font-medium cursor-pointer"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
             Refaire une simulation
