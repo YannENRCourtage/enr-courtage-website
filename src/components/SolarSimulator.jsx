@@ -1052,6 +1052,7 @@ OPTIONS CHOISIES :
                     value={addressInput}
                     onChange={(e) => setAddressInput(e.target.value)}
                     placeholder="Saisissez votre adresse postale..."
+                    style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                     className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-200 focus:border-[#0f9b8e] focus:ring-2 focus:ring-[#0f9b8e]/20 outline-none text-[#0f2847] bg-white text-lg shadow-sm transition-all placeholder:text-gray-400"
                   />
                 </div>
@@ -1302,6 +1303,7 @@ OPTIONS CHOISIES :
                       value={consumptionKwh}
                       onChange={(e) => handleKwhChange(e.target.value)}
                       placeholder="6000"
+                      style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                       className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-[#0f2847] bg-white placeholder-gray-300"
                     />
                     <span className="bg-[#0f9b8e] text-white font-bold px-4 py-3 text-sm">
@@ -1326,6 +1328,7 @@ OPTIONS CHOISIES :
                       value={consumptionEuros}
                       onChange={(e) => handleEurosChange(e.target.value)}
                       placeholder="1500"
+                      style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                       className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-[#0f2847] bg-white placeholder-gray-300"
                     />
                     <span className="bg-[#0f9b8e] text-white font-bold px-4 py-3 text-sm">
@@ -1614,6 +1617,7 @@ OPTIONS CHOISIES :
                         value={leadForm.nom}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, nom: e.target.value }))}
                         placeholder="Votre nom"
+                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
                       />
                     </div>
@@ -1625,6 +1629,7 @@ OPTIONS CHOISIES :
                         value={leadForm.prenom}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, prenom: e.target.value }))}
                         placeholder="Votre prénom"
+                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
                       />
                     </div>
@@ -1639,6 +1644,7 @@ OPTIONS CHOISIES :
                         value={leadForm.email}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
                         placeholder="votre@email.com"
+                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
                       />
                     </div>
@@ -1650,6 +1656,7 @@ OPTIONS CHOISIES :
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
                         placeholder="06 12 34 56 78"
+                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                         className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
                       />
                     </div>

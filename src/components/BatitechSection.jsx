@@ -889,8 +889,9 @@ const BatitechSection = () => {
               transition={{ duration: 0.8 }}
               className="space-y-6"
             >
-              <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-extrabold text-white leading-tight whitespace-normal lg:whitespace-nowrap">
-                Primes CEE : Éligibilité <span className="enr-gradient-text-gold">Fiche AGRI-EQ-110</span>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white leading-tight">
+                Primes CEE :<br />
+                Éligibilité <span className="enr-gradient-text-gold">Fiche AGRI-EQ-110</span>
               </h2>
 
               <p className="text-slate-300 leading-relaxed text-base">
@@ -959,20 +960,7 @@ const BatitechSection = () => {
       </section>
 
 
-      {/* ========================================================================= */}
-      {/* 10. RECYCLAGE SOREN & ECO-RESPONSABILITE */}
-      {/* ========================================================================= */}
-      <section className="py-14 bg-slate-900 border-t border-slate-800">
-        <div className="max-w-5xl mx-auto container-padding">
-          <div className="bg-white rounded-3xl p-6 md:p-8 shadow-xl border border-slate-700">
-            <img 
-              src="/images/batitech/recyclage-soren.png" 
-              alt="Recyclage panneaux Cogen'Air SOREN" 
-              className="w-full object-contain max-h-48"
-            />
-          </div>
-        </div>
-      </section>
+
 
 
       {/* ========================================================================= */}

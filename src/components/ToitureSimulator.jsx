@@ -864,6 +864,7 @@ export default function ToitureSimulator() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Saisissez votre adresse postale (ex: 52 Rue de la Victoire, Paris)..."
+                  style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                   className="w-full bg-white border-2 border-gray-200 rounded-2xl py-4 pl-12 pr-4 text-sm focus:outline-none focus:border-[#84cc16] focus:bg-white shadow-sm transition-all text-[#0f2847] font-medium"
                 />
                 <Search className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" />
@@ -1183,6 +1184,7 @@ export default function ToitureSimulator() {
                         value={leadForm.lastName}
                         onChange={(e) => setLeadForm({ ...leadForm, lastName: e.target.value })}
                         placeholder="Dupont"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                         className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
@@ -1194,6 +1196,7 @@ export default function ToitureSimulator() {
                         value={leadForm.firstName}
                         onChange={(e) => setLeadForm({ ...leadForm, firstName: e.target.value })}
                         placeholder="Jean"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                         className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
@@ -1208,6 +1211,7 @@ export default function ToitureSimulator() {
                         value={leadForm.email}
                         onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                         placeholder="jean.dupont@exemple.fr"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                         className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
@@ -1219,6 +1223,7 @@ export default function ToitureSimulator() {
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
                         placeholder="06 12 34 56 78"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                         className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
@@ -1229,6 +1234,7 @@ export default function ToitureSimulator() {
                     <select
                       value={leadForm.userType}
                       onChange={(e) => setLeadForm({ ...leadForm, userType: e.target.value })}
+                      style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                       className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                     >
                       <option value="proprietaire">Propriétaire privé / Particulier</option>

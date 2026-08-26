@@ -173,6 +173,7 @@ export default function ContactForm() {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Jean Dupont"
+                  style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#070d18', colorScheme: 'dark' }}
                   className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
                 />
               </div>
@@ -188,6 +189,7 @@ export default function ContactForm() {
                   value={formData.email}
                   onChange={handleChange}
                   placeholder="jean.dupont@entreprise.fr"
+                  style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#070d18', colorScheme: 'dark' }}
                   className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
                 />
               </div>
@@ -203,6 +205,7 @@ export default function ContactForm() {
                 value={formData.subject}
                 onChange={handleChange}
                 placeholder="Étude de toiture / Autoconsommation / Batterie"
+                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#070d18', colorScheme: 'dark' }}
                 className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
               />
             </div>
@@ -218,6 +221,7 @@ export default function ContactForm() {
                 value={formData.message}
                 onChange={handleChange}
                 placeholder="Décrivez votre bâtiment, adresse ou terrain..."
+                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#070d18', colorScheme: 'dark' }}
                 className="w-full px-4 py-3.5 rounded-xl bg-[#070d18] border border-white/10 text-white placeholder-gray-500 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all resize-none"
               />
             </div>
@@ -241,6 +245,7 @@ export default function ContactForm() {
                 value={callbackPhone}
                 onChange={(e) => setCallbackPhone(e.target.value)}
                 placeholder="Laissez votre numéro pour être rappelé..."
+                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
                 className="bg-transparent border-none text-white text-sm placeholder-gray-500 focus:outline-none w-full"
               />
             </div>

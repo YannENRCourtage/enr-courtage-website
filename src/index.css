@@ -281,6 +281,19 @@ textarea {
   color: #0f2847 !important;
   -webkit-text-fill-color: #0f2847 !important;
   color-scheme: light !important;
+  forced-color-adjust: none !important;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus,
+select:focus,
+textarea:focus,
+input:not([type="checkbox"]):not([type="radio"]):active,
+select:active,
+textarea:active {
+  color: #0f2847 !important;
+  -webkit-text-fill-color: #0f2847 !important;
+  color-scheme: light !important;
+  forced-color-adjust: none !important;
 }
 
 input:not([type="checkbox"]):not([type="radio"])::placeholder,
@@ -301,7 +314,8 @@ select option {
 .bg-white button,
 .bg-white [role="option"],
 div[class*="bg-white"] > button,
-div[class*="bg-white"] > div {
+div[class*="bg-white"] > div,
+div[class*="bg-white"] span {
   color: #0f2847 !important;
   -webkit-text-fill-color: #0f2847 !important;
 }
@@ -372,6 +386,7 @@ textarea[class*="bg-white/10"] {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   color-scheme: dark !important;
+  forced-color-adjust: none !important;
 }
 
 #contact-form input::placeholder,

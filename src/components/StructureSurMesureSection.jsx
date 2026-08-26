@@ -689,6 +689,7 @@ export default function StructureSurMesureSection() {
                         value={addressInput}
                         onChange={(e) => handleAddressSearch(e.target.value)}
                         placeholder="Ex: 52 Rue de la Victoire, Paris ou Rue de la Paix, Lyon..."
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                         className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-200 focus:border-[#0f2847] focus:ring-4 focus:ring-blue-100 outline-none text-base font-semibold text-[#0f2847] bg-white transition-all shadow-sm"
                       />
                     </div>
@@ -1013,7 +1014,8 @@ export default function StructureSurMesureSection() {
                               value={leadForm.nom}
                               onChange={(e) => setLeadForm({ ...leadForm, nom: e.target.value })}
                               placeholder="Dupont"
-                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                             />
                           </div>
 
@@ -1025,7 +1027,8 @@ export default function StructureSurMesureSection() {
                               value={leadForm.prenom}
                               onChange={(e) => setLeadForm({ ...leadForm, prenom: e.target.value })}
                               placeholder="Jean"
-                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                             />
                           </div>
                         </div>
@@ -1039,7 +1042,8 @@ export default function StructureSurMesureSection() {
                               value={leadForm.email}
                               onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                               placeholder="jean.dupont@exemple.fr"
-                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                             />
                           </div>
 
@@ -1051,7 +1055,8 @@ export default function StructureSurMesureSection() {
                               value={leadForm.telephone}
                               onChange={(e) => setLeadForm({ ...leadForm, telephone: e.target.value })}
                               placeholder="06 12 34 56 78"
-                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                              className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                             />
                           </div>
                         </div>
@@ -1063,7 +1068,8 @@ export default function StructureSurMesureSection() {
                             value={leadForm.societe}
                             onChange={(e) => setLeadForm({ ...leadForm, societe: e.target.value })}
                             placeholder="Nom de votre entreprise, exploitation agricole ou SCI..."
-                            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                           />
                         </div>
 
@@ -1074,7 +1080,8 @@ export default function StructureSurMesureSection() {
                             value={leadForm.commentaire}
                             onChange={(e) => setLeadForm({ ...leadForm, commentaire: e.target.value })}
                             placeholder="Précisez votre calendrier de projet, caractéristiques du terrain, etc."
-                            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                           />
                         </div>
 

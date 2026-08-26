@@ -194,6 +194,7 @@ const EligibilitySimulator = () => {
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       placeholder="Saisissez une adresse..."
+                      style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
                       className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl leading-5 bg-white text-[#0f2847] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     />
                   </div>
@@ -253,7 +254,8 @@ const EligibilitySimulator = () => {
                         }}
                         disabled={dontKnowDistance}
                         placeholder="Ex: 150"
-                        className="block w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400 transition-colors"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', colorScheme: 'light' }}
+                        className="block w-full pl-4 pr-12 py-3 border border-gray-300 rounded-xl leading-5 bg-white text-[#0f2847] placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-400 transition-colors"
                       />
                       <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
                         <span className="text-gray-500 sm:text-sm font-medium">mètres</span>
