@@ -141,11 +141,12 @@ const BatitechSection = () => {
           loop
           muted
           playsInline
+          key="batitech-hero-video-v2"
           className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 scale-105"
         >
-          <source src="/sechoir-bg.mp4" type="video/mp4" />
-          <source src="/Séchoir 6 travées bardage bois video V2.mp4" type="video/mp4" />
-          <source src="/S%C3%A9choir%206%20trav%C3%A9es%20bardage%20bois%20video%20V2.mp4" type="video/mp4" />
+          <source src="/sechoir-bg-v2.mp4?v=2" type="video/mp4" />
+          <source src="/Séchoir 6 travées bardage bois video V2.mp4?v=2" type="video/mp4" />
+          <source src="/sechoir-bg.mp4?v=2" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-slate-950/55 z-0 pointer-events-none" />
 
