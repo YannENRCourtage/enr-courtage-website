@@ -1,12 +1,12 @@
 import React, { useRef, useState } from "react"
 import { useToast } from "./ui/use-toast"
-import { Send, Phone, PhoneCall } from "lucide-react"
+import { Send } from "lucide-react"
 
 /**
  * Formulaire de contact ENR COURTAGE - Style Dark "Nous contacter"
  * - Envoi via Formspree (FormData)
  * - Toast (message bas droite) avec FOND BLANC pour succès et erreur
- * - Section dark 'Nous contacter' avec rappel téléphonique
+ * - Section dark 'Nous contacter'
  */
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/mrblwazb"
@@ -15,8 +15,6 @@ export default function ContactForm() {
   const { toast } = useToast()
   const formRef = useRef(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isSubmittingCallback, setIsSubmittingCallback] = useState(false)
-  const [callbackPhone, setCallbackPhone] = useState("")
 
   const [formData, setFormData] = useState({
     name: "",
@@ -235,30 +233,6 @@ export default function ContactForm() {
               <Send className="w-4 h-4" />
             </button>
           </form>
-
-          {/* Rappel téléphonique */}
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-200 shadow-md">
-            <div className="flex items-center space-x-3 text-sm w-full sm:w-auto flex-1">
-              <Phone className="w-5 h-5 text-blue-600 flex-shrink-0" />
-              <input
-                type="tel"
-                value={callbackPhone}
-                onChange={(e) => setCallbackPhone(e.target.value)}
-                placeholder="Laissez votre numéro pour être rappelé..."
-                style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                className="bg-white border-none text-[#0f2847] text-sm placeholder-gray-500 focus:outline-none w-full font-medium"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={handleCallbackSubmit}
-              disabled={isSubmittingCallback}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all flex items-center justify-center space-x-2 flex-shrink-0 shadow-md disabled:opacity-50"
-            >
-              <PhoneCall className="w-4 h-4 text-white" />
-              <span>{isSubmittingCallback ? "Rappel en cours..." : "Rappeler"}</span>
-            </button>
-          </div>
         </div>
       </div>
     </section>
