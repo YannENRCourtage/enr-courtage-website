@@ -875,10 +875,10 @@ export default function ToitureSimulator() {
                     <button
                       key={idx}
                       onClick={() => handleSelectAddress(sugg)}
-                      className="w-full px-5 py-3.5 hover:bg-gray-50 flex items-center gap-3 transition-colors text-sm text-gray-700 font-medium"
+                      className="w-full px-5 py-3.5 hover:bg-gray-50 flex items-center gap-3 transition-colors text-sm text-[#0f2847] font-medium"
                     >
                       <MapPin className="w-4 h-4 text-[#84cc16] flex-shrink-0" />
-                      <span>{sugg.label}</span>
+                      <span className="text-[#0f2847] font-semibold">{sugg.label}</span>
                     </button>
                   ))}
                 </div>
@@ -1183,7 +1183,7 @@ export default function ToitureSimulator() {
                         value={leadForm.lastName}
                         onChange={(e) => setLeadForm({ ...leadForm, lastName: e.target.value })}
                         placeholder="Dupont"
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
                     <div>
@@ -1194,7 +1194,7 @@ export default function ToitureSimulator() {
                         value={leadForm.firstName}
                         onChange={(e) => setLeadForm({ ...leadForm, firstName: e.target.value })}
                         placeholder="Jean"
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
                   </div>
@@ -1208,7 +1208,7 @@ export default function ToitureSimulator() {
                         value={leadForm.email}
                         onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })}
                         placeholder="jean.dupont@exemple.fr"
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
                     <div>
@@ -1219,7 +1219,7 @@ export default function ToitureSimulator() {
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm({ ...leadForm, phone: e.target.value })}
                         placeholder="06 12 34 56 78"
-                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                        className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                       />
                     </div>
                   </div>
@@ -1229,7 +1229,7 @@ export default function ToitureSimulator() {
                     <select
                       value={leadForm.userType}
                       onChange={(e) => setLeadForm({ ...leadForm, userType: e.target.value })}
-                      className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
+                      className="w-full bg-white border border-gray-200 rounded-xl p-3 text-sm text-[#0f2847] focus:outline-none focus:ring-2 focus:ring-[#84cc16]"
                     >
                       <option value="proprietaire">Propriétaire privé / Particulier</option>
                       <option value="entreprise">Entreprise / Industriel / Commercial</option>

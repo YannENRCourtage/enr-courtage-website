@@ -32,13 +32,6 @@ const BatitechSection = () => {
       description: "Le ventilateur haute pression insuffle l'air chaud sous le plancher carrossable à pontets des cellules, traversant uniformément la matière stockée.",
       accent: "#10b981",
       badge: "Plancher Pontets"
-    },
-    {
-      icon: <Zap className="h-7 w-7" />,
-      title: "4. Production & Vente d'Électricité",
-      description: "Simultanément, la centrale PV produit une électricité décarbonée revendue en totalité via contrat EDF OA garanti 20 ans (rendement PV dopé de +10%).",
-      accent: "#3b82f6",
-      badge: "Revenus Garantis"
     }
   ];
 
@@ -229,11 +222,6 @@ const BatitechSection = () => {
               transition={{ duration: 0.8, delay: 0.2 }} 
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
-                <Award className="w-4 h-4 text-amber-400" />
-                Alliance de deux leaders français
-              </div>
-
               <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
                 Le Principe <span className="enr-gradient-text-gold">BatiTech®</span> : Séchoir Clé en Main
               </h2>
@@ -294,11 +282,6 @@ const BatitechSection = () => {
               transition={{ duration: 0.8 }} 
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider">
-                <Sun className="w-4 h-4 text-blue-400" />
-                Innovation Solaire Hybride
-              </div>
-
               <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight">
                 Le Panneau <span className="enr-gradient-text-gold">Cogen'Air®</span>
               </h2>
@@ -373,7 +356,7 @@ const BatitechSection = () => {
 
 
       {/* ========================================================================= */}
-      {/* 4. FONCTIONNEMENT EN 4 ETAPES (BENTO GRID DYNAMIQUE) */}
+      {/* 4. FONCTIONNEMENT EN 3 ETAPES */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-28 bg-slate-900 relative">
         <div className="max-w-7xl mx-auto container-padding">
@@ -381,22 +364,18 @@ const BatitechSection = () => {
             initial={{ opacity: 0, y: 30 }} 
             whileInView={{ opacity: 1, y: 0 }} 
             viewport={{ once: true }} 
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8 }} 
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4">
-              <Cpu className="w-4 h-4 text-emerald-400" />
-              Synergie Énergie & Séchage
-            </div>
             <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
-              Fonctionnement du Système BatiTech®
+              Fonctionnement du Système <span className="enr-gradient-text-gold">BatiTech®</span>
             </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+            <p className="text-slate-400 max-w-4xl mx-auto whitespace-normal lg:whitespace-nowrap">
               Une technologie brevetée en circuit thermodynamique optimisé pour un rendement maximal toute l'année.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {steps.map((step, index) => (
               <motion.div
                 key={index}
@@ -437,14 +416,10 @@ const BatitechSection = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-14"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-4">
-              <Play className="w-4 h-4 text-amber-400" />
-              Démonstration Vidéo
-            </div>
-            <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
-              Découvrez la Technologie Cogen'Air® en Action
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white mb-4 whitespace-normal lg:whitespace-nowrap">
+              Découvrez la Technologie <span className="enr-gradient-text-gold">Cogen'Air®</span> en Action
             </h2>
-            <p className="text-slate-400 max-w-2xl mx-auto">
+            <p className="text-slate-400 max-w-4xl mx-auto whitespace-normal lg:whitespace-nowrap">
               Visualisez le fonctionnement du panneau thermovoltaïque et la circulation d'air chaud dans le séchoir.
             </p>
           </motion.div>
@@ -558,12 +533,8 @@ const BatitechSection = () => {
             transition={{ duration: 0.8 }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-4">
-              <Layers className="w-4 h-4 text-amber-400" />
-              Détails Constructifs & Brevets
-            </div>
             <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
-              Schémas Techniques & Innovations
+              Schémas Techniques & <span className="enr-gradient-text-gold">Innovations</span>
             </h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
               Chaque composant du séchoir BatiTech® est conçu pour garantir étanchéité, robustesse mécanique et performance thermodynamique.
@@ -718,15 +689,11 @@ const BatitechSection = () => {
             initial={{ opacity: 0, y: 30 }} 
             whileInView={{ opacity: 1, y: 0 }} 
             viewport={{ once: true }} 
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.8 }} 
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider mb-4">
-              <Wheat className="w-4 h-4 text-emerald-400" />
-              Séchage Polyvalent Toute l'Année
-            </div>
             <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
-              Que Pouvez-Vous Sécher avec BatiTech® ?
+              Que Pouvez-Vous Sécher avec <span className="enr-gradient-text-gold">BatiTech®</span> ?
             </h2>
             <p className="text-slate-400 max-w-2xl mx-auto">
               Une solution unique permettant d'alterner différentes matières au gré des saisons pour rentabiliser l'installation sur 12 mois.
@@ -786,15 +753,11 @@ const BatitechSection = () => {
                 </div>
               </div>
               <div className="space-y-4">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
-                  <Building2 className="w-4 h-4 text-amber-400" />
-                  Bâtiment Construit en Exploitation
-                </div>
                 <h3 className="text-2xl md:text-3xl font-extrabold text-white">
                   Une rentabilité démontrée sur le terrain
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed">
-                  L'association d'une toiture thermovoltaïque Cogen'Air® et d'une charpente métallique Barconnière permet d'obtenir un outil de production durable, finançable par les économies d'aliments et la vente d'électricité.
+                  L'association d'une toiture thermovoltaïque Cogen'Air® et d'une charpente métallique Barconnière permet d'obtenir un outil de production durable, finançable par les économies d'aliments et la valorisation thermique & agronomique.
                 </p>
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
@@ -802,8 +765,8 @@ const BatitechSection = () => {
                     <div className="text-emerald-400 font-bold text-base">+2 à +4 pts MAT</div>
                   </div>
                   <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                    <div className="text-xs text-slate-400">Énergie verte</div>
-                    <div className="text-amber-400 font-bold text-base">Revente EDF OA 20 ans</div>
+                    <div className="text-xs text-slate-400">Énergie solaire</div>
+                    <div className="text-amber-400 font-bold text-base">Thermovoltaïque Cogen'Air®</div>
                   </div>
                 </div>
               </div>
@@ -926,12 +889,7 @@ const BatitechSection = () => {
               transition={{ duration: 0.8 }}
               className="space-y-6"
             >
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                Dispositif d'Aide de l'État
-              </div>
-
-              <h2 className="text-3xl md:text-5xl font-extrabold text-white leading-tight">
+              <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-extrabold text-white leading-tight whitespace-normal lg:whitespace-nowrap">
                 Primes CEE : Éligibilité <span className="enr-gradient-text-gold">Fiche AGRI-EQ-110</span>
               </h2>
 

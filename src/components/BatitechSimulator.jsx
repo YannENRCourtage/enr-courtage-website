@@ -69,7 +69,7 @@ function RoiBarChart({ investmentNet, annualGain }) {
             <span>Économies cumulées & Amortissement sur 30 ans</span>
           </h4>
           <p className="text-xs text-slate-400 mt-1">
-            Projection sur 30 ans du solde net (Revenus EDF OA + Valorisation agricole & chaleur - Coûts ventilation - Investissement net)
+            Projection sur 30 ans du solde net (Valorisation agricole & chaleur - Coûts ventilation - Investissement net)
           </p>
         </div>
         <div className="px-3 py-1 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full text-xs font-bold shadow-[0_0_15px_rgba(245,158,11,0.2)]">
@@ -371,9 +371,8 @@ const BatitechSimulator = () => {
       ? BatitechData.getOrientationCoefficient(inclination, orientation) 
       : 1.0;
     
-    // A. Production Électrique (Revente totale EDF OA @ 0.085 €/kWh)
+    // A. Production Électrique (Thermovoltaïque Cogen'Air®)
     const annualProduction = Math.round((model.kwc || model.kWc) * productible * orientCoef);
-    const electricityRevenue = Math.round(annualProduction * TARIF_RACHAT);
 
     // B. Prime CEE (Fiche AGRI-EQ-110)
     const actKey = activityType.toLowerCase().startsWith('for') ? 'forestiere' : 'agricole';
@@ -521,9 +520,9 @@ const BatitechSimulator = () => {
     const investmentBrut = baseInvestment + totalOptionsCost;
     const investmentNet = Math.max(0, investmentBrut - ceePremium);
 
-    // F. NOUVELLE FORMULE DU GAIN NET ANNUEL :
-    // Gain Net = (Revenus Vente Électricité) - (Coûts Ventilation) + (Plus-value agricole) + (Économies énergies fossiles substituées)
-    const annualGain = (electricityRevenue - ventilatorCosts) + totalAgriculturalValuation;
+    // F. FORMULE DU GAIN NET ANNUEL :
+    // Gain Net = (Plus-value agricole & économies énergies fossiles) - (Coûts de Ventilation)
+    const annualGain = totalAgriculturalValuation - ventilatorCosts;
 
     // G. TEMPS DE RETOUR (ROI) AVEC GESTION DE DIVISION PAR ZÉRO / GAIN NÉGATIF
     let roi = "-";
@@ -541,7 +540,6 @@ const BatitechSimulator = () => {
     return {
       model,
       annualProduction,
-      electricityRevenue,
       ceePremium,
       ventilatorCosts,
       baseInvestment,
@@ -834,32 +832,10 @@ const BatitechSimulator = () => {
           ))}
         </div>
 
-        {detailedMode && (
-          <div className="mt-8 pt-6 border-t border-slate-800">
-            <label className="block text-sm font-semibold text-white mb-4">Inclinaison de la toiture</label>
-            <div className="grid grid-cols-4 gap-3">
-              {[0, 15, 30, 60].map(deg => (
-                <button
-                  key={deg}
-                  onClick={() => setInclination(deg)}
-                  className={`py-2 px-3 rounded-xl text-sm font-semibold transition-all ${
-                    inclination === deg
-                      ? 'bg-amber-500 text-white font-bold'
-                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                  }`}
-                >
-                  {deg}°
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-        {!detailedMode && (
-          <div className="mt-6 text-sm text-slate-400 flex items-center">
-            <InfoIcon className="w-4 h-4 mr-2 text-amber-500" />
-            Inclinaison fixe à 15° (Charpente Barconnière AS9.2)
-          </div>
-        )}
+        <div className="mt-6 text-sm text-slate-400 flex items-center">
+          <InfoIcon className="w-4 h-4 mr-2 text-amber-500" />
+          Inclinaison de toiture : 15° (Standard Charpente Barconnière AS9.2)
+        </div>
       </div>
     </motion.div>
   );
@@ -1148,7 +1124,7 @@ const BatitechSimulator = () => {
             <div className="absolute top-0 right-0 p-4 opacity-20"><Zap className="w-16 h-16 text-emerald-400" /></div>
             <div className="text-emerald-400 text-sm font-bold mb-2">Production Électrique</div>
             <div className="text-3xl font-bold text-white mb-1">{new Intl.NumberFormat('fr-FR').format(results.annualProduction)} <span className="text-lg text-slate-400 font-normal">kWh/an</span></div>
-            <div className="text-emerald-500 font-semibold">{formatEuros(results.electricityRevenue)} / an (EDF OA)</div>
+            <div className="text-emerald-500 font-semibold">Énergie solaire décarbonée</div>
           </div>
           
           <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden">
@@ -1278,10 +1254,6 @@ const BatitechSimulator = () => {
             
             <div className="space-y-3">
               <div className="text-xs uppercase font-bold text-emerald-400 tracking-wider mb-2">Flux de Trésorerie Annuels</div>
-              <div className="flex justify-between items-center py-2 border-b border-slate-800">
-                <span className="text-slate-400">Revenus Vente Électricité (EDF OA)</span>
-                <span className="text-emerald-400 font-semibold">+ {formatEuros(results.electricityRevenue)}</span>
-              </div>
               <div className="flex justify-between items-center py-2 border-b border-slate-800">
                 <span className="text-slate-400">Plus-value qualité agricole & concentrés</span>
                 <span className="text-emerald-400 font-semibold">+ {formatEuros(results.totalAgriQualityGain)}</span>

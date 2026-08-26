@@ -1062,10 +1062,10 @@ OPTIONS CHOISIES :
                       <button
                         key={idx}
                         onClick={() => handleSelectSuggestion(item)}
-                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 flex items-center space-x-3 transition-colors"
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-50 flex items-center space-x-3 transition-colors text-[#0f2847]"
                       >
                         <MapPin className="w-4 h-4 text-[#0f9b8e] flex-shrink-0" />
-                        <span className="text-sm text-gray-700">{item.properties.label}</span>
+                        <span className="text-sm font-medium text-[#0f2847]">{item.properties.label}</span>
                       </button>
                     ))}
                   </div>
@@ -1302,7 +1302,7 @@ OPTIONS CHOISIES :
                       value={consumptionKwh}
                       onChange={(e) => handleKwhChange(e.target.value)}
                       placeholder="6000"
-                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-gray-800 placeholder-gray-300"
+                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-[#0f2847] bg-white placeholder-gray-300"
                     />
                     <span className="bg-[#0f9b8e] text-white font-bold px-4 py-3 text-sm">
                       kWh / an
@@ -1326,7 +1326,7 @@ OPTIONS CHOISIES :
                       value={consumptionEuros}
                       onChange={(e) => handleEurosChange(e.target.value)}
                       placeholder="1500"
-                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-gray-800 placeholder-gray-300"
+                      className="w-full px-4 py-3 text-center text-xl font-bold outline-none text-[#0f2847] bg-white placeholder-gray-300"
                     />
                     <span className="bg-[#0f9b8e] text-white font-bold px-4 py-3 text-sm">
                       € / an

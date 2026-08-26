@@ -225,19 +225,13 @@ const Hero = ({ setActiveTab }) => {
                       <Wheat className="h-6 w-6" />
                     </div>
                     <h3 className="text-2xl lg:text-3xl font-extrabold text-white group-hover:text-amber-300 transition-colors leading-tight">
-                      Séchoir Multi-Matières BatiTech<sup>®</sup>
+                      Séchoir Multi-Matières <span className="enr-gradient-text-gold">BatiTech<sup>®</sup></span>
                     </h3>
                   </div>
-                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed mb-4 max-w-2xl">
+                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed max-w-2xl">
                     Séchez fourrage, céréales et plaquettes forestières grâce à la technologie thermovoltaïque Cogen'Air®. 
                     Production d'électricité photovoltaïque + récupération de chaleur air/solaire dans un bâtiment clé en main.
                   </p>
-                  <div className="flex flex-wrap gap-3 mb-4">
-                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">3 configurations</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">30 à 94 kWc</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">Primes CEE éligibles</span>
-                    <span className="px-3 py-1 rounded-full bg-orange-500/15 text-orange-400 text-xs font-bold border border-orange-500/20">Simulateur intégré</span>
-                  </div>
                 </div>
                 {/* Right: CTA */}
                 <div className="flex items-center text-xs font-extrabold uppercase tracking-wider transition-all duration-300 group-hover:translate-x-1 text-orange-400 lg:flex-shrink-0">

@@ -270,7 +270,7 @@ img {
 /* ==========================================================================
    FORM CONTROLS & DROPDOWN STYLING
    Règle générale : 
-   - Champs clairs (fond blanc/clair) = police sombre (#0f2847)
+   - Champs clairs (fond blanc/gris clair) = police sombre (#0f2847)
    - Champs sombres (fond sombre/semi-transparent) = police claire (#ffffff)
    ========================================================================== */
 
@@ -297,15 +297,34 @@ select option {
   -webkit-text-fill-color: #0f2847 !important;
 }
 
-/* 2. Exceptions explicites pour les CHAMPS SOMBRES */
-.bg-slate-900 input,
-.bg-slate-950 input,
+/* Suggestions d'autocomplétion sur fond clair */
+.bg-white button,
+.bg-white [role="option"],
+div[class*="bg-white"] > button,
+div[class*="bg-white"] > div {
+  color: #0f2847 !important;
+  -webkit-text-fill-color: #0f2847 !important;
+}
+
+/* 2. Règle pour TOUS les CHAMPS SOMBRES */
+#contact-form input:not([type="checkbox"]):not([type="radio"]),
+#contact-form textarea,
+#contact-form select,
+[data-contact-form] input:not([type="checkbox"]):not([type="radio"]),
+[data-contact-form] textarea,
+[data-contact-form] select,
+#batitech-simulator-section input:not([type="checkbox"]):not([type="radio"]),
+#batitech-simulator-section textarea,
+#batitech-simulator-section select,
+#formulaire-etude-finale input:not([type="checkbox"]):not([type="radio"]),
+#formulaire-etude-finale textarea,
+#formulaire-etude-finale select,
+.bg-slate-900 input:not([type="checkbox"]):not([type="radio"]),
+.bg-slate-950 input:not([type="checkbox"]):not([type="radio"]),
 .bg-slate-900 select,
 .bg-slate-950 select,
 .bg-slate-900 textarea,
 .bg-slate-950 textarea,
-.bg-slate-900 input:not([type="checkbox"]):not([type="radio"]),
-.bg-slate-950 input:not([type="checkbox"]):not([type="radio"]),
 input.batitech-input,
 .batitech-input,
 input.dark-input,
@@ -314,40 +333,105 @@ select.dark-input,
 .dark-input select,
 textarea.dark-input,
 .dark-input textarea,
-input[class*="bg-slate-800"],
-input[class*="bg-slate-900"],
-input[class*="bg-slate-950"],
+input[class*="bg-slate-"],
+select[class*="bg-slate-"],
+textarea[class*="bg-slate-"],
 input[class*="bg-gray-800"],
-input[class*="bg-black"],
-input[class*="bg-white/10"],
-select[class*="bg-slate-800"],
-select[class*="bg-slate-900"],
-select[class*="bg-slate-950"],
+input[class*="bg-gray-900"],
+input[class*="bg-gray-950"],
 select[class*="bg-gray-800"],
+select[class*="bg-gray-900"],
+select[class*="bg-gray-950"],
+textarea[class*="bg-gray-800"],
+textarea[class*="bg-gray-900"],
+textarea[class*="bg-gray-950"],
+input[class*="bg-black"],
 select[class*="bg-black"],
-select[class*="bg-white/10"] {
+textarea[class*="bg-black"],
+input[class*="bg-[#070d18]"],
+input[class*="bg-[#0a1628]"],
+input[class*="bg-[#0a101d]"],
+input[class*="bg-[#070b12]"],
+input[class*="bg-[#0f2847]"],
+input[class*="bg-[#162238]"],
+input[class*="bg-white/10"],
+input[class*="bg-white/5"],
+input[class*="bg-white/20"],
+select[class*="bg-[#070d18]"],
+select[class*="bg-[#0a1628]"],
+select[class*="bg-[#0a101d]"],
+select[class*="bg-[#070b12]"],
+select[class*="bg-[#0f2847]"],
+select[class*="bg-white/10"],
+textarea[class*="bg-[#070d18]"],
+textarea[class*="bg-[#0a1628]"],
+textarea[class*="bg-[#0a101d]"],
+textarea[class*="bg-[#070b12]"],
+textarea[class*="bg-[#0f2847]"],
+textarea[class*="bg-white/10"] {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   color-scheme: dark !important;
 }
 
+#contact-form input::placeholder,
+#contact-form textarea::placeholder,
+[data-contact-form] input::placeholder,
+[data-contact-form] textarea::placeholder,
 input.dark-input::placeholder,
 .dark-input input::placeholder,
-input[class*="bg-slate-800"]::placeholder,
+input.batitech-input::placeholder,
+.batitech-input::placeholder,
+input[class*="bg-slate-"]::placeholder,
 input[class*="bg-gray-800"]::placeholder,
-input[class*="bg-white/10"]::placeholder {
-  color: #cbd5e1 !important;
-  -webkit-text-fill-color: #cbd5e1 !important;
+input[class*="bg-gray-900"]::placeholder,
+input[class*="bg-[#070d18]"]::placeholder,
+input[class*="bg-[#0a1628]"]::placeholder,
+input[class*="bg-white/10"]::placeholder,
+textarea[class*="bg-[#070d18]"]::placeholder {
+  color: #94a3b8 !important;
+  -webkit-text-fill-color: #94a3b8 !important;
 }
 
 select.dark-input option,
 .dark-input select option,
-select[class*="bg-slate-800"] option,
+.bg-slate-900 select option,
+.bg-slate-950 select option,
+select[class*="bg-slate-"] option,
 select[class*="bg-gray-800"] option,
-select[class*="bg-slate-900"] option {
-  background-color: #1e293b !important;
+select[class*="bg-gray-900"] option {
+  background-color: #0f172a !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Suggestions d'autocomplétion sur fond sombre */
+ul[class*="bg-slate-"] li,
+div[class*="bg-slate-"] button,
+div[class*="bg-slate-"] li {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Webkit Autofill fix */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #0f2847 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+#contact-form input:-webkit-autofill,
+[data-contact-form] input:-webkit-autofill,
+input.dark-input:-webkit-autofill,
+input.batitech-input:-webkit-autofill,
+input[class*="bg-slate-"]:-webkit-autofill,
+input[class*="bg-[#070d18]"]:-webkit-autofill,
+input[class*="bg-[#0a1628]"]:-webkit-autofill,
+input[class*="bg-white/10"]:-webkit-autofill {
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-box-shadow: 0 0 0px 1000px #0a1628 inset !important;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .dark .enr-gradient-text-gold {
