@@ -337,6 +337,9 @@ select.dark-input,
 .dark-input select,
 textarea.dark-input,
 .dark-input textarea,
+input[class*="bg-slate-"],
+select[class*="bg-slate-"],
+textarea[class*="bg-slate-"],
 input[class*="bg-[#070d18]"],
 input[class*="bg-[#0a1628]"],
 input[class*="bg-[#0a101d]"],
@@ -364,6 +367,7 @@ input.dark-input::placeholder,
 .dark-input input::placeholder,
 input.batitech-input::placeholder,
 .batitech-input::placeholder,
+input[class*="bg-slate-"]::placeholder,
 input[class*="bg-[#070d18]"]::placeholder,
 input[class*="bg-[#0a1628]"]::placeholder,
 input[class*="bg-white/10"]::placeholder,
@@ -372,11 +376,6 @@ textarea[class*="bg-[#070d18]"]::placeholder {
   -webkit-text-fill-color: #94a3b8 !important;
 }
 
-select.dark-input option,
-.dark-input select option,
-select[class*="bg-slate-"] option,
-select[class*="bg-gray-800"] option,
-select[class*="bg-gray-900"] option {
 /* Options des selects sombres */
 select.dark-input option,
 .dark-input select option,
@@ -408,6 +407,7 @@ input:-webkit-autofill:focus {
 [data-contact-form] input:-webkit-autofill,
 input.dark-input:-webkit-autofill,
 input.batitech-input:-webkit-autofill,
+input[class*="bg-slate-"]:-webkit-autofill,
 input[class*="bg-[#070d18]"]:-webkit-autofill,
 input[class*="bg-[#0a1628]"]:-webkit-autofill,
 input[class*="bg-white/10"]:-webkit-autofill {
