@@ -588,6 +588,43 @@ const BatitechSimulator = () => {
   const currentAuventUnitCost = getAuventUnitCostForDisplay(selectedModel);
   const currentTotalOptionsCost = (auventSud ? currentAuventUnitCost : 0) + (auventNord ? currentAuventUnitCost : 0) + (parseInt(extraTravees, 10) || 0) * 20250;
 
+  const getMaterialMaxCapacity = (matId) => {
+    const modelCaps = BatitechData.DRYING_CAPACITIES?.[selectedModel] || 
+                      BatitechData.DRYING_CAPACITIES?.[`batitech_${selectedModel.replace(/\./g, '_')}`] || 
+                      BatitechData.DRYING_CAPACITIES?.batitech_3_1_15 || {};
+    const dZone = dryingZone || 'B';
+
+    if (matId === 'fourrage') {
+      const hrKey = materials.fourrage?.hr || '45-15';
+      return modelCaps.fourrageVrac?.[hrKey]?.[dZone] || 
+             modelCaps.fourrageVrac?.[`HR ${hrKey}`]?.[dZone] || 
+             modelCaps.fourrageVrac?.['HR 45-15']?.[dZone] || 300;
+    }
+    if (matId === 'bottes') {
+      const dur = materials.bottes?.duration || '50j';
+      return modelCaps.bottesCarrees?.[dur]?.[dZone] || 
+             modelCaps.bottesCarrees?.[`${dur} HR 35-15`]?.[dZone] || 
+             modelCaps.bottesCarrees?.['50j HR 35-15']?.[dZone] || 140;
+    }
+    if (matId === 'ble') {
+      return modelCaps.cereales?.bleTendre?.[dZone] || 
+             modelCaps.cereales?.['Blé tendre 15j HR 15-12']?.[dZone] || 
+             modelCaps.cereales?.['Blé tendre 15j']?.[dZone] || 270;
+    }
+    if (matId === 'mais') {
+      return modelCaps.cereales?.mais?.[dZone] || 
+             modelCaps.cereales?.['Maïs 37j HR 35-15']?.[dZone] || 
+             modelCaps.cereales?.['Maïs 37j']?.[dZone] || 60;
+    }
+    if (matId === 'plaquettes') {
+      const hrKey = materials.plaquettes?.hr || '45-25';
+      return modelCaps.plaquettes?.[hrKey]?.[dZone] || 
+             modelCaps.plaquettes?.[`HR ${hrKey}`]?.[dZone] || 
+             modelCaps.plaquettes?.['HR 45-25']?.[dZone] || 450;
+    }
+    return 0;
+  };
+
   const renderStep1 = () => (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -887,7 +924,19 @@ const BatitechSimulator = () => {
       >
         <div>
           <h3 className="text-2xl font-bold text-white mb-2">Vos Besoins en Séchage & Valorisation Agricole</h3>
-          <p className="text-slate-400">Sélectionnez les matières, indiquez vos volumes et ajustez vos gains agronomiques</p>
+          <p className="text-slate-400 mb-4">Sélectionnez les matières, indiquez vos volumes et ajustez vos gains agronomiques</p>
+          
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-950/90 px-5 py-3 rounded-2xl border border-amber-500/30 text-sm shadow-md">
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400">Modèle sélectionné :</span>
+              <span className="font-extrabold text-amber-400">BatiTech {selectedModel}</span>
+              <span className="text-xs text-slate-400 font-medium">({selectedModel === '3.1.15' ? '18m × 20m' : selectedModel === '6.2.15' ? '36m × 20m' : '48m × 20m'})</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <span>Zone d'ensoleillement :</span>
+              <span className="font-bold text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Zone {dryingZone || 'B'}</span>
+            </div>
+          </div>
         </div>
 
         <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800">
@@ -925,6 +974,7 @@ const BatitechSimulator = () => {
               ? parseFloat(materials[mat.id]?.energySavingsPerTon) 
               : mat.defaultEnergy;
             const matEstAnnualGain = matQty * (matGain + matEnergy);
+            const maxCap = getMaterialMaxCapacity(mat.id);
 
             return (
               <div 
@@ -932,7 +982,7 @@ const BatitechSimulator = () => {
                 className={`bg-slate-900 rounded-2xl p-5 border transition-all ${isMatActive ? 'border-amber-500/60 shadow-lg' : 'border-slate-800'}`}
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <label className="flex items-center space-x-3 cursor-pointer select-none text-white font-semibold text-base">
+                  <label className="flex items-center space-x-3 cursor-pointer select-none text-white font-semibold text-base flex-wrap gap-y-1">
                     <input 
                       type="checkbox" 
                       className="w-5 h-5 rounded border-slate-600 text-amber-500 focus:ring-amber-500 bg-slate-800" 
@@ -941,20 +991,31 @@ const BatitechSimulator = () => {
                     />
                     <span className="flex items-center text-amber-400 mr-1">{mat.icon}</span>
                     <span>{mat.label}</span>
+                    <span className="ml-1 sm:ml-2 text-xs px-2.5 py-0.5 bg-amber-500/20 text-amber-300 font-bold rounded-lg border border-amber-500/40 whitespace-nowrap">
+                      Capacité max modèle : {maxCap} {mat.unitLabel}
+                    </span>
                   </label>
                   
                   {isMatActive && (
-                    <div className="flex items-center space-x-2 pl-8 sm:pl-0">
-                      <input
-                        type="number"
-                        min="1"
-                        placeholder={mat.unitLabel}
-                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                        className="w-36 bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg px-3 py-2.5 font-bold shadow-sm"
-                        value={materials[mat.id].qty}
-                        onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
-                      />
-                      <span className="text-xs text-slate-400 font-semibold">{mat.unitLabel}</span>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 pl-8 sm:pl-0">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="1"
+                          placeholder={`Max: ${maxCap}`}
+                          style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                          className="w-36 bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg px-3 py-2.5 font-bold shadow-sm"
+                          value={materials[mat.id].qty}
+                          onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
+                        />
+                        <span className="text-xs text-slate-400 font-semibold">{mat.unitLabel}</span>
+                      </div>
+                      {matQty > maxCap && (
+                        <span className="text-[11px] text-amber-400 font-semibold flex items-center">
+                          <AlertCircle className="w-3.5 h-3.5 mr-1 text-orange-400 flex-shrink-0" />
+                          Dépasse la capacité ({maxCap} {mat.unitLabel})
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

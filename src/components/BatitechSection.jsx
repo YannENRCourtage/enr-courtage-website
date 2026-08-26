@@ -264,7 +264,7 @@ const BatitechSection = () => {
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
-                    <span>Panneaux Cogen'Air® brevetés (335 Wc + 744 Wth)</span>
+                    <span>Panneaux Cogen'Air® brevetés <br />(335 Wc + 744 Wth)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
