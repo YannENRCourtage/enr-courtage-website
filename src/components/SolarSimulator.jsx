@@ -1610,54 +1610,54 @@ OPTIONS CHOISIES :
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">NOM *</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/90">NOM *</label>
                       <input
                         type="text"
                         required
                         value={leadForm.nom}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, nom: e.target.value }))}
                         placeholder="Votre nom"
-                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-[#0f2847] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e] font-medium shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">PRÉNOM *</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/90">PRÉNOM *</label>
                       <input
                         type="text"
                         required
                         value={leadForm.prenom}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, prenom: e.target.value }))}
                         placeholder="Votre prénom"
-                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-[#0f2847] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e] font-medium shadow-sm"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">ADRESSE MAIL *</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/90">ADRESSE MAIL *</label>
                       <input
                         type="email"
                         required
                         value={leadForm.email}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, email: e.target.value }))}
                         placeholder="votre@email.com"
-                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-[#0f2847] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e] font-medium shadow-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/80">TÉLÉPHONE *</label>
+                      <label className="block text-xs font-bold uppercase tracking-wider mb-2 text-white/90">TÉLÉPHONE *</label>
                       <input
                         type="tel"
                         required
                         value={leadForm.phone}
                         onChange={(e) => setLeadForm(prev => ({ ...prev, phone: e.target.value }))}
                         placeholder="06 12 34 56 78"
-                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
-                        className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e]"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                        className="w-full px-4 py-3 rounded-xl bg-white border border-gray-200 text-[#0f2847] placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f9b8e] font-medium shadow-sm"
                       />
                     </div>
                   </div>

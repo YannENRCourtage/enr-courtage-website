@@ -763,17 +763,27 @@ export default function StructureSurMesureSection() {
                           { label: 'Sud-Ouest (45°)', val: 45 },
                           { label: 'Sud (0°)', val: 0 },
                           { label: 'Sud-Est (-45°)', val: -45 }
-                        ].map(preset => (
-                          <button
-                            key={preset.val}
-                            onClick={() => handlePresetOrientation(preset.val)}
-                            className={`py-1.5 px-1 rounded-lg text-[10px] font-bold border transition-all ${
-                              effectiveOrientationDeg === preset.val ? 'bg-[#0f2847] text-white border-[#0f2847]' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
-                            }`}
-                          >
-                            {preset.label}
-                          </button>
-                        ))}
+                        ].map(preset => {
+                          const isSelected = effectiveOrientationDeg === preset.val;
+                          return (
+                            <button
+                              key={preset.val}
+                              onClick={() => handlePresetOrientation(preset.val)}
+                              style={{ 
+                                color: isSelected ? '#ffffff' : '#0f2847', 
+                                WebkitTextFillColor: isSelected ? '#ffffff' : '#0f2847',
+                                backgroundColor: isSelected ? '#0f2847' : '#ffffff'
+                              }}
+                              className={`py-2 px-1 rounded-lg text-[11px] font-extrabold border transition-all shadow-sm ${
+                                isSelected 
+                                  ? 'bg-[#0f2847] !text-white border-[#0f2847]' 
+                                  : 'bg-white !text-[#0f2847] border-gray-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              {preset.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
 

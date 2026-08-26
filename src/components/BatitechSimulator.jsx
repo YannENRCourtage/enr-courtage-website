@@ -766,18 +766,18 @@ const BatitechSimulator = () => {
           </div>
           <input
             type="text"
-            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-            className="w-full bg-slate-950 border border-slate-700 !text-white text-lg rounded-xl pl-10 pr-4 py-4 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 batitech-input dark-input placeholder-slate-500 font-medium"
+            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+            className="w-full bg-white border-2 border-gray-200 text-[#0f2847] text-lg rounded-xl pl-10 pr-4 py-4 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 placeholder-gray-400 font-medium shadow-sm"
             placeholder="Saisissez l'adresse du site..."
             value={addressInput}
             onChange={(e) => setAddressInput(e.target.value)}
           />
           {suggestions.length > 0 && (
-            <ul className="absolute z-10 w-full mt-1 bg-slate-800 border border-slate-700 rounded-xl shadow-lg max-h-60 overflow-auto">
+            <ul className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-auto">
               {suggestions.map((s, i) => (
                 <li
                   key={i}
-                  className="px-4 py-3 hover:bg-slate-700 cursor-pointer text-white text-sm border-b border-slate-700/50 last:border-0"
+                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer text-[#0f2847] font-medium text-sm border-b border-gray-100 last:border-0"
                   onClick={() => handleSelectSuggestion(s)}
                 >
                   {s.properties.label}
@@ -928,8 +928,8 @@ const BatitechSimulator = () => {
                         type="number"
                         min="1"
                         placeholder={mat.unitLabel}
-                        style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                        className="w-36 bg-slate-950 border border-slate-700 !text-white text-sm rounded-lg px-3 py-2.5 batitech-input dark-input font-bold"
+                        style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                        className="w-36 bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg px-3 py-2.5 font-bold shadow-sm"
                         value={materials[mat.id].qty}
                         onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
                       />
@@ -972,10 +972,10 @@ const BatitechSimulator = () => {
                               step="1"
                               value={materials[mat.id].gainPerTon}
                               onChange={(e) => handleMaterialChange(mat.id, 'gainPerTon', e.target.value)}
-                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                              className="w-full bg-slate-900 border border-slate-700 !text-white text-sm rounded-lg pl-3 pr-12 py-2 batitech-input font-bold"
+                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                              className="w-full bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg pl-3 pr-12 py-2 font-bold shadow-sm"
                             />
-                            <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">€/t</span>
+                            <span className="absolute right-3 text-xs text-gray-500 font-medium pointer-events-none">€/t</span>
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1 leading-tight">{mat.hint}</p>
                         </div>
@@ -993,10 +993,10 @@ const BatitechSimulator = () => {
                               step="1"
                               value={materials[mat.id].energySavingsPerTon}
                               onChange={(e) => handleMaterialChange(mat.id, 'energySavingsPerTon', e.target.value)}
-                              style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                              className="w-full bg-slate-900 border border-slate-700 !text-white text-sm rounded-lg pl-3 pr-12 py-2 batitech-input font-bold"
+                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                              className="w-full bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg pl-3 pr-12 py-2 font-bold shadow-sm"
                             />
-                            <span className="absolute right-3 text-xs text-slate-400 font-medium pointer-events-none">€/t</span>
+                            <span className="absolute right-3 text-xs text-gray-500 font-medium pointer-events-none">€/t</span>
                           </div>
                           <p className="text-[11px] text-slate-400 mt-1 leading-tight">Économie de combustible (gaz propane / fioul) sur séchoir thermique</p>
                         </div>
@@ -1009,37 +1009,37 @@ const BatitechSimulator = () => {
                         <span className="text-xs text-slate-400 font-medium">Paramètre hygrométrique / durée :</span>
                         {mat.id === 'fourrage' && (
                           <select 
-                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                            className="bg-slate-900 border border-slate-700 !text-white text-xs rounded-lg px-3 py-1.5 batitech-input dark-input font-medium"
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
                             value={materials[mat.id].hr}
                             onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
                           >
-                            <option value="50-15" className="bg-slate-900 text-white">Séchage 50% HR vers 15% HR</option>
-                            <option value="45-15" className="bg-slate-900 text-white">Séchage 45% HR vers 15% HR</option>
-                            <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
+                            <option value="50-15" className="bg-white text-[#0f2847]">Séchage 50% HR vers 15% HR</option>
+                            <option value="45-15" className="bg-white text-[#0f2847]">Séchage 45% HR vers 15% HR</option>
+                            <option value="40-15" className="bg-white text-[#0f2847]">Séchage 40% HR vers 15% HR</option>
                           </select>
                         )}
                         {mat.id === 'bottes' && (
                           <select 
-                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                            className="bg-slate-900 border border-slate-700 !text-white text-xs rounded-lg px-3 py-1.5 batitech-input dark-input font-medium"
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
                             value={materials[mat.id].duration}
                             onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
                           >
-                            <option value="50j" className="bg-slate-900 text-white">Durée 50 jours</option>
-                            <option value="81j" className="bg-slate-900 text-white">Durée 81 jours</option>
+                            <option value="50j" className="bg-white text-[#0f2847]">Durée 50 jours</option>
+                            <option value="81j" className="bg-white text-[#0f2847]">Durée 81 jours</option>
                           </select>
                         )}
                         {mat.id === 'plaquettes' && (
                           <select 
-                            style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }}
-                            className="bg-slate-900 border border-slate-700 !text-white text-xs rounded-lg px-3 py-1.5 batitech-input dark-input font-medium"
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
                             value={materials[mat.id].hr}
                             onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
                           >
-                            <option value="50-30" className="bg-slate-900 text-white">Séchage 50% HR vers 30% HR</option>
-                            <option value="45-25" className="bg-slate-900 text-white">Séchage 45% HR vers 25% HR</option>
-                            <option value="40-15" className="bg-slate-900 text-white">Séchage 40% HR vers 15% HR</option>
+                            <option value="50-30" className="bg-white text-[#0f2847]">Séchage 50% HR vers 30% HR</option>
+                            <option value="45-25" className="bg-white text-[#0f2847]">Séchage 45% HR vers 25% HR</option>
+                            <option value="40-15" className="bg-white text-[#0f2847]">Séchage 40% HR vers 15% HR</option>
                           </select>
                         )}
                       </div>

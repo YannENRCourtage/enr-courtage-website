@@ -237,16 +237,16 @@ export default function ContactForm() {
           </form>
 
           {/* Rappel téléphonique */}
-          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#070d18]/60 p-4 sm:p-5 rounded-2xl border border-white/5">
-            <div className="flex items-center space-x-3 text-sm text-gray-300 w-full sm:w-auto flex-1">
-              <Phone className="w-5 h-5 text-blue-400 flex-shrink-0" />
+          <div className="mt-8 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-3.5 sm:p-4 rounded-2xl border border-gray-200 shadow-md">
+            <div className="flex items-center space-x-3 text-sm w-full sm:w-auto flex-1">
+              <Phone className="w-5 h-5 text-blue-600 flex-shrink-0" />
               <input
                 type="tel"
                 value={callbackPhone}
                 onChange={(e) => setCallbackPhone(e.target.value)}
                 placeholder="Laissez votre numéro pour être rappelé..."
-                style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', colorScheme: 'dark' }}
-                className="bg-transparent border-none text-white text-sm placeholder-gray-500 focus:outline-none w-full"
+                style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                className="bg-white border-none text-[#0f2847] text-sm placeholder-gray-500 focus:outline-none w-full font-medium"
               />
             </div>
             <button
@@ -255,7 +255,7 @@ export default function ContactForm() {
               disabled={isSubmittingCallback}
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm transition-all flex items-center justify-center space-x-2 flex-shrink-0 shadow-md disabled:opacity-50"
             >
-              <PhoneCall className="w-4 h-4" />
+              <PhoneCall className="w-4 h-4 text-white" />
               <span>{isSubmittingCallback ? "Rappel en cours..." : "Rappeler"}</span>
             </button>
           </div>
