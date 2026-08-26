@@ -135,7 +135,7 @@ const BatitechSection = () => {
       {/* 1. HERO SECTION & SIMULATEUR */}
       {/* ========================================================================= */}
       <section className="relative pt-24 md:pt-32 pb-20 md:pb-28 overflow-hidden bg-slate-950" aria-labelledby="batitech-title">
-        {/* Vidéo "Séchoir 6 travées bardage bois video" en arrière-plan avec sous-imposition */}
+        {/* Vidéo "Séchoir 6 travées bardage bois video V2" en arrière-plan avec sous-imposition */}
         <video
           autoPlay
           loop
@@ -144,8 +144,8 @@ const BatitechSection = () => {
           className="absolute inset-0 w-full h-full object-cover z-0 opacity-85 scale-105"
         >
           <source src="/sechoir-bg.mp4" type="video/mp4" />
-          <source src="/Séchoir 6 travées bardage bois video.mp4" type="video/mp4" />
-          <source src="/S%C3%A9choir%206%20trav%C3%A9es%20bardage%20bois%20video.mp4" type="video/mp4" />
+          <source src="/Séchoir 6 travées bardage bois video V2.mp4" type="video/mp4" />
+          <source src="/S%C3%A9choir%206%20trav%C3%A9es%20bardage%20bois%20video%20V2.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-slate-950/55 z-0 pointer-events-none" />
 
