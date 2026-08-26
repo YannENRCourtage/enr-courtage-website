@@ -199,10 +199,13 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 rounded-full blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 group-hover:scale-105 animate-pulse" />
                 <Button 
                   onClick={scrollToContact} 
-                  className="relative bg-[#0f2847] hover:bg-[#1a3a5c] text-white rounded-full font-bold shadow-xl transition-all duration-300 text-sm px-6 py-2.5 transform group-hover:scale-105"
+                  style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#0f2847' }}
+                  className="relative bg-[#0f2847] hover:bg-[#1a3a5c] !text-white rounded-full font-bold shadow-xl transition-all duration-300 text-sm px-6 py-2.5 transform group-hover:scale-105 flex items-center"
                 >
-                  <Mail className="mr-2 h-4 w-4 text-amber-400" />
-                  Nous contacter
+                  <Mail className="mr-2 h-4 w-4 text-amber-400 shrink-0" />
+                  <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }} className="!text-white font-bold">
+                    Nous contacter
+                  </span>
                 </Button>
               </div>
             </div>
@@ -305,10 +308,13 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                       scrollToContact(); 
                       setIsMenuOpen(false); 
                     }} 
-                    className="w-full mt-2 bg-[#0f2847] hover:bg-[#1a3a5c] text-white font-medium shadow-md text-sm"
+                    style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff', backgroundColor: '#0f2847' }}
+                    className="w-full mt-2 bg-[#0f2847] hover:bg-[#1a3a5c] !text-white font-bold shadow-md text-sm py-3 flex items-center justify-center"
                   >
-                    <Mail className="mr-2 h-4 w-4" /> 
-                    Contact
+                    <Mail className="mr-2 h-4 w-4 text-amber-400 shrink-0" /> 
+                    <span style={{ color: '#ffffff', WebkitTextFillColor: '#ffffff' }} className="!text-white font-bold">
+                      Nous contacter
+                    </span>
                   </Button>
                 </div>
               </motion.div>
