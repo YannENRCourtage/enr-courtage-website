@@ -114,14 +114,14 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-1" aria-label="Navigation principale">
+            <nav className="hidden md:flex items-center space-x-2" aria-label="Navigation principale">
               {/* Accueil */}
               <button
                 onClick={() => handleTabClick('home')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
                   activeTab === 'home'
-                    ? 'text-[#0f2847] bg-gray-100'
-                    : 'text-gray-600 hover:text-[#0f2847] hover:bg-gray-50'
+                    ? 'text-white bg-[#0f2847] shadow-md shadow-slate-900/10'
+                    : 'text-gray-700 hover:text-[#0f2847] hover:bg-gray-100/80'
                 }`}
                 aria-current={activeTab === 'home' ? 'page' : undefined}
               >
@@ -135,10 +135,10 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                 onMouseLeave={() => setIsDropdownOpen(false)}
               >
                 <button
-                  className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                    ['construction', 'autoconsommation', 'batterie', 'irve', 'toiture'].includes(activeTab)
-                      ? 'text-[#0f2847] bg-gray-100'
-                      : 'text-gray-600 hover:text-[#0f2847] hover:bg-gray-50'
+                  className={`flex items-center px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
+                    ['construction', 'autoconsommation', 'batterie', 'irve', 'toiture', 'structure_sur_mesure', 'sechoir'].includes(activeTab)
+                      ? 'text-white bg-[#0f2847] shadow-md shadow-slate-900/10'
+                      : 'text-gray-700 hover:text-[#0f2847] hover:bg-gray-100/80'
                   }`}
                   aria-expanded={isDropdownOpen}
                   aria-haspopup="true"
@@ -162,7 +162,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                           key={solution.id}
                           onClick={() => handleDropdownItemClick(solution.id)}
                           className={`w-full flex items-center px-4 py-3 text-left transition-colors duration-150 ${solution.color} ${
-                            activeTab === solution.id ? 'bg-gray-50 font-semibold' : 'text-gray-600'
+                            activeTab === solution.id ? 'bg-amber-500/15 font-bold text-[#0f2847]' : 'text-gray-600'
                           }`}
                         >
                           <span className={activeTab === solution.id ? 'text-[#0f2847]' : 'text-gray-400'}>
@@ -182,10 +182,10 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
               {/* À propos */}
               <button
                 onClick={() => handleTabClick('about')}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all duration-200 ${
                   activeTab === 'about'
-                    ? 'text-[#0f2847] bg-gray-100'
-                    : 'text-gray-600 hover:text-[#0f2847] hover:bg-gray-50'
+                    ? 'text-white bg-[#0f2847] shadow-md shadow-slate-900/10'
+                    : 'text-gray-700 hover:text-[#0f2847] hover:bg-gray-100/80'
                 }`}
                 aria-current={activeTab === 'about' ? 'page' : undefined}
               >
@@ -240,8 +240,8 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                   {/* Accueil */}
                   <button
                     onClick={() => handleTabClick('home')}
-                    className={`block px-4 py-3 rounded-lg text-sm font-medium w-full text-left transition-colors duration-200 ${
-                      activeTab === 'home' ? 'text-[#0f2847] bg-gray-100' : 'text-gray-600 hover:text-[#0f2847] hover:bg-gray-50'
+                    className={`block px-4 py-3 rounded-xl text-sm font-bold w-full text-left transition-colors duration-200 ${
+                      activeTab === 'home' ? 'text-white bg-[#0f2847] shadow-sm' : 'text-gray-700 hover:text-[#0f2847] hover:bg-gray-50'
                     }`}
                     aria-current={activeTab === 'home' ? 'page' : undefined}
                   >
@@ -252,7 +252,11 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                   <div>
                     <button
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      className="flex items-center justify-between w-full px-4 py-3 rounded-lg text-sm font-medium text-gray-600 hover:text-[#0f2847] hover:bg-gray-50 transition-colors duration-200"
+                      className={`flex items-center justify-between w-full px-4 py-3 rounded-xl text-sm font-bold transition-colors duration-200 ${
+                        ['construction', 'autoconsommation', 'batterie', 'irve', 'toiture', 'structure_sur_mesure', 'sechoir'].includes(activeTab)
+                          ? 'text-white bg-[#0f2847] shadow-sm'
+                          : 'text-gray-700 hover:text-[#0f2847] hover:bg-gray-50'
+                      }`}
                     >
                       <span>Nos solutions</span>
                       <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -265,7 +269,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="pl-4 space-y-1 overflow-hidden"
+                          className="pl-4 space-y-1 overflow-hidden mt-1"
                         >
                           {solutions.map((solution) => (
                             <button
@@ -273,8 +277,8 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                               onClick={() => handleDropdownItemClick(solution.id)}
                               className={`flex items-center w-full px-4 py-2.5 rounded-lg text-sm transition-colors duration-150 ${
                                 activeTab === solution.id 
-                                  ? 'bg-gray-100 font-semibold text-[#0f2847]' 
-                                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
+                                  ? 'bg-amber-500/15 font-bold text-[#0f2847]' 
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                               }`}
                             >
                               <span className={activeTab === solution.id ? 'text-[#0f2847]' : 'text-gray-400'}>
@@ -294,8 +298,8 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                   {/* À propos */}
                   <button
                     onClick={() => handleTabClick('about')}
-                    className={`block px-4 py-3 rounded-lg text-sm font-medium w-full text-left transition-colors duration-200 ${
-                      activeTab === 'about' ? 'text-[#0f2847] bg-gray-100' : 'text-gray-600 hover:text-[#0f2847] hover:bg-gray-50'
+                    className={`block px-4 py-3 rounded-xl text-sm font-bold w-full text-left transition-colors duration-200 ${
+                      activeTab === 'about' ? 'text-white bg-[#0f2847] shadow-sm' : 'text-gray-700 hover:text-[#0f2847] hover:bg-gray-50'
                     }`}
                     aria-current={activeTab === 'about' ? 'page' : undefined}
                   >

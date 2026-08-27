@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Building2, Sun, Battery, Car, Building, Zap, ShieldCheck, Award, RefreshCw, ArrowRight, Phone, PhoneCall, Send, CheckCircle2 } from 'lucide-react';
+import { Building2, Sun, Battery, Car, Building, Zap, Wheat, ShieldCheck, Award, RefreshCw, ArrowRight, Phone, PhoneCall, Send, CheckCircle2 } from 'lucide-react';
 import ContactForm from './ContactForm';
 
 const AboutSection = () => {
@@ -63,6 +63,15 @@ const AboutSection = () => {
       description: "Production et partage local d'énergie solaire sans apport financier pour réduire immédiatement les factures d'électricité.",
       badge: "Économies Immédiates",
       bgClass: "bg-gradient-to-b from-blue-950/40 via-[#0a101d] to-[#070b14] border-blue-500/30 hover:border-blue-400"
+    },
+    {
+      id: 'sechoir',
+      path: '/sechoir-batitech',
+      icon: <Wheat className="h-7 w-7 text-amber-400" />,
+      title: "Séchoir Multi-Matières BatiTech®",
+      description: "Solution clé en main associant séchage agricole & forestier haute performance et toiture solaire thermocoolée.",
+      badge: "Séchage & Solaire",
+      bgClass: "bg-gradient-to-b from-amber-950/40 via-[#0a101d] to-[#070b14] border-amber-500/30 hover:border-amber-400"
     }
   ];
 

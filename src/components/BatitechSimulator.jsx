@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Sun, Wind, Wheat, TreePine, DollarSign, MapPin, ChevronRight, ChevronLeft, 
+  Sun, Wind, Wheat, TreePine, DollarSign, MapPin, ChevronRight, ChevronLeft, ChevronDown,
   BarChart3, Calculator, Zap, Factory, Leaf, CheckCircle2, AlertCircle, RotateCcw,
   RefreshCw, Check, Search, ShieldCheck, FileText, Send, Building2, Plus, Minus,
   Sparkles, Flame, TrendingUp, Info as InfoIcon, Package as PackageIcon
@@ -19,6 +19,24 @@ export const CROP_YIELDS_PER_HA = {
   ble: 7.5,         // Céréales - Blé tendre : 7.5 t/ha
   mais: 7,          // Céréales - Maïs grain : 7 t/ha
   plaquettes: 10    // Plaquettes forestières : 10 t/ha
+};
+
+// Mapping des départements vers les régions françaises
+export const DEPARTMENT_TO_REGION = {
+  '01': 'Auvergne-Rhône-Alpes', '03': 'Auvergne-Rhône-Alpes', '07': 'Auvergne-Rhône-Alpes', '15': 'Auvergne-Rhône-Alpes', '26': 'Auvergne-Rhône-Alpes', '38': 'Auvergne-Rhône-Alpes', '42': 'Auvergne-Rhône-Alpes', '43': 'Auvergne-Rhône-Alpes', '63': 'Auvergne-Rhône-Alpes', '69': 'Auvergne-Rhône-Alpes', '73': 'Auvergne-Rhône-Alpes', '74': 'Auvergne-Rhône-Alpes',
+  '21': 'Bourgogne-Franche-Comté', '25': 'Bourgogne-Franche-Comté', '39': 'Bourgogne-Franche-Comté', '58': 'Bourgogne-Franche-Comté', '70': 'Bourgogne-Franche-Comté', '71': 'Bourgogne-Franche-Comté', '89': 'Bourgogne-Franche-Comté', '90': 'Bourgogne-Franche-Comté',
+  '22': 'Bretagne', '29': 'Bretagne', '35': 'Bretagne', '56': 'Bretagne',
+  '18': 'Centre-Val de Loire', '28': 'Centre-Val de Loire', '36': 'Centre-Val de Loire', '37': 'Centre-Val de Loire', '41': 'Centre-Val de Loire', '45': 'Centre-Val de Loire',
+  '2A': 'Corse', '2B': 'Corse', '20': 'Corse',
+  '08': 'Grand Est', '10': 'Grand Est', '51': 'Grand Est', '52': 'Grand Est', '54': 'Grand Est', '55': 'Grand Est', '57': 'Grand Est', '67': 'Grand Est', '68': 'Grand Est', '88': 'Grand Est',
+  '02': 'Hauts-de-France', '59': 'Hauts-de-France', '60': 'Hauts-de-France', '62': 'Hauts-de-France', '80': 'Hauts-de-France',
+  '75': 'Île-de-France', '77': 'Île-de-France', '78': 'Île-de-France', '91': 'Île-de-France', '92': 'Île-de-France', '93': 'Île-de-France', '94': 'Île-de-France', '95': 'Île-de-France',
+  '14': 'Normandie', '27': 'Normandie', '50': 'Normandie', '61': 'Normandie', '76': 'Normandie',
+  '16': 'Nouvelle-Aquitaine', '17': 'Nouvelle-Aquitaine', '19': 'Nouvelle-Aquitaine', '23': 'Nouvelle-Aquitaine', '24': 'Nouvelle-Aquitaine', '33': 'Nouvelle-Aquitaine', '40': 'Nouvelle-Aquitaine', '47': 'Nouvelle-Aquitaine', '64': 'Nouvelle-Aquitaine', '79': 'Nouvelle-Aquitaine', '86': 'Nouvelle-Aquitaine', '87': 'Nouvelle-Aquitaine',
+  '09': 'Occitanie', '11': 'Occitanie', '12': 'Occitanie', '30': 'Occitanie', '31': 'Occitanie', '32': 'Occitanie', '34': 'Occitanie', '46': 'Occitanie', '48': 'Occitanie', '65': 'Occitanie', '66': 'Occitanie', '81': 'Occitanie', '82': 'Occitanie',
+  '44': 'Pays de la Loire', '49': 'Pays de la Loire', '53': 'Pays de la Loire', '72': 'Pays de la Loire', '85': 'Pays de la Loire',
+  '04': "Provence-Alpes-Côte d'Azur", '05': "Provence-Alpes-Côte d'Azur", '06': "Provence-Alpes-Côte d'Azur", '13': "Provence-Alpes-Côte d'Azur", '83': "Provence-Alpes-Côte d'Azur", '84': "Provence-Alpes-Côte d'Azur",
+  '971': 'Guadeloupe', '972': 'Martinique', '973': 'Guyane', '974': 'La Réunion', '976': 'Mayotte'
 };
 
 const BATITECH_MODELS = BatitechData.BATITECH_MODELS || {
@@ -159,6 +177,7 @@ const BatitechSimulator = () => {
   const [suggestions, setSuggestions] = useState([]);
   const [selectedAddress, setSelectedAddress] = useState('');
   const [department, setDepartment] = useState('');
+  const [region, setRegion] = useState('');
   const [climateZone, setClimateZone] = useState('H2');
   const [dryingZone, setDryingZone] = useState('B');
   const [productible, setProductible] = useState(1100);
@@ -168,6 +187,10 @@ const BatitechSimulator = () => {
 
   // Step 3: Needs & Agricultural Valuation
   const [activityType, setActivityType] = useState('Agricole');
+  const [expandedValuation, setExpandedValuation] = useState({});
+  const toggleExpandedValuation = (matId) => {
+    setExpandedValuation(prev => ({ ...prev, [matId]: !prev[matId] }));
+  };
   
   const [materials, setMaterials] = useState({
     fourrage: { 
@@ -273,6 +296,18 @@ const BatitechSimulator = () => {
     setAddressInput(label);
     setSelectedAddress(label);
     setDepartment(dpt);
+
+    // Extraction de la région (depuis le contexte de l'API ou le mapping département)
+    let reg = '';
+    if (feature.properties?.context) {
+      const parts = feature.properties.context.split(',').map(p => p.trim());
+      if (parts.length >= 3) reg = parts[2];
+      else if (parts.length >= 2) reg = parts[1];
+    }
+    if (!reg && DEPARTMENT_TO_REGION[dpt]) {
+      reg = DEPARTMENT_TO_REGION[dpt];
+    }
+    setRegion(reg || DEPARTMENT_TO_REGION[dpt] || 'Normandie');
     
     // Determine zones using helper functions from data file
     const cZone = BatitechData.getClimateZone ? BatitechData.getClimateZone(dpt) : (CLIMATE_ZONES_BY_DEPARTMENT[dpt] || 'H2');
@@ -950,18 +985,22 @@ const BatitechSimulator = () => {
         </div>
 
         {selectedAddress && (
-          <div className="mt-6 flex flex-wrap gap-4">
-            <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center">
-              <span className="text-slate-400 text-sm mr-2">Zone Climatique CEE:</span>
-              <span className="text-white font-bold">{climateZone}</span>
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 w-full">
+            <div className="bg-slate-800 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center justify-center text-center">
+              <span className="text-slate-400 text-xs sm:text-sm mr-1.5 whitespace-nowrap">Zone Climatique CEE:</span>
+              <span className="text-white font-bold text-xs sm:text-sm">{climateZone}</span>
             </div>
-            <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center">
-              <span className="text-slate-400 text-sm mr-2">Zone Séchage:</span>
-              <span className="text-white font-bold">{dryingZone}</span>
+            <div className="bg-slate-800 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center justify-center text-center">
+              <span className="text-slate-400 text-xs sm:text-sm mr-1.5 whitespace-nowrap">Zone Séchage:</span>
+              <span className="text-white font-bold text-xs sm:text-sm">{dryingZone}</span>
             </div>
-            <div className="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex items-center">
-              <span className="text-slate-400 text-sm mr-2">Fiche CEE :</span>
-              <span className="text-amber-400 font-bold">AGRI-EQ-110</span>
+            <div className="bg-slate-800 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center justify-center text-center">
+              <span className="text-slate-400 text-xs sm:text-sm mr-1.5 whitespace-nowrap">Fiche CEE :</span>
+              <span className="text-amber-400 font-bold text-xs sm:text-sm whitespace-nowrap">AGRI-EQ-110</span>
+            </div>
+            <div className="bg-slate-800 px-3.5 py-2.5 rounded-xl border border-slate-700 flex items-center justify-center text-center">
+              <span className="text-slate-400 text-xs sm:text-sm mr-1.5 whitespace-nowrap">Région :</span>
+              <span className="text-white font-bold text-xs sm:text-sm whitespace-nowrap">{region || (department && DEPARTMENT_TO_REGION[department]) || 'Normandie'}</span>
             </div>
           </div>
         )}
@@ -1153,113 +1192,127 @@ const BatitechSimulator = () => {
                   )}
                 </div>
 
-                {/* Section Valorisation Agricole & Économies intégrée */}
+                {/* Section Valorisation Agricole & Économies (Repliée par défaut, ouvrable au clic) */}
                 {isMatActive && (
-                  <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-4 pt-4 border-t border-slate-800 space-y-4"
-                  >
-                    <div className="bg-slate-950/80 rounded-xl p-4 border border-emerald-500/30">
-                      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 border-b border-slate-800 pb-2">
-                        <div className="flex items-center text-emerald-400 text-xs font-bold uppercase tracking-wider">
-                          <Sparkles className="w-4 h-4 mr-1.5 text-emerald-400" />
-                          Valorisation Agricole & Économies Thermiques
-                        </div>
-                        {matQty > 0 && (
-                          <div className="text-xs font-bold px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg border border-emerald-500/40">
-                            Gain généré : + {formatEuros(matEstAnnualGain)} / an
-                          </div>
-                        )}
-                      </div>
+                  <div className="mt-3 pt-3 border-t border-slate-800">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandedValuation(mat.id)}
+                        className="flex items-center text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors py-1.5 px-3 rounded-lg bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-400/50 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 mr-1.5 text-emerald-400" />
+                        <span>Valorisation agricole & économies thermiques</span>
+                        <ChevronDown className={`w-4 h-4 ml-1.5 transition-transform duration-200 ${expandedValuation[mat.id] ? 'rotate-180' : ''}`} />
+                      </button>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {/* Plus-value agronomique & qualité */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
-                            <span>Plus-value qualité / concentrés</span>
-                            <span className="text-[11px] text-amber-400 font-semibold">(Réf. : {mat.defaultGain} €/t)</span>
-                          </label>
-                          <div className="relative flex items-center">
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={materials[mat.id].gainPerTon}
-                              onChange={(e) => handleMaterialChange(mat.id, 'gainPerTon', e.target.value)}
-                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                              className="w-full bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg pl-3 pr-12 py-2 font-bold shadow-sm"
-                            />
-                            <span className="absolute right-3 text-xs text-gray-500 font-medium pointer-events-none">€/t</span>
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-1 leading-tight">{mat.hint}</p>
+                      {matQty > 0 && (
+                        <div className="text-xs font-bold px-2.5 py-1 bg-emerald-500/20 text-emerald-300 rounded-lg border border-emerald-500/40">
+                          Gain généré : + {formatEuros(matEstAnnualGain)} / an
                         </div>
-
-                        {/* Économie d'énergie fossile substituée */}
-                        <div>
-                          <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
-                            <span>Économie énergie fossile substituée</span>
-                            <span className="text-[11px] text-amber-400 font-semibold">(Réf. : {mat.defaultEnergy} €/t)</span>
-                          </label>
-                          <div className="relative flex items-center">
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={materials[mat.id].energySavingsPerTon}
-                              onChange={(e) => handleMaterialChange(mat.id, 'energySavingsPerTon', e.target.value)}
-                              style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                              className="w-full bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg pl-3 pr-12 py-2 font-bold shadow-sm"
-                            />
-                            <span className="absolute right-3 text-xs text-gray-500 font-medium pointer-events-none">€/t</span>
-                          </div>
-                          <p className="text-[11px] text-slate-400 mt-1 leading-tight">Économie de combustible (gaz propane / fioul) sur séchoir thermique</p>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
-                    {/* Mode détaillé selectors */}
-                    {detailedMode && (
-                      <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center gap-3">
-                        <span className="text-xs text-slate-400 font-medium">Paramètre hygrométrique / durée :</span>
-                        {mat.id === 'fourrage' && (
-                          <select 
-                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                            className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
-                            value={materials[mat.id].hr}
-                            onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
-                          >
-                            <option value="50-15" className="bg-white text-[#0f2847]">Séchage 50% HR vers 15% HR</option>
-                            <option value="45-15" className="bg-white text-[#0f2847]">Séchage 45% HR vers 15% HR</option>
-                            <option value="40-15" className="bg-white text-[#0f2847]">Séchage 40% HR vers 15% HR</option>
-                          </select>
-                        )}
-                        {mat.id === 'bottes' && (
-                          <select 
-                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                            className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
-                            value={materials[mat.id].duration}
-                            onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
-                          >
-                            <option value="50j" className="bg-white text-[#0f2847]">Durée 50 jours</option>
-                            <option value="81j" className="bg-white text-[#0f2847]">Durée 81 jours</option>
-                          </select>
-                        )}
-                        {mat.id === 'plaquettes' && (
-                          <select 
-                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                            className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
-                            value={materials[mat.id].hr}
-                            onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
-                          >
-                            <option value="50-30" className="bg-white text-[#0f2847]">Séchage 50% HR vers 30% HR</option>
-                            <option value="45-25" className="bg-white text-[#0f2847]">Séchage 45% HR vers 25% HR</option>
-                            <option value="40-15" className="bg-white text-[#0f2847]">Séchage 40% HR vers 15% HR</option>
-                          </select>
-                        )}
-                      </div>
-                    )}
-                  </motion.div>
+                    <AnimatePresence>
+                      {expandedValuation[mat.id] && (
+                        <motion.div 
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2 }}
+                          className="mt-3 space-y-4 overflow-hidden"
+                        >
+                          <div className="bg-slate-950/80 rounded-xl p-4 border border-emerald-500/30">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              {/* Plus-value agronomique & qualité */}
+                              <div>
+                                <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+                                  <span>Plus-value qualité / concentrés</span>
+                                  <span className="text-[11px] text-amber-400 font-semibold">(Réf. : {mat.defaultGain} €/t)</span>
+                                </label>
+                                <div className="relative flex items-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={materials[mat.id].gainPerTon}
+                                    onChange={(e) => handleMaterialChange(mat.id, 'gainPerTon', e.target.value)}
+                                    style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                                    className="w-full bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg pl-3 pr-12 py-2 font-bold shadow-sm"
+                                  />
+                                  <span className="absolute right-3 text-xs text-gray-500 font-medium pointer-events-none">€/t</span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-1 leading-tight">{mat.hint}</p>
+                              </div>
+
+                              {/* Économie d'énergie fossile substituée */}
+                              <div>
+                                <label className="block text-xs font-medium text-slate-300 mb-1.5 flex items-center justify-between">
+                                  <span>Économie énergie fossile substituée</span>
+                                  <span className="text-[11px] text-amber-400 font-semibold">(Réf. : {mat.defaultEnergy} €/t)</span>
+                                </label>
+                                <div className="relative flex items-center">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    value={materials[mat.id].energySavingsPerTon}
+                                    onChange={(e) => handleMaterialChange(mat.id, 'energySavingsPerTon', e.target.value)}
+                                    style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                                    className="w-full bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg pl-3 pr-12 py-2 font-bold shadow-sm"
+                                  />
+                                  <span className="absolute right-3 text-xs text-gray-500 font-medium pointer-events-none">€/t</span>
+                                </div>
+                                <p className="text-[11px] text-slate-400 mt-1 leading-tight">Économie de combustible (gaz propane / fioul) sur séchoir thermique</p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Mode détaillé selectors */}
+                          {detailedMode && (
+                            <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col sm:flex-row items-center gap-3">
+                              <span className="text-xs text-slate-400 font-medium">Paramètre hygrométrique / durée :</span>
+                              {mat.id === 'fourrage' && (
+                                <select 
+                                  style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                                  className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
+                                  value={materials[mat.id].hr}
+                                  onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
+                                >
+                                  <option value="50-15" className="bg-white text-[#0f2847]">Séchage 50% HR vers 15% HR</option>
+                                  <option value="45-15" className="bg-white text-[#0f2847]">Séchage 45% HR vers 15% HR</option>
+                                  <option value="40-15" className="bg-white text-[#0f2847]">Séchage 40% HR vers 15% HR</option>
+                                </select>
+                              )}
+                              {mat.id === 'bottes' && (
+                                <select 
+                                  style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                                  className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
+                                  value={materials[mat.id].duration}
+                                  onChange={(e) => handleMaterialChange(mat.id, 'duration', e.target.value)}
+                                >
+                                  <option value="50j" className="bg-white text-[#0f2847]">Durée 50 jours</option>
+                                  <option value="81j" className="bg-white text-[#0f2847]">Durée 81 jours</option>
+                                </select>
+                              )}
+                              {mat.id === 'plaquettes' && (
+                                <select 
+                                  style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                                  className="bg-white border border-gray-300 text-[#0f2847] text-xs rounded-lg px-3 py-1.5 font-medium shadow-sm"
+                                  value={materials[mat.id].hr}
+                                  onChange={(e) => handleMaterialChange(mat.id, 'hr', e.target.value)}
+                                >
+                                  <option value="50-30" className="bg-white text-[#0f2847]">Séchage 50% HR vers 30% HR</option>
+                                  <option value="45-25" className="bg-white text-[#0f2847]">Séchage 45% HR vers 25% HR</option>
+                                  <option value="40-15" className="bg-white text-[#0f2847]">Séchage 40% HR vers 15% HR</option>
+                                </select>
+                              )}
+                            </div>
+                          )}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 )}
               </div>
             );
@@ -1495,26 +1548,40 @@ const BatitechSimulator = () => {
 
         <RoiBarChart investmentNet={results.investmentNet} annualGain={results.annualGain} />
 
-        <div className="text-center pt-8 pb-4">
-          <button 
-            className="btn-primary bg-amber-500 hover:bg-amber-600 text-slate-900 border-none px-10 py-4 text-lg w-full md:w-auto flex items-center justify-center mx-auto"
-            onClick={() => {
-              const contactForm = document.querySelector('[data-contact-form]');
-              if (contactForm) contactForm.scrollIntoView({ behavior: 'smooth' });
-            }}
-          >
-            <FileText className="w-5 h-5 mr-3" />
-            Demander un devis personnalisé
-          </button>
+        <div className="pt-8 pb-4 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button 
+              onClick={() => {
+                setStep(3);
+                scrollToSimulatorTop();
+              }}
+              className="flex items-center justify-center px-6 py-4 rounded-xl font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 hover:text-white transition-all border border-slate-700 text-base w-full sm:w-auto shadow-md cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5 mr-2 text-amber-400" />
+              Modifier les paramètres
+            </button>
+
+            <button 
+              className="btn-primary bg-amber-500 hover:bg-amber-600 text-slate-900 border-none px-10 py-4 text-base font-extrabold w-full sm:w-auto flex items-center justify-center shadow-lg shadow-amber-500/20"
+              onClick={() => {
+                const contactForm = document.querySelector('[data-contact-form]') || document.querySelector('#contact-form');
+                if (contactForm) contactForm.scrollIntoView({ behavior: 'smooth' });
+              }}
+            >
+              <FileText className="w-5 h-5 mr-2" />
+              Demander un devis personnalisé
+            </button>
+          </div>
+
           <button 
             onClick={() => {
               setStep(1);
               scrollToSimulatorTop();
             }}
-            className="mt-6 text-slate-400 hover:text-white flex items-center justify-center mx-auto transition-colors font-medium cursor-pointer"
+            className="text-slate-400 hover:text-white flex items-center justify-center mx-auto transition-colors font-medium text-sm pt-2 cursor-pointer"
           >
             <RotateCcw className="w-4 h-4 mr-2" />
-            Refaire une simulation
+            Refaire une simulation depuis le début
           </button>
         </div>
       </motion.div>

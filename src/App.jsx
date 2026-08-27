@@ -38,6 +38,8 @@ function MainPage() {
       setActiveTab('structure_sur_mesure');
     } else if (location.pathname === '/sechoir-batitech' || location.pathname === '/sechoir-multimatieres-batitech') {
       setActiveTab('sechoir');
+    } else if (location.pathname === '/a-propos' || location.pathname === '/about') {
+      setActiveTab('about');
     } else if (!tabParam && location.pathname === '/') {
       setActiveTab('home');
     }
@@ -51,6 +53,8 @@ function MainPage() {
       window.history.pushState({}, '', '/structure-metallique-sur-mesure');
     } else if (tab === 'sechoir') {
       window.history.pushState({}, '', '/sechoir-batitech');
+    } else if (tab === 'about') {
+      window.history.pushState({}, '', '/?tab=about');
     } else {
       window.history.pushState({}, '', `/?tab=${tab}`);
     }
@@ -203,6 +207,8 @@ function App() {
         <Route path="/structure-metallique-sur-mesure" element={<MainPage />} />
         <Route path="/sechoir-batitech" element={<MainPage />} />
         <Route path="/sechoir-multimatieres-batitech" element={<MainPage />} />
+        <Route path="/a-propos" element={<MainPage />} />
+        <Route path="/about" element={<MainPage />} />
         <Route path="/batterie-soutien-reseau" element={<BatterieDetailPage />} />
       </Routes>
       <Toaster />
