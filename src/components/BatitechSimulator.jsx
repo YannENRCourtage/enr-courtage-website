@@ -4,13 +4,22 @@ import {
   Sun, Wind, Wheat, TreePine, DollarSign, MapPin, ChevronRight, ChevronLeft, 
   BarChart3, Calculator, Zap, Factory, Leaf, CheckCircle2, AlertCircle, RotateCcw,
   RefreshCw, Check, Search, ShieldCheck, FileText, Send, Building2, Plus, Minus,
-  Sparkles, Flame, TrendingUp, Info
+  Sparkles, Flame, TrendingUp, Info, Package as PackageIcon
 } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
 // We import data from the batitechData file. 
 import * as BatitechData from '@/data/batitechData';
 import { getAgriculturalValuationConfig } from '@/services/batitechConfigService';
+
+// Rendements moyens estimatifs par défaut (tonnes / hectare) pour chaque filière
+export const CROP_YIELDS_PER_HA = {
+  fourrage: 6,      // Fourrage vrac : 6 t/ha
+  bottes: 6,        // Bottes carrées : 6 t/ha
+  ble: 7.5,         // Céréales - Blé tendre : 7.5 t/ha
+  mais: 7,          // Céréales - Maïs grain : 7 t/ha
+  plaquettes: 10    // Plaquettes forestières : 10 t/ha
+};
 
 const BATITECH_MODELS = BatitechData.BATITECH_MODELS || {
   "3.1.15": { id: "3.1.15", name: "BatiTech 3.1.15", travees: 3, cells: 1, kwc: 82.5, panels: 192, investment: { total: 115000 } },
@@ -164,6 +173,7 @@ const BatitechSimulator = () => {
     fourrage: { 
       active: false, 
       qty: '', 
+      ha: '',
       hr: '45-15',
       gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.fourrage?.defaultGainPerTon || 55,
       energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.fourrage?.defaultEnergySavingsPerTon || 10
@@ -171,6 +181,7 @@ const BatitechSimulator = () => {
     bottes: { 
       active: false, 
       qty: '', 
+      ha: '',
       duration: '50j',
       gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.bottes?.defaultGainPerTon || 50,
       energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.bottes?.defaultEnergySavingsPerTon || 10
@@ -178,18 +189,21 @@ const BatitechSimulator = () => {
     ble: { 
       active: false, 
       qty: '',
+      ha: '',
       gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.ble?.defaultGainPerTon || 25,
       energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.ble?.defaultEnergySavingsPerTon || 15
     },
     mais: { 
       active: false, 
       qty: '',
+      ha: '',
       gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.mais?.defaultGainPerTon || 35,
       energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.mais?.defaultEnergySavingsPerTon || 25
     },
     plaquettes: { 
       active: false, 
       qty: '', 
+      ha: '',
       hr: '45-25',
       gainPerTon: AGRICULTURAL_VALUATION_DEFAULTS.plaquettes?.defaultGainPerTon || 30,
       energySavingsPerTon: AGRICULTURAL_VALUATION_DEFAULTS.plaquettes?.defaultEnergySavingsPerTon || 20
@@ -285,6 +299,95 @@ const BatitechSimulator = () => {
     }));
   };
 
+  const handleSurfaceChange = (matId, val) => {
+    const yieldPerHa = CROP_YIELDS_PER_HA[matId] || 6;
+    
+    // Si la valeur est vide ou nulle
+    if (val === '' || val === null) {
+      setMaterials(prev => ({
+        ...prev,
+        [matId]: {
+          ...prev[matId],
+          ha: '',
+          qty: ''
+        }
+      }));
+      return;
+    }
+
+    const normalizedVal = val.toString().replace(',', '.');
+    const haNum = parseFloat(normalizedVal);
+
+    if (isNaN(haNum) || haNum < 0) {
+      setMaterials(prev => ({
+        ...prev,
+        [matId]: {
+          ...prev[matId],
+          ha: val
+        }
+      }));
+      return;
+    }
+
+    // Tonnage = Surface * Rendement (arrondi à l'entier pour un tonnage réaliste et stable)
+    const calculatedQty = Math.round(haNum * yieldPerHa);
+
+    setMaterials(prev => ({
+      ...prev,
+      [matId]: {
+        ...prev[matId],
+        ha: val,
+        qty: calculatedQty > 0 ? calculatedQty.toString() : ''
+      }
+    }));
+  };
+
+  const handleTonnageChange = (matId, val) => {
+    const yieldPerHa = CROP_YIELDS_PER_HA[matId] || 6;
+
+    // Si la valeur est vide ou nulle
+    if (val === '' || val === null) {
+      setMaterials(prev => ({
+        ...prev,
+        [matId]: {
+          ...prev[matId],
+          qty: '',
+          ha: ''
+        }
+      }));
+      return;
+    }
+
+    const normalizedVal = val.toString().replace(',', '.');
+    const qtyNum = parseFloat(normalizedVal);
+
+    if (isNaN(qtyNum) || qtyNum < 0) {
+      setMaterials(prev => ({
+        ...prev,
+        [matId]: {
+          ...prev[matId],
+          qty: val
+        }
+      }));
+      return;
+    }
+
+    // Surface = Tonnage / Rendement (arrondi à 1 décimale, ex: 15.5 Ha)
+    const rawHa = qtyNum / yieldPerHa;
+    const formattedHa = Number.isInteger(rawHa) 
+      ? rawHa.toString() 
+      : parseFloat(rawHa.toFixed(1)).toString();
+
+    setMaterials(prev => ({
+      ...prev,
+      [matId]: {
+        ...prev[matId],
+        qty: val,
+        ha: formattedHa
+      }
+    }));
+  };
+
   const validateStep2 = () => {
     if (!selectedAddress) {
       toast({
@@ -318,7 +421,7 @@ const BatitechSimulator = () => {
     if (!isValid) {
       toast({
         title: "Quantités invalides",
-        description: "Veuillez indiquer une quantité valide pour chaque matière sélectionnée.",
+        description: "Veuillez indiquer une surface ou un tonnage valide pour chaque matière sélectionnée.",
         variant: "destructive"
       });
       return false;
@@ -506,6 +609,7 @@ const BatitechSimulator = () => {
           key: matKey,
           label: AGRICULTURAL_VALUATION_DEFAULTS[matKey]?.label || matKey,
           qty,
+          ha: matVal.ha,
           gainPerTon,
           energySavingsPerTon,
           cropQualityGain,
@@ -997,25 +1101,54 @@ const BatitechSimulator = () => {
                   </label>
                   
                   {isMatActive && (
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 pl-8 sm:pl-0">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          min="1"
-                          placeholder={`Max: ${maxCap}`}
-                          style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
-                          className="w-36 bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg px-3 py-2.5 font-bold shadow-sm"
-                          value={materials[mat.id].qty}
-                          onChange={(e) => handleMaterialChange(mat.id, 'qty', e.target.value)}
-                        />
-                        <span className="text-xs text-slate-400 font-semibold">{mat.unitLabel}</span>
+                    <div className="flex flex-col items-start sm:items-end gap-2 pl-8 sm:pl-0">
+                      <div className="flex flex-wrap items-center gap-3">
+                        {/* Champ Surface (Ha) */}
+                        <div className="flex items-center space-x-1.5">
+                          <label className="text-xs text-slate-400 font-medium whitespace-nowrap">Surface :</label>
+                          <input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            placeholder="Ha"
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="w-24 sm:w-28 bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg px-2.5 py-2 font-bold shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            value={materials[mat.id].ha || ''}
+                            onChange={(e) => handleSurfaceChange(mat.id, e.target.value)}
+                          />
+                          <span className="text-xs text-slate-300 font-semibold whitespace-nowrap">Ha</span>
+                        </div>
+
+                        <span className="text-slate-600 hidden sm:inline">|</span>
+
+                        {/* Champ Tonnage */}
+                        <div className="flex items-center space-x-1.5">
+                          <label className="text-xs text-slate-400 font-medium whitespace-nowrap">Volume :</label>
+                          <input
+                            type="number"
+                            min="1"
+                            placeholder={`Max: ${maxCap}`}
+                            style={{ color: '#0f2847', WebkitTextFillColor: '#0f2847', backgroundColor: '#ffffff', colorScheme: 'light' }}
+                            className="w-28 sm:w-32 bg-white border border-gray-300 text-[#0f2847] text-sm rounded-lg px-2.5 py-2 font-bold shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                            value={materials[mat.id].qty || ''}
+                            onChange={(e) => handleTonnageChange(mat.id, e.target.value)}
+                          />
+                          <span className="text-xs text-slate-300 font-semibold whitespace-nowrap">{mat.unitLabel}</span>
+                        </div>
                       </div>
-                      {matQty > maxCap && (
-                        <span className="text-[11px] text-amber-400 font-semibold flex items-center">
-                          <AlertCircle className="w-3.5 h-3.5 mr-1 text-orange-400 flex-shrink-0" />
-                          Dépasse la capacité ({maxCap} {mat.unitLabel})
+
+                      {/* Info rendement & alerte capacité */}
+                      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 w-full sm:justify-end text-[11px]">
+                        <span className="text-slate-500">
+                          Rendement moyen : <strong className="text-slate-400 font-medium">{CROP_YIELDS_PER_HA[mat.id]} t/ha</strong>
                         </span>
-                      )}
+                        {matQty > maxCap && (
+                          <span className="text-amber-400 font-semibold flex items-center">
+                            <AlertCircle className="w-3.5 h-3.5 mr-1 text-orange-400 flex-shrink-0" />
+                            Dépasse la capacité ({maxCap} {mat.unitLabel})
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1284,7 +1417,9 @@ const BatitechSimulator = () => {
                   {results.materialValuationBreakdown.map((row, idx) => (
                     <tr key={idx} className="hover:bg-slate-800/40">
                       <td className="py-3 px-4 font-semibold text-white">{row.label}</td>
-                      <td className="py-3 px-4 text-center">{row.qty} t</td>
+                      <td className="py-3 px-4 text-center">
+                        {row.qty} t {row.ha ? <span className="text-xs text-slate-400 font-normal">({row.ha} ha)</span> : ''}
+                      </td>
                       <td className="py-3 px-4 text-center text-emerald-400 font-medium">+{row.gainPerTon} €/t ({formatEuros(row.cropQualityGain)})</td>
                       <td className="py-3 px-4 text-center text-blue-400 font-medium">+{row.energySavingsPerTon} €/t ({formatEuros(row.cropEnergySavings)})</td>
                       <td className="py-3 px-4 text-right font-bold text-amber-400">+{formatEuros(row.cropTotalValuation)}/an</td>
