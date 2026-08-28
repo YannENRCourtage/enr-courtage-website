@@ -212,8 +212,8 @@ const Hero = ({ setActiveTab }) => {
                 {/* Left: Image preview */}
                 <div className="w-full lg:w-1/3 rounded-2xl overflow-hidden flex-shrink-0">
                   <img 
-                    src="/images/batitech/sechoir-hero.jpg" 
-                    alt="Séchoir BatiTech multi-matières" 
+                    src="/images/batitech/sechoir-batitech-3d.jpg?v=2" 
+                    alt="Séchoir Multi-Matières BatiTech" 
                     className="w-full h-48 lg:h-56 object-cover rounded-2xl transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
