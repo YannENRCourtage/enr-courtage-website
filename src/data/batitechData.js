@@ -20,7 +20,7 @@ export const BATITECH_MODELS = [
     ventilatorPower: 18.5,
     totalVentPower: 18.5,
     dimensions: { width: 18, depth: 20.03, eaveHeight: 3.88 },
-    investment: { barconniere: 217822, base: 77386, solairePC: 31845, total: 327053 }
+    investment: { batiment: 217822, sechoir: 77386, solairePC: 31845, total: 327053 }
   },
   {
     id: '6.2.15',
@@ -39,7 +39,7 @@ export const BATITECH_MODELS = [
     ventilatorPower: 18.5,
     totalVentPower: 37,
     dimensions: { width: 36, depth: 20.03, eaveHeight: 3.88 },
-    investment: { barconniere: 380751, base: 137296, solairePC: 46939, total: 564986 }
+    investment: { batiment: 380751, sechoir: 137296, solairePC: 46939, total: 564986 }
   },
   {
     id: '8.3.15',
@@ -58,7 +58,7 @@ export const BATITECH_MODELS = [
     ventilatorPower: 18.5,
     totalVentPower: 55.5,
     dimensions: { width: 48, depth: 20.03, eaveHeight: 3.88 },
-    investment: { barconniere: 514302, base: 194220, solairePC: 55979, total: 764501 }
+    investment: { batiment: 514302, sechoir: 194220, solairePC: 55979, total: 764501 }
   }
 ];
 
@@ -333,7 +333,7 @@ export function getClimateZone(dept) {
 
 /**
  * Valeurs moyennes par défaut de valorisation agricole et économies thermiques par tonne séchée
- * Basées sur les études agronomiques (INRAE, Chambre d'Agriculture, BASE Innovation) :
+ * Basées sur les études agronomiques (INRAE, Chambre d'Agriculture) :
  * - Gain protéique (+2 à +4 pts MAT)
  * - Réduction des pertes mécaniques au champ (-15% à -20%)
  * - Économies d'achats d'aliments concentrés / tourteaux

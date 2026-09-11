@@ -1035,7 +1035,7 @@ const BatitechSimulator = () => {
 
         <div className="mt-6 text-sm text-slate-400 flex items-center">
           <InfoIcon className="w-4 h-4 mr-2 text-amber-500" />
-          Inclinaison de toiture : 15° (Standard Charpente Barconnière AS9.2)
+          Inclinaison de toiture : 15° (Standard Charpente Métallique)
         </div>
       </div>
     </motion.div>

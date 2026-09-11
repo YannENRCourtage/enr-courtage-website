@@ -76,7 +76,7 @@ const BatitechSection = () => {
       power: "30,15 kWc",
       panels: "90 modules Cogen'Air® (9×10)",
       investment: "327 053 €",
-      breakdown: "Barconnière : 217 822 € | BASE : 77 386 € | Solaire PC : 31 845 €",
+      breakdown: "Bâtiment & Charpente : 217 822 € | Système de Séchage : 77 386 € | Solaire : 31 845 €",
       archiImg: "/images/batitech/plan-batitech-3115-archi.png",
       pvImg: "/images/batitech/plan-batitech-3115-pv.png"
     },
@@ -89,7 +89,7 @@ const BatitechSection = () => {
       power: "63,3 kWc",
       panels: "189 modules Cogen'Air® (9×21)",
       investment: "564 986 €",
-      breakdown: "Barconnière : 380 751 € | BASE : 137 296 € | Solaire PC : 46 939 €",
+      breakdown: "Bâtiment & Charpente : 380 751 € | Système de Séchage : 137 296 € | Solaire : 46 939 €",
       archiImg: "/images/batitech/plan-batitech-6215-archi.png",
       pvImg: "/images/batitech/plan-batitech-6215-pv.png"
     },
@@ -102,7 +102,7 @@ const BatitechSection = () => {
       power: "93,8 kWc",
       panels: "280 modules Cogen'Air® (10×28)",
       investment: "764 501 €",
-      breakdown: "Barconnière : 514 302 € | BASE : 194 220 € | Solaire PC : 55 979 €",
+      breakdown: "Bâtiment & Charpente : 514 302 € | Système de Séchage : 194 220 € | Solaire : 55 979 €",
       archiImg: "/images/batitech/plan-batitech-8315-archi.png",
       pvImg: "/images/batitech/plan-batitech-8315-pv.png"
     }
@@ -179,7 +179,7 @@ const BatitechSection = () => {
 
 
       {/* ========================================================================= */}
-      {/* 2. LE PRINCIPE BATITECH : SYNERGIE BARCONNIERE & BASE */}
+      {/* 2. LE PRINCIPE BATITECH : SÉCHOIR CLÉ EN MAIN */}
       {/* ========================================================================= */}
       <section className="py-20 md:py-28 bg-slate-900 relative">
         <div className="max-w-7xl mx-auto container-padding">
@@ -189,8 +189,8 @@ const BatitechSection = () => {
             <motion.div 
               initial={{ opacity: 0, x: -30 }} 
               whileInView={{ opacity: 1, x: 0 }} 
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
+              viewport={{ once: true }} 
+              transition={{ duration: 0.8 }} 
               className="space-y-6"
             >
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 bg-slate-950 p-3 group">
@@ -206,7 +206,7 @@ const BatitechSection = () => {
                     <div className="text-white text-sm font-semibold">Structure BatiTech® & Gaine de Collecte</div>
                   </div>
                   <span className="px-2.5 py-1 bg-amber-500/20 text-amber-300 text-xs font-bold rounded-lg border border-amber-500/40">
-                    Brevets BASE & Barconnière
+                    Technologie Brevetée
                   </span>
                 </div>
               </div>
@@ -242,13 +242,13 @@ const BatitechSection = () => {
               </h2>
 
               <p className="text-slate-300 leading-relaxed text-base">
-                <strong>BatiTech® Séchage à plat</strong> est né de l'union de deux experts incontournables : 
-                <strong className="text-amber-400"> Barconnière</strong>, référence de la charpente métallique agricole depuis 40 ans, et 
-                <strong className="text-amber-400"> BASE</strong>, pionnier français du séchage solaire et de la technologie Thermovoltaïque® depuis 17 ans.
+                <strong>BatiTech® Séchage à plat</strong> est une solution industrielle complète combinant le meilleur de la 
+                <strong className="text-amber-400"> charpente métallique agricole</strong> haute robustesse et de la 
+                <strong className="text-amber-400"> technologie Thermovoltaïque®</strong> de séchage solaire haute performance.
               </p>
 
               <p className="text-slate-300 leading-relaxed text-base">
-                Conçu sur la base de la gamme <strong>ECO EVO</strong> développée par Barconnière, le séchoir intègre un caisson de refoulement, un couloir de distribution aéraulique et des cellules à plancher perforé pour valoriser l'air chaud généré par la toiture photovoltaïque.
+                Conçu spécifiquement pour les exigences du monde agricole, le séchoir intègre une structure métallique renforcée, un caisson de refoulement, un couloir de distribution aéraulique et des cellules à plancher perforé pour valoriser l'air chaud généré par la toiture photovoltaïque.
               </p>
 
               {/* Callout Specs Box */}
@@ -260,7 +260,7 @@ const BatitechSection = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 text-sm text-slate-200">
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
-                    <span>Charpente Barconnière AS9.2 (pente 15°, sans auvent)</span>
+                    <span>Charpente métallique agricole (pente 15°, sans auvent)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-1" />
@@ -302,7 +302,7 @@ const BatitechSection = () => {
               </h2>
 
               <p className="text-slate-300 leading-relaxed text-base">
-                Créé et breveté par <strong>BASE</strong>, le panneau Cogen'Air® produit simultanément de l'électricité et de la chaleur. En refroidissant en permanence les cellules photovoltaïques grâce à la circulation d'air, <strong>il augmente la production électrique de près de 10%</strong> tout en délivrant des débits d'air chaud à <strong>+5°C à +15°C</strong> par rapport à l'air ambiant.
+                Technologie française brevetée, le panneau Cogen'Air® produit simultanément de l'électricité et de la chaleur. En refroidissant en permanence les cellules photovoltaïques grâce à la circulation d'air, <strong>il augmente la production électrique de près de 10%</strong> tout en délivrant des débits d'air chaud à <strong>+5°C à +15°C</strong> par rapport à l'air ambiant.
               </p>
 
               <div className="p-5 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
@@ -460,7 +460,7 @@ const BatitechSection = () => {
                   <iframe 
                     className="w-full h-full"
                     src="https://www.youtube.com/embed/INZvWg8qw6c"
-                    title="Présentation Panneau Cogen'Air BASE"
+                    title="Présentation Panneau Cogen'Air"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
                   />
@@ -471,7 +471,7 @@ const BatitechSection = () => {
               </p>
             </motion.div>
 
-            {/* BASE 3D Animation Video */}
+            {/* 3D Animation Video */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -590,7 +590,7 @@ const BatitechSection = () => {
               </p>
             </motion.div>
 
-            {/* Card 2: Coupe Charpente Barconnière */}
+            {/* Card 2: Coupe Charpente Métallique */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -601,7 +601,7 @@ const BatitechSection = () => {
               <div className="flex items-center justify-between">
                 <h3 className="text-xl font-bold text-white flex items-center">
                   <Building2 className="w-5 h-5 mr-2 text-blue-400" />
-                  Coupe Charpente Barconnière AS9.2
+                  Coupe Charpente Métallique
                 </h3>
                 <span className="px-2.5 py-1 bg-blue-500/20 text-blue-300 text-xs font-bold rounded-lg border border-blue-500/40">Pente 15°</span>
               </div>
@@ -618,7 +618,7 @@ const BatitechSection = () => {
                 />
               </div>
               <p className="text-slate-300 text-sm leading-relaxed">
-                Structure métallique profilée ECO EVO intégrant le couloir de distribution, les gaines aérauliques et les murs de séparation béton pour une résistance maximale aux efforts de stockage.
+                Structure métallique profilée haute résistance intégrant le couloir de distribution, les gaines aérauliques et les murs de séparation béton pour une résistance maximale aux efforts de stockage.
               </p>
             </motion.div>
 
@@ -772,7 +772,7 @@ const BatitechSection = () => {
                   Une rentabilité démontrée sur le terrain
                 </h3>
                 <p className="text-slate-300 text-sm leading-relaxed">
-                  L'association d'une toiture thermovoltaïque Cogen'Air® et d'une charpente métallique Barconnière permet d'obtenir un outil de production durable, finançable par les économies d'aliments et la valorisation thermique & agronomique.
+                  L'association d'une toiture thermovoltaïque Cogen'Air® et d'une charpente métallique de haute précision permet d'obtenir un outil de production durable, finançable par les économies d'aliments et la valorisation thermique & agronomique.
                 </p>
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
