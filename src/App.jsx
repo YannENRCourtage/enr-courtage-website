@@ -21,9 +21,11 @@ import ConfigurateurCharpente from '@/components/ConfigurateurCharpente';
 import StructureSurMesureSection from '@/components/StructureSurMesureSection';
 import WhyUsBentoSection from '@/components/WhyUsBentoSection';
 import BatitechSection from '@/components/BatitechSection';
-
-
-
+import InvestorAuthPage from '@/components/investor/InvestorAuthPage';
+import NdaSignaturePage from '@/components/investor/NdaSignaturePage';
+import InvestorDashboard from '@/components/investor/InvestorDashboard';
+import PortfolioDetailPage from '@/components/investor/PortfolioDetailPage';
+import ProtectedRoute from '@/components/investor/ProtectedRoute';
 function MainPage() {
   const [activeTab, setActiveTab] = useState('home');
   const contactFormRef = useRef(null);
@@ -210,6 +212,12 @@ function App() {
         <Route path="/a-propos" element={<MainPage />} />
         <Route path="/about" element={<MainPage />} />
         <Route path="/batterie-soutien-reseau" element={<BatterieDetailPage />} />
+        
+        {/* Espace Investisseurs (M&A Teasers PV & BESS) */}
+        <Route path="/investisseurs" element={<InvestorAuthPage />} />
+        <Route path="/investisseurs/nda" element={<ProtectedRoute requireNda={false}><NdaSignaturePage /></ProtectedRoute>} />
+        <Route path="/investisseurs/dashboard" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
+        <Route path="/investisseurs/portefeuille/:id" element={<ProtectedRoute><PortfolioDetailPage /></ProtectedRoute>} />
       </Routes>
       <Toaster />
     </BrowserRouter>

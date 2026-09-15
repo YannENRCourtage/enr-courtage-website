@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown, Sun, Wheat } from 'lucide-react';
+import { Menu, X, Mail, Building2, Zap, Battery, Car, ChevronDown, Sun, Wheat, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
@@ -194,7 +194,7 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
             </nav>
 
             {/* Contact / Estimer Button - Desktop */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center space-x-3">
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 rounded-full blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 group-hover:scale-105 animate-pulse" />
                 <Button 
@@ -208,6 +208,16 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                   </span>
                 </Button>
               </div>
+
+              {/* Espace Investisseurs Button */}
+              <a
+                href="/investisseurs"
+                className="px-3.5 py-2 rounded-full border border-amber-500/40 bg-amber-50 hover:bg-amber-100/80 text-amber-900 font-bold text-xs transition-all duration-200 flex items-center gap-1.5 shadow-sm"
+                title="Accès réservé aux investisseurs qualifiés (M&A Teaser)"
+              >
+                <Lock className="w-3.5 h-3.5 text-amber-600" />
+                <span>Espace Investisseurs</span>
+              </a>
             </div>
 
             {/* Mobile Menu Toggle */}
@@ -320,6 +330,15 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                       Nous contacter
                     </span>
                   </Button>
+
+                  <a
+                    href="/investisseurs"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="w-full mt-2 py-3 rounded-xl border border-amber-500/40 bg-amber-50 text-amber-950 font-bold text-sm flex items-center justify-center space-x-2 shadow-sm"
+                  >
+                    <Lock className="w-4 h-4 text-amber-600" />
+                    <span>Espace Investisseurs (M&A)</span>
+                  </a>
                 </div>
               </motion.div>
             )}

@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { MapPin, Mail } from 'lucide-react';
+import { MapPin, Mail, Lock } from 'lucide-react';
 
 const Footer = ({ setActiveTab }) => {
   const handleNavClick = (tabId) => setActiveTab(tabId);
@@ -48,6 +48,12 @@ const Footer = ({ setActiveTab }) => {
             <ul className="space-y-3 text-gray-400 mb-8">
               <li><button onClick={() => handleNavClick('about')} className="text-sm hover:text-[#d4a843] transition-colors text-left">À propos</button></li>
               <li><a href="https://enr-courtage-energie.fr/" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-[#d4a843] transition-colors">enr-courtage-energie.fr</a></li>
+              <li>
+                <a href="/investisseurs" className="text-sm hover:text-[#d4a843] transition-colors flex items-center gap-1.5 text-amber-400 font-medium">
+                  <Lock className="h-3.5 w-3.5" />
+                  <span>Espace Investisseurs (M&A)</span>
+                </a>
+              </li>
             </ul>
 
             {/* Adhérent ENERPLAN */}
