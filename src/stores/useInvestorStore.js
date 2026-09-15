@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { INVESTORS, generateBilateralNdaText } from '@/data/investorData';
 
+// Immediately purge any legacy test sessions from browser localStorage
+if (typeof window !== 'undefined' && window.localStorage) {
+  try {
+    window.localStorage.removeItem('enr-investor-storage');
+    window.localStorage.removeItem('enr-investor-storage-v2');
+  } catch (e) {
+    // Ignore storage access errors in private mode
+  }
+}
+
 // Helper to generate a random secure password
 export function generateRandomPassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
@@ -284,8 +294,30 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
       },
     }),
     {
-      name: 'enr-investor-storage-v2',
+      name: 'enr-investor-storage-v3',
       storage: createJSONStorage(() => localStorage),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        // Automatically disconnect any legacy test accounts
+        const testEmails = [
+          'investisseur.test@enr-courtage.fr',
+          'jm.dupont@meridiam.com',
+          's.laurent@omnescapital.com',
+          'demo@enr-courtage.fr',
+        ];
+        if (state.currentInvestor && testEmails.includes(state.currentInvestor.email?.toLowerCase())) {
+          state.currentInvestor = null;
+        }
+        if (state.investors) {
+          state.investors = state.investors.filter(
+            (inv) =>
+              !testEmails.includes(inv.email?.toLowerCase()) &&
+              inv.id !== 'INV-001' &&
+              inv.id !== 'INV-002' &&
+              inv.id !== 'INV-003'
+          );
+        }
+      },
     }
   )
 );

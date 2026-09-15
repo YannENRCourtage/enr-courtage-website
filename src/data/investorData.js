@@ -10,7 +10,7 @@
  */
 
 // ============================================================================
-// INVESTISSEURS & COMPTES ADMINISTRATEUR
+// COMPTE ADMINISTRATEUR UNIQUE (AUCUN COMPTE DE TEST PRÉ-CONFIGURÉ)
 // ============================================================================
 export const INVESTORS = [
   {
@@ -25,23 +25,6 @@ export const INVESTORS = [
     ndaSignedAt: '2026-08-01T08:00:00Z',
     ndaSignedByAdmin: true,
     createdAt: '2026-08-01T08:00:00Z',
-  },
-  {
-    id: 'INV-001',
-    email: 'investisseur.test@enr-courtage.fr',
-    password: 'invest@enr!01',
-    name: 'Jean-Marc Dupont',
-    company: 'Meridiam Infrastructure',
-    legalForm: 'SAS',
-    headOffice: '4 Place de l\'Opéra, 75002 Paris',
-    rcsNumber: '812 345 678',
-    rcsCity: 'Paris',
-    role: 'Directeur des Investissements',
-    isAdmin: false,
-    status: 'active',
-    ndaSignedAt: '2026-09-01T10:00:00Z',
-    ndaSignedByAdmin: true,
-    createdAt: '2026-08-15T08:00:00Z',
   },
 ];
 
