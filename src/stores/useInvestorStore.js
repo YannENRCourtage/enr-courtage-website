@@ -35,10 +35,144 @@ export const useInvestorStore = create(
       excludeOrange: true,
 
       // List of offers submitted
-      offers: [],
+      offers: [
+        {
+          id: 'OFF-2026-001',
+          investorId: 'INV-ENEE',
+          investorName: 'Alexandre DUPRE',
+          investorCompany: 'ENEE ENERGY PARTNERS',
+          investorEmail: 'a.dupre@enee-energy.com',
+          investorPhone: '06 12 34 56 78',
+          portfolioId: 'both',
+          portfolioName: 'Portefeuilles Combinés (HÉLIOS PV + VOLTA BESS)',
+          offerType: 'total',
+          selectedSiteIds: [],
+          selectedSitesCount: 56,
+          amountEur: 3850000,
+          valuationPerMw: '163 760 €/MW',
+          milestones: [
+            {
+              id: 1,
+              label: 'Jalon 1 — Signature de la Promesse de Cession (Upfront)',
+              percentage: 30,
+              amount: 1155000,
+              targetCondition: 'Closing signature promesse & mise sous séquestre',
+              targetDate: 'T4 2026 (Octobre 2026)',
+            },
+            {
+              id: 2,
+              label: 'Jalon 2 — Purge définitive du recours des tiers (Urbanisme)',
+              percentage: 30,
+              amount: 1155000,
+              targetCondition: 'Attestation de non-recours délivrée par les mairies',
+              targetDate: 'T1 2027 (Mars 2027)',
+            },
+            {
+              id: 3,
+              label: 'Jalon 3 — Obtention de la PTF / Accord de Raccordement Enedis',
+              percentage: 20,
+              amount: 770000,
+              targetCondition: 'Acceptation de la Proposition Technique et Financière',
+              targetDate: 'T3 2027 (Septembre 2027)',
+            },
+            {
+              id: 4,
+              label: 'Jalon 4 — Ready to Build (RTB) & Cession Définitive',
+              percentage: 20,
+              amount: 770000,
+              targetCondition: 'Démarrage des travaux / Ordre de service constructeur',
+              targetDate: 'T1 2028 (Janvier 2028)',
+            },
+          ],
+          upfrontPercent: 30,
+          earnoutPercent: 70,
+          comments: 'Offre indicative ferme sur le périmètre combiné PV + BESS sous réserve de confirmation des devis d\'exécution charpente et de l\'accord fournisseur batteries 35 k€ / 125 kW.',
+          status: 'shortlist', // 'submitted' | 'shortlist' | 'exclusive' | 'accepted' | 'rejected'
+          adminNotes: 'Dossier prioritaire. Proposition financière en haut de fourchette. Organiser session Q&A technique.',
+          createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
+        },
+      ],
+
+      // Custom Data Room files uploaded by Admin
+      customDataRoom: {},
 
       // Toggle orange projects filter
       toggleExcludeOrange: () => set((state) => ({ excludeOrange: !state.excludeOrange })),
+
+      // Add document to Data Room
+      addDocumentToDataRoom: (portfolioId, categoryName, fileObj) => {
+        set((state) => {
+          const currentPortfolioDocs = state.customDataRoom[portfolioId] || {};
+          const currentCatFiles = currentPortfolioDocs[categoryName] || [];
+          
+          const newDoc = {
+            id: 'DOC-' + Date.now(),
+            name: fileObj.name,
+            type: fileObj.type || 'PDF',
+            size: fileObj.size || '1.0 Mo',
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: 'Yann BARBERIS',
+            notes: fileObj.notes || '',
+            fileUrl: fileObj.fileUrl || null,
+            fileData: fileObj.fileData || null,
+          };
+
+          return {
+            customDataRoom: {
+              ...state.customDataRoom,
+              [portfolioId]: {
+                ...currentPortfolioDocs,
+                [categoryName]: [...currentCatFiles, newDoc],
+              },
+            },
+          };
+        });
+      },
+
+      // Delete document from Data Room
+      deleteDocumentFromDataRoom: (portfolioId, categoryName, docIdOrName) => {
+        set((state) => {
+          const currentPortfolioDocs = state.customDataRoom[portfolioId] || {};
+          const currentCatFiles = currentPortfolioDocs[categoryName] || [];
+
+          const filtered = currentCatFiles.filter(
+            (f) => f.id !== docIdOrName && f.name !== docIdOrName
+          );
+
+          return {
+            customDataRoom: {
+              ...state.customDataRoom,
+              [portfolioId]: {
+                ...currentPortfolioDocs,
+                [categoryName]: filtered,
+              },
+            },
+          };
+        });
+      },
+
+      // Update offer status & admin notes
+      updateOfferStatus: (offerId, newStatus, adminNotes) => {
+        set((state) => ({
+          offers: state.offers.map((off) =>
+            off.id === offerId
+              ? {
+                  ...off,
+                  status: newStatus || off.status,
+                  adminNotes: adminNotes !== undefined ? adminNotes : off.adminNotes,
+                  updatedAt: new Date().toISOString(),
+                }
+              : off
+          ),
+        }));
+      },
+
+      // Delete an offer
+      deleteOffer: (offerId) => {
+        set((state) => ({
+          offers: state.offers.filter((off) => off.id !== offerId),
+        }));
+      },
 
       // Authentication action with EMAIL
       login: (email, password) => {

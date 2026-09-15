@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { FolderLock, FileText, Download, ShieldCheck, Scale, Wrench, Calculator, Map, Network, CheckCircle2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { FolderLock, FileText, Download, ShieldCheck, Scale, Wrench, Calculator, Map, Network, CheckCircle2, FileCode, Paperclip } from 'lucide-react';
+import { useInvestorStore } from '@/stores/useInvestorStore';
 
 const categoryIconMap = {
   Scale,
@@ -7,6 +8,11 @@ const categoryIconMap = {
   Calculator,
   Map,
   Network,
+  Juridique: Scale,
+  Technique: Wrench,
+  Financier: Calculator,
+  Urbanisme: Map,
+  Réseau: Network,
 };
 
 export default function DataRoomSection({
@@ -14,7 +20,43 @@ export default function DataRoomSection({
   investorName = 'Investisseur',
   investorCompany = '',
 }) {
+  const { customDataRoom } = useInvestorStore();
   const [downloadedFiles, setDownloadedFiles] = useState({});
+
+  // Merge default categories with custom uploaded files
+  const categories = useMemo(() => {
+    if (!portfolio || !portfolio.dataRoom) return [];
+    
+    const defaultCats = portfolio.dataRoom.categories.map((cat) => ({
+      ...cat,
+      files: [...cat.files],
+    }));
+
+    const customDocsForPortfolio = customDataRoom?.[portfolio.id] || {};
+
+    Object.entries(customDocsForPortfolio).forEach(([catName, customFiles]) => {
+      const existingCat = defaultCats.find(
+        (c) => c.name.toLowerCase() === catName.toLowerCase()
+      );
+
+      if (existingCat) {
+        // Append custom files avoiding exact duplicates
+        customFiles.forEach((cf) => {
+          if (!existingCat.files.some((f) => f.name === cf.name)) {
+            existingCat.files.push(cf);
+          }
+        });
+      } else {
+        defaultCats.push({
+          name: catName,
+          icon: 'Paperclip',
+          files: customFiles,
+        });
+      }
+    });
+
+    return defaultCats;
+  }, [portfolio, customDataRoom]);
 
   if (!portfolio || !portfolio.dataRoom) {
     return null;
@@ -89,7 +131,7 @@ export default function DataRoomSection({
 
       {/* Categories Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-        {portfolio.dataRoom.categories.map((category, idx) => {
+        {categories.map((category, idx) => {
           const CatIcon = categoryIconMap[category.icon] || FileText;
 
           return (
