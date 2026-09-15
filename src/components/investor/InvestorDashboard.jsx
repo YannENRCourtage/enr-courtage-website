@@ -24,19 +24,24 @@ import ProcessTimeline from './ProcessTimeline';
 import InteractiveMap from './InteractiveMap';
 import SiteTable from './SiteTable';
 import DataRoomSection from './DataRoomSection';
+import AdminValidationModal from './AdminValidationModal';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
-  const { currentInvestor, excludeOrange, toggleExcludeOrange } = useInvestorStore();
+  const { currentInvestor, excludeOrange, toggleExcludeOrange, investors } = useInvestorStore();
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const kpis = useMemo(() => investorService.getGlobalKpis(excludeOrange), [excludeOrange]);
 
   const [activeTableTab, setActiveTableTab] = useState('pv'); // 'pv' | 'bess'
   const [dataRoomPortfolio, setDataRoomPortfolio] = useState(null);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const heliosPortfolio = portfolios.find((p) => p.id === 'helios');
   const voltaPortfolio = portfolios.find((p) => p.id === 'volta');
+
+  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
+  const pendingRequestsCount = investors.filter((i) => i.status === 'pending').length;
 
   return (
     <div className="min-h-screen bg-[#090d16] text-gray-100 flex flex-col selection:bg-amber-500 selection:text-gray-950">
@@ -44,10 +49,39 @@ export default function InvestorDashboard() {
       <InvestorHeader
         activeTab="dashboard"
         onOpenDataRoom={() => setDataRoomPortfolio(heliosPortfolio)}
+        onOpenAdmin={() => setIsAdminModalOpen(true)}
       />
 
       {/* Main Content */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+        {/* Admin Notification Banner */}
+        {isAdmin && (
+          <div className="bg-gradient-to-r from-amber-950/60 to-gray-900 border border-amber-500/40 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+            <div className="flex items-center space-x-3">
+              <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
+              <div className="text-xs text-gray-200">
+                <span className="font-bold text-white">Espace Administrateur — Yann BARBERIS</span>
+                <span className="text-gray-400 block sm:inline sm:ml-2">
+                  {pendingRequestsCount > 0
+                    ? `Vous avez ${pendingRequestsCount} nouvelle(s) demande(s) d'accès investisseur en attente de contre-signature NDA.`
+                    : "Aucune demande en attente de validation."}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsAdminModalOpen(true)}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+            >
+              <span>Gérer les accès & NDA</span>
+              {pendingRequestsCount > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full bg-gray-950 text-amber-300 text-[10px] font-black">
+                  {pendingRequestsCount}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
         {/* ================================================================= */}
         {/* SECTION 1 : SYNTHÈSE EXÉCUTIVE & HERO                             */}
         {/* ================================================================= */}
@@ -374,6 +408,12 @@ export default function InvestorDashboard() {
             </a>
           </div>
         </section>
+
+        {/* Modal Validation Administrateur (Yann BARBERIS) */}
+        <AdminValidationModal
+          isOpen={isAdminModalOpen}
+          onClose={() => setIsAdminModalOpen(false)}
+        />
       </main>
 
       {/* Footer */}

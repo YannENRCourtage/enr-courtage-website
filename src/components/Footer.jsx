@@ -48,12 +48,6 @@ const Footer = ({ setActiveTab }) => {
             <ul className="space-y-3 text-gray-400 mb-8">
               <li><button onClick={() => handleNavClick('about')} className="text-sm hover:text-[#d4a843] transition-colors text-left">À propos</button></li>
               <li><a href="https://enr-courtage-energie.fr/" target="_blank" rel="noopener noreferrer" className="text-sm hover:text-[#d4a843] transition-colors">enr-courtage-energie.fr</a></li>
-              <li>
-                <a href="/investisseurs" className="text-sm hover:text-[#d4a843] transition-colors flex items-center gap-1.5 text-amber-400 font-medium">
-                  <Lock className="h-3.5 w-3.5" />
-                  <span>Espace Investisseurs (M&A)</span>
-                </a>
-              </li>
             </ul>
 
             {/* Adhérent ENERPLAN */}
@@ -70,7 +64,7 @@ const Footer = ({ setActiveTab }) => {
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col items-start justify-start">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="flex flex-col items-start justify-start space-y-6">
              <div className="flex flex-col items-start space-y-2">
                 {/* Nelson logo & Accès CRM */}
                 <a href="https://nelsonpv.fr" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Accès CRM Nelson PV">
@@ -82,6 +76,18 @@ const Footer = ({ setActiveTab }) => {
                   />
                 </a>
                 <span className="text-xs font-semibold text-gray-400 tracking-wide uppercase mt-1">Accès CRM</span>
+            </div>
+
+            {/* Espace Investisseurs dans la colonne Accès CRM */}
+            <div className="pt-2 border-t border-white/10 w-full flex flex-col items-start space-y-1.5">
+              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Cession & M&A</span>
+              <a
+                href="/investisseurs"
+                className="text-xs hover:text-[#d4a843] transition-colors flex items-center gap-1.5 text-amber-400 font-medium py-1"
+              >
+                <Lock className="h-3.5 w-3.5 text-amber-400" />
+                <span>Espace Investisseurs (M&A)</span>
+              </a>
             </div>
           </motion.div>
         </div>

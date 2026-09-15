@@ -1,21 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lock, ShieldCheck, KeyRound, AlertCircle, ArrowLeft, Building2, HelpCircle, Check } from 'lucide-react';
+import { Lock, ShieldCheck, Mail, AlertCircle, ArrowLeft, UserPlus, FileSignature, CheckCircle2 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import RegisterNdaModal from './RegisterNdaModal';
 
 export default function InvestorAuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login, currentInvestor } = useInvestorStore();
 
-  const [code, setCode] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(location.state?.error || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
-  // If already logged in and active, redirect to dashboard
-  React.useEffect(() => {
-    if (currentInvestor && currentInvestor.status === 'active' && currentInvestor.ndaSignedAt) {
+  // If already logged in, redirect to dashboard
+  useEffect(() => {
+    if (currentInvestor && (currentInvestor.isAdmin || (currentInvestor.status === 'active' && currentInvestor.ndaSignedByAdmin))) {
       navigate('/investisseurs/dashboard', { replace: true });
     }
   }, [currentInvestor, navigate]);
@@ -25,7 +27,7 @@ export default function InvestorAuthPage() {
     setError('');
     setIsLoading(true);
 
-    const result = login(code, password);
+    const result = login(email, password);
     setIsLoading(false);
 
     if (!result.success) {
@@ -33,17 +35,7 @@ export default function InvestorAuthPage() {
       return;
     }
 
-    if (result.ndaRequired) {
-      navigate('/investisseurs/nda');
-    } else {
-      navigate('/investisseurs/dashboard');
-    }
-  };
-
-  const handleQuickFill = (demoCode, demoPass) => {
-    setCode(demoCode);
-    setPassword(demoPass);
-    setError('');
+    navigate('/investisseurs/dashboard');
   };
 
   return (
@@ -64,7 +56,7 @@ export default function InvestorAuthPage() {
         </div>
       </header>
 
-      {/* Main Form Container */}
+      {/* Main Container */}
       <main className="flex-grow flex items-center justify-center p-4 sm:p-8 relative">
         {/* Glow ambient spots */}
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -86,34 +78,34 @@ export default function InvestorAuthPage() {
             </h1>
 
             <p className="text-xs text-gray-400 max-w-sm mx-auto leading-relaxed">
-              Cession de portefeuilles de droits de développement photovoltaïques (PV) et stockage par batteries (BESS).
+              Cession de droits de développement photovoltaïques (PV) et stockage par batteries (BESS).
             </p>
           </div>
 
-          {/* Card */}
-          <div className="bg-[#111827]/90 border border-gray-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+          {/* Login Card */}
+          <div className="bg-[#111827]/95 border border-gray-800/90 rounded-2xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl space-y-6">
             {error && (
-              <div className="mb-5 p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-start gap-2.5 leading-relaxed">
+              <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-start gap-2.5 leading-relaxed">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>{error}</span>
               </div>
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Code */}
+              {/* Email */}
               <div>
                 <label className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-1.5">
-                  Code Investisseur Personnel
+                  Adresse e-mail (Identifiant)
                 </label>
                 <div className="relative">
-                  <KeyRound className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
-                    type="text"
+                    type="email"
                     required
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.toUpperCase())}
-                    placeholder="Ex : HELIOS2026"
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-900/90 border border-gray-700 rounded-xl text-white font-mono text-sm uppercase placeholder-gray-600 focus:outline-none focus:border-amber-400 transition"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="votre.email@societe.com"
+                    className="w-full pl-10 pr-4 py-2.5 bg-gray-900/90 border border-gray-700 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-amber-400 transition font-sans"
                   />
                 </div>
               </div>
@@ -147,52 +139,33 @@ export default function InvestorAuthPage() {
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Accéder aux portefeuilles</span>
+                    <span>Se connecter</span>
                   </>
                 )}
               </button>
             </form>
 
-            {/* Quick test credentials box */}
-            <div className="mt-6 pt-5 border-t border-gray-800">
-              <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
-                <span>Comptes de test pré-configurés :</span>
+            {/* S'INSCRIRE / DEMANDER UN ACCÈS */}
+            <div className="pt-4 border-t border-gray-800 text-center space-y-3">
+              <div className="text-xs text-gray-400">
+                Vous n'avez pas encore d'identifiants d'accès ?
               </div>
-              <div className="space-y-1.5 text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('HELIOS2026', 'invest@enr!01')}
-                  className="w-full text-left p-2 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 transition flex items-center justify-between"
-                >
-                  <span className="font-mono text-amber-400">HELIOS2026</span>
-                  <span className="text-[10px] text-emerald-400">Actif (Accès direct)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('VOLTA2026', 'invest@enr!02')}
-                  className="w-full text-left p-2 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 transition flex items-center justify-between"
-                >
-                  <span className="font-mono text-cyan-400">VOLTA2026</span>
-                  <span className="text-[10px] text-amber-400">NDA Requis (À signer)</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleQuickFill('DEMO2026', 'demo@enr!03')}
-                  className="w-full text-left p-2 rounded-lg bg-gray-800/40 hover:bg-gray-800 text-gray-300 hover:text-white border border-gray-800 transition flex items-center justify-between"
-                >
-                  <span className="font-mono text-gray-300">DEMO2026</span>
-                  <span className="text-[10px] text-emerald-400">Actif (Testeur)</span>
-                </button>
-              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsRegisterModalOpen(true)}
+                className="w-full py-2.5 px-4 rounded-xl bg-gray-800 hover:bg-gray-700 text-amber-400 hover:text-amber-300 font-bold text-xs border border-gray-700 hover:border-amber-500/40 transition flex items-center justify-center space-x-2 shadow-sm"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>S'inscrire & Signer le NDA bilatéral</span>
+              </button>
             </div>
           </div>
 
           {/* Contact notice */}
           <div className="text-center text-xs text-gray-500 space-y-1">
-            <p>Vous êtes investisseur et ne disposez pas d'identifiants ?</p>
             <p>
-              Demandez un accès auprès de notre équipe M&A :{' '}
+              Besoin d'assistance ? Contactez le pôle M&A :{' '}
               <a href="mailto:contact@enr-courtage.fr" className="text-amber-400 hover:underline">
                 contact@enr-courtage.fr
               </a>
@@ -200,6 +173,12 @@ export default function InvestorAuthPage() {
           </div>
         </div>
       </main>
+
+      {/* Registration & NDA Modal */}
+      <RegisterNdaModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+      />
 
       {/* Footer */}
       <footer className="border-t border-gray-800/80 bg-[#0c1220]/60 px-6 py-4 text-center text-[11px] text-gray-500">

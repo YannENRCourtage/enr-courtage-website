@@ -10,41 +10,38 @@
  */
 
 // ============================================================================
-// INVESTISSEURS (comptes de démonstration)
+// INVESTISSEURS & COMPTES ADMINISTRATEUR
 // ============================================================================
 export const INVESTORS = [
   {
+    id: 'ADMIN-001',
+    email: 'y.barberis@enr-courtage.fr',
+    password: 'invest@enr!01',
+    name: 'Yann BARBERIS',
+    company: 'ENR COURTAGE',
+    role: 'Président',
+    isAdmin: true,
+    status: 'active',
+    ndaSignedAt: '2026-08-01T08:00:00Z',
+    ndaSignedByAdmin: true,
+    createdAt: '2026-08-01T08:00:00Z',
+  },
+  {
     id: 'INV-001',
-    code: 'HELIOS2026',
+    email: 'investisseur.test@enr-courtage.fr',
     password: 'invest@enr!01',
     name: 'Jean-Marc Dupont',
     company: 'Meridiam Infrastructure',
-    email: 'jm.dupont@meridiam.com',
-    status: 'active', // 'pending' | 'nda_required' | 'active'
-    ndaSignedAt: '2026-09-01T10:00:00Z',
-    createdAt: '2026-08-15T08:00:00Z',
-  },
-  {
-    id: 'INV-002',
-    code: 'VOLTA2026',
-    password: 'invest@enr!02',
-    name: 'Sophie Laurent',
-    company: 'Omnes Capital',
-    email: 's.laurent@omnescapital.com',
-    status: 'nda_required',
-    ndaSignedAt: null,
-    createdAt: '2026-09-05T14:00:00Z',
-  },
-  {
-    id: 'INV-003',
-    code: 'DEMO2026',
-    password: 'demo@enr!03',
-    name: 'Investisseur Démo',
-    company: 'ENR Courtage (Test)',
-    email: 'demo@enr-courtage.fr',
+    legalForm: 'SAS',
+    headOffice: '4 Place de l\'Opéra, 75002 Paris',
+    rcsNumber: '812 345 678',
+    rcsCity: 'Paris',
+    role: 'Directeur des Investissements',
+    isAdmin: false,
     status: 'active',
-    ndaSignedAt: '2026-09-10T09:00:00Z',
-    createdAt: '2026-09-10T08:00:00Z',
+    ndaSignedAt: '2026-09-01T10:00:00Z',
+    ndaSignedByAdmin: true,
+    createdAt: '2026-08-15T08:00:00Z',
   },
 ];
 
@@ -329,56 +326,88 @@ export const PROCESS_STEPS = [
 ];
 
 // ============================================================================
-// TEXTE NDA
+// MODÈLE DU NDA BILATÉRAL (CONFORME WORD ACTE CONFIDENTIALITÉ ENR COURTAGE)
 // ============================================================================
-export const NDA_TEXT = `
-ACCORD DE CONFIDENTIALITÉ (NDA)
+export function generateBilateralNdaText({
+  companyName = '[Société]',
+  legalForm = 'Société par actions simplifiée',
+  headOffice = '[Adresse du siège social]',
+  rcsNumber = '[Numéro RCS]',
+  rcsCity = '[Ville RCS]',
+  representativeName = '[Nom du signataire]',
+  representativeRole = '[Fonction]',
+  dateStr = new Date().toLocaleDateString('fr-FR'),
+  adminSigned = false,
+  userSigned = false,
+} = {}) {
+  return `ACCORD DE CONFIDENTIALITÉ (NDA)
 
 ENTRE LES SOUSSIGNÉS :
 
-La société ENR COURTAGE, SAS au capital de [montant] €, dont le siège social est situé à [adresse], immatriculée au RCS de [ville] sous le numéro [RCS], représentée par son Président en exercice, ci-après dénommée « la Partie Divulguante »,
-
-D'UNE PART,
+1. ENR COURTAGE,
+SAS, société par actions simplifiée, dont le siège social est situé au 7 RUE GUTENBERG 33700 MERIGNAC, France, immatriculée au Registre du Commerce et des Sociétés sous le numéro 881 500 552, représentée par Monsieur Yann BARBERIS, en sa qualité de Président.
+(Ci-après désignée la "Partie Divulgatrice")
 
 ET
 
-L'Investisseur dont l'identité est renseignée ci-dessous lors de la signature électronique, ci-après dénommé « la Partie Réceptrice »,
+2. ${companyName},
+${legalForm}, dont le siège social est situé au ${headOffice}, immatriculée au Registre du Commerce et des Sociétés de ${rcsCity} sous le numéro ${rcsNumber}, représentée par ${representativeName}, en sa qualité de ${representativeRole}.
+(Ci-après désignée la "Partie Réceptrice")
 
-D'AUTRE PART,
+(Ci-après désignées collectivement les "Parties" et individuellement une "Partie")
 
-Ci-après collectivement désignées « les Parties »,
+PRÉAMBULE
+Les Parties souhaitent entrer en discussions concernant l'acquisition potentielle par la Partie Réceptrice des droits de développement d'un ou plusieurs portefeuilles de projets photovoltaïques et de stockage d'énergie par batteries (BESS) développés par la Partie Divulgatrice (ci-après le "Projet").
+Dans ce cadre, la Partie Divulgatrice sera amenée à communiquer à la Partie Réceptrice des informations strictement confidentielles et stratégiques.
 
-IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :
+ARTICLE 1 - DÉFINITION DES INFORMATIONS CONFIDENTIELLES
+Sont considérées comme "Informations Confidentielles" toutes les informations, données, documents et savoir-faire, de quelque nature que ce soit (commerciale, technique, financière, juridique ou administrative), transmis par la Partie Divulgatrice à la Partie Réceptrice.
+Cela inclut expressément, sans s'y limiter :
+- Les listes de projets, fichiers Excel, coordonnées géographiques, parcelles cadastrales et documents d'urbanisme (Déclarations Préalables, Permis de Construire).
+- Les accords fonciers, promesses de bail emphytéotique et conditions financières associées.
+- Les accords de distribution, de partenariat, et les structures de coûts (CAPEX/OPEX) négociés avec des tiers (notamment les fournisseurs de batteries et constructeurs).
+- L'existence même des discussions entre les Parties.
 
-ARTICLE 1 — OBJET
-Le présent accord a pour objet de définir les conditions dans lesquelles la Partie Réceptrice s'engage à traiter de manière confidentielle les Informations Confidentielles qui lui seront communiquées par la Partie Divulguante dans le cadre de l'examen d'opportunités d'investissement portant sur des portefeuilles de projets d'énergies renouvelables (photovoltaïque et stockage par batteries).
+ARTICLE 2 - OBLIGATIONS DE LA PARTIE RÉCEPTRICE
+La Partie Réceptrice s'engage strictement à :
+- Garder les Informations Confidentielles rigoureusement secrètes et ne pas les divulguer à des tiers.
+- N'utiliser ces Informations Confidentielles qu'aux seules fins de l'évaluation, de la négociation et de la réalisation du Projet.
+- Ne communiquer ces Informations Confidentielles qu'à ses dirigeants, employés, ou conseils professionnels (avocats, auditeurs) ayant une stricte nécessité d'en connaître pour l'évaluation du Projet, et sous réserve que ces personnes soient soumises à des obligations de confidentialité au moins aussi strictes que celles du présent accord.
 
-ARTICLE 2 — DÉFINITION DES INFORMATIONS CONFIDENTIELLES
-Sont considérées comme « Informations Confidentielles » toutes informations, données, documents, de quelque nature que ce soit (technique, financière, commerciale, juridique, stratégique), communiquées par la Partie Divulguante à la Partie Réceptrice, que ce soit par écrit, oralement, par voie électronique ou par tout autre moyen, notamment :
-- Les teasers, mémorandums d'information et business plans ;
-- Les données relatives aux sites, installations et projets ;
-- Les conditions financières, prix, marges et valorisations ;
-- Les contrats, accords et engagements avec des tiers ;
-- Les informations relatives aux partenaires, fournisseurs et clients ;
-- Les données contenues dans la Data Room virtuelle.
+ARTICLE 3 - EXCLUSIONS
+Les obligations de confidentialité ne s'appliquent pas aux informations pour lesquelles la Partie Réceptrice peut prouver :
+- Qu'elles étaient dans le domaine public au moment de leur divulgation ou y sont tombées par la suite sans faute de sa part.
+- Qu'elles étaient déjà valablement en sa possession avant la divulgation par la Partie Divulgatrice.
+- Qu'elles ont été reçues de manière licite d'un tiers n'étant pas soumis à une obligation de confidentialité.
 
-ARTICLE 3 — OBLIGATIONS DE CONFIDENTIALITÉ
-La Partie Réceptrice s'engage à :
-a) Traiter les Informations Confidentielles avec le même degré de précaution qu'elle appliquerait à ses propres informations confidentielles ;
-b) Ne pas divulguer les Informations Confidentielles à des tiers sans l'accord préalable écrit de la Partie Divulguante ;
-c) Limiter l'accès aux Informations Confidentielles aux seuls membres de son personnel ou conseillers ayant besoin d'en connaître ;
-d) Ne pas utiliser les Informations Confidentielles à d'autres fins que l'évaluation de l'opportunité d'investissement ;
-e) Ne pas reproduire ou copier les Informations Confidentielles sauf nécessité stricte.
+ARTICLE 4 - NON-CONTOURNEMENT ET NON-SOLLICITATION
+Pendant la durée du présent accord, la Partie Réceptrice s'interdit formellement de :
+- Contacter, solliciter ou tenter de contracter directement avec les propriétaires fonciers, apporteurs d'affaires, fournisseurs ou partenaires techniques dont l'identité aurait été révélée par les Informations Confidentielles, dans le but de contourner la Partie Divulgatrice.
+- Débaucher, solliciter ou engager tout salarié ou collaborateur de la Partie Divulgatrice.
 
-ARTICLE 4 — DURÉE
-Le présent accord prend effet à compter de sa signature et restera en vigueur pendant une durée de deux (2) ans à compter de cette date. Les obligations de confidentialité survivront à l'expiration ou à la résiliation du présent accord.
+ARTICLE 5 - RESTITUTION ET DESTRUCTION
+À la première demande écrite de la Partie Divulgatrice, ou en cas de cessation des discussions concernant le Projet, la Partie Réceptrice s'engage à restituer ou détruire (à la discrétion de la Partie Divulgatrice) l'intégralité des Informations Confidentielles en sa possession dans un délai de sept (7) jours, et à en certifier la destruction par écrit.
 
-ARTICLE 5 — RESTITUTION DES INFORMATIONS
-À première demande de la Partie Divulguante ou à l'issue du présent accord, la Partie Réceptrice s'engage à restituer ou détruire l'ensemble des Informations Confidentielles et de leurs copies.
+ARTICLE 6 - DURÉE
+Le présent accord entre en vigueur à la date de sa signature par la dernière des Parties. Les obligations de confidentialité et de non-contournement survivront pour une durée de un (1) an à compter de cette date, y compris en cas de rupture des pourparlers.
 
-ARTICLE 6 — LOI APPLICABLE ET JURIDICTION
-Le présent accord est régi par le droit français. Tout litige sera soumis à la compétence exclusive des tribunaux de [ville].
-`;
+ARTICLE 7 - LOI APPLICABLE ET JURIDICTION COMPÉTENTE
+Le présent accord est régi et interprété conformément au droit français. Tout litige relatif à sa validité, son interprétation ou son exécution, à défaut d'accord amiable, sera soumis à la compétence exclusive du Tribunal de Commerce de Bordeaux.
+
+Fait en deux (2) exemplaires originaux, le ${dateStr}
+
+Pour ENR COURTAGE
+Nom : Yann BARBERIS
+Titre : Président
+Signature : ${adminSigned ? '✓ Signé électroniquement par Yann BARBERIS' : '[En attente de validation administrative]'}
+
+Pour ${companyName}
+Nom : ${representativeName}
+Titre : ${representativeRole}
+Signature : ${userSigned ? `✓ Signé électroniquement par ${representativeName}` : '[En attente de signature]'}`;
+}
+
+export const NDA_TEXT = generateBilateralNdaText();
 
 // ============================================================================
 // CAPACITÉ TOTALE CALCULÉE

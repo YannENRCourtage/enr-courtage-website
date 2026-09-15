@@ -1,14 +1,24 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { INVESTORS } from '@/data/investorData';
+import { INVESTORS, generateBilateralNdaText } from '@/data/investorData';
+
+// Helper to generate a random secure password
+export function generateRandomPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$';
+  let pass = 'Enr' + new Date().getFullYear() + '!';
+  for (let i = 0; i < 4; i++) {
+    pass += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pass;
+}
 
 export const useInvestorStore = create(
   persist(
     (set, get) => ({
-      // Current logged in investor session
+      // Current logged in session
       currentInvestor: null,
 
-      // List of all investors (persisted so admin edits or demo registrations work)
+      // List of all investors (starts with default admin and demo accounts, then persisted)
       investors: INVESTORS,
 
       // Filter: exclude 4 urban-risk projects (default true like in the reference teaser)
@@ -20,20 +30,38 @@ export const useInvestorStore = create(
       // Toggle orange projects filter
       toggleExcludeOrange: () => set((state) => ({ excludeOrange: !state.excludeOrange })),
 
-      // Authentication action
-      login: (code, password) => {
-        const cleanCode = (code || '').trim().toUpperCase();
+      // Authentication action with EMAIL
+      login: (email, password) => {
+        const cleanEmail = (email || '').trim().toLowerCase();
         const cleanPass = (password || '').trim();
+
+        // Check if admin hardcoded credentials match directly
+        if (cleanEmail === 'y.barberis@enr-courtage.fr' && cleanPass === 'invest@enr!01') {
+          const adminUser = {
+            id: 'ADMIN-001',
+            email: 'y.barberis@enr-courtage.fr',
+            name: 'Yann BARBERIS',
+            company: 'ENR COURTAGE',
+            role: 'Président',
+            isAdmin: true,
+            status: 'active',
+            ndaSignedAt: '2026-08-01T08:00:00Z',
+            ndaSignedByAdmin: true,
+            createdAt: '2026-08-01T08:00:00Z',
+          };
+          set({ currentInvestor: adminUser });
+          return { success: true, isAdmin: true, status: 'active' };
+        }
 
         const allInvestors = get().investors;
         const investor = allInvestors.find(
-          (inv) => inv.code.toUpperCase() === cleanCode && inv.password === cleanPass
+          (inv) => inv.email && inv.email.toLowerCase() === cleanEmail && inv.password === cleanPass
         );
 
         if (!investor) {
           return {
             success: false,
-            error: 'Code investisseur ou mot de passe incorrect. Contactez l\'administrateur ENR Courtage.',
+            error: 'Identifiant (e-mail) ou mot de passe incorrect.',
           };
         }
 
@@ -41,7 +69,15 @@ export const useInvestorStore = create(
           return {
             success: false,
             status: 'pending',
-            error: 'Votre compte est en attente de validation par l\'administrateur ENR Courtage. Vous recevrez un e-mail dès validation.',
+            error: 'Votre demande d\'inscription et accord NDA sont en cours de validation par l\'administrateur ENR Courtage. Vous recevrez vos accès dès validation.',
+          };
+        }
+
+        if (investor.status === 'rejected') {
+          return {
+            success: false,
+            status: 'rejected',
+            error: 'Votre demande d\'accès n\'a pas été retenue par l\'administrateur. Pour toute question, contactez contact@enr-courtage.fr.',
           };
         }
 
@@ -49,38 +85,149 @@ export const useInvestorStore = create(
 
         return {
           success: true,
+          isAdmin: !!investor.isAdmin,
           status: investor.status,
-          ndaRequired: investor.status === 'nda_required' || !investor.ndaSignedAt,
+          ndaRequired: !investor.ndaSignedAt || !investor.ndaSignedByAdmin,
         };
       },
 
-      // NDA signature
-      signNda: (signatureDetails) => {
-        const current = get().currentInvestor;
-        if (!current) return { success: false, error: 'Non authentifié' };
+      // Register new investor with signed NDA details
+      registerRequest: (formData) => {
+        const cleanEmail = (formData.email || '').trim().toLowerCase();
+        const allInvestors = get().investors;
 
-        const signedAt = new Date().toISOString();
-        const updatedInvestor = {
-          ...current,
-          status: 'active',
-          ndaSignedAt: signedAt,
-          signatureDetails: {
-            fullName: signatureDetails.fullName || current.name,
-            company: signatureDetails.company || current.company,
-            role: signatureDetails.role || '',
-            signedAt,
-          },
-        };
+        // Check if already registered
+        const existing = allInvestors.find((inv) => inv.email && inv.email.toLowerCase() === cleanEmail);
+        if (existing) {
+          return {
+            success: false,
+            error: 'Cette adresse e-mail est déjà enregistrée. Veuillez vous connecter ou contacter l\'administrateur.',
+          };
+        }
 
-        const updatedInvestors = get().investors.map((inv) =>
-          inv.id === current.id ? updatedInvestor : inv
-        );
-
-        set({
-          currentInvestor: updatedInvestor,
-          investors: updatedInvestors,
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+        const generatedNda = generateBilateralNdaText({
+          companyName: formData.companyName,
+          legalForm: formData.legalForm,
+          headOffice: formData.headOffice,
+          rcsNumber: formData.rcsNumber,
+          rcsCity: formData.rcsCity,
+          representativeName: formData.representativeName,
+          representativeRole: formData.representativeRole,
+          dateStr,
+          adminSigned: false,
+          userSigned: true,
         });
 
+        const newInvestor = {
+          id: 'INV-' + Date.now(),
+          email: cleanEmail,
+          password: '', // Assigned upon admin approval
+          name: formData.representativeName,
+          company: formData.companyName,
+          legalForm: formData.legalForm,
+          headOffice: formData.headOffice,
+          rcsNumber: formData.rcsNumber,
+          rcsCity: formData.rcsCity,
+          role: formData.representativeRole,
+          phone: formData.phone || '',
+          isAdmin: false,
+          status: 'pending', // Pending admin approval
+          userNdaSignedAt: new Date().toISOString(),
+          ndaSignedByAdmin: false,
+          adminSignedAt: null,
+          ndaText: generatedNda,
+          createdAt: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          investors: [newInvestor, ...state.investors],
+        }));
+
+        return { success: true, investor: newInvestor };
+      },
+
+      // Admin action: Validate & counter-sign NDA
+      adminValidateInvestor: (investorId, generatedPassword) => {
+        const pass = generatedPassword || generateRandomPassword();
+        const signedAt = new Date().toISOString();
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+
+        let validatedInvestor = null;
+
+        const updatedInvestors = get().investors.map((inv) => {
+          if (inv.id === investorId) {
+            const countersignedNda = generateBilateralNdaText({
+              companyName: inv.company,
+              legalForm: inv.legalForm,
+              headOffice: inv.headOffice,
+              rcsNumber: inv.rcsNumber,
+              rcsCity: inv.rcsCity,
+              representativeName: inv.name,
+              representativeRole: inv.role,
+              dateStr,
+              adminSigned: true,
+              userSigned: true,
+            });
+
+            validatedInvestor = {
+              ...inv,
+              status: 'active',
+              password: pass,
+              ndaSignedAt: inv.userNdaSignedAt || signedAt,
+              ndaSignedByAdmin: true,
+              adminSignedAt: signedAt,
+              ndaText: countersignedNda,
+            };
+            return validatedInvestor;
+          }
+          return inv;
+        });
+
+        set({ investors: updatedInvestors });
+
+        // Generate email template
+        const emailSubject = `Validation de votre accès Espace Investisseurs ENR Courtage & NDA contre-signé`;
+        const emailBody = `Bonjour ${validatedInvestor?.name || ''},
+
+Nous avons le plaisir de vous confirmer la validation de votre demande d'accès à la plateforme de cession de portefeuilles d'ENR Courtage, ainsi que la contre-signature de notre accord de confidentialité bilatéral (NDA).
+
+Vos identifiants personnels de connexion sont les suivants :
+- Lien d'accès : https://www.enr-courtage.fr/investisseurs
+- Identifiant (e-mail) : ${validatedInvestor?.email}
+- Mot de passe : ${pass}
+
+Vous pouvez dès à présent vous connecter pour accéder à l'ensemble des éléments transactionnels :
+- Portefeuille HÉLIOS (PV 8.01 MWc fermes / 25 sites sécurisés)
+- Portefeuille VOLTA (BESS 15.50 MW / 31 sites standardisés 4x125 kW)
+- Teasers d'investissement et matrices économiques détaillées
+- Data Room virtuelle complète (fiches synoptiques, devis travaux, PdB, accord fournisseur BESS)
+- Formulaire de proposition d'achat indicatif (global ou partiel selon jalonnements)
+
+Nous restons à votre entière disposition pour tout échange complémentaire.
+
+Bien cordialement,
+
+Yann BARBERIS
+Président — ENR COURTAGE
+y.barberis@enr-courtage.fr | 05 35 54 85 99
+7 rue Gutenberg, 33700 Mérignac`;
+
+        return {
+          success: true,
+          investor: validatedInvestor,
+          password: pass,
+          emailSubject,
+          emailBody,
+        };
+      },
+
+      // Admin action: Invalidate / reject request
+      adminRejectInvestor: (investorId) => {
+        const updated = get().investors.map((inv) =>
+          inv.id === investorId ? { ...inv, status: 'rejected' } : inv
+        );
+        set({ investors: updated });
         return { success: true };
       },
 
@@ -104,6 +251,7 @@ export const useInvestorStore = create(
           selectedSiteIds: offerData.selectedSiteIds || [],
           selectedSitesCount: offerData.selectedSitesCount || 0,
           amountEur: offerData.amountEur,
+          milestones: offerData.milestones || [],
           upfrontPercent: offerData.upfrontPercent || 70,
           earnoutPercent: offerData.earnoutPercent || 30,
           comments: offerData.comments || '',
@@ -123,13 +271,20 @@ export const useInvestorStore = create(
         return !!get().currentInvestor;
       },
 
+      isAdmin: () => {
+        const current = get().currentInvestor;
+        return current && (current.isAdmin || current.email === 'y.barberis@enr-courtage.fr');
+      },
+
       hasSignedNda: () => {
         const current = get().currentInvestor;
-        return current && current.status === 'active' && !!current.ndaSignedAt;
+        if (!current) return false;
+        if (current.isAdmin) return true;
+        return current.status === 'active' && !!current.ndaSignedByAdmin;
       },
     }),
     {
-      name: 'enr-investor-storage',
+      name: 'enr-investor-storage-v2',
       storage: createJSONStorage(() => localStorage),
     }
   )

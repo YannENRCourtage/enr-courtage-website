@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, CheckCircle2, Clock, Info, CheckSquare, Square, X, MapPin } from 'lucide-react';
+import { Search, Filter, CheckCircle2, Clock, Info, CheckSquare, Square, X, MapPin, Copy, Check } from 'lucide-react';
 
 export default function SiteTable({
   sites = [],
@@ -15,6 +15,14 @@ export default function SiteTable({
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('ALL');
   const [activeModalSite, setActiveModalSite] = useState(null);
+  const [copiedField, setCopiedField] = useState(null);
+
+  const handleCopyText = (text, fieldName) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldName);
+    setTimeout(() => setCopiedField(null), 2500);
+  };
 
   // Filter sites
   const filteredSites = useMemo(() => {
@@ -346,34 +354,91 @@ export default function SiteTable({
               </div>
             </div>
 
-            <div className="space-y-2 text-xs bg-gray-800/30 p-3 rounded-lg border border-gray-800">
+            <div className="space-y-2.5 text-xs bg-gray-800/40 p-3.5 rounded-xl border border-gray-800">
               {activeModalSite.client && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Propriétaire / Client :</span>
                   <span className="text-white font-medium">{activeModalSite.client}</span>
                 </div>
               )}
+
               {activeModalSite.address && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Adresse :</span>
-                  <span className="text-white font-medium text-right">{activeModalSite.address}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-400 shrink-0">Adresse :</span>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-white font-medium text-right truncate">
+                      {activeModalSite.address} {activeModalSite.cp ? `(${activeModalSite.cp} ${activeModalSite.ville || ''})` : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(
+                        `${activeModalSite.address}, ${activeModalSite.cp || ''} ${activeModalSite.ville || ''}`.trim(),
+                        'address'
+                      )}
+                      className="p-1.5 rounded-md bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-amber-400 border border-gray-700 transition shrink-0"
+                      title="Copier l'adresse"
+                    >
+                      {copiedField === 'address' ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
+
               {activeModalSite.lat && activeModalSite.lng && (
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Coordonnées GPS :</span>
-                  <span className="text-cyan-400 font-mono text-[11px] flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {activeModalSite.lat.toFixed(4)}, {activeModalSite.lng.toFixed(4)}
-                  </span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-gray-400 shrink-0">Coordonnées GPS :</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-cyan-400 font-mono text-[11px] flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {activeModalSite.lat.toFixed(6)}, {activeModalSite.lng.toFixed(6)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleCopyText(`${activeModalSite.lat}, ${activeModalSite.lng}`, 'gps')}
+                      className="p-1.5 rounded-md bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-cyan-400 border border-gray-700 transition shrink-0"
+                      title="Copier les coordonnées GPS"
+                    >
+                      {copiedField === 'gps' ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
 
-            <div className="pt-2 flex justify-end">
+            {/* Modal Actions */}
+            <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-gray-800">
+              <button
+                type="button"
+                onClick={() => handleCopyText(
+                  `${activeModalSite.name || activeModalSite.ville} - ${activeModalSite.address || ''} (${activeModalSite.cp || ''}) | Coordonnées GPS : ${activeModalSite.lat}, ${activeModalSite.lng}`,
+                  'both'
+                )}
+                className="px-3.5 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              >
+                {copiedField === 'both' ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Adresse & GPS Copiés !</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copier Adresse & GPS</span>
+                  </>
+                )}
+              </button>
+
               <button
                 onClick={() => setActiveModalSite(null)}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold"
+                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-xs font-semibold"
               >
                 Fermer
               </button>

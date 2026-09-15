@@ -1,15 +1,18 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Zap, Printer, Lock, LogOut, User, ShieldAlert, ArrowLeft } from 'lucide-react';
+import { Zap, Printer, Lock, LogOut, User, ShieldAlert, ArrowLeft, ShieldCheck } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
 export default function InvestorHeader({
   activeTab = 'dashboard',
   onOpenDataRoom = null,
+  onOpenAdmin = null,
   showBackToDashboard = false,
 }) {
   const navigate = useNavigate();
-  const { currentInvestor, logout, excludeOrange, toggleExcludeOrange } = useInvestorStore();
+  const { currentInvestor, logout, excludeOrange, toggleExcludeOrange, investors } = useInvestorStore();
+  const pendingCount = investors.filter((i) => i.status === 'pending').length;
+  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
 
   const handleLogout = () => {
     logout();
@@ -92,6 +95,23 @@ export default function InvestorHeader({
             >
               <Lock className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Accès Data Room</span>
+            </button>
+          )}
+
+          {/* Admin button for Yann BARBERIS */}
+          {isAdmin && onOpenAdmin && (
+            <button
+              onClick={onOpenAdmin}
+              className="flex items-center space-x-1.5 text-xs font-bold px-3 py-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow-sm transition"
+              title="Gérer les demandes et contre-signer les NDA"
+            >
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span className="hidden sm:inline">Administration</span>
+              {pendingCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-gray-950 text-[10px] font-black flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
             </button>
           )}
 

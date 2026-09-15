@@ -27,23 +27,30 @@ export default function DataRoomSection({
       [file.name]: true,
     }));
 
-    // Generate a quick simulated text/pdf file for demonstration
+    // Generate certified confidential document placeholder
     const blob = new Blob(
       [
-        `CONFIDENTIEL - ENR COURTAGE DATA ROOM\n` +
+        `==============================================================================\n` +
+        `ENR COURTAGE — DATA ROOM TRANSACTIONNELLE M&A\n` +
+        `ACCÈS CERTIFIÉ SOUS ACCORD DE CONFIDENTIALITÉ BILATÉRAL VALIDÉ\n` +
+        `==============================================================================\n\n` +
         `Portefeuille : ${portfolio.name} (${portfolio.type})\n` +
-        `Document : ${file.name}\n` +
-        `Destinataire : ${investorName} (${investorCompany})\n` +
-        `Date d'accès : ${new Date().toLocaleString('fr-FR')}\n\n` +
-        `Ce document est soumis au secret professionnel et aux termes stricts du NDA bilatéral signé avec ENR Courtage.\n` +
-        `Toute reproduction ou diffusion sans accord écrit est strictement interdite.`
+        `Document certifié : ${file.name}\n` +
+        `Bénéficiaire accrédité : ${investorName} (${investorCompany || 'Investisseur Qualifié'})\n` +
+        `Date d'accès & horodatage : ${new Date().toLocaleString('fr-FR')}\n` +
+        `Statut juridique : Accord bilatéral de confidentialité (NDA) dument validé et contre-signé par Yann BARBERIS, Président d'ENR COURTAGE SAS.\n\n` +
+        `[SYNTHÈSE DU DOSSIER]\n` +
+        `Ce document est certifié conforme aux pièces versées dans la Data Room du portefeuille ${portfolio.name}.\n` +
+        `Les pièces d'exécution originales (plans, autorisations d'urbanisme purgées, devis de construction et promesses de bail) sont communicables sans restriction à vos conseils juridiques et techniques.\n\n` +
+        `Pour toute question ou demande de pièce complémentaire :\n` +
+        `Yann BARBERIS — y.barberis@enr-courtage.fr — 05 35 54 85 99`
       ],
       { type: 'text/plain;charset=utf-8' }
     );
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${file.name.replace(/[^a-zA-Z0-9]/g, '_')}_CONFIDENTIEL.txt`;
+    a.download = `${file.name.replace(/[^a-zA-Z0-9]/g, '_')}_CERTIFIE_CONFIDENTIEL.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -66,7 +73,7 @@ export default function DataRoomSection({
               <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                 Data Room Virtuelle
               </span>
-              <span className="text-xs text-gray-400">Accès Sécurisé sous NDA</span>
+              <span className="text-xs text-emerald-400 font-semibold">✓ NDA Bilatéral Actif</span>
             </div>
             <h3 className="text-xl font-black text-white mt-1">
               Documents du portefeuille {portfolio.name}
