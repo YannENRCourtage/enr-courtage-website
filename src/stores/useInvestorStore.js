@@ -45,6 +45,15 @@ export const useInvestorStore = create(
         const cleanEmail = (email || '').trim().toLowerCase();
         const cleanPass = (password || '').trim();
 
+        // Block any legacy test accounts permanently
+        const blockedKeywords = ['meridiam', 'omnes', 'demo', 'test', 'helios2026', 'volta2026', 'demo2026'];
+        if (blockedKeywords.some((kw) => cleanEmail.includes(kw))) {
+          return {
+            success: false,
+            error: 'Les comptes de test ont été définitivement supprimés. Veuillez soumettre une demande d\'inscription pour obtenir un accès.',
+          };
+        }
+
         // Check if admin hardcoded credentials match directly
         if (cleanEmail === 'y.barberis@enr-courtage.fr' && cleanPass === 'invest@enr!01') {
           const adminUser = {

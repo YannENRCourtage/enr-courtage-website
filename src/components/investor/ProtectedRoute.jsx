@@ -6,7 +6,26 @@ export default function ProtectedRoute({ children, requireNda = true }) {
   const location = useLocation();
   const { currentInvestor } = useInvestorStore();
 
-  // 1. Not authenticated -> redirect to login
+  // 1. Force logout of any legacy test accounts
+  if (
+    currentInvestor &&
+    !currentInvestor.isAdmin &&
+    currentInvestor.email !== 'y.barberis@enr-courtage.fr' &&
+    (
+      currentInvestor.id === 'INV-001' ||
+      currentInvestor.id === 'INV-002' ||
+      currentInvestor.id === 'INV-003' ||
+      currentInvestor.email?.toLowerCase().includes('meridiam') ||
+      currentInvestor.email?.toLowerCase().includes('omnes') ||
+      currentInvestor.email?.toLowerCase().includes('demo') ||
+      currentInvestor.email?.toLowerCase().includes('test')
+    )
+  ) {
+    useInvestorStore.getState().logout();
+    return <Navigate to="/investisseurs" replace />;
+  }
+
+  // 2. Not authenticated -> redirect to login
   if (!currentInvestor) {
     return <Navigate to="/investisseurs" state={{ from: location }} replace />;
   }
