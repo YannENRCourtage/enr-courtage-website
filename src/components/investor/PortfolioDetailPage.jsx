@@ -247,7 +247,7 @@ export default function PortfolioDetailPage() {
         {/* ================================================================= */}
         {/* CARTE DES IMPLANTATIONS DU PORTEFEUILLE                           */}
         {/* ================================================================= */}
-        <section className="space-y-4">
+        <section id="carte" className="space-y-4">
           <InteractiveMap
             pvSites={isPv ? portfolio.sites : []}
             bessSites={!isPv ? portfolio.sites : []}
@@ -258,7 +258,7 @@ export default function PortfolioDetailPage() {
         {/* ================================================================= */}
         {/* PIPELINE & TABLEAU DES SITES AVEC SÉLECTION                      */}
         {/* ================================================================= */}
-        <section className="space-y-4">
+        <section id="sites" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
             <div>
               <h3 className="text-lg font-bold text-white flex items-center gap-2">

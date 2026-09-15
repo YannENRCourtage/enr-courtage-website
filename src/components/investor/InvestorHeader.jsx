@@ -141,24 +141,43 @@ export default function InvestorHeader({
 
       {/* Quick Anchor Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-6 overflow-x-auto text-xs font-medium border-t border-gray-800/60 py-2.5 text-gray-400">
-        <a href="#synthese" className="hover:text-amber-400 transition flex items-center space-x-1 whitespace-nowrap">
-          <span>📊 Synthèse Exécutive</span>
-        </a>
-        <a href="#helios" className="hover:text-amber-400 transition flex items-center space-x-1 whitespace-nowrap">
-          <span>☀️ Projet HÉLIOS (PV)</span>
-        </a>
-        <a href="#volta" className="hover:text-cyan-400 transition flex items-center space-x-1 whitespace-nowrap">
-          <span>🔋 Projet VOLTA (BESS)</span>
-        </a>
-        <a href="#cartographie" className="hover:text-emerald-400 transition flex items-center space-x-1 whitespace-nowrap">
-          <span>🗺️ Carte Interactive</span>
-        </a>
-        <a href="#pipeline" className="hover:text-blue-400 transition flex items-center space-x-1 whitespace-nowrap">
-          <span>📋 Table des Sites</span>
-        </a>
-        <a href="#process" className="hover:text-purple-400 transition flex items-center space-x-1 whitespace-nowrap">
-          <span>🤝 Processus M&A</span>
-        </a>
+        {activeTab === 'dashboard' ? (
+          <>
+            <a href="#synthese" className="hover:text-amber-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>📊 Synthèse Exécutive</span>
+            </a>
+            <a href="#helios" className="hover:text-amber-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>☀️ Portefeuille HÉLIOS (PV)</span>
+            </a>
+            <a href="#volta" className="hover:text-cyan-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>🔋 Portefeuille VOLTA (BESS)</span>
+            </a>
+            <a href="#offre" className="hover:text-amber-300 font-semibold transition flex items-center space-x-1 whitespace-nowrap">
+              <span>💼 Déposer une Offre</span>
+            </a>
+            <a href="#comparatif" className="hover:text-emerald-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>📈 Matrice Économique</span>
+            </a>
+            <a href="#process" className="hover:text-purple-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>🤝 Processus M&A</span>
+            </a>
+          </>
+        ) : (
+          <>
+            <button onClick={() => navigate('/investisseurs/dashboard')} className="hover:text-white transition flex items-center space-x-1 whitespace-nowrap text-gray-400">
+              <span>← Tous les portefeuilles</span>
+            </button>
+            <a href="#carte" className="hover:text-emerald-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>🗺️ Carte Interactive</span>
+            </a>
+            <a href="#sites" className="hover:text-blue-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>📋 Table des Sites & Sélection</span>
+            </a>
+            <a href="#dataroom" className="hover:text-amber-400 transition flex items-center space-x-1 whitespace-nowrap">
+              <span>📁 Data Room Dédiée</span>
+            </a>
+          </>
+        )}
       </div>
     </header>
   );

@@ -6,14 +6,13 @@ import {
   ShieldAlert,
   FileSpreadsheet,
   Layers,
-  TableProperties,
-  CheckCircle2,
-  Lock,
-  ChevronRight,
-  Printer,
+  Coins,
+  ArrowRight,
+  FolderLock,
   Sparkles,
   Phone,
   Mail,
+  CheckCircle2,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -21,10 +20,9 @@ import InvestorHeader from './InvestorHeader';
 import KpiCard from './KpiCard';
 import PortfolioCard from './PortfolioCard';
 import ProcessTimeline from './ProcessTimeline';
-import InteractiveMap from './InteractiveMap';
-import SiteTable from './SiteTable';
 import DataRoomSection from './DataRoomSection';
 import AdminValidationModal from './AdminValidationModal';
+import OfferModal from './OfferModal';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
@@ -33,9 +31,9 @@ export default function InvestorDashboard() {
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const kpis = useMemo(() => investorService.getGlobalKpis(excludeOrange), [excludeOrange]);
 
-  const [activeTableTab, setActiveTableTab] = useState('pv'); // 'pv' | 'bess'
   const [dataRoomPortfolio, setDataRoomPortfolio] = useState(null);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
 
   const heliosPortfolio = portfolios.find((p) => p.id === 'helios');
   const voltaPortfolio = portfolios.find((p) => p.id === 'volta');
@@ -82,6 +80,7 @@ export default function InvestorDashboard() {
             </button>
           </div>
         )}
+
         {/* ================================================================= */}
         {/* SECTION 1 : SYNTHÈSE EXÉCUTIVE & HERO                             */}
         {/* ================================================================= */}
@@ -106,7 +105,7 @@ export default function InvestorDashboard() {
                   Plateforme Énergies Renouvelables & Flexibilité
                 </h2>
                 <p className="text-gray-300 text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed">
-                  Cession de droits de développement sur deux portefeuilles complémentaires à haut niveau de standardisation foncière, technique et d'approvisionnement en Nouvelle-Aquitaine et Occitanie.
+                  Cession de droits de développement sur deux portefeuilles distincts et complémentaires à haut niveau de standardisation foncière, technique et d'approvisionnement en Nouvelle-Aquitaine et Occitanie.
                 </p>
               </div>
 
@@ -181,29 +180,75 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* SECTION 2 : CARTES DES PORTEFEUILLES (HÉLIOS & VOLTA)             */}
         {/* ================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {heliosPortfolio && (
-            <div id="helios">
-              <PortfolioCard
-                portfolio={heliosPortfolio}
-                onOpenDataRoom={(p) => setDataRoomPortfolio(p)}
-              />
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                <Layers className="w-5 h-5 text-amber-400" />
+                <span>Portefeuilles en cours de cession</span>
+              </h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Cliquez sur un portefeuille pour accéder à sa page dédiée : cartographie détaillée, inventaire unitaire des sites et Data Room dédiée.
+              </p>
             </div>
-          )}
-          {voltaPortfolio && (
-            <div id="volta">
-              <PortfolioCard
-                portfolio={voltaPortfolio}
-                onOpenDataRoom={(p) => setDataRoomPortfolio(p)}
-              />
-            </div>
-          )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {heliosPortfolio && (
+              <div id="helios">
+                <PortfolioCard
+                  portfolio={heliosPortfolio}
+                  onOpenDataRoom={(p) => setDataRoomPortfolio(p)}
+                />
+              </div>
+            )}
+            {voltaPortfolio && (
+              <div id="volta">
+                <PortfolioCard
+                  portfolio={voltaPortfolio}
+                  onOpenDataRoom={(p) => setDataRoomPortfolio(p)}
+                />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ================================================================= */}
-        {/* SECTION 3 : MATRICE ÉCONOMIQUE & HYPOTHÈSES COMPARATIVES         */}
+        {/* SECTION 3 : PROPOSITION D'OFFRE GLOBALE OU PARTIELLE (CTA)        */}
         {/* ================================================================= */}
-        <section className="rounded-2xl bg-[#111827] border border-gray-800 p-6 sm:p-8 shadow-xl space-y-5">
+        <section
+          id="offre"
+          className="rounded-2xl bg-gradient-to-r from-amber-950/40 via-gray-900 to-cyan-950/40 border border-amber-500/30 p-6 sm:p-8 shadow-2xl relative overflow-hidden"
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="space-y-2 text-center md:text-left">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold uppercase tracking-wider">
+                <Coins className="w-4 h-4 text-amber-400" />
+                <span>Espace Transactionnel & Propositions</span>
+              </div>
+              <h3 className="text-2xl font-black text-white">
+                Déposer une offre d'acquisition (Totale ou Partielle)
+              </h3>
+              <p className="text-xs text-gray-300 max-w-2xl leading-relaxed">
+                Vous pouvez formuler une offre ferme ou indicative sur le portefeuille <strong>HÉLIOS (PV)</strong>, sur le portefeuille <strong>VOLTA (BESS)</strong>, ou sur les <strong>deux combinés</strong>, avec votre propre proposition d'échéancier par jalonnements.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsOfferModalOpen(true)}
+              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-gray-950 font-black text-xs uppercase tracking-wider transition transform hover:scale-[1.02] shadow-xl shadow-amber-500/25 flex items-center gap-2.5 shrink-0"
+            >
+              <Coins className="w-4 h-4" />
+              <span>Soumettre une Proposition d'Achat</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </section>
+
+        {/* ================================================================= */}
+        {/* SECTION 4 : MATRICE ÉCONOMIQUE & HYPOTHÈSES COMPARATIVES         */}
+        {/* ================================================================= */}
+        <section id="comparatif" className="rounded-2xl bg-[#111827] border border-gray-800 p-6 sm:p-8 shadow-xl space-y-5">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-4">
             <div>
               <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
@@ -278,88 +323,18 @@ export default function InvestorDashboard() {
         </section>
 
         {/* ================================================================= */}
-        {/* SECTION 4 : CARTE INTERACTIVE DES IMPLANTATIONS                  */}
-        {/* ================================================================= */}
-        <section id="cartographie" className="space-y-4">
-          <InteractiveMap
-            pvSites={heliosPortfolio ? heliosPortfolio.sites : []}
-            bessSites={voltaPortfolio ? voltaPortfolio.sites : []}
-            excludeOrange={excludeOrange}
-          />
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 5 : PIPELINE COMPLET & TABLEAU DES SITES                 */}
-        {/* ================================================================= */}
-        <section id="pipeline" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
-                <TableProperties className="w-4 h-4" /> Pipeline Transactionnel
-              </div>
-              <h3 className="text-xl font-black text-white mt-1">
-                Inventaire Exhaustif des Sites
-              </h3>
-            </div>
-
-            {/* Tab switch */}
-            <div className="flex items-center space-x-2 bg-gray-900 p-1 rounded-xl border border-gray-800">
-              <button
-                onClick={() => setActiveTableTab('pv')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                  activeTableTab === 'pv'
-                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Sun className="w-3.5 h-3.5" />
-                <span>Portefeuille PV (HÉLIOS)</span>
-              </button>
-
-              <button
-                onClick={() => setActiveTableTab('bess')}
-                className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                  activeTableTab === 'bess'
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/40 shadow-sm'
-                    : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <Battery className="w-3.5 h-3.5" />
-                <span>Portefeuille BESS (VOLTA)</span>
-              </button>
-            </div>
-          </div>
-
-          {activeTableTab === 'pv' && heliosPortfolio && (
-            <SiteTable
-              sites={heliosPortfolio.sites}
-              type="PV"
-              excludeOrange={excludeOrange}
-            />
-          )}
-
-          {activeTableTab === 'bess' && voltaPortfolio && (
-            <SiteTable
-              sites={voltaPortfolio.sites}
-              type="BESS"
-              excludeOrange={false}
-            />
-          )}
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 6 : PROCESSUS STRUCTURÉ M&A                              */}
+        {/* SECTION 5 : PROCESSUS STRUCTURÉ M&A                              */}
         {/* ================================================================= */}
         <section id="process">
           <ProcessTimeline />
         </section>
 
         {/* ================================================================= */}
-        {/* SECTION 7 : DATA ROOM ACCORDÉON / MODAL                          */}
+        {/* SECTION 6 : DATA ROOM MODAL (SOUS LE HEADER)                     */}
         {/* ================================================================= */}
         {dataRoomPortfolio && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-            <div className="max-w-4xl w-full my-8 relative">
+          <div className="fixed top-20 inset-x-0 bottom-0 z-30 bg-black/85 backdrop-blur-md overflow-y-auto p-4 flex items-start justify-center pt-4">
+            <div className="max-w-4xl w-full my-4 relative">
               <button
                 onClick={() => setDataRoomPortfolio(null)}
                 className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white px-3 py-1.5 bg-gray-800 rounded-lg text-xs font-semibold"
@@ -376,7 +351,7 @@ export default function InvestorDashboard() {
         )}
 
         {/* ================================================================= */}
-        {/* SECTION 8 : CONTACT M&A ADVISORY                                  */}
+        {/* SECTION 7 : CONTACT M&A ADVISORY                                  */}
         {/* ================================================================= */}
         <section className="rounded-2xl bg-gradient-to-br from-gray-900 via-[#111827] to-gray-900 border border-gray-800 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
@@ -413,6 +388,14 @@ export default function InvestorDashboard() {
         <AdminValidationModal
           isOpen={isAdminModalOpen}
           onClose={() => setIsAdminModalOpen(false)}
+        />
+
+        {/* Modal Proposition d'achat multi-portefeuilles */}
+        <OfferModal
+          portfolio={heliosPortfolio}
+          selectedSiteIds={[]}
+          isOpen={isOfferModalOpen}
+          onClose={() => setIsOfferModalOpen(false)}
         />
       </main>
 
