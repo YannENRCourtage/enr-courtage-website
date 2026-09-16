@@ -389,7 +389,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
         set({ currentInvestor: null });
       },
 
-      // Submit an offer
+      // Submit a new offer
       submitOffer: (offerData) => {
         const current = get().currentInvestor;
         const newOffer = {
@@ -398,6 +398,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
           investorName: current?.name || 'Inconnu',
           investorCompany: current?.company || '',
           investorEmail: current?.email || '',
+          investorPhone: current?.phone || '',
           portfolioId: offerData.portfolioId,
           portfolioName: offerData.portfolioName,
           offerType: offerData.offerType, // 'total' | 'partial'
@@ -405,11 +406,30 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
           selectedSitesCount: offerData.selectedSitesCount || 0,
           amountEur: offerData.amountEur,
           milestones: offerData.milestones || [],
-          upfrontPercent: offerData.upfrontPercent || 70,
-          earnoutPercent: offerData.earnoutPercent || 30,
+          upfrontPercent: offerData.upfrontPercent || 30,
+          earnoutPercent: offerData.earnoutPercent || 70,
           comments: offerData.comments || '',
-          status: 'submitted',
+          status: 'submitted', // 'submitted' | 'counter_by_admin' | 'counter_by_investor' | 'agreement_reached' | 'mandate_signed' | 'rejected'
+          history: [
+            {
+              type: 'submission',
+              author: current?.name || 'Investisseur',
+              authorRole: 'investor',
+              amountEur: offerData.amountEur,
+              milestones: offerData.milestones || [],
+              comments: offerData.comments || '',
+              date: new Date().toISOString(),
+            },
+          ],
+          counterOffer: null,
+          mandate: {
+            investorSigned: false,
+            investorSignedAt: null,
+            adminSigned: false,
+            adminSignedAt: null,
+          },
           createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         };
 
         set((state) => ({
@@ -417,6 +437,253 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
         }));
 
         return { success: true, offer: newOffer };
+      },
+
+      // Modify / Revise an offer by the investor (while in submitted state)
+      modifyOffer: (offerId, updatedData) => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            const updated = {
+              ...off,
+              amountEur: updatedData.amountEur !== undefined ? updatedData.amountEur : off.amountEur,
+              milestones: updatedData.milestones || off.milestones,
+              comments: updatedData.comments !== undefined ? updatedData.comments : off.comments,
+              portfolioId: updatedData.portfolioId || off.portfolioId,
+              portfolioName: updatedData.portfolioName || off.portfolioName,
+              offerType: updatedData.offerType || off.offerType,
+              selectedSiteIds: updatedData.selectedSiteIds || off.selectedSiteIds,
+              selectedSitesCount: updatedData.selectedSitesCount || off.selectedSitesCount,
+              status: 'submitted',
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'revision',
+                  author: off.investorName,
+                  authorRole: 'investor',
+                  amountEur: updatedData.amountEur || off.amountEur,
+                  milestones: updatedData.milestones || off.milestones,
+                  comments: updatedData.comments || 'Offre révisée par l\'investisseur',
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+            return updated;
+          }),
+        }));
+      },
+
+      // Admin Action: Accept investor offer directly
+      adminAcceptOffer: (offerId) => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            return {
+              ...off,
+              status: 'agreement_reached',
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'acceptance',
+                  author: 'Yann BARBERIS (ENR COURTAGE)',
+                  authorRole: 'admin',
+                  amountEur: off.amountEur,
+                  milestones: off.milestones,
+                  comments: 'Offre acceptée par ENR COURTAGE. Passage à la signature du Mandat de Négociation Exclusive.',
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        }));
+      },
+
+      // Admin Action: Reject offer
+      adminRejectOffer: (offerId, reason = '') => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            return {
+              ...off,
+              status: 'rejected',
+              adminNotes: reason,
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'rejection',
+                  author: 'Yann BARBERIS (ENR COURTAGE)',
+                  authorRole: 'admin',
+                  comments: reason || 'Offre non retenue par le Cédant.',
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        }));
+      },
+
+      // Admin Action: Send Counter-Proposal
+      adminCounterOffer: (offerId, { counterAmountEur, counterMilestones, counterComments }) => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            return {
+              ...off,
+              status: 'counter_by_admin',
+              counterOffer: {
+                author: 'Yann BARBERIS (ENR COURTAGE)',
+                amountEur: counterAmountEur,
+                milestones: counterMilestones,
+                comments: counterComments,
+                date: new Date().toISOString(),
+              },
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'counter_proposal_admin',
+                  author: 'Yann BARBERIS (ENR COURTAGE)',
+                  authorRole: 'admin',
+                  amountEur: counterAmountEur,
+                  milestones: counterMilestones,
+                  comments: counterComments,
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        }));
+      },
+
+      // Investor Action: Accept Admin Counter-Proposal
+      investorAcceptCounter: (offerId) => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            const counter = off.counterOffer;
+            return {
+              ...off,
+              amountEur: counter?.amountEur || off.amountEur,
+              milestones: counter?.milestones || off.milestones,
+              status: 'agreement_reached',
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'acceptance',
+                  author: off.investorName,
+                  authorRole: 'investor',
+                  amountEur: counter?.amountEur || off.amountEur,
+                  comments: 'Contre-proposition acceptée par l\'investisseur. Passage à la signature du Mandat de Négociation Exclusive.',
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        }));
+      },
+
+      // Investor Action: Reject Admin Counter-Proposal
+      investorRejectCounter: (offerId, reason = '') => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            return {
+              ...off,
+              status: 'rejected',
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'rejection',
+                  author: off.investorName,
+                  authorRole: 'investor',
+                  comments: reason || 'Contre-proposition déclinée par l\'investisseur.',
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        }));
+      },
+
+      // Investor Action: Send Counter-Proposal back to Admin
+      investorCounterOffer: (offerId, { counterAmountEur, counterMilestones, counterComments }) => {
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            return {
+              ...off,
+              status: 'counter_by_investor',
+              counterOffer: {
+                author: off.investorName,
+                amountEur: counterAmountEur,
+                milestones: counterMilestones,
+                comments: counterComments,
+                date: new Date().toISOString(),
+              },
+              updatedAt: new Date().toISOString(),
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'counter_proposal_investor',
+                  author: off.investorName,
+                  authorRole: 'investor',
+                  amountEur: counterAmountEur,
+                  milestones: counterMilestones,
+                  comments: counterComments,
+                  date: new Date().toISOString(),
+                },
+              ],
+            };
+          }),
+        }));
+      },
+
+      // Sign Mandat de Négociation Exclusive
+      signMandate: (offerId, signatoryType) => {
+        const now = new Date().toISOString();
+        set((state) => ({
+          offers: state.offers.map((off) => {
+            if (off.id !== offerId) return off;
+            const mandate = off.mandate || {
+              investorSigned: false,
+              investorSignedAt: null,
+              adminSigned: false,
+              adminSignedAt: null,
+            };
+
+            const updatedMandate = {
+              ...mandate,
+              investorSigned: signatoryType === 'investor' ? true : mandate.investorSigned,
+              investorSignedAt: signatoryType === 'investor' ? now : mandate.investorSignedAt,
+              adminSigned: signatoryType === 'admin' ? true : mandate.adminSigned,
+              adminSignedAt: signatoryType === 'admin' ? now : mandate.adminSignedAt,
+            };
+
+            const bothSigned = updatedMandate.investorSigned && updatedMandate.adminSigned;
+
+            return {
+              ...off,
+              mandate: updatedMandate,
+              status: bothSigned ? 'mandate_signed' : off.status,
+              updatedAt: now,
+              history: [
+                ...(off.history || []),
+                {
+                  type: 'mandate_signature',
+                  author: signatoryType === 'admin' ? 'Yann BARBERIS (ENR COURTAGE)' : off.investorName,
+                  authorRole: signatoryType,
+                  comments: `Signature électronique du Mandat de Négociation Exclusive validée par ${signatoryType === 'admin' ? 'ENR COURTAGE' : off.investorCompany}.`,
+                  date: now,
+                },
+              ],
+            };
+          }),
+        }));
       },
 
       // Helper checks

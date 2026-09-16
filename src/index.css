@@ -475,7 +475,11 @@ input:-webkit-autofill:focus {
     width: 100% !important;
   }
 
-  .no-print {
+  button,
+  .no-print,
+  #offre,
+  #contact-ma,
+  .print-hide {
     display: none !important;
   }
 

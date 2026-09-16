@@ -1,5 +1,5 @@
 import React from 'react';
-import { Send, FileSignature, FolderLock, Coins, CheckCheck, ChevronRight } from 'lucide-react';
+import { Send, FileSignature, FolderLock, Coins, CheckCheck, FileCheck, ChevronRight } from 'lucide-react';
 import { PROCESS_STEPS } from '@/data/investorData';
 
 const iconMap = {
@@ -7,6 +7,7 @@ const iconMap = {
   FileSignature,
   FolderLock,
   Coins,
+  FileCheck,
   CheckCheck,
 };
 
@@ -26,7 +27,7 @@ export default function ProcessTimeline() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 relative">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 relative">
         {PROCESS_STEPS.map((step, idx) => {
           const Icon = iconMap[step.icon] || CheckCheck;
           const isLast = idx === PROCESS_STEPS.length - 1;
@@ -38,7 +39,7 @@ export default function ProcessTimeline() {
             >
               {/* Connector line on desktop */}
               {!isLast && (
-                <div className="hidden md:block absolute -right-2.5 top-1/2 -translate-y-1/2 z-20 text-gray-600">
+                <div className="hidden xl:block absolute -right-2.5 top-1/2 -translate-y-1/2 z-20 text-gray-600">
                   <ChevronRight className="w-4 h-4" />
                 </div>
               )}
@@ -58,7 +59,7 @@ export default function ProcessTimeline() {
               </div>
 
               <div className="mt-4 pt-2 border-t border-gray-800/60 flex items-center text-[10px] text-gray-500 font-medium">
-                <span>Étape {step.step}/5</span>
+                <span>Étape {step.step}/{PROCESS_STEPS.length}</span>
               </div>
             </div>
           );

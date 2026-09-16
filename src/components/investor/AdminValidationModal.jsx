@@ -29,9 +29,12 @@ import {
   Check,
   FileCode,
   Tag,
+  Edit3,
+  RotateCcw,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
+import ExclusiveMandateModal from './ExclusiveMandateModal';
 
 export default function AdminValidationModal({ isOpen, onClose }) {
   const {
@@ -41,6 +44,10 @@ export default function AdminValidationModal({ isOpen, onClose }) {
     offers,
     updateOfferStatus,
     deleteOffer,
+    adminAcceptOffer,
+    adminRejectOffer,
+    adminCounterOffer,
+    signMandate,
     customDataRoom,
     addDocumentToDataRoom,
     deleteDocumentFromDataRoom,
@@ -50,6 +57,13 @@ export default function AdminValidationModal({ isOpen, onClose }) {
   const [validatedData, setValidatedData] = useState(null); // { investor, password, emailSubject, emailBody }
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'offers' | 'dataroom' | 'active'
+
+  // Negotiation & Mandate State
+  const [counteringOfferId, setCounteringOfferId] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [counterComments, setCounterComments] = useState('');
+  const [counterMilestones, setCounterMilestones] = useState([]);
+  const [mandateModalOffer, setMandateModalOffer] = useState(null);
 
   // Data Room Management State
   const [selectedDataRoomPortfolio, setSelectedDataRoomPortfolio] = useState('helios');
@@ -102,6 +116,60 @@ export default function AdminValidationModal({ isOpen, onClose }) {
     navigator.clipboard.writeText(validatedData.emailBody);
     setCopied(true);
     setTimeout(() => setCopied(false), 3000);
+  };
+
+  // Admin Negotiation Actions
+  const handleOpenCounter = (offer) => {
+    setCounteringOfferId(offer.id);
+    setCounterAmount(String(offer.amountEur || ''));
+    setCounterComments('');
+    const baseMilestones = (offer.milestones && offer.milestones.length > 0)
+      ? offer.milestones
+      : [
+          { id: 1, label: 'Jalon 1 — Signature Promesse (Upfront)', percentage: 30, targetCondition: 'Closing signature promesse & mise sous séquestre', targetDate: 'T4 2026' },
+          { id: 2, label: 'Jalon 2 — Purge Urbanisme', percentage: 30, targetCondition: 'Attestation non-recours délivrée', targetDate: 'T1 2027' },
+          { id: 3, label: 'Jalon 3 — Accord Enedis PTF', percentage: 20, targetCondition: 'Acceptation PTF', targetDate: 'T3 2027' },
+          { id: 4, label: 'Jalon 4 — Ready to Build (RTB)', percentage: 20, targetCondition: 'Closing définitif & OS travaux', targetDate: 'T1 2028' },
+        ];
+    setCounterMilestones(baseMilestones.map((m) => ({ ...m })));
+  };
+
+  const handleSubmitCounter = (offerId) => {
+    const num = Number(String(counterAmount).replace(/\s/g, '').replace(',', '.'));
+    if (isNaN(num) || num <= 0) {
+      alert('Veuillez renseigner un montant valide en euros hors taxes.');
+      return;
+    }
+    const totalP = counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0);
+    if (totalP !== 100) {
+      alert(`La somme des pourcentages des jalonnements doit être égale à 100% (actuellement : ${totalP}%).`);
+      return;
+    }
+    const milestonesWithAmounts = counterMilestones.map((m) => ({
+      ...m,
+      percentage: Number(m.percentage),
+      amount: Math.round((num * Number(m.percentage)) / 100),
+    }));
+
+    adminCounterOffer(offerId, {
+      counterAmountEur: num,
+      counterMilestones: milestonesWithAmounts,
+      counterComments: counterComments,
+    });
+    setCounteringOfferId(null);
+  };
+
+  const handleAdminAccept = (offerId) => {
+    if (window.confirm("Confirmez-vous l'acceptation définitive de cette proposition ? Les deux parties pourront procéder immédiatement à la signature du Mandat de Négociation Exclusive.")) {
+      adminAcceptOffer(offerId);
+    }
+  };
+
+  const handleAdminReject = (offerId) => {
+    const reason = window.prompt("Indiquez un motif de refus à communiquer à l'investisseur (optionnel) :");
+    if (reason !== null) {
+      adminRejectOffer(offerId, reason);
+    }
   };
 
   // Handle File Input Selection
@@ -603,31 +671,200 @@ export default function AdminValidationModal({ isOpen, onClose }) {
                       </div>
                     )}
 
-                    {/* Admin Status & Notes Form */}
-                    <div className="bg-gray-900/70 p-3 rounded-xl border border-gray-800 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-[11px] font-bold text-gray-400">Statut de l'offre :</span>
-                        <select
-                          value={offer.status || 'submitted'}
-                          onChange={(e) => updateOfferStatus(offer.id, e.target.value)}
-                          className="px-2.5 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-amber-300 font-semibold focus:outline-none focus:border-amber-400"
-                        >
-                          <option value="submitted">⏳ En cours d'examen</option>
-                          <option value="shortlist">⭐ Retenue dans la Shortlist</option>
-                          <option value="exclusive">🔒 En Négociation Exclusive</option>
-                          <option value="accepted">✓ Offre Acceptée (Closing)</option>
-                          <option value="rejected">✕ Non Retenue</option>
-                        </select>
+                    {/* ========================================================= */}
+                    {/* ZONE DE NÉGOCIATION INTERACTIVE BILATÉRALE (YANN BARBERIS) */}
+                    {/* ========================================================= */}
+                    <div className="bg-gradient-to-r from-gray-900 to-gray-950 p-4 rounded-xl border border-gray-700/80 space-y-4">
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[11px] font-bold text-gray-400">Statut de la Négociation :</span>
+                          {offer.status === 'submitted' && (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/40 animate-pulse">
+                              ⏳ Offre initiale reçue — En attente de votre décision
+                            </span>
+                          )}
+                          {offer.status === 'counter_by_admin' && (
+                            <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 font-bold text-[10px] border border-blue-500/40">
+                              ⚡ Contre-proposition transmise ({new Intl.NumberFormat('fr-FR').format(offer.counterOffer?.amountEur || offer.amountEur)} €) — En attente investisseur
+                            </span>
+                          )}
+                          {offer.status === 'counter_by_investor' && (
+                            <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px] border border-amber-500/40 animate-pulse">
+                              🔄 Contre-proposition reçue de l'investisseur — À vous de jouer
+                            </span>
+                          )}
+                          {offer.status === 'agreement_reached' && (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-[10px] border border-emerald-500/40">
+                              🤝 Accord mutuel trouvé — Mandat d'exclusivité à régulariser
+                            </span>
+                          )}
+                          {offer.status === 'mandate_signed' && (
+                            <span className="px-2.5 py-1 rounded-full bg-emerald-500/30 text-emerald-300 font-black text-[10px] border border-emerald-400">
+                              🏆 Mandat d'Exclusivité Signé par les deux parties (60 jours)
+                            </span>
+                          )}
+                          {offer.status === 'rejected' && (
+                            <span className="px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 font-bold text-[10px] border border-red-500/40">
+                              ✕ Offre déclinée / refusée
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Direct Mandate Button if agreement reached or signed */}
+                        {(offer.status === 'agreement_reached' || offer.status === 'mandate_signed') && (
+                          <button
+                            onClick={() => setMandateModalOffer(offer)}
+                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-lg shadow-emerald-600/20"
+                          >
+                            <FileCheck className="w-4 h-4" />
+                            <span>
+                              {offer.status === 'mandate_signed'
+                                ? 'Consulter le Mandat Signé (PDF)'
+                                : 'Consulter & Signer le Mandat d\'Exclusivité'}
+                            </span>
+                          </button>
+                        )}
                       </div>
 
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="text"
-                          defaultValue={offer.adminNotes || ''}
-                          onBlur={(e) => updateOfferStatus(offer.id, offer.status, e.target.value)}
-                          placeholder="Note interne Yann BARBERIS..."
-                          className="px-3 py-1.5 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 placeholder-gray-500 w-64 focus:outline-none focus:border-amber-400"
-                        />
+                      {/* Bilateral Action Buttons for Yann BARBERIS */}
+                      {(offer.status === 'submitted' || offer.status === 'counter_by_investor' || offer.status === 'counter_by_admin') && (
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <button
+                              onClick={() => handleAdminAccept(offer.id)}
+                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Accepter l'offre</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleOpenCounter(offer)}
+                              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                            >
+                              <Edit3 className="w-4 h-4" />
+                              <span>Faire une contre-proposition</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleAdminReject(offer.id)}
+                              className="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-red-500/20 text-gray-300 hover:text-red-400 border border-gray-700 hover:border-red-500/40 text-xs font-semibold transition flex items-center gap-1.5"
+                            >
+                              <XCircle className="w-4 h-4" />
+                              <span>Refuser</span>
+                            </button>
+                          </div>
+
+                          <div className="text-[11px] text-gray-400 italic">
+                            Aller-retours illimités jusqu'à accord parfait.
+                          </div>
+                        </div>
+                      )}
+
+                      {/* INLINE COUNTER-PROPOSAL FORM */}
+                      {counteringOfferId === offer.id && (
+                        <div className="p-4 rounded-xl bg-gray-800/80 border border-amber-500/40 space-y-4 animate-in fade-in">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+                              <Edit3 className="w-3.5 h-3.5" /> Rédiger une contre-proposition — Yann BARBERIS
+                            </span>
+                            <button
+                              onClick={() => setCounteringOfferId(null)}
+                              className="text-gray-400 hover:text-white text-xs font-medium"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-300 uppercase tracking-wider mb-1">
+                                Nouveau Montant Global Proposé (€ HT)
+                              </label>
+                              <input
+                                type="text"
+                                value={counterAmount}
+                                onChange={(e) => setCounterAmount(e.target.value)}
+                                placeholder="ex: 4 000 000"
+                                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-gray-300 uppercase tracking-wider mb-1">
+                                Commentaire / Justification de la contre-proposition
+                              </label>
+                              <input
+                                type="text"
+                                value={counterComments}
+                                onChange={(e) => setCounterComments(e.target.value)}
+                                placeholder="ex: Réajustement compte tenu du stade de purge urbanistique..."
+                                className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white focus:outline-none focus:border-amber-400"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Adjust Milestones % */}
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                              Répartition des versements par jalon (Total exigé = 100%)
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                              {counterMilestones.map((m, idx) => (
+                                <div key={idx} className="bg-gray-900/90 p-2 rounded-lg border border-gray-700 text-xs space-y-1">
+                                  <div className="text-[10px] font-semibold text-gray-300 truncate">{m.label}</div>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={m.percentage}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setCounterMilestones((prev) =>
+                                          prev.map((item, i) => (i === idx ? { ...item, percentage: val } : item))
+                                        );
+                                      }}
+                                      className="w-16 px-2 py-1 bg-gray-800 border border-gray-600 rounded text-center text-amber-400 font-mono font-bold"
+                                    />
+                                    <span className="text-gray-400">%</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-700">
+                            <button
+                              onClick={() => setCounteringOfferId(null)}
+                              className="px-3 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 text-xs font-semibold"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              onClick={() => handleSubmitCounter(offer.id)}
+                              className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-gray-950 text-xs font-black transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Transmettre la contre-proposition à l'investisseur</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Admin Internal Notes & Delete */}
+                      <div className="pt-2 border-t border-gray-800/80 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-bold text-gray-500">Note interne Yann BARBERIS :</span>
+                          <input
+                            type="text"
+                            defaultValue={offer.adminNotes || ''}
+                            onBlur={(e) => updateOfferStatus(offer.id, offer.status, e.target.value)}
+                            placeholder="Note confidentielle..."
+                            className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 placeholder-gray-500 w-64 focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+
                         <button
                           onClick={() => {
                             if (window.confirm('Supprimer définitivement cette offre ?')) {
@@ -940,6 +1177,15 @@ export default function AdminValidationModal({ isOpen, onClose }) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Exclusive Mandate Modal for Admin (Yann BARBERIS) */}
+        {mandateModalOffer && (
+          <ExclusiveMandateModal
+            offer={mandateModalOffer}
+            isOpen={!!mandateModalOffer}
+            onClose={() => setMandateModalOffer(null)}
+          />
         )}
       </div>
     </div>

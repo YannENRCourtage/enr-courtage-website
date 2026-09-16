@@ -270,7 +270,7 @@ export const PROCESS_STEPS = [
     step: 1,
     label: '01',
     title: 'Expression d\'Intérêt',
-    description: 'Sélection du périmètre (Global ou par portefeuille).',
+    description: 'Sélection du périmètre cible (Portefeuille entier ou projets spécifiques).',
     color: 'amber',
     icon: 'Send',
   },
@@ -278,7 +278,7 @@ export const PROCESS_STEPS = [
     step: 2,
     label: '02',
     title: 'NDA Bilatéral',
-    description: 'Signature de l\'accord de confidentialité mutuel.',
+    description: 'Signature de l\'accord de confidentialité mutuel contre-signé par Yann BARBERIS.',
     color: 'blue',
     icon: 'FileSignature',
   },
@@ -286,27 +286,138 @@ export const PROCESS_STEPS = [
     step: 3,
     label: '03',
     title: 'Accès Data Room',
-    description: 'Fiches projets, PdB, devis, accords BESS...',
+    description: 'Consultation des fiches projets, PdB, devis d\'exécution et accords fournisseurs.',
     color: 'emerald',
     icon: 'FolderLock',
   },
   {
     step: 4,
     label: '04',
-    title: 'Offre Indicative',
-    description: 'Schéma Upfront + Earn-out (franchissement de jalons).',
+    title: 'Offre & Négociation',
+    description: 'Dépôt d\'offre indicative avec jalonnements personnalisés et cycle d\'échanges bilatéraux.',
     color: 'purple',
     icon: 'Coins',
   },
   {
     step: 5,
     label: '05',
+    title: 'Mandat de Négociation Exclusive',
+    description: 'Verrouillage de l\'accord négocié, période d\'exclusivité ferme et recours obligatoire à un avocat pour les actes définitifs.',
+    color: 'amber',
+    icon: 'FileCheck',
+  },
+  {
+    step: 6,
+    label: '06',
     title: 'Closing & Cession',
-    description: 'Transfert des droits de développement et suivi.',
+    description: 'Transfert effectif des droits de développement et suivi contractuel par jalons.',
     color: 'rose',
     icon: 'CheckCheck',
   },
 ];
+
+// ============================================================================
+// MODÈLE DU MANDAT DE NÉGOCIATION EXCLUSIVE (LOI & EXCLUSIVITY AGREEMENT)
+// ============================================================================
+export function generateExclusiveMandateText({
+  companyName = '[Société Acquéreur]',
+  legalForm = 'Société par actions simplifiée',
+  headOffice = '[Adresse Siège Social]',
+  rcsNumber = '[RCS]',
+  rcsCity = '[Ville]',
+  representativeName = '[Nom Représentant]',
+  representativeRole = '[Fonction]',
+  portfolioName = 'Portefeuille HÉLIOS & VOLTA',
+  offerType = 'total',
+  selectedSitesCount = 25,
+  amountEur = 2500000,
+  milestones = [],
+  dateStr = new Date().toLocaleDateString('fr-FR'),
+  exclusivityDays = 60,
+  investorSigned = false,
+  investorSignedAt = null,
+  adminSigned = false,
+  adminSignedAt = null,
+} = {}) {
+  const formattedAmount = new Intl.NumberFormat('fr-FR').format(amountEur);
+
+  const milestonesListText = milestones && milestones.length > 0
+    ? milestones.map((m, idx) => 
+        `   • Jalon ${idx + 1} : ${m.label}\n     - Quote-part : ${m.percentage}%\n     - Montant exigible : ${new Intl.NumberFormat('fr-FR').format(m.amount)} € HT\n     - Condition d'exigibilité : ${m.targetCondition || 'Attestation formelle de conformité'}\n     - Échéance indicative : ${m.targetDate || 'Calendrier contractuel'}`
+      ).join('\n\n')
+    : '   • Jalon 1 : Signature de la promesse (30%)\n   • Jalon 2 : Purge du recours des tiers (30%)\n   • Jalon 3 : Accord Enedis PTF (20%)\n   • Jalon 4 : Ready to Build (RTB) (20%)';
+
+  return `MANDAT D'ENTRÉE EN NÉGOCIATION EXCLUSIVE & ACCORD DE VALORISATION
+(CONTRAT D'EXCLUSIVITÉ TRANSACTIONNELLE — CESSION DE DROITS DE DÉVELOPPEMENT)
+
+ENTRE LES SOUSSIGNÉS :
+
+1. ENR COURTAGE SAS
+Société par actions simplifiée au capital social de 1 000 €, dont le siège social est situé 7 RUE GUTENBERG, 33700 MÉRIGNAC, immatriculée au RCS de Bordeaux sous le numéro 881 500 552, représentée par Monsieur Yann BARBERIS en sa qualité de Président,
+(Ci-après désignée « LE CÉDANT / ENR COURTAGE »)
+
+D'UNE PART,
+
+ET :
+
+2. ${companyName}
+${legalForm}, dont le siège social est sis au ${headOffice}, immatriculée au RCS de ${rcsCity} sous le numéro ${rcsNumber}, représentée par ${representativeName}, en sa qualité de ${representativeRole},
+(Ci-après désignée « L'ACQUÉREUR »)
+
+D'AUTRE PART,
+(Ci-après ensemble dénommées « Les Parties »).
+
+PRÉAMBULE & CONTEXTE :
+1. Les Parties sont entrées en pourparlers sous couvert d'un Accord de Confidentialité Bilatéral (NDA) régularisé et vérifié.
+2. L'Acquéreur a eu accès à la Data Room technique et financière mise à disposition par ENR COURTAGE.
+3. À l'issue des échanges et de la phase d'instruction, les Parties sont parvenues à un accord financier et structurel portant sur la cession des droits de développement décrits ci-après.
+4. Le présent Mandat a pour objet d'organiser et de sécuriser la phase finale de rédaction contractuelle sous le bénéfice d'une exclusivité réciproque stricte.
+
+IL A ÉTÉ CONVENU ET ARRÊTÉ CE QUI SUIT :
+
+ARTICLE 1 — PÉRIMÈTRE DE LA TRANSACTION
+Le présent accord porte sur la cession ferme des droits de développement relatifs au périmètre suivant :
+- Désignation : ${portfolioName}
+- Typologie d'acquisition : ${offerType === 'total' ? `Totalité du portefeuille (${selectedSitesCount} sites sécurisés)` : `Achat partiel (${selectedSitesCount} site(s) spécifiquement désigné(s))`}
+- Droits cédés : Droits de développement, maîtrise foncière (Promesses de bail emphytéotique), dossiers d'urbanisme purgés ou en cours de purge, accords techniques et dimensionnements.
+
+ARTICLE 2 — VALORISATION ET CONDITIONS FINANCIÈRES FERMES
+Le prix d'acquisition global convenu et arrêté entre les Parties est fixé à :
+MONTANT GLOBAL FERME : ${formattedAmount} € HT (Euros Hors Taxes)
+
+ARTICLE 3 — MODALITÉS D'ÉCHÉANCIER ET JALONNEMENTS CONTRACTUELS
+Le règlement du prix sera échelonné selon le schéma de jalonnements négocié et validé par les deux Parties :
+
+${milestonesListText}
+
+Chaque versement sera conditionné à la constatation matérielle de la levée de la condition suspensive afférente et fera l'objet d'un séquestre notarié ou d'un compte CARPA.
+
+ARTICLE 4 — ENGAGEMENT D'EXCLUSIVITÉ
+En contrepartie de la fermeté de la proposition de l'Acquéreur et du temps mobilisé par ses équipes, ENR COURTAGE accorde à l'Acquéreur une EXCLUSIVITÉ STRICTE ET TOTALE de négociation pour une durée de :
+DURÉE D'EXCLUSIVITÉ : ${exclusivityDays} JOURS OUVRÉS à compter de la date de signature des présentes.
+
+Pendant cette période, ENR COURTAGE s'interdit formellement :
+- De solliciter, encourager ou accepter toute offre concurrente d'un tiers sur le périmètre visé.
+- D'accorder des accès Data Room ou d'engager des négociations parallèles.
+- De transférer ou hypothéquer les droits de développement en cause.
+
+ARTICLE 5 — OBLIGATION EXPRESSE DE RECOURS AUX SERVICES D'UN AVOCAT
+« LES PARTIES RECONNAISSENT FORMELLEMENT ET CONVIENNENT EXPRESSÉMENT QUE LA RÉDACTION, L'AUDIT JURIDIQUE ET LA CONCLUSION DES ACTES DÉFINITIFS DE CESSION (PROTOCOLE D'ACCORD DE CESSION, PROMESSE SYNALLAGMATIQUE OU UNILATÉRALE DE CESSION DE DROITS DE DÉVELOPPEMENT, BAUX EMPHYTÉOTIQUES, CONVENTION DE SÉQUESTRE ET CONTRATS D'ACCOMPAGNEMENT TECHNIQUE) NÉCESSITENT OBLIGATOIREMENT LE RECOURS AUX SERVICES D'UN AVOCAT INSCRIT AU BARREAU OU D'UN CABINET JURIDIQUE SPÉCIALISÉ EN DROIT DE L'ÉNERGIE ET DROIT DES AFFAIRES.
+Chaque Partie sera assistée de son propre Conseil juridique pour veiller à la parfaite sécurité juridique, réglementaire et fiscale du Closing. »
+
+ARTICLE 6 — CONFIDENTIALITÉ ET LOI APPLICABLE
+Le présent accord est soumis au droit français. Tout différend relatif à sa validité, son interprétation ou son exécution sera soumis à la juridiction exclusive du Tribunal de Commerce de Bordeaux.
+
+Fait le ${dateStr}, en deux (2) exemplaires originaux revêtus de signatures électroniques certifiées.
+
+POUR L'ACQUÉREUR : ${companyName}
+Représentée par : ${representativeName} (${representativeRole})
+Statut signature : ${investorSigned ? `✓ SIGNÉ ÉLECTRONIQUEMENT le ${new Date(investorSignedAt || Date.now()).toLocaleString('fr-FR')} (Bon pour accord et mandat d'exclusivité)` : '[En attente de signature par l\'Acquéreur]'}
+
+POUR LE CÉDANT : ENR COURTAGE SAS
+Représentée par : Monsieur Yann BARBERIS, Président
+Statut signature : ${adminSigned ? `✓ SIGNÉ ÉLECTRONIQUEMENT le ${new Date(adminSignedAt || Date.now()).toLocaleString('fr-FR')} (Bon pour acceptation et octroi de l'exclusivité)` : '[En attente de signature par ENR COURTAGE]'}`;
+}
 
 // ============================================================================
 // MODÈLE DU NDA BILATÉRAL (CONFORME WORD ACTE CONFIDENTIALITÉ ENR COURTAGE)

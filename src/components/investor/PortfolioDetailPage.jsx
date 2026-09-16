@@ -105,7 +105,7 @@ export default function PortfolioDetailPage() {
       {/* Main Container */}
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         {/* Navigation Breadcrumb */}
-        <div className="flex items-center justify-between">
+        <div className="no-print flex items-center justify-between">
           <button
             onClick={() => navigate('/investisseurs/dashboard')}
             className="flex items-center space-x-2 text-xs font-semibold text-gray-400 hover:text-white transition"
@@ -146,7 +146,7 @@ export default function PortfolioDetailPage() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="no-print flex flex-wrap items-center gap-3">
                 <a
                   href="#dataroom"
                   className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-600/20"

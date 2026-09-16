@@ -144,7 +144,7 @@ export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
             onClick={handleNavigate}
             className={`text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 transition flex items-center gap-1.5 ${accentColor.button}`}
           >
-            <span>Détail & Sites ({portfolio.sites.length})</span>
+            <span>Accéder au Teaser ({portfolio.sites.length} sites)</span>
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
