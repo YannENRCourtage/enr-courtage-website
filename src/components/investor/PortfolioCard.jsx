@@ -132,20 +132,12 @@ export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
           {portfolio.footerNote}
         </span>
         <div className="flex items-center space-x-2">
-          {onOpenDataRoom && (
-            <button
-              onClick={() => onOpenDataRoom(portfolio)}
-              className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5"
-            >
-              <Lock className="w-3 h-3" /> Data Room
-            </button>
-          )}
           <button
             onClick={handleNavigate}
-            className={`text-xs font-semibold px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 transition flex items-center gap-1.5 ${accentColor.button}`}
+            className={`text-xs font-bold px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-white border border-gray-700 transition flex items-center gap-2 ${accentColor.button}`}
           >
-            <span>Accéder au Teaser ({portfolio.sites.length} sites)</span>
-            <ArrowRight className="w-3 h-3" />
+            <span>Consulter le Teaser & Data Room ({portfolio.sites.length} sites)</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>

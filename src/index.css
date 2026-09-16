@@ -476,6 +476,8 @@ input:-webkit-autofill:focus {
   }
 
   button,
+  aside,
+  header,
   .no-print,
   #offre,
   #contact-ma,
@@ -483,9 +485,11 @@ input:-webkit-autofill:focus {
     display: none !important;
   }
 
-  main {
+  main,
+  div[class*="pl-72"] {
     max-width: 100% !important;
     padding: 0 !important;
+    padding-left: 0 !important;
     margin: 0 !important;
     width: 100% !important;
   }

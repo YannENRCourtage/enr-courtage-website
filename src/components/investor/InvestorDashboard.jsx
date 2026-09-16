@@ -35,9 +35,9 @@ import {
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import InvestorHeader from './InvestorHeader';
+import InvestorSidebar from './InvestorSidebar';
 import PortfolioCard from './PortfolioCard';
 import ProcessTimeline from './ProcessTimeline';
-import DataRoomSection from './DataRoomSection';
 import AdminValidationModal from './AdminValidationModal';
 import OfferModal from './OfferModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
@@ -58,7 +58,7 @@ export default function InvestorDashboard() {
   const heliosPortfolio = portfolios.find((p) => p.id === 'helios');
   const voltaPortfolio = portfolios.find((p) => p.id === 'volta');
 
-  const [dataRoomPortfolio, setDataRoomPortfolio] = useState(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   // Offer modal state
@@ -126,16 +126,28 @@ export default function InvestorDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-gray-100 flex flex-col selection:bg-amber-500 selection:text-gray-950">
-      {/* Header */}
-      <InvestorHeader
-        activeTab="dashboard"
-        onOpenDataRoom={() => setDataRoomPortfolio(heliosPortfolio)}
+    <div className="min-h-screen bg-[#090d16] text-gray-100 flex selection:bg-amber-500 selection:text-gray-950">
+      {/* Vertical Sidebar */}
+      <InvestorSidebar
+        activePage="dashboard"
+        onOpenCreateOffer={() => handleOpenCreateOffer(null)}
         onOpenAdmin={() => setIsAdminModalOpen(true)}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Content */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+      {/* Main Content Area */}
+      <div className="flex-1 lg:pl-72 flex flex-col min-w-0">
+        {/* Header */}
+        <InvestorHeader
+          onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
+          onOpenAdmin={() => setIsAdminModalOpen(true)}
+          pageTitle="Tableau de Bord des Portefeuilles PV & BESS"
+          pageTitleBadge="M&A TRANSACTIONNEL"
+        />
+
+        {/* Main Content */}
+        <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         {/* Admin Notification Banner */}
         {isAdmin && (
           <div className="bg-gradient-to-r from-amber-950/60 to-gray-900 border border-amber-500/40 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
@@ -238,7 +250,7 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* SECTION 1 : PRINCIPE DE FONCTIONNEMENT DE LA PLATEFORME           */}
         {/* ================================================================= */}
-        <section className="rounded-2xl bg-[#111827] border border-gray-800 p-6 sm:p-8 space-y-6 shadow-xl">
+        <section id="fonctionnement" className="rounded-2xl bg-[#111827] border border-gray-800 p-6 sm:p-8 space-y-6 shadow-xl">
           <div className="border-b border-gray-800 pb-4">
             <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
               <Sparkles className="w-4 h-4" /> Modalités Transactionnelles
@@ -301,7 +313,7 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* SECTION 2 : MES PROPOSITIONS D'ACHAT & NÉGOCIATIONS EN COURS      */}
         {/* ================================================================= */}
-        <section className="space-y-4">
+        <section id="mes-offres" className="space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -577,7 +589,7 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* SECTION 3 : LES 2 PORTEFEUILLES ACTUELLEMENT EN VENTE             */}
         {/* ================================================================= */}
-        <section className="space-y-4">
+        <section id="portefeuilles" className="space-y-4">
           <div className="border-b border-gray-800 pb-3">
             <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
               <Layers className="w-5 h-5 text-amber-400" />
@@ -591,18 +603,12 @@ export default function InvestorDashboard() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {heliosPortfolio && (
               <div id="helios">
-                <PortfolioCard
-                  portfolio={heliosPortfolio}
-                  onOpenDataRoom={(p) => setDataRoomPortfolio(p)}
-                />
+                <PortfolioCard portfolio={heliosPortfolio} />
               </div>
             )}
             {voltaPortfolio && (
               <div id="volta">
-                <PortfolioCard
-                  portfolio={voltaPortfolio}
-                  onOpenDataRoom={(p) => setDataRoomPortfolio(p)}
-                />
+                <PortfolioCard portfolio={voltaPortfolio} />
               </div>
             )}
           </div>
@@ -685,27 +691,8 @@ export default function InvestorDashboard() {
         </section>
 
         {/* ================================================================= */}
-        {/* MODALS : DATA ROOM, ADMIN, OFFRE & MANDAT                         */}
+        {/* MODALS : ADMIN, OFFRE & MANDAT                                    */}
         {/* ================================================================= */}
-
-        {/* Data Room Modal */}
-        {dataRoomPortfolio && (
-          <div className="fixed top-20 inset-x-0 bottom-0 z-30 bg-black/85 backdrop-blur-md overflow-y-auto p-4 flex items-start justify-center pt-4">
-            <div className="max-w-4xl w-full my-4 relative">
-              <button
-                onClick={() => setDataRoomPortfolio(null)}
-                className="absolute top-4 right-4 z-20 text-gray-400 hover:text-white px-3 py-1.5 bg-gray-800 rounded-lg text-xs font-semibold"
-              >
-                Fermer
-              </button>
-              <DataRoomSection
-                portfolio={dataRoomPortfolio}
-                investorName={currentInvestor?.name}
-                investorCompany={currentInvestor?.company}
-              />
-            </div>
-          </div>
-        )}
 
         {/* Modal Validation Administrateur (Yann BARBERIS) */}
         <AdminValidationModal
@@ -741,5 +728,6 @@ export default function InvestorDashboard() {
         </p>
       </footer>
     </div>
-  );
+  </div>
+);
 }
