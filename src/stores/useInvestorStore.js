@@ -180,11 +180,11 @@ export const useInvestorStore = create(
         const cleanPass = (password || '').trim();
 
         // Block any legacy test accounts permanently
-        const blockedKeywords = ['meridiam', 'omnes', 'demo', 'test', 'helios2026', 'volta2026', 'demo2026'];
+        const blockedKeywords = ['meridiam', 'omnes', 'demo', 'test@', 'helios2026', 'volta2026', 'demo2026'];
         if (blockedKeywords.some((kw) => cleanEmail.includes(kw))) {
           return {
             success: false,
-            error: 'Les comptes de test ont été définitivement supprimés. Veuillez soumettre une demande d\'inscription pour obtenir un accès.',
+            error: 'Ce compte de test a été supprimé. Veuillez utiliser vos identifiants personnels ou soumettre une demande.',
           };
         }
 
@@ -206,10 +206,23 @@ export const useInvestorStore = create(
           return { success: true, isAdmin: true, status: 'active' };
         }
 
-        const allInvestors = get().investors;
-        const investor = allInvestors.find(
-          (inv) => inv.email && inv.email.toLowerCase() === cleanEmail && inv.password === cleanPass
+        let allInvestors = get().investors || [];
+        let investor = allInvestors.find(
+          (inv) => inv.email && inv.email.trim().toLowerCase() === cleanEmail && (inv.password?.trim() === cleanPass)
         );
+
+        // Fallback to default INVESTORS array if not found in state (e.g. fresh device or cleared localStorage)
+        if (!investor) {
+          const defaultMatch = INVESTORS.find(
+            (inv) => inv.email && inv.email.trim().toLowerCase() === cleanEmail && (inv.password?.trim() === cleanPass)
+          );
+          if (defaultMatch) {
+            investor = defaultMatch;
+            set((state) => ({
+              investors: [defaultMatch, ...(state.investors || []).filter((i) => i.email?.toLowerCase() !== cleanEmail)],
+            }));
+          }
+        }
 
         if (!investor) {
           return {
@@ -226,11 +239,11 @@ export const useInvestorStore = create(
           };
         }
 
-        if (investor.status === 'rejected') {
+        if (investor.status === 'rejected' || investor.status === 'suspended') {
           return {
             success: false,
-            status: 'rejected',
-            error: 'Votre demande d\'accès n\'a pas été retenue par l\'administrateur. Pour toute question, contactez contact@enr-courtage.fr.',
+            status: investor.status,
+            error: 'Votre accès est actuellement désactivé. Pour toute question, contactez contact@enr-courtage.fr.',
           };
         }
 
@@ -382,6 +395,99 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
         );
         set({ investors: updated });
         return { success: true };
+      },
+
+      // Admin action: Add new user directly
+      adminAddUser: ({ name, company, email, password, role = 'Investisseur', phone = '', isAdmin = false, status = 'active' }) => {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const pass = (password || '').trim() || generateRandomPassword();
+        const existing = get().investors.find((i) => i.email && i.email.trim().toLowerCase() === cleanEmail);
+        if (existing) {
+          return { success: false, error: 'Un utilisateur avec cette adresse e-mail existe déjà.' };
+        }
+
+        const dateStr = new Date().toLocaleDateString('fr-FR');
+        const ndaText = generateBilateralNdaText({
+          companyName: (company || 'Investisseur').trim(),
+          legalForm: 'Société commerciale',
+          headOffice: 'Siège social',
+          rcsNumber: 'RCS',
+          rcsCity: 'France',
+          representativeName: (name || 'Représentant').trim(),
+          representativeRole: (role || 'Investisseur').trim(),
+          dateStr,
+          adminSigned: true,
+          userSigned: true,
+        });
+
+        const newUser = {
+          id: 'USR-' + Date.now(),
+          name: (name || '').trim(),
+          company: (company || '').trim(),
+          email: cleanEmail,
+          password: pass,
+          role: (role || 'Investisseur').trim(),
+          phone: (phone || '').trim(),
+          isAdmin: !!isAdmin,
+          status: status || 'active',
+          ndaSignedAt: new Date().toISOString(),
+          ndaSignedByAdmin: true,
+          adminSignedAt: new Date().toISOString(),
+          ndaText,
+          createdAt: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          investors: [newUser, ...(state.investors || [])],
+        }));
+
+        return { success: true, user: newUser, password: pass };
+      },
+
+      // Admin action: Update existing user
+      adminUpdateUser: (userId, updatedFields) => {
+        set((state) => ({
+          investors: state.investors.map((inv) => {
+            if (inv.id !== userId) return inv;
+            const updated = {
+              ...inv,
+              ...updatedFields,
+              email: updatedFields.email ? updatedFields.email.trim().toLowerCase() : inv.email,
+              password: updatedFields.password !== undefined ? updatedFields.password.trim() : inv.password,
+              updatedAt: new Date().toISOString(),
+            };
+            // If current logged-in user is updated, keep currentInvestor in sync
+            if (state.currentInvestor?.id === userId) {
+              state.currentInvestor = updated;
+            }
+            return updated;
+          }),
+        }));
+        return { success: true };
+      },
+
+      // Admin action: Delete user
+      adminDeleteUser: (userId) => {
+        set((state) => ({
+          investors: state.investors.filter((inv) => inv.id !== userId),
+        }));
+        return { success: true };
+      },
+
+      // Admin action: Reset user password
+      adminResetPassword: (userId, newPassword) => {
+        const pass = (newPassword || '').trim() || generateRandomPassword();
+        set((state) => ({
+          investors: state.investors.map((inv) => {
+            if (inv.id !== userId) return inv;
+            return {
+              ...inv,
+              password: pass,
+              updatedAt: new Date().toISOString(),
+            };
+          }),
+        }));
+        return { success: true, password: pass };
       },
 
       // Logout
@@ -726,6 +832,25 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
               inv.id !== 'INV-002' &&
               inv.id !== 'INV-003'
           );
+
+          // Synchronize default accounts (like yannbarberis@msn.com & admin)
+          INVESTORS.forEach((defaultInv) => {
+            const idx = state.investors.findIndex(
+              (inv) => inv.email && inv.email.trim().toLowerCase() === defaultInv.email.toLowerCase()
+            );
+            if (idx === -1) {
+              state.investors.push(defaultInv);
+            } else {
+              state.investors[idx] = {
+                ...defaultInv,
+                ...state.investors[idx],
+                password: state.investors[idx].password || defaultInv.password,
+                status: state.investors[idx].status || defaultInv.status,
+              };
+            }
+          });
+        } else {
+          state.investors = INVESTORS;
         }
       },
     }

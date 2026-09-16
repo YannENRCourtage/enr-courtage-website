@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Lock, ShieldCheck, Mail, AlertCircle, ArrowLeft, UserPlus, FileSignature, CheckCircle2 } from 'lucide-react';
+import { Lock, ShieldCheck, Mail, AlertCircle, ArrowLeft, UserPlus, FileSignature, CheckCircle2, Eye, EyeOff } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import RegisterNdaModal from './RegisterNdaModal';
 
@@ -11,6 +11,7 @@ export default function InvestorAuthPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(location.state?.error || '');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
@@ -118,13 +119,21 @@ export default function InvestorAuthPage() {
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full pl-10 pr-4 py-2.5 bg-gray-900/90 border border-gray-700 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-amber-400 transition"
+                    className="w-full pl-10 pr-10 py-2.5 bg-gray-900/90 border border-gray-700 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:border-amber-400 transition font-mono"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white p-1 transition"
+                    title={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 

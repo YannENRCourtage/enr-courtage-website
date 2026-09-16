@@ -31,6 +31,14 @@ import {
   Tag,
   Edit3,
   RotateCcw,
+  Users,
+  Eye,
+  EyeOff,
+  Search,
+  KeyRound,
+  Lock,
+  UserPlus,
+  RefreshCw,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -41,6 +49,10 @@ export default function AdminValidationModal({ isOpen, onClose }) {
     investors,
     adminValidateInvestor,
     adminRejectInvestor,
+    adminAddUser,
+    adminUpdateUser,
+    adminDeleteUser,
+    adminResetPassword,
     offers,
     updateOfferStatus,
     deleteOffer,
@@ -56,7 +68,28 @@ export default function AdminValidationModal({ isOpen, onClose }) {
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
   const [validatedData, setValidatedData] = useState(null); // { investor, password, emailSubject, emailBody }
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'offers' | 'dataroom' | 'active'
+  const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'offers' | 'dataroom' | 'users'
+
+  // User Management State (Tab: users)
+  const [userSearch, setUserSearch] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'pending' | 'rejected'
+  const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    company: '',
+    email: '',
+    password: '',
+    role: 'Investisseur',
+    phone: '',
+    isAdmin: false,
+    status: 'active',
+  });
+  const [editingUser, setEditingUser] = useState(null);
+  const [editingUserData, setEditingUserData] = useState({});
+  const [visiblePasswords, setVisiblePasswords] = useState({});
+  const [copiedUserAccessId, setCopiedUserAccessId] = useState(null);
+  const [copiedPassId, setCopiedPassId] = useState(null);
+  const [userActionNotice, setUserActionNotice] = useState('');
 
   // Negotiation & Mandate State
   const [counteringOfferId, setCounteringOfferId] = useState(null);
@@ -90,6 +123,116 @@ export default function AdminValidationModal({ isOpen, onClose }) {
     if (offerPortfolioFilter === 'all') return true;
     return off.portfolioId === offerPortfolioFilter;
   });
+
+  // Filtered Users (Tab: users)
+  const filteredUsers = useMemo(() => {
+    return investors.filter((inv) => {
+      if (userStatusFilter !== 'all' && inv.status !== userStatusFilter) {
+        return false;
+      }
+      if (!userSearch.trim()) return true;
+      const q = userSearch.toLowerCase().trim();
+      return (
+        inv.name?.toLowerCase().includes(q) ||
+        inv.email?.toLowerCase().includes(q) ||
+        inv.company?.toLowerCase().includes(q) ||
+        inv.role?.toLowerCase().includes(q)
+      );
+    });
+  }, [investors, userSearch, userStatusFilter]);
+
+  // Create User Handler
+  const handleCreateUser = (e) => {
+    e.preventDefault();
+    if (!newUserData.email || !newUserData.name) {
+      alert('Veuillez renseigner au moins le nom et l\'adresse e-mail.');
+      return;
+    }
+    const pass = newUserData.password.trim() || generateRandomPassword();
+    const res = adminAddUser({
+      ...newUserData,
+      password: pass,
+    });
+    if (!res.success) {
+      alert(res.error || 'Erreur lors de la création.');
+      return;
+    }
+    setIsAddUserModalOpen(false);
+    setUserActionNotice(`Compte créé avec succès pour ${newUserData.name} (${newUserData.email}) ! Mot de passe : ${pass}`);
+    setVisiblePasswords((prev) => ({ ...prev, [res.user.id]: true }));
+    setNewUserData({
+      name: '',
+      company: '',
+      email: '',
+      password: '',
+      role: 'Investisseur',
+      phone: '',
+      isAdmin: false,
+      status: 'active',
+    });
+    setTimeout(() => setUserActionNotice(''), 6000);
+  };
+
+  // Save Edit User Handler
+  const handleSaveEditUser = (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    adminUpdateUser(editingUser.id, editingUserData);
+    setUserActionNotice(`Modifications enregistrées pour ${editingUserData.name || editingUser.name}.`);
+    setEditingUser(null);
+    setTimeout(() => setUserActionNotice(''), 4000);
+  };
+
+  // Delete User Handler
+  const handleDeleteUser = (user) => {
+    if (user.email === 'y.barberis@enr-courtage.fr') {
+      alert('Impossible de supprimer le compte administrateur principal.');
+      return;
+    }
+    if (window.confirm(`Êtes-vous certain de vouloir supprimer définitivement le compte de ${user.name} (${user.email}) ?`)) {
+      adminDeleteUser(user.id);
+      setUserActionNotice(`Utilisateur ${user.name} supprimé avec succès.`);
+      setTimeout(() => setUserActionNotice(''), 4000);
+    }
+  };
+
+  // Reset User Password Handler
+  const handleResetUserPassword = (user) => {
+    const customPass = window.prompt(
+      `Saisissez un nouveau mot de passe pour ${user.name} (ou laissez vide pour en générer un automatiquement) :`
+    );
+    if (customPass === null) return;
+    const res = adminResetPassword(user.id, customPass.trim() || undefined);
+    setUserActionNotice(`Nouveau mot de passe pour ${user.name} : ${res.password}`);
+    setVisiblePasswords((prev) => ({ ...prev, [user.id]: true }));
+    setTimeout(() => setUserActionNotice(''), 6000);
+  };
+
+  // Copy User Access Email Template
+  const handleCopyUserAccessEmail = (user) => {
+    const emailBody = `Bonjour ${user.name || ''},
+
+Voici vos identifiants d'accès à l'Espace Investisseurs d'ENR Courtage :
+- Lien de connexion : https://www.enr-courtage.fr/investisseurs
+- Identifiant (e-mail) : ${user.email}
+- Mot de passe confidentiel : ${user.password}
+
+Vous pouvez dès à présent vous connecter pour accéder aux Teasers complets et aux Data Rooms des portefeuilles :
+- Portefeuille HÉLIOS (PV 8.01 MWc fermes / 25 sites sécurisés)
+- Portefeuille VOLTA (BESS 15.50 MW / 31 sites standardisés)
+
+Bien cordialement,
+Yann BARBERIS — ENR COURTAGE
+y.barberis@enr-courtage.fr | 05 35 54 85 99`;
+
+    navigator.clipboard.writeText(emailBody);
+    setCopiedUserAccessId(user.id);
+    setUserActionNotice(`E-mail d'accès pour ${user.name} copié dans le presse-papier !`);
+    setTimeout(() => {
+      setCopiedUserAccessId(null);
+      setUserActionNotice('');
+    }, 3000);
+  };
 
   // KPI Offers
   const totalOffersValue = offers.reduce((sum, off) => sum + (off.amountEur || 0), 0);
@@ -327,16 +470,16 @@ export default function AdminValidationModal({ isOpen, onClose }) {
             <button
               onClick={() => {
                 setValidatedData(null);
-                setActiveTab('active');
+                setActiveTab('users');
               }}
               className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                activeTab === 'active'
+                activeTab === 'users'
                   ? 'bg-amber-500 text-gray-950 shadow-sm'
                   : 'text-gray-400 hover:text-white'
               }`}
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Investisseurs Validés ({activeInvestors.length})</span>
+              <Users className="w-3.5 h-3.5" />
+              <span>Gestion Utilisateurs & Mots de passe ({investors.length})</span>
             </button>
           </div>
         </div>
@@ -1109,41 +1252,593 @@ export default function AdminValidationModal({ isOpen, onClose }) {
           </div>
         ) : (
           /* =============================================================== */
-          /* TAB 4: ACTIVE INVESTORS                                         */
+          /* TAB 4: GESTION DES UTILISATEURS, IDENTIFIANTS & MOTS DE PASSE   */
           /* =============================================================== */
-          <div className="space-y-3">
-            {activeInvestors.length === 0 ? (
+          <div className="space-y-5">
+            {/* Top Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-800/60 p-4 rounded-2xl border border-gray-700">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <Users className="w-5 h-5 text-amber-400" />
+                  <h3 className="text-base font-bold text-white">
+                    Gestion des Accès & Mots de Passe ({investors.length})
+                  </h3>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Modifiez les mots de passe, créez de nouveaux investisseurs ou révoquez des accès à la plateforme.
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setNewUserData({
+                    name: '',
+                    company: '',
+                    email: '',
+                    password: generateRandomPassword(),
+                    role: 'Investisseur',
+                    phone: '',
+                    isAdmin: false,
+                    status: 'active',
+                  });
+                  setIsAddUserModalOpen(true);
+                }}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-gray-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>+ Ajouter un Utilisateur</span>
+              </button>
+            </div>
+
+            {/* Notification alert */}
+            {userActionNotice && (
+              <div className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center justify-between shadow-lg">
+                <div className="flex items-center space-x-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span>{userActionNotice}</span>
+                </div>
+                <button
+                  onClick={() => setUserActionNotice('')}
+                  className="text-emerald-400 hover:text-white text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Search & Filters */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="relative flex-1 min-w-[240px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                  placeholder="Rechercher par nom, société, e-mail..."
+                  className="w-full pl-9 pr-4 py-2 bg-gray-800/80 border border-gray-700 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-400"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 bg-gray-800/60 p-1 rounded-xl border border-gray-700 text-xs">
+                <button
+                  onClick={() => setUserStatusFilter('all')}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                    userStatusFilter === 'all'
+                      ? 'bg-amber-500 text-gray-950'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Tous ({investors.length})
+                </button>
+                <button
+                  onClick={() => setUserStatusFilter('active')}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                    userStatusFilter === 'active'
+                      ? 'bg-emerald-500 text-gray-950'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  Actifs ({investors.filter((i) => i.status === 'active').length})
+                </button>
+                <button
+                  onClick={() => setUserStatusFilter('pending')}
+                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                    userStatusFilter === 'pending'
+                      ? 'bg-amber-500 text-gray-950'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  En attente ({investors.filter((i) => i.status === 'pending').length})
+                </button>
+              </div>
+            </div>
+
+            {/* Users Cards List */}
+            {filteredUsers.length === 0 ? (
               <div className="py-12 text-center text-gray-400 text-xs bg-gray-800/20 rounded-xl border border-gray-800">
-                Aucun investisseur actif.
+                Aucun utilisateur correspondant à votre recherche.
               </div>
             ) : (
-              activeInvestors.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="p-4 rounded-xl bg-gray-800/40 border border-gray-800 text-xs flex flex-wrap items-center justify-between gap-3"
-                >
-                  <div className="space-y-1">
-                    <div className="font-bold text-white flex items-center gap-2">
-                      <span>{inv.company}</span>
-                      <span className="text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
-                        ✓ Accès Validé & NDA Actif
-                      </span>
+              <div className="grid grid-cols-1 gap-3.5">
+                {filteredUsers.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="p-4 rounded-xl bg-gray-800/60 border border-gray-700 text-xs space-y-3.5 shadow-lg hover:border-gray-600 transition"
+                  >
+                    {/* User Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-700/60 pb-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center font-black text-amber-400 text-sm shadow-inner">
+                          {inv.name ? inv.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white flex flex-wrap items-center gap-2 text-sm">
+                            <span>{inv.name || 'Sans nom'}</span>
+                            <span className="text-gray-400 font-medium">({inv.company || 'Société non renseignée'})</span>
+                            {inv.isAdmin && (
+                              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40">
+                                ⭐ Administrateur
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] text-gray-400">
+                            {inv.role || 'Investisseur'} {inv.phone ? `• Tél : ${inv.phone}` : ''}
+                            <span> • Créé le : {new Date(inv.createdAt || Date.now()).toLocaleDateString('fr-FR')}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Status Badge */}
+                      <div>
+                        {inv.status === 'active' && (
+                          <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Accès Actif (NDA OK)
+                          </span>
+                        )}
+                        {inv.status === 'pending' && (
+                          <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5" /> En attente de validation
+                          </span>
+                        )}
+                        {(inv.status === 'rejected' || inv.status === 'suspended') && (
+                          <span className="px-3 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                            <XCircle className="w-3.5 h-3.5" /> Accès Désactivé
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-gray-400 text-[11px]">
-                      {inv.name} ({inv.role}) • {inv.email} • Mot de passe : <span className="font-mono text-amber-400 font-bold">{inv.password}</span>
+
+                    {/* Credentials Box (Visible & Modifiable) */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-900/90 p-3.5 rounded-xl border border-gray-800">
+                      {/* Email / Identifiant */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                          <Mail className="w-3 h-3 text-amber-400" /> Identifiant de connexion (E-mail)
+                        </span>
+                        <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
+                          <span className="font-mono text-white text-xs select-all truncate">{inv.email}</span>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(inv.email);
+                              setUserActionNotice(`Identifiant (${inv.email}) copié !`);
+                              setTimeout(() => setUserActionNotice(''), 3000);
+                            }}
+                            className="text-gray-400 hover:text-amber-400 ml-2 p-1 transition"
+                            title="Copier l'identifiant"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Mot de passe */}
+                      <div className="space-y-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                          <KeyRound className="w-3 h-3 text-amber-400" /> Mot de passe confidentiel
+                        </span>
+                        <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
+                          <span className="font-mono text-amber-400 font-bold text-xs select-all">
+                            {visiblePasswords[inv.id] ? (inv.password || '(vide)') : '••••••••••••'}
+                          </span>
+                          <div className="flex items-center space-x-1.5 ml-2">
+                            <button
+                              onClick={() =>
+                                setVisiblePasswords((prev) => ({
+                                  ...prev,
+                                  [inv.id]: !prev[inv.id],
+                                }))
+                              }
+                              className="text-gray-400 hover:text-white p-1 transition"
+                              title={visiblePasswords[inv.id] ? 'Masquer' : 'Afficher le mot de passe'}
+                            >
+                              {visiblePasswords[inv.id] ? (
+                                <EyeOff className="w-3.5 h-3.5" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                navigator.clipboard.writeText(inv.password || '');
+                                setCopiedPassId(inv.id);
+                                setTimeout(() => setCopiedPassId(null), 2500);
+                              }}
+                              className="text-gray-400 hover:text-amber-400 p-1 transition"
+                              title="Copier le mot de passe"
+                            >
+                              {copiedPassId === inv.id ? (
+                                <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              ) : (
+                                <Copy className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+
+                            <button
+                              onClick={() => handleResetUserPassword(inv)}
+                              className="text-gray-400 hover:text-cyan-400 p-1 transition"
+                              title="Régénérer / Réinitialiser le mot de passe"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action Buttons Toolbar */}
+                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                      <button
+                        onClick={() => handleCopyUserAccessEmail(inv)}
+                        className="px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
+                      >
+                        <Mail className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{copiedUserAccessId === inv.id ? '✓ E-mail type copié !' : 'Copier e-mail d\'accès type'}</span>
+                      </button>
+
+                      <div className="flex items-center space-x-2">
+                        {inv.ndaText && (
+                          <button
+                            onClick={() => setSelectedInvestorForNda(inv)}
+                            className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
+                            title="Consulter le NDA bilatéral"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>NDA</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => {
+                            setEditingUser(inv);
+                            setEditingUserData({
+                              name: inv.name || '',
+                              company: inv.company || '',
+                              email: inv.email || '',
+                              password: inv.password || '',
+                              role: inv.role || 'Investisseur',
+                              phone: inv.phone || '',
+                              status: inv.status || 'active',
+                              isAdmin: !!inv.isAdmin,
+                            });
+                          }}
+                          className="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                        >
+                          <Edit3 className="w-3.5 h-3.5" />
+                          <span>Modifier</span>
+                        </button>
+
+                        {inv.email !== 'y.barberis@enr-courtage.fr' && (
+                          <button
+                            onClick={() => handleDeleteUser(inv)}
+                            className="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700 transition"
+                            title="Supprimer définitivement l'utilisateur"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
+        {/* ================================================================= */}
+        {/* SUB-MODAL : AJOUTER UN NOUVEL UTILISATEUR                          */}
+        {/* ================================================================= */}
+        {isAddUserModalOpen && (
+          <div className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                  <UserPlus className="w-4 h-4" />
+                  <span>Créer un Nouvel Accès Investisseur</span>
+                </div>
+                <button
+                  onClick={() => setIsAddUserModalOpen(false)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateUser} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-gray-400 font-semibold mb-1">Nom et Prénom du représentant *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.name}
+                    onChange={(e) => setNewUserData({ ...newUserData, name: e.target.value })}
+                    placeholder="ex: Jean DUPONT"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 font-semibold mb-1">Société / Entité juridique *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.company}
+                    onChange={(e) => setNewUserData({ ...newUserData, company: e.target.value })}
+                    placeholder="ex: SOLAR INVEST PARTNERS"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Adresse E-mail (Identifiant) *</label>
+                    <input
+                      type="email"
+                      required
+                      value={newUserData.email}
+                      onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                      placeholder="invest@fonds.com"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={newUserData.phone}
+                      onChange={(e) => setNewUserData({ ...newUserData, phone: e.target.value })}
+                      placeholder="06 12 34 56 78"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Mot de passe avec générateur */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-gray-400 font-semibold">Mot de passe d'accès *</label>
+                    <button
+                      type="button"
+                      onClick={() => setNewUserData({ ...newUserData, password: generateRandomPassword() })}
+                      className="text-amber-400 hover:text-amber-300 font-bold text-[11px] flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Générer automatiquement
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={newUserData.password}
+                    onChange={(e) => setNewUserData({ ...newUserData, password: e.target.value })}
+                    placeholder="Mot de passe"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Fonction / Rôle</label>
+                    <input
+                      type="text"
+                      value={newUserData.role}
+                      onChange={(e) => setNewUserData({ ...newUserData, role: e.target.value })}
+                      placeholder="ex: Directeur des Investissements"
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Statut initial</label>
+                    <select
+                      value={newUserData.status}
+                      onChange={(e) => setNewUserData({ ...newUserData, status: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-semibold focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="active">Actif (Accès débloqué)</option>
+                      <option value="pending">En attente de validation</option>
+                      <option value="rejected">Désactivé</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2 pt-1">
+                  <input
+                    type="checkbox"
+                    id="newIsAdmin"
+                    checked={newUserData.isAdmin}
+                    onChange={(e) => setNewUserData({ ...newUserData, isAdmin: e.target.checked })}
+                    className="rounded border-gray-700 text-amber-500 focus:ring-0"
+                  />
+                  <label htmlFor="newIsAdmin" className="text-gray-300 font-semibold text-xs cursor-pointer">
+                    Accorder les privilèges d'administrateur (gestion M&A)
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-800">
                   <button
-                    onClick={() => setSelectedInvestorForNda(inv)}
-                    className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
+                    type="button"
+                    onClick={() => setIsAddUserModalOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold"
                   >
-                    <FileText className="w-3.5 h-3.5" />
-                    <span>Consulter NDA Bilatéral</span>
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold transition shadow-lg shadow-amber-500/20"
+                  >
+                    Créer & Activer le Compte
                   </button>
                 </div>
-              ))
-            )}
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* SUB-MODAL : MODIFIER UN UTILISATEUR EXISTANT                      */}
+        {/* ================================================================= */}
+        {editingUser && (
+          <div className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div className="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+                  <Edit3 className="w-4 h-4" />
+                  <span>Modifier les Accès de {editingUser.name}</span>
+                </div>
+                <button
+                  onClick={() => setEditingUser(null)}
+                  className="text-gray-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEditUser} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block text-gray-400 font-semibold mb-1">Nom et Prénom *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUserData.name || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, name: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-gray-400 font-semibold mb-1">Société *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUserData.company || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, company: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Adresse E-mail (Identifiant) *</label>
+                    <input
+                      type="email"
+                      required
+                      value={editingUserData.email || ''}
+                      onChange={(e) => setEditingUserData({ ...editingUserData, email: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-mono focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Téléphone</label>
+                    <input
+                      type="tel"
+                      value={editingUserData.phone || ''}
+                      onChange={(e) => setEditingUserData({ ...editingUserData, phone: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Mot de passe modifiable avec bouton génération */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-gray-400 font-semibold">Mot de passe d'accès *</label>
+                    <button
+                      type="button"
+                      onClick={() => setEditingUserData({ ...editingUserData, password: generateRandomPassword() })}
+                      className="text-amber-400 hover:text-amber-300 font-bold text-[11px] flex items-center gap-1"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Générer un nouveau mot de passe
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={editingUserData.password || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, password: e.target.value })}
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-amber-400 font-mono font-bold focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Fonction / Rôle</label>
+                    <input
+                      type="text"
+                      value={editingUserData.role || ''}
+                      onChange={(e) => setEditingUserData({ ...editingUserData, role: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-gray-400 font-semibold mb-1">Statut du compte</label>
+                    <select
+                      value={editingUserData.status || 'active'}
+                      onChange={(e) => setEditingUserData({ ...editingUserData, status: e.target.value })}
+                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white font-semibold focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="active">Actif (Accès autorisé)</option>
+                      <option value="pending">En attente de validation</option>
+                      <option value="rejected">Désactivé / Bloqué</option>
+                    </select>
+                  </div>
+                </div>
+
+                {editingUser.email !== 'y.barberis@enr-courtage.fr' && (
+                  <div className="flex items-center space-x-2 pt-1">
+                    <input
+                      type="checkbox"
+                      id="editIsAdmin"
+                      checked={!!editingUserData.isAdmin}
+                      onChange={(e) => setEditingUserData({ ...editingUserData, isAdmin: e.target.checked })}
+                      className="rounded border-gray-700 text-amber-500 focus:ring-0"
+                    />
+                    <label htmlFor="editIsAdmin" className="text-gray-300 font-semibold text-xs cursor-pointer">
+                      Privilèges Administrateur M&A
+                    </label>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-gray-800">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 font-semibold"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold transition shadow-lg shadow-amber-500/20"
+                  >
+                    Enregistrer les Modifications
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
