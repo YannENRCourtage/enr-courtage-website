@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Sun,
   Battery,
@@ -9,6 +9,7 @@ import {
   Layers,
   Coins,
   ArrowRight,
+  ArrowLeft,
   FolderLock,
   Sparkles,
   Phone,
@@ -24,6 +25,7 @@ import {
   TrendingUp,
   Building,
   User,
+  Users,
   ExternalLink,
   Edit3,
   RotateCcw,
@@ -44,6 +46,9 @@ import ExclusiveMandateModal from './ExclusiveMandateModal';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const adminTabParam = searchParams.get('adminTab');
+
   const {
     currentInvestor,
     excludeOrange,
@@ -60,6 +65,26 @@ export default function InvestorDashboard() {
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [adminActiveTab, setAdminActiveTab] = useState(adminTabParam || null);
+
+  React.useEffect(() => {
+    if (adminTabParam) {
+      setAdminActiveTab(adminTabParam);
+    }
+  }, [adminTabParam]);
+
+  const handleSelectAdminTab = (tab) => {
+    setAdminActiveTab(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (tab) {
+        next.set('adminTab', tab);
+      } else {
+        next.delete('adminTab');
+      }
+      return next;
+    });
+  };
 
   // Offer modal state
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
@@ -130,8 +155,10 @@ export default function InvestorDashboard() {
       {/* Vertical Sidebar */}
       <InvestorSidebar
         activePage="dashboard"
+        adminActiveTab={adminActiveTab}
+        onSelectAdminTab={handleSelectAdminTab}
         onOpenCreateOffer={() => handleOpenCreateOffer(null)}
-        onOpenAdmin={() => setIsAdminModalOpen(true)}
+        onOpenAdmin={() => handleSelectAdminTab('requests')}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
@@ -141,15 +168,19 @@ export default function InvestorDashboard() {
         {/* Header */}
         <InvestorHeader
           onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
-          onOpenAdmin={() => setIsAdminModalOpen(true)}
-          pageTitle="Tableau de Bord des Portefeuilles PV & BESS"
-          pageTitleBadge="M&A TRANSACTIONNEL"
+          onOpenAdmin={() => handleSelectAdminTab('requests')}
+          pageTitle={
+            adminActiveTab
+              ? "Console d'Administration & Supervision M&A"
+              : "Tableau de Bord des Portefeuilles PV & BESS"
+          }
+          pageTitleBadge={adminActiveTab ? "SUPERVISION ADMIN" : "M&A TRANSACTIONNEL"}
         />
 
         {/* Main Content */}
         <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         {/* Admin Notification Banner */}
-        {isAdmin && (
+        {isAdmin && !adminActiveTab && (
           <div className="bg-gradient-to-r from-amber-950/60 to-gray-900 border border-amber-500/40 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
             <div className="flex items-center space-x-3">
               <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
@@ -164,7 +195,7 @@ export default function InvestorDashboard() {
             </div>
 
             <button
-              onClick={() => setIsAdminModalOpen(true)}
+              onClick={() => handleSelectAdminTab('requests')}
               className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
             >
               <span>Gérer les accès & NDA</span>
@@ -177,6 +208,103 @@ export default function InvestorDashboard() {
           </div>
         )}
 
+        {/* Embedded Admin Console OR Standard Dashboard */}
+        {isAdmin && adminActiveTab ? (
+          <div className="space-y-6">
+            {/* Admin Header Navigation Bar */}
+            <div className="bg-gradient-to-r from-gray-900 via-gray-900/90 to-[#0f172a] border border-gray-800 rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => handleSelectAdminTab(null)}
+                  className="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>← Revenir aux Portefeuilles</span>
+                </button>
+                <div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
+                      SUPERVISION M&A ENR COURTAGE
+                    </span>
+                    <span className="text-xs text-gray-400 font-medium">Yann BARBERIS</span>
+                  </div>
+                  <h2 className="text-base sm:text-xl font-black text-white tracking-tight mt-1">
+                    {adminActiveTab === 'requests' && "Validation des Demandes d'Accès & Signatures NDA"}
+                    {adminActiveTab === 'offers' && "Synthèse Exécutive des Offres d'Achat Investisseurs"}
+                    {adminActiveTab === 'dataroom' && "Gestion & Téléversement des Documents Data Room"}
+                    {adminActiveTab === 'users' && "Gestion des Utilisateurs & Mots de Passe"}
+                  </h2>
+                </div>
+              </div>
+
+              {/* Tab Selector Buttons */}
+              <div className="flex flex-wrap items-center gap-1.5 bg-gray-950/80 p-1.5 rounded-xl border border-gray-800 text-xs">
+                <button
+                  onClick={() => handleSelectAdminTab('requests')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                    adminActiveTab === 'requests'
+                      ? 'bg-amber-500 text-gray-950 shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>Demandes & NDA</span>
+                  {pendingRequestsCount > 0 && (
+                    <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">
+                      {pendingRequestsCount}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleSelectAdminTab('offers')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                    adminActiveTab === 'offers'
+                      ? 'bg-amber-500 text-gray-950 shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>Offres ({offers.length})</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectAdminTab('dataroom')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                    adminActiveTab === 'dataroom'
+                      ? 'bg-amber-500 text-gray-950 shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <FolderLock className="w-3.5 h-3.5" />
+                  <span>Data Room</span>
+                </button>
+
+                <button
+                  onClick={() => handleSelectAdminTab('users')}
+                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
+                    adminActiveTab === 'users'
+                      ? 'bg-amber-500 text-gray-950 shadow-md'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Utilisateurs ({investors.length})</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Embedded Admin Interface */}
+            <AdminValidationModal
+              isOpen={true}
+              isEmbedded={true}
+              initialTab={adminActiveTab}
+              onTabChange={(tab) => handleSelectAdminTab(tab)}
+              onClose={() => handleSelectAdminTab(null)}
+            />
+          </div>
+        ) : (
+          <>
         {/* ================================================================= */}
         {/* TABLEAU DE BORD PERSONNEL INVESTISSEUR (HEADER DE BIENVENUE)     */}
         {/* ================================================================= */}
@@ -689,6 +817,8 @@ export default function InvestorDashboard() {
             </a>
           </div>
         </section>
+        </>
+      )}
 
         {/* ================================================================= */}
         {/* MODALS : ADMIN, OFFRE & MANDAT                                    */}

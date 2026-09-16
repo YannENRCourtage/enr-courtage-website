@@ -11,6 +11,7 @@ import {
   LogOut,
   Building,
   User,
+  Users,
   Zap,
   Lock,
   ChevronRight,
@@ -18,11 +19,15 @@ import {
   FolderLock,
   X,
   FileSpreadsheet,
+  Clock,
+  Upload,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
 export default function InvestorSidebar({
   activePage = 'dashboard', // 'dashboard' | 'helios' | 'volta'
+  adminActiveTab = null, // 'requests' | 'offers' | 'dataroom' | 'users' | null
+  onSelectAdminTab = null,
   onOpenCreateOffer = null,
   onOpenAdmin = null,
   isOpenMobile = false,
@@ -56,6 +61,18 @@ export default function InvestorSidebar({
       }
     } else {
       navigate(path + hash);
+    }
+  };
+
+  const handleAdminSelect = (tabKey) => {
+    onCloseMobile();
+    if (onSelectAdminTab) {
+      onSelectAdminTab(tabKey);
+      if (location.pathname !== '/investisseurs/dashboard') {
+        navigate(`/investisseurs/dashboard?adminTab=${tabKey}`);
+      }
+    } else {
+      navigate(`/investisseurs/dashboard?adminTab=${tabKey}`);
     }
   };
 
@@ -116,9 +133,12 @@ export default function InvestorSidebar({
               Vue Principale
             </div>
             <button
-              onClick={() => handleNavigate('/investisseurs/dashboard')}
+              onClick={() => {
+                if (onSelectAdminTab) onSelectAdminTab(null);
+                handleNavigate('/investisseurs/dashboard');
+              }}
               className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition ${
-                activePage === 'dashboard'
+                activePage === 'dashboard' && !adminActiveTab
                   ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm'
                   : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
               }`}
@@ -127,11 +147,101 @@ export default function InvestorSidebar({
                 <LayoutDashboard className="w-4 h-4 shrink-0" />
                 <span>Tableau de Bord</span>
               </div>
-              {activePage === 'dashboard' && (
+              {activePage === 'dashboard' && !adminActiveTab && (
                 <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
               )}
             </button>
           </div>
+
+          {/* Section: Administration & Supervision (Visible pour l'Administrateur) */}
+          {isAdmin && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-3">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-amber-400">
+                  Supervision M&A (Admin)
+                </span>
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
+                  Yann B.
+                </span>
+              </div>
+
+              <div className="space-y-1">
+                {/* 1. Demandes d'Accès & NDA */}
+                <button
+                  onClick={() => handleAdminSelect('requests')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                    adminActiveTab === 'requests'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
+                      : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Demandes Accès & NDA</span>
+                  </div>
+                  {pendingCount > 0 ? (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 text-gray-950 animate-pulse">
+                      {pendingCount}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-gray-500 font-mono">0</span>
+                  )}
+                </button>
+
+                {/* 2. Synthèse des Offres */}
+                <button
+                  onClick={() => handleAdminSelect('offers')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                    adminActiveTab === 'offers'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
+                      : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Coins className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Synthèse des Offres</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">
+                    {offers.length}
+                  </span>
+                </button>
+
+                {/* 3. Documents Data Room */}
+                <button
+                  onClick={() => handleAdminSelect('dataroom')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                    adminActiveTab === 'dataroom'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
+                      : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <FolderLock className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>Gestion Data Room</span>
+                  </div>
+                  <span className="text-[9px] text-cyan-400 font-mono">2 portef.</span>
+                </button>
+
+                {/* 4. Gestion Utilisateurs & Mots de passe */}
+                <button
+                  onClick={() => handleAdminSelect('users')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                    adminActiveTab === 'users'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
+                      : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <Users className="w-4 h-4 text-purple-400 shrink-0" />
+                    <span>Utilisateurs & Accès</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">
+                    {investors.length}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Section: Portefeuilles en Vente */}
           <div>
@@ -300,17 +410,14 @@ export default function InvestorSidebar({
           </div>
 
           {/* Admin console button for Yann BARBERIS */}
-          {isAdmin && onOpenAdmin && (
+          {isAdmin && (
             <button
-              onClick={() => {
-                onCloseMobile();
-                onOpenAdmin();
-              }}
+              onClick={() => handleAdminSelect('requests')}
               className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold transition shadow-sm"
             >
               <div className="flex items-center space-x-2">
                 <ShieldAlert className="w-4 h-4 text-amber-400" />
-                <span>Administration & Accès</span>
+                <span>Console M&A (Admin)</span>
               </div>
               {pendingCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-gray-950 text-[10px] font-black">

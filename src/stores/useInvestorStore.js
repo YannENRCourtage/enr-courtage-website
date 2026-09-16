@@ -849,6 +849,25 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99
               };
             }
           });
+
+          // Sanitize every investor object to guarantee pure strings for all text fields
+          state.investors = state.investors.map((inv) => ({
+            ...inv,
+            id: String(inv.id || 'INV-' + Math.random().toString(36).slice(2, 8)),
+            name: typeof inv.name === 'string' ? inv.name : String(inv.name || ''),
+            company: typeof inv.company === 'string' ? inv.company : String(inv.company || ''),
+            email: typeof inv.email === 'string' ? inv.email : String(inv.email || ''),
+            role: typeof inv.role === 'string' ? inv.role : String(inv.role || 'Investisseur'),
+            phone: typeof inv.phone === 'string' ? inv.phone : String(inv.phone || ''),
+            legalForm: typeof inv.legalForm === 'string' ? inv.legalForm : String(inv.legalForm || 'SAS'),
+            headOffice: typeof inv.headOffice === 'string' ? inv.headOffice : String(inv.headOffice || ''),
+            rcsNumber: typeof inv.rcsNumber === 'string' ? inv.rcsNumber : String(inv.rcsNumber || ''),
+            rcsCity: typeof inv.rcsCity === 'string' ? inv.rcsCity : String(inv.rcsCity || ''),
+            password: typeof inv.password === 'string' ? inv.password : String(inv.password || ''),
+            ndaText: typeof inv.ndaText === 'string' ? inv.ndaText : String(inv.ndaText || ''),
+            status: typeof inv.status === 'string' ? inv.status : 'active',
+            isAdmin: !!inv.isAdmin,
+          }));
         } else {
           state.investors = INVESTORS;
         }

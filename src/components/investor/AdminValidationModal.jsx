@@ -43,8 +43,22 @@ import {
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
+import ErrorBoundary from './ErrorBoundary';
 
-export default function AdminValidationModal({ isOpen, onClose }) {
+// Helper to guarantee safe string rendering in JSX
+function safeText(val, fallback = '') {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number') return String(val);
+  return fallback;
+}
+
+export default function AdminValidationModal({
+  isOpen = true,
+  onClose,
+  isEmbedded = false,
+  initialTab = 'requests',
+  onTabChange = null,
+}) {
   const {
     investors,
     adminValidateInvestor,
@@ -68,7 +82,13 @@ export default function AdminValidationModal({ isOpen, onClose }) {
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
   const [validatedData, setValidatedData] = useState(null); // { investor, password, emailSubject, emailBody }
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState('requests'); // 'requests' | 'offers' | 'dataroom' | 'users'
+  const [activeTab, setActiveTab] = useState(initialTab || 'requests'); // 'requests' | 'offers' | 'dataroom' | 'users'
+
+  React.useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   // User Management State (Tab: users)
   const [userSearch, setUserSearch] = useState('');
@@ -113,33 +133,38 @@ export default function AdminValidationModal({ isOpen, onClose }) {
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const currentPortfolioObj = portfolios.find((p) => p.id === selectedDataRoomPortfolio);
 
-  if (!isOpen) return null;
+  if (!isOpen && !isEmbedded) return null;
 
-  const pendingInvestors = investors.filter((inv) => inv.status === 'pending');
-  const activeInvestors = investors.filter((inv) => inv.status === 'active' && !inv.isAdmin);
+  const safeInvestors = Array.isArray(investors) ? investors : [];
+  const safeOffers = Array.isArray(offers) ? offers : [];
+
+  const pendingInvestors = safeInvestors.filter((inv) => inv && inv.status === 'pending');
+  const activeInvestors = safeInvestors.filter((inv) => inv && inv.status === 'active' && !inv.isAdmin);
 
   // Filtered Offers
-  const filteredOffers = offers.filter((off) => {
+  const filteredOffers = safeOffers.filter((off) => {
+    if (!off) return false;
     if (offerPortfolioFilter === 'all') return true;
     return off.portfolioId === offerPortfolioFilter;
   });
 
   // Filtered Users (Tab: users)
   const filteredUsers = useMemo(() => {
-    return investors.filter((inv) => {
+    return safeInvestors.filter((inv) => {
+      if (!inv || typeof inv !== 'object') return false;
       if (userStatusFilter !== 'all' && inv.status !== userStatusFilter) {
         return false;
       }
       if (!userSearch.trim()) return true;
       const q = userSearch.toLowerCase().trim();
       return (
-        inv.name?.toLowerCase().includes(q) ||
-        inv.email?.toLowerCase().includes(q) ||
-        inv.company?.toLowerCase().includes(q) ||
-        inv.role?.toLowerCase().includes(q)
+        safeText(inv.name).toLowerCase().includes(q) ||
+        safeText(inv.email).toLowerCase().includes(q) ||
+        safeText(inv.company).toLowerCase().includes(q) ||
+        safeText(inv.role).toLowerCase().includes(q)
       );
     });
-  }, [investors, userSearch, userStatusFilter]);
+  }, [safeInvestors, userSearch, userStatusFilter]);
 
   // Create User Handler
   const handleCreateUser = (e) => {
@@ -395,14 +420,24 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-5xl w-full p-5 sm:p-8 shadow-2xl relative my-6">
-        <button
-          onClick={onClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <ErrorBoundary onReset={onClose}>
+      <div className={isEmbedded ? "w-full space-y-6" : "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 overflow-y-auto"}>
+        <div className={isEmbedded ? "bg-gray-900 border border-gray-800 rounded-2xl w-full p-5 sm:p-8 shadow-2xl relative space-y-6" : "bg-gray-900 border border-gray-800 rounded-2xl max-w-5xl w-full p-5 sm:p-8 shadow-2xl relative my-6"}>
+          {isEmbedded ? (
+            <button
+              onClick={onClose}
+              className="absolute top-5 right-5 text-xs text-amber-400 hover:text-white px-3 py-1.5 rounded-lg border border-amber-500/30 hover:bg-gray-800 transition flex items-center gap-1.5"
+            >
+              <span>← Retour au tableau de bord</span>
+            </button>
+          ) : (
+            <button
+              onClick={onClose}
+              className="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
 
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-4 mb-6">
@@ -426,6 +461,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
               onClick={() => {
                 setValidatedData(null);
                 setActiveTab('requests');
+                if (onTabChange) onTabChange('requests');
               }}
               className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'requests'
@@ -441,6 +477,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
               onClick={() => {
                 setValidatedData(null);
                 setActiveTab('offers');
+                if (onTabChange) onTabChange('offers');
               }}
               className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'offers'
@@ -456,6 +493,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
               onClick={() => {
                 setValidatedData(null);
                 setActiveTab('dataroom');
+                if (onTabChange) onTabChange('dataroom');
               }}
               className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'dataroom'
@@ -471,6 +509,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
               onClick={() => {
                 setValidatedData(null);
                 setActiveTab('users');
+                if (onTabChange) onTabChange('users');
               }}
               className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
                 activeTab === 'users'
@@ -561,10 +600,10 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
                   >
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm font-bold text-white">{inv.company}</span>
-                        {inv.legalForm && (
+                        <span className="text-sm font-bold text-white">{safeText(inv.company, 'Société Partenaire')}</span>
+                        {safeText(inv.legalForm) && (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-gray-700 text-gray-300">
-                            {inv.legalForm}
+                            {safeText(inv.legalForm)}
                           </span>
                         )}
                         <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold">
@@ -575,22 +614,22 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
                       <div className="text-xs text-gray-300 flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span className="flex items-center gap-1">
                           <User className="w-3.5 h-3.5 text-gray-400" />
-                          {inv.name} ({inv.role})
+                          {safeText(inv.name, 'Sans nom')} ({safeText(inv.role, 'Investisseur')})
                         </span>
                         <span className="flex items-center gap-1 font-mono text-amber-400">
                           <Mail className="w-3.5 h-3.5 text-gray-400" />
-                          {inv.email}
+                          {safeText(inv.email)}
                         </span>
-                        {inv.phone && (
+                        {safeText(inv.phone) && (
                           <span className="flex items-center gap-1 text-gray-400">
                             <Phone className="w-3.5 h-3.5 text-gray-400" />
-                            {inv.phone}
+                            {safeText(inv.phone)}
                           </span>
                         )}
                       </div>
 
                       <div className="text-[11px] text-gray-500">
-                        Siège : {inv.headOffice} • RCS : {inv.rcsNumber} ({inv.rcsCity})
+                        Siège : {safeText(inv.headOffice, 'Non renseigné')} • RCS : {safeText(inv.rcsNumber, 'Non renseigné')} ({safeText(inv.rcsCity, 'France')})
                       </div>
                     </div>
 
@@ -1369,12 +1408,12 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-700/60 pb-3">
                       <div className="flex items-center space-x-3">
                         <div className="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center font-black text-amber-400 text-sm shadow-inner">
-                          {inv.name ? inv.name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                          {safeText(inv.name) ? safeText(inv.name).charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                         </div>
                         <div>
                           <div className="font-bold text-white flex flex-wrap items-center gap-2 text-sm">
-                            <span>{inv.name || 'Sans nom'}</span>
-                            <span className="text-gray-400 font-medium">({inv.company || 'Société non renseignée'})</span>
+                            <span>{safeText(inv.name, 'Sans nom')}</span>
+                            <span className="text-gray-400 font-medium">({safeText(inv.company, 'Société non renseignée')})</span>
                             {inv.isAdmin && (
                               <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40">
                                 ⭐ Administrateur
@@ -1382,7 +1421,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
                             )}
                           </div>
                           <div className="text-[11px] text-gray-400">
-                            {inv.role || 'Investisseur'} {inv.phone ? `• Tél : ${inv.phone}` : ''}
+                            {safeText(inv.role, 'Investisseur')} {safeText(inv.phone) ? `• Tél : ${safeText(inv.phone)}` : ''}
                             <span> • Créé le : {new Date(inv.createdAt || Date.now()).toLocaleDateString('fr-FR')}</span>
                           </div>
                         </div>
@@ -1416,11 +1455,11 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
                           <Mail className="w-3 h-3 text-amber-400" /> Identifiant de connexion (E-mail)
                         </span>
                         <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
-                          <span className="font-mono text-white text-xs select-all truncate">{inv.email}</span>
+                          <span className="font-mono text-white text-xs select-all truncate">{safeText(inv.email)}</span>
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(inv.email);
-                              setUserActionNotice(`Identifiant (${inv.email}) copié !`);
+                              navigator.clipboard.writeText(safeText(inv.email));
+                              setUserActionNotice(`Identifiant (${safeText(inv.email)}) copié !`);
                               setTimeout(() => setUserActionNotice(''), 3000);
                             }}
                             className="text-gray-400 hover:text-amber-400 ml-2 p-1 transition"
@@ -1438,7 +1477,7 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
                         </span>
                         <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
                           <span className="font-mono text-amber-400 font-bold text-xs select-all">
-                            {visiblePasswords[inv.id] ? (inv.password || '(vide)') : '••••••••••••'}
+                            {visiblePasswords[inv.id] ? safeText(inv.password, '(vide)') : '••••••••••••'}
                           </span>
                           <div className="flex items-center space-x-1.5 ml-2">
                             <button
@@ -1884,5 +1923,6 @@ y.barberis@enr-courtage.fr | 05 35 54 85 99`;
         )}
       </div>
     </div>
+    </ErrorBoundary>
   );
 }
