@@ -235,7 +235,7 @@ export default function InvestorSidebar({
                 >
                   <div className="flex items-center space-x-2.5">
                     <Users className="w-4 h-4 text-purple-400 shrink-0" />
-                    <span>Utilisateurs & Accès</span>
+                    <span>Supervision & Accès</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">
                     {investors.length}

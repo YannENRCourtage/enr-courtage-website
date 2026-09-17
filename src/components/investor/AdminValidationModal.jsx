@@ -39,6 +39,13 @@ import {
   Lock,
   UserPlus,
   RefreshCw,
+  ArrowRightLeft,
+  FolderPlus,
+  FolderCheck,
+  Folder,
+  FileCheck,
+  Table,
+  LayoutGrid,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -76,7 +83,13 @@ export default function AdminValidationModal({
     signMandate,
     customDataRoom,
     addDocumentToDataRoom,
+    addBatchDocumentsToDataRoom,
     deleteDocumentFromDataRoom,
+    deleteDefaultDoc,
+    deleteCategory,
+    moveDocument,
+    deletedDefaultDocs,
+    userDownloads,
   } = useInvestorStore();
 
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
@@ -90,9 +103,11 @@ export default function AdminValidationModal({
     }
   }, [initialTab]);
 
-  // User Management State (Tab: users)
+  // User Management & Supervision State (Tab: users)
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'pending' | 'rejected'
+  const [supervisionViewMode, setSupervisionViewMode] = useState('table'); // 'table' | 'cards'
+  const [selectedUserDownloadsModal, setSelectedUserDownloadsModal] = useState(null); // { user, downloads }
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [newUserData, setNewUserData] = useState({
     name: '',
@@ -125,7 +140,17 @@ export default function AdminValidationModal({
   const [docType, setDocType] = useState('PDF');
   const [docSize, setDocSize] = useState('1.5 Mo');
   const [docNotes, setDocNotes] = useState('');
+  const [docFileData, setDocFileData] = useState(null);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
+
+  // Batch / Staging State
+  const [stagedFiles, setStagedFiles] = useState([]);
+  const [batchGlobalCategory, setBatchGlobalCategory] = useState('Juridique');
+
+  // Move Document Modal State
+  const [movingDoc, setMovingDoc] = useState(null); // { doc, sourceCategory, sourcePortfolioId }
+  const [targetMovePortfolio, setTargetMovePortfolio] = useState('volta');
+  const [targetMoveCategory, setTargetMoveCategory] = useState('Juridique');
 
   // Offer Filter State
   const [offerPortfolioFilter, setOfferPortfolioFilter] = useState('all');
@@ -340,19 +365,119 @@ y.barberis@enr-courtage.fr`;
     }
   };
 
-  // Handle File Input Selection
+  // Handle Multiple / Single File Input Selection
   const handleFileInputChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    if (files.length === 1) {
+      const file = files[0];
       setDocName(file.name.replace(/\.[^/.]+$/, ''));
       const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
       setDocType(ext);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
-      setDocSize(`${sizeMb} Mo`);
+      setDocSize(`${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`);
+
+      // Read file for download
+      const reader = new FileReader();
+      reader.onload = () => setDocFileData(reader.result);
+      reader.readAsDataURL(file);
+    }
+
+    // Also populate stagedFiles for batch management
+    const newStaged = files.map((file, idx) => {
+      const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      return {
+        id: 'STAGE-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
+        name: file.name,
+        type: ext,
+        size: `${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`,
+        category: batchGlobalCategory || 'Juridique',
+        rawFile: file,
+      };
+    });
+
+    setStagedFiles((prev) => [...prev, ...newStaged]);
+    if (files.length > 1) {
+      setUploadSuccessMsg(`📁 ${files.length} documents ajoutés au lot de préparation. Vérifiez les catégories ci-dessous avant publication.`);
+      setTimeout(() => setUploadSuccessMsg(''), 5000);
     }
   };
 
-  // Handle Document Upload
+  // Handle Full Folder Import (webkitdirectory)
+  const handleFolderInputChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const newStaged = files.map((file, idx) => {
+      const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
+      const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      
+      // Try to intelligently detect category from subfolder path if any
+      const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : [];
+      let detectedCat = batchGlobalCategory || 'Juridique';
+      if (pathParts.length > 2) {
+        const sub = pathParts[pathParts.length - 2].toLowerCase();
+        if (sub.includes('juridique') || sub.includes('bail') || sub.includes('baux')) detectedCat = 'Juridique';
+        else if (sub.includes('tech') || sub.includes('plan')) detectedCat = 'Technique';
+        else if (sub.includes('financ') || sub.includes('bp') || sub.includes('modele')) detectedCat = 'Financier';
+        else if (sub.includes('urba') || sub.includes('permis')) detectedCat = 'Urbanisme';
+        else if (sub.includes('reseau') || sub.includes('enedis') || sub.includes('racc')) detectedCat = 'Réseau';
+        else if (sub.includes('fourn') || sub.includes('batterie') || sub.includes('panneau')) detectedCat = 'Fournisseur';
+      }
+
+      return {
+        id: 'STAGE-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
+        name: file.name,
+        type: ext,
+        size: `${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`,
+        category: detectedCat,
+        rawFile: file,
+      };
+    });
+
+    setStagedFiles((prev) => [...prev, ...newStaged]);
+    setUploadSuccessMsg(`📂 Dossier complet chargé : ${files.length} document(s) prêts. Vous pouvez affecter chaque document au bon dossier.`);
+    setTimeout(() => setUploadSuccessMsg(''), 6000);
+  };
+
+  // Update a single staged file's category
+  const handleUpdateStagedCategory = (id, newCategory) => {
+    setStagedFiles((prev) =>
+      prev.map((f) => (f.id === id ? { ...f, category: newCategory } : f))
+    );
+  };
+
+  // Apply batch global category to all staged files
+  const handleApplyGlobalCategoryToAll = () => {
+    setStagedFiles((prev) =>
+      prev.map((f) => ({ ...f, category: batchGlobalCategory }))
+    );
+    setUploadSuccessMsg(`✓ Tous les documents ont été affectés au dossier « ${batchGlobalCategory} ».`);
+    setTimeout(() => setUploadSuccessMsg(''), 3000);
+  };
+
+  // Remove a single staged file
+  const handleRemoveStagedFile = (id) => {
+    setStagedFiles((prev) => prev.filter((f) => f.id !== id));
+  };
+
+  // Publish all staged files
+  const handlePublishStagedFiles = () => {
+    if (stagedFiles.length === 0) return;
+
+    addBatchDocumentsToDataRoom(selectedDataRoomPortfolio, stagedFiles);
+    const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA (Batteries)' : 'HÉLIOS (PV)';
+    setUploadSuccessMsg(`🚀 ${stagedFiles.length} document(s) publiés avec succès dans la Data Room ${targetName} !`);
+    setStagedFiles([]);
+    setDocName('');
+    setDocNotes('');
+    setDocFileData(null);
+    setTimeout(() => setUploadSuccessMsg(''), 5000);
+  };
+
+  // Handle Single Document Upload
   const handleAddDocument = (e) => {
     e.preventDefault();
     if (!docName.trim()) return;
@@ -362,12 +487,74 @@ y.barberis@enr-courtage.fr`;
       type: docType,
       size: docSize || '1.0 Mo',
       notes: docNotes,
+      fileData: docFileData,
     });
 
-    setUploadSuccessMsg(`Document « ${docName} » ajouté avec succès à la Data Room !`);
+    const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA' : 'HÉLIOS';
+    setUploadSuccessMsg(`Document « ${docName} » publié dans la Data Room ${targetName} (${docCategory}) !`);
     setDocName('');
     setDocNotes('');
+    setDocFileData(null);
     setTimeout(() => setUploadSuccessMsg(''), 4000);
+  };
+
+  // Handle Open Move Document Modal
+  const handleOpenMoveModal = (file, currentCatName, currentPortId) => {
+    setMovingDoc({
+      doc: file,
+      sourceCategory: currentCatName,
+      sourcePortfolioId: currentPortId,
+    });
+    // Set target portfolio to the other one by default
+    setTargetMovePortfolio(currentPortId === 'helios' ? 'volta' : 'helios');
+    setTargetMoveCategory(currentCatName || 'Juridique');
+  };
+
+  // Confirm Document Move
+  const handleConfirmMove = () => {
+    if (!movingDoc) return;
+
+    moveDocument({
+      sourcePortfolioId: movingDoc.sourcePortfolioId,
+      targetPortfolioId: targetMovePortfolio,
+      doc: movingDoc.doc,
+      sourceCategory: movingDoc.sourceCategory,
+      targetCategory: targetMoveCategory,
+    });
+
+    const sourceLabel = movingDoc.sourcePortfolioId === 'volta' ? 'VOLTA' : 'HÉLIOS';
+    const targetLabel = targetMovePortfolio === 'volta' ? 'VOLTA' : 'HÉLIOS';
+
+    setUploadSuccessMsg(`✓ Document « ${movingDoc.doc.name} » déplacé avec succès de ${sourceLabel} vers ${targetLabel} (${targetMoveCategory}) !`);
+    setMovingDoc(null);
+    setTimeout(() => setUploadSuccessMsg(''), 5000);
+  };
+
+  // Delete Default Demo Document
+  const handleDeleteDefaultDoc = (portfolioId, fileName) => {
+    if (window.confirm(`Confirmez-vous la suppression définitive du document « ${fileName} » de la Data Room ?`)) {
+      deleteDefaultDoc(portfolioId, fileName);
+      setUploadSuccessMsg(`Document « ${fileName} » supprimé définitivement.`);
+      setTimeout(() => setUploadSuccessMsg(''), 4000);
+    }
+  };
+
+  // Delete Custom Document
+  const handleDeleteCustomDoc = (portfolioId, categoryName, docId, fileName) => {
+    if (window.confirm(`Confirmez-vous la suppression du document « ${fileName} » ?`)) {
+      deleteDocumentFromDataRoom(portfolioId, categoryName, docId);
+      setUploadSuccessMsg(`Document « ${fileName} » retiré de la Data Room.`);
+      setTimeout(() => setUploadSuccessMsg(''), 4000);
+    }
+  };
+
+  // Delete Category / Folder
+  const handleDeleteCategory = (portfolioId, categoryName) => {
+    if (window.confirm(`Êtes-vous certain de vouloir supprimer le dossier « ${categoryName} » et l'ensemble de ses documents ?`)) {
+      deleteCategory(portfolioId, categoryName);
+      setUploadSuccessMsg(`Dossier « ${categoryName} » supprimé.`);
+      setTimeout(() => setUploadSuccessMsg(''), 4000);
+    }
   };
 
   // Export Offers to CSV
@@ -1116,182 +1303,443 @@ y.barberis@enr-courtage.fr`;
               </div>
             )}
 
-            {/* Upload Form */}
-            <form onSubmit={handleAddDocument} className="bg-gray-800/40 border border-gray-700/80 rounded-2xl p-5 space-y-4">
-              <div className="flex items-center justify-between border-b border-gray-700/80 pb-3">
+            {/* Upload & Import Form with Batch & Folder support */}
+            <div className="bg-gray-800/40 border border-gray-700/80 rounded-2xl p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-700/80 pb-3">
                 <div className="flex items-center space-x-2 text-xs font-bold uppercase text-white">
                   <Upload className="w-4 h-4 text-amber-400" />
-                  <span>Verser un nouveau document dans la Data Room</span>
+                  <span>Verser des documents dans la Data Room ({selectedDataRoomPortfolio === 'volta' ? 'VOLTA BESS' : 'HÉLIOS PV'})</span>
                 </div>
-                <span className="text-[11px] text-gray-400 font-mono">Accessible instantanément sous NDA</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* File picker */}
-                <div className="md:col-span-3">
-                  <label className="block text-xs font-bold text-gray-300 mb-1">
-                    Sélectionner un fichier depuis votre ordinateur
-                  </label>
+                <div className="flex items-center space-x-2">
                   <input
                     type="file"
-                    onChange={handleFileInputChange}
-                    className="w-full text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gray-800 file:text-amber-400 hover:file:bg-gray-700 cursor-pointer bg-gray-900/60 p-2 rounded-xl border border-gray-700"
+                    webkitdirectory=""
+                    directory=""
+                    multiple
+                    id="folder-upload-input"
+                    className="hidden"
+                    onChange={handleFolderInputChange}
                   />
-                </div>
-
-                {/* Doc Name */}
-                <div className="md:col-span-2">
-                  <label className="block text-xs font-bold text-gray-300 mb-1">
-                    Intitulé du document *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={docName}
-                    onChange={(e) => setDocName(e.target.value)}
-                    placeholder="Ex: Promesse de bail emphytéotique Condom 256 kWc"
-                    className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                {/* Category */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 mb-1">
-                    Catégorie
-                  </label>
-                  <select
-                    value={docCategory}
-                    onChange={(e) => setDocCategory(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-amber-400"
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('folder-upload-input')?.click()}
+                    className="px-3 py-1.5 rounded-xl bg-gray-900 hover:bg-gray-800 text-cyan-300 hover:text-white text-xs font-bold border border-cyan-500/40 flex items-center gap-1.5 transition shadow-sm"
                   >
-                    <option value="Juridique">⚖️ Juridique & Baux</option>
-                    <option value="Technique">🔧 Technique & Plans</option>
-                    <option value="Financier">📊 Financier & Business Plan</option>
-                    <option value="Urbanisme">🗺️ Urbanisme & Permis</option>
-                    <option value="Réseau">⚡ Réseau & Raccordement Enedis</option>
-                    <option value="Fournisseur">🏷️ Accord Fournisseur / Équipement</option>
-                  </select>
-                </div>
-
-                {/* Type & Size */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 mb-1">Format</label>
-                  <select
-                    value={docType}
-                    onChange={(e) => setDocType(e.target.value)}
-                    className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="PDF">PDF</option>
-                    <option value="XLSX">XLSX (Excel)</option>
-                    <option value="DOCX">DOCX (Word)</option>
-                    <option value="ZIP">ZIP (Archive)</option>
-                    <option value="DWG">DWG (Plan DAO)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 mb-1">Taille affichée</label>
-                  <input
-                    type="text"
-                    value={docSize}
-                    onChange={(e) => setDocSize(e.target.value)}
-                    placeholder="Ex: 2.4 Mo"
-                    className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-300 mb-1">Note de confidentialité</label>
-                  <input
-                    type="text"
-                    value={docNotes}
-                    onChange={(e) => setDocNotes(e.target.value)}
-                    placeholder="Ex: Pièce certifiée sous NDA"
-                    className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
-                  />
+                    <FolderPlus className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>📂 Intégrer un dossier complet</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/20"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Publier dans la Data Room du portefeuille</span>
-                </button>
-              </div>
-            </form>
-
-            {/* Existing Documents in Data Room for this portfolio */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
-                <FolderLock className="w-4 h-4 text-emerald-400" />
-                <span>Inventaire des documents en ligne — {currentPortfolioObj?.name}</span>
-              </h4>
-
-              <div className="space-y-3">
-                {/* Default Categories */}
-                {currentPortfolioObj?.dataRoom?.categories?.map((cat, cIdx) => (
-                  <div key={cIdx} className="bg-gray-800/50 border border-gray-800 rounded-xl p-3.5 space-y-2">
-                    <div className="text-xs font-bold text-white flex items-center justify-between border-b border-gray-700/60 pb-1.5">
-                      <span>📁 Section {cat.name}</span>
-                      <span className="text-[10px] text-gray-400 font-mono">
-                        {cat.files.length + (customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name]?.length || 0)} document(s)
+              {/* Staged Files Queue (Lot de documents à affecter et publier) */}
+              {stagedFiles.length > 0 && (
+                <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-950/40 via-gray-900 to-gray-900 border border-cyan-500/40 space-y-3 shadow-lg">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-cyan-500/30 pb-2">
+                    <div className="flex items-center space-x-2">
+                      <FolderCheck className="w-4 h-4 text-cyan-400" />
+                      <span className="text-xs font-bold text-white uppercase">
+                        Lot en préparation ({stagedFiles.length} document{stagedFiles.length > 1 ? 's' : ''})
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                      {/* Default files */}
-                      {cat.files.map((file, fIdx) => (
-                        <div
-                          key={`def-${fIdx}`}
-                          className="flex items-center justify-between p-2 rounded-lg bg-gray-900/60 border border-gray-800 text-[11px]"
-                        >
-                          <div className="flex items-center space-x-2 truncate">
-                            <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-gray-800 text-gray-400">
-                              {file.type}
-                            </span>
-                            <span className="truncate text-gray-200 font-medium">{file.name}</span>
-                          </div>
-                          <span className="text-[10px] text-gray-500 font-mono shrink-0 ml-2">{file.size}</span>
-                        </div>
-                      ))}
-
-                      {/* Custom uploaded files for this category */}
-                      {(customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || []).map((file, fIdx) => (
-                        <div
-                          key={`cust-${fIdx}`}
-                          className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-[11px]"
-                        >
-                          <div className="flex items-center space-x-2 truncate">
-                            <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-emerald-500/20 text-emerald-300 font-bold">
-                              {file.type}
-                            </span>
-                            <span className="truncate text-emerald-200 font-medium">{file.name}</span>
-                          </div>
-
-                          <div className="flex items-center space-x-2 shrink-0 ml-2">
-                            <span className="text-[10px] text-gray-400 font-mono">{file.size}</span>
-                            <button
-                              onClick={() => deleteDocumentFromDataRoom(selectedDataRoomPortfolio, cat.name, file.id)}
-                              className="text-gray-500 hover:text-red-400 p-0.5 transition"
-                              title="Retirer le document"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    {/* Bulk category assigner */}
+                    <div className="flex items-center space-x-2 text-xs">
+                      <span className="text-gray-400 text-[11px]">Affecter tout le lot à :</span>
+                      <select
+                        value={batchGlobalCategory}
+                        onChange={(e) => setBatchGlobalCategory(e.target.value)}
+                        className="px-2.5 py-1 bg-gray-900 border border-gray-700 rounded-lg text-xs text-cyan-300 font-semibold focus:outline-none focus:border-cyan-400"
+                      >
+                        <option value="Juridique">⚖️ Juridique & Baux</option>
+                        <option value="Technique">🔧 Technique & Plans</option>
+                        <option value="Financier">📊 Financier & BP</option>
+                        <option value="Urbanisme">🗺️ Urbanisme & Permis</option>
+                        <option value="Réseau">⚡ Réseau & Enedis</option>
+                        <option value="Fournisseur">🏷️ Fournisseurs / Équipement</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={handleApplyGlobalCategoryToAll}
+                        className="px-2.5 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs transition"
+                      >
+                        Appliquer à tous
+                      </button>
                     </div>
                   </div>
-                ))}
+
+                  {/* Staged files list with individual category assignment */}
+                  <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
+                    {stagedFiles.map((sf) => (
+                      <div
+                        key={sf.id}
+                        className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg bg-gray-950/80 border border-gray-800 text-xs hover:border-cyan-500/30 transition"
+                      >
+                        <div className="flex items-center space-x-2 flex-1 min-w-[200px]">
+                          <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-cyan-500/20 text-cyan-300 font-bold">
+                            {sf.type}
+                          </span>
+                          <span className="font-medium text-white truncate text-[11px]" title={sf.name}>
+                            {sf.name}
+                          </span>
+                          <span className="text-[10px] text-gray-500 font-mono shrink-0">({sf.size})</span>
+                        </div>
+
+                        {/* Individual category dropdown */}
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <label className="text-[10px] text-gray-400">Dossier :</label>
+                          <select
+                            value={sf.category}
+                            onChange={(e) => handleUpdateStagedCategory(sf.id, e.target.value)}
+                            className="px-2 py-1 bg-gray-900 border border-gray-700 rounded-md text-[11px] text-gray-200 focus:outline-none focus:border-amber-400"
+                          >
+                            <option value="Juridique">⚖️ Juridique</option>
+                            <option value="Technique">🔧 Technique</option>
+                            <option value="Financier">📊 Financier</option>
+                            <option value="Urbanisme">🗺️ Urbanisme</option>
+                            <option value="Réseau">⚡ Réseau</option>
+                            <option value="Fournisseur">🏷️ Fournisseur</option>
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveStagedFile(sf.id)}
+                            className="p-1 text-gray-500 hover:text-red-400 rounded transition"
+                            title="Retirer du lot"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Actions for staged files */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-cyan-500/20">
+                    <button
+                      type="button"
+                      onClick={() => setStagedFiles([])}
+                      className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white text-xs transition"
+                    >
+                      Vider la sélection
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handlePublishStagedFiles}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Publier tous les documents ({stagedFiles.length}) dans la Data Room</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Single / Direct File Upload Form */}
+              <form onSubmit={handleAddDocument} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {/* File picker with WHITE "Parcourir..." button */}
+                  <div className="md:col-span-3">
+                    <label className="block text-xs font-bold text-gray-300 mb-1">
+                      Sélectionner un ou plusieurs fichiers depuis votre ordinateur :
+                    </label>
+                    <input
+                      type="file"
+                      multiple
+                      onChange={handleFileInputChange}
+                      className="w-full text-xs text-gray-300 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border file:border-gray-300 file:text-xs file:font-bold file:bg-white file:text-gray-900 hover:file:bg-gray-100 cursor-pointer bg-gray-950 p-2.5 rounded-xl border border-gray-700 shadow-inner"
+                    />
+                    <span className="text-[10px] text-gray-400 block mt-1">
+                      💡 Vous pouvez sélectionner plusieurs fichiers à la fois ou cliquer sur « Intégrer un dossier complet » en haut à droite.
+                    </span>
+                  </div>
+
+                  {/* Doc Name */}
+                  <div className="md:col-span-2">
+                    <label className="block text-xs font-bold text-gray-300 mb-1">
+                      Intitulé du document (pour ajout unitaire) *
+                    </label>
+                    <input
+                      type="text"
+                      value={docName}
+                      onChange={(e) => setDocName(e.target.value)}
+                      placeholder="Ex: Promesse de bail emphytéotique Condom 256 kWc"
+                      className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  {/* Category */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">
+                      Dossier / Catégorie cible
+                    </label>
+                    <select
+                      value={docCategory}
+                      onChange={(e) => setDocCategory(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="Juridique">⚖️ Juridique & Baux</option>
+                      <option value="Technique">🔧 Technique & Plans</option>
+                      <option value="Financier">📊 Financier & Business Plan</option>
+                      <option value="Urbanisme">🗺️ Urbanisme & Permis</option>
+                      <option value="Réseau">⚡ Réseau & Raccordement Enedis</option>
+                      <option value="Fournisseur">🏷️ Accord Fournisseur / Équipement</option>
+                    </select>
+                  </div>
+
+                  {/* Type & Size */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Format</label>
+                    <select
+                      value={docType}
+                      onChange={(e) => setDocType(e.target.value)}
+                      className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-gray-200 focus:outline-none focus:border-amber-400"
+                    >
+                      <option value="PDF">PDF</option>
+                      <option value="XLSX">XLSX (Excel)</option>
+                      <option value="DOCX">DOCX (Word)</option>
+                      <option value="ZIP">ZIP (Archive)</option>
+                      <option value="DWG">DWG (Plan DAO)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Taille affichée</label>
+                    <input
+                      type="text"
+                      value={docSize}
+                      onChange={(e) => setDocSize(e.target.value)}
+                      placeholder="Ex: 2.4 Mo"
+                      className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-300 mb-1">Note de confidentialité</label>
+                    <input
+                      type="text"
+                      value={docNotes}
+                      onChange={(e) => setDocNotes(e.target.value)}
+                      placeholder="Ex: Pièce certifiée sous NDA"
+                      className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={!docName.trim()}
+                    className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-gray-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Publier ce document unitaire</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Existing Documents in Data Room for this portfolio */}
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-gray-300 flex items-center gap-2">
+                  <FolderLock className="w-4 h-4 text-emerald-400" />
+                  <span>Inventaire des documents en ligne — {currentPortfolioObj?.name}</span>
+                </h4>
+                <span className="text-[11px] text-gray-400">
+                  💡 Cliquez sur <strong>Déplacer</strong> pour basculer un document vers l'autre portefeuille ou sur <strong>Supprimer</strong> pour retirer n'importe quel document (y compris démo).
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Default Categories */}
+                {currentPortfolioObj?.dataRoom?.categories?.map((cat, cIdx) => {
+                  const deletedForPortfolio = deletedDefaultDocs?.[selectedDataRoomPortfolio] || [];
+                  const visibleDefaultFiles = (cat.files || []).filter((f) => !deletedForPortfolio.includes(f.name));
+                  const customCatFiles = customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || [];
+                  const totalCount = visibleDefaultFiles.length + customCatFiles.length;
+
+                  return (
+                    <div key={cIdx} className="bg-gray-800/50 border border-gray-800 rounded-xl p-3.5 space-y-2">
+                      <div className="text-xs font-bold text-white flex items-center justify-between border-b border-gray-700/60 pb-1.5">
+                        <div className="flex items-center space-x-2">
+                          <span>📁 Section {cat.name}</span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 font-mono">
+                          {totalCount} document(s) disponible(s)
+                        </span>
+                      </div>
+
+                      {totalCount === 0 ? (
+                        <div className="p-3 text-center text-gray-500 text-xs italic">
+                          Aucun document dans ce dossier pour ce portefeuille.
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                          {/* Default / demo files */}
+                          {visibleDefaultFiles.map((file, fIdx) => (
+                            <div
+                              key={`def-${fIdx}`}
+                              className="flex items-center justify-between p-2 rounded-lg bg-gray-900/60 border border-gray-800 text-[11px] hover:border-gray-700 transition"
+                            >
+                              <div className="flex items-center space-x-2 truncate min-w-0">
+                                <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-gray-800 text-gray-400 shrink-0">
+                                  {file.type}
+                                </span>
+                                <span className="truncate text-gray-200 font-medium" title={file.name}>
+                                  {file.name}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center space-x-2 shrink-0 ml-2">
+                                <span className="text-[10px] text-gray-500 font-mono">{file.size}</span>
+                                
+                                {/* Move document button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenMoveModal(file, cat.name, selectedDataRoomPortfolio)}
+                                  className="px-2 py-0.5 rounded bg-gray-800 hover:bg-cyan-500/20 text-gray-400 hover:text-cyan-300 border border-gray-700 transition flex items-center gap-1 text-[10px]"
+                                  title="Déplacer vers un autre portefeuille"
+                                >
+                                  <ArrowRightLeft className="w-3 h-3 text-cyan-400" />
+                                  <span>Déplacer</span>
+                                </button>
+
+                                {/* Delete demo document button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteDefaultDoc(selectedDataRoomPortfolio, file.name)}
+                                  className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition"
+                                  title="Supprimer ce document de démo"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+
+                          {/* Custom uploaded files for this category */}
+                          {customCatFiles.map((file, fIdx) => (
+                            <div
+                              key={`cust-${fIdx}`}
+                              className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-[11px] hover:border-emerald-500/50 transition"
+                            >
+                              <div className="flex items-center space-x-2 truncate min-w-0">
+                                <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-emerald-500/20 text-emerald-300 font-bold shrink-0">
+                                  {file.type}
+                                </span>
+                                <span className="truncate text-emerald-200 font-medium" title={file.name}>
+                                  {file.name}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center space-x-2 shrink-0 ml-2">
+                                <span className="text-[10px] text-gray-400 font-mono">{file.size}</span>
+
+                                {/* Move document button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenMoveModal(file, cat.name, selectedDataRoomPortfolio)}
+                                  className="px-2 py-0.5 rounded bg-gray-800 hover:bg-cyan-500/20 text-gray-400 hover:text-cyan-300 border border-gray-700 transition flex items-center gap-1 text-[10px]"
+                                  title="Déplacer vers un autre portefeuille"
+                                >
+                                  <ArrowRightLeft className="w-3 h-3 text-cyan-400" />
+                                  <span>Déplacer</span>
+                                </button>
+
+                                {/* Delete custom document button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCustomDoc(selectedDataRoomPortfolio, cat.name, file.id, file.name)}
+                                  className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition"
+                                  title="Supprimer définitivement ce document"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Additional Custom Folders/Categories if any */}
+                {Object.entries(customDataRoom?.[selectedDataRoomPortfolio] || {}).map(([customCatName, customCatFiles]) => {
+                  const isDefaultCat = currentPortfolioObj?.dataRoom?.categories?.some(
+                    (c) => c.name.toLowerCase() === customCatName.toLowerCase()
+                  );
+                  if (isDefaultCat) return null; // already rendered above
+                  if (!customCatFiles || customCatFiles.length === 0) return null;
+
+                  return (
+                    <div key={customCatName} className="bg-gray-800/50 border border-cyan-500/30 rounded-xl p-3.5 space-y-2">
+                      <div className="text-xs font-bold text-white flex items-center justify-between border-b border-gray-700/60 pb-1.5">
+                        <div className="flex items-center space-x-2">
+                          <span>📁 Dossier personnalisé : {customCatName}</span>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <span className="text-[10px] text-gray-400 font-mono">{customCatFiles.length} document(s)</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCategory(selectedDataRoomPortfolio, customCatName)}
+                            className="text-gray-500 hover:text-red-400 text-[10px] flex items-center gap-1 transition"
+                            title="Supprimer ce dossier et son contenu"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Supprimer le dossier</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        {customCatFiles.map((file, fIdx) => (
+                          <div
+                            key={`cust-extra-${fIdx}`}
+                            className="flex items-center justify-between p-2 rounded-lg bg-emerald-950/20 border border-emerald-500/30 text-[11px]"
+                          >
+                            <div className="flex items-center space-x-2 truncate min-w-0">
+                              <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-emerald-500/20 text-emerald-300 font-bold shrink-0">
+                                {file.type}
+                              </span>
+                              <span className="truncate text-emerald-200 font-medium" title={file.name}>
+                                {file.name}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center space-x-2 shrink-0 ml-2">
+                              <span className="text-[10px] text-gray-400 font-mono">{file.size}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenMoveModal(file, customCatName, selectedDataRoomPortfolio)}
+                                className="px-2 py-0.5 rounded bg-gray-800 hover:bg-cyan-500/20 text-gray-400 hover:text-cyan-300 border border-gray-700 transition flex items-center gap-1 text-[10px]"
+                                title="Déplacer vers un autre portefeuille"
+                              >
+                                <ArrowRightLeft className="w-3 h-3 text-cyan-400" />
+                                <span>Déplacer</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCustomDoc(selectedDataRoomPortfolio, customCatName, file.id, file.name)}
+                                className="p-1 text-gray-500 hover:text-red-400 rounded transition"
+                                title="Retirer le document"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
         ) : (
           /* =============================================================== */
-          /* TAB 4: GESTION DES UTILISATEURS, IDENTIFIANTS & MOTS DE PASSE   */
+          /* TAB 4: SUPERVISION DES UTILISATEURS & TÉLÉCHARGEMENTS           */
           /* =============================================================== */
           <div className="space-y-5">
             {/* Top Toolbar */}
@@ -1300,33 +1748,35 @@ y.barberis@enr-courtage.fr`;
                 <div className="flex items-center space-x-2">
                   <Users className="w-5 h-5 text-amber-400" />
                   <h3 className="text-base font-bold text-white">
-                    Gestion des Accès & Mots de Passe ({investors.length})
+                    Supervision & Gestion des Accès ({investors.length})
                   </h3>
                 </div>
                 <p className="text-xs text-gray-400">
-                  Modifiez les mots de passe, créez de nouveaux investisseurs ou révoquez des accès à la plateforme.
+                  Suivez en direct les documents Data Room téléchargés par chaque investisseur, contrôlez les accès et gérez les identifiants.
                 </p>
               </div>
 
-              <button
-                onClick={() => {
-                  setNewUserData({
-                    name: '',
-                    company: '',
-                    email: '',
-                    password: generateRandomPassword(),
-                    role: 'Investisseur',
-                    phone: '',
-                    isAdmin: false,
-                    status: 'active',
-                  });
-                  setIsAddUserModalOpen(true);
-                }}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-gray-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>+ Ajouter un Utilisateur</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setNewUserData({
+                      name: '',
+                      company: '',
+                      email: '',
+                      password: generateRandomPassword(),
+                      role: 'Investisseur',
+                      phone: '',
+                      isAdmin: false,
+                      status: 'active',
+                    });
+                    setIsAddUserModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-gray-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>+ Ajouter un Utilisateur</span>
+                </button>
+              </div>
             </div>
 
             {/* Notification alert */}
@@ -1345,7 +1795,7 @@ y.barberis@enr-courtage.fr`;
               </div>
             )}
 
-            {/* Search & Filters */}
+            {/* Search, Filters & View Mode Switcher */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="relative flex-1 min-w-[240px]">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
@@ -1358,230 +1808,727 @@ y.barberis@enr-courtage.fr`;
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 bg-gray-800/60 p-1 rounded-xl border border-gray-700 text-xs">
-                <button
-                  onClick={() => setUserStatusFilter('all')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                    userStatusFilter === 'all'
-                      ? 'bg-amber-500 text-gray-950'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Tous ({investors.length})
-                </button>
-                <button
-                  onClick={() => setUserStatusFilter('active')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                    userStatusFilter === 'active'
-                      ? 'bg-emerald-500 text-gray-950'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  Actifs ({investors.filter((i) => i.status === 'active').length})
-                </button>
-                <button
-                  onClick={() => setUserStatusFilter('pending')}
-                  className={`px-2.5 py-1 rounded-lg font-semibold transition ${
-                    userStatusFilter === 'pending'
-                      ? 'bg-amber-500 text-gray-950'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  En attente ({investors.filter((i) => i.status === 'pending').length})
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Status Filter Buttons */}
+                <div className="flex items-center gap-1 bg-gray-800/60 p-1 rounded-xl border border-gray-700 text-xs">
+                  <button
+                    onClick={() => setUserStatusFilter('all')}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                      userStatusFilter === 'all'
+                        ? 'bg-amber-500 text-gray-950'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Tous ({investors.length})
+                  </button>
+                  <button
+                    onClick={() => setUserStatusFilter('active')}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                      userStatusFilter === 'active'
+                        ? 'bg-emerald-500 text-gray-950'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    Actifs ({investors.filter((i) => i.status === 'active').length})
+                  </button>
+                  <button
+                    onClick={() => setUserStatusFilter('pending')}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition ${
+                      userStatusFilter === 'pending'
+                        ? 'bg-amber-500 text-gray-950'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    En attente ({investors.filter((i) => i.status === 'pending').length})
+                  </button>
+                </div>
+
+                {/* View Mode Toggle: Table (Columns) vs Cards */}
+                <div className="flex items-center gap-1 bg-gray-800/60 p-1 rounded-xl border border-gray-700 text-xs">
+                  <button
+                    onClick={() => setSupervisionViewMode('table')}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+                      supervisionViewMode === 'table'
+                        ? 'bg-cyan-500 text-gray-950'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                    title="Vue Tableau avec Colonnes de Supervision"
+                  >
+                    <Table className="w-3.5 h-3.5" />
+                    <span>Tableau</span>
+                  </button>
+                  <button
+                    onClick={() => setSupervisionViewMode('cards')}
+                    className={`px-2.5 py-1 rounded-lg font-semibold transition flex items-center gap-1.5 ${
+                      supervisionViewMode === 'cards'
+                        ? 'bg-cyan-500 text-gray-950'
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                    title="Vue Fiches Détaillées"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span>Fiches</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Users Cards List */}
+            {/* Content: Table View or Cards View */}
             {filteredUsers.length === 0 ? (
               <div className="py-12 text-center text-gray-400 text-xs bg-gray-800/20 rounded-xl border border-gray-800">
                 Aucun utilisateur correspondant à votre recherche.
               </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-3.5">
-                {filteredUsers.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="p-4 rounded-xl bg-gray-800/60 border border-gray-700 text-xs space-y-3.5 shadow-lg hover:border-gray-600 transition"
-                  >
-                    {/* User Header */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-700/60 pb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center font-black text-amber-400 text-sm shadow-inner">
-                          {safeText(inv.name) ? safeText(inv.name).charAt(0).toUpperCase() : <User className="w-5 h-5" />}
-                        </div>
-                        <div>
-                          <div className="font-bold text-white flex flex-wrap items-center gap-2 text-sm">
-                            <span>{safeText(inv.name, 'Sans nom')}</span>
-                            <span className="text-gray-400 font-medium">({safeText(inv.company, 'Société non renseignée')})</span>
-                            {inv.isAdmin && (
-                              <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40">
-                                ⭐ Administrateur
+            ) : supervisionViewMode === 'table' ? (
+              /* =============================================================== */
+              /* TABLEAU DE SUPERVISION AVEC COLONNES DÉDIÉES                    */
+              /* =============================================================== */
+              <div className="overflow-x-auto rounded-2xl border border-gray-800 bg-gray-900/60 shadow-xl">
+                <table className="w-full text-left text-xs text-gray-300">
+                  <thead className="bg-gray-800/80 text-[11px] font-bold uppercase tracking-wider text-gray-400 border-b border-gray-700">
+                    <tr>
+                      <th className="p-3.5">Investisseur & Société</th>
+                      <th className="p-3.5">Identifiant / E-mail</th>
+                      <th className="p-3.5 text-center">Statut Accès</th>
+                      <th className="p-3.5 min-w-[280px]">📁 Documents Téléchargés (Data Room)</th>
+                      <th className="p-3.5 text-center">Mot de passe</th>
+                      <th className="p-3.5 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800/80">
+                    {filteredUsers.map((inv) => {
+                      const downloads = userDownloads?.[inv.email?.trim().toLowerCase()] || [];
+
+                      return (
+                        <tr key={inv.id} className="hover:bg-gray-800/40 transition">
+                          {/* Col 1: Name & Company */}
+                          <td className="p-3.5 align-top">
+                            <div className="flex items-start space-x-2.5">
+                              <div className="w-8 h-8 rounded-lg bg-gray-950 border border-gray-800 flex items-center justify-center font-bold text-amber-400 text-xs shrink-0 mt-0.5">
+                                {safeText(inv.name) ? safeText(inv.name).charAt(0).toUpperCase() : <User className="w-4 h-4" />}
+                              </div>
+                              <div>
+                                <div className="font-bold text-white flex items-center gap-1.5">
+                                  <span>{safeText(inv.name, 'Sans nom')}</span>
+                                  {inv.isAdmin && (
+                                    <span className="px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 text-[9px] font-bold border border-amber-500/40">
+                                      Admin
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="text-gray-400 text-[11px]">{safeText(inv.company, 'Société non renseignée')}</div>
+                                {safeText(inv.phone) && (
+                                  <div className="text-[10px] text-gray-500 font-mono">Tél : {safeText(inv.phone)}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Col 2: Email */}
+                          <td className="p-3.5 align-top font-mono text-gray-200">
+                            <div className="flex items-center space-x-1.5">
+                              <span className="truncate max-w-[180px]">{safeText(inv.email)}</span>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(safeText(inv.email));
+                                  setUserActionNotice(`Identifiant (${safeText(inv.email)}) copié !`);
+                                  setTimeout(() => setUserActionNotice(''), 3000);
+                                }}
+                                className="text-gray-500 hover:text-amber-400 p-0.5 transition"
+                                title="Copier l'identifiant"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Col 3: Status & NDA */}
+                          <td className="p-3.5 align-top text-center">
+                            {inv.status === 'active' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">
+                                <CheckCircle2 className="w-3 h-3" /> Actif (NDA OK)
                               </span>
                             )}
-                          </div>
-                          <div className="text-[11px] text-gray-400">
-                            {safeText(inv.role, 'Investisseur')} {safeText(inv.phone) ? `• Tél : ${safeText(inv.phone)}` : ''}
-                            <span> • Créé le : {new Date(inv.createdAt || Date.now()).toLocaleDateString('fr-FR')}</span>
-                          </div>
-                        </div>
-                      </div>
+                            {inv.status === 'pending' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold">
+                                <Clock className="w-3 h-3" /> En attente
+                              </span>
+                            )}
+                            {(inv.status === 'rejected' || inv.status === 'suspended') && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[10px] font-bold">
+                                <XCircle className="w-3 h-3" /> Désactivé
+                              </span>
+                            )}
+                          </td>
 
-                      {/* Status Badge */}
-                      <div>
-                        {inv.status === 'active' && (
-                          <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1.5">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Accès Actif (NDA OK)
-                          </span>
-                        )}
-                        {inv.status === 'pending' && (
-                          <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5" /> En attente de validation
-                          </span>
-                        )}
-                        {(inv.status === 'rejected' || inv.status === 'suspended') && (
-                          <span className="px-3 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[11px] font-bold flex items-center gap-1.5">
-                            <XCircle className="w-3.5 h-3.5" /> Accès Désactivé
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                          {/* Col 4: DOWNLOADS AUDIT COLUMN */}
+                          <td className="p-3.5 align-top">
+                            {downloads.length === 0 ? (
+                              <div className="flex items-center space-x-1.5 text-gray-500 text-[11px] py-1">
+                                <Clock className="w-3.5 h-3.5 text-gray-600 shrink-0" />
+                                <span>0 document téléchargé</span>
+                              </div>
+                            ) : (
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1 shrink-0">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                                    <span>{downloads.length} document{downloads.length > 1 ? 's' : ''} téléchargé{downloads.length > 1 ? 's' : ''}</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedUserDownloadsModal({ user: inv, downloads })}
+                                    className="text-[10px] text-cyan-400 hover:text-cyan-300 underline font-medium"
+                                  >
+                                    Historique complet →
+                                  </button>
+                                </div>
 
-                    {/* Credentials Box (Visible & Modifiable) */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-900/90 p-3.5 rounded-xl border border-gray-800">
-                      {/* Email / Identifiant */}
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
-                          <Mail className="w-3 h-3 text-amber-400" /> Identifiant de connexion (E-mail)
-                        </span>
-                        <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
-                          <span className="font-mono text-white text-xs select-all truncate">{safeText(inv.email)}</span>
-                          <button
-                            onClick={() => {
-                              navigator.clipboard.writeText(safeText(inv.email));
-                              setUserActionNotice(`Identifiant (${safeText(inv.email)}) copié !`);
-                              setTimeout(() => setUserActionNotice(''), 3000);
-                            }}
-                            className="text-gray-400 hover:text-amber-400 ml-2 p-1 transition"
-                            title="Copier l'identifiant"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </div>
+                                {/* List of downloaded documents */}
+                                <div className="space-y-1">
+                                  {downloads.slice(0, 3).map((dl, dIdx) => (
+                                    <div
+                                      key={dIdx}
+                                      className="flex items-center space-x-1.5 p-1 rounded bg-gray-950/80 border border-gray-800 text-[10px] text-gray-300"
+                                      title={`${dl.fileName} (${dl.portfolioName || dl.portfolioId}) - ${new Date(dl.downloadedAt).toLocaleString('fr-FR')}`}
+                                    >
+                                      <span className={`px-1 rounded text-[8px] font-bold ${
+                                        dl.portfolioId === 'volta' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-amber-500/20 text-amber-300'
+                                      }`}>
+                                        {dl.portfolioId === 'volta' ? 'VOLTA' : 'HÉLIOS'}
+                                      </span>
+                                      <span className="truncate max-w-[170px] font-medium text-white">{dl.fileName}</span>
+                                      <span className="text-gray-500 text-[9px] font-mono shrink-0 ml-auto">
+                                        {new Date(dl.downloadedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à {new Date(dl.downloadedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                  ))}
+                                  {downloads.length > 3 && (
+                                    <span className="text-[10px] text-gray-400 block pl-1">
+                                      + {downloads.length - 3} autre(s) document(s)
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </td>
 
-                      {/* Mot de passe */}
-                      <div className="space-y-1">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
-                          <KeyRound className="w-3 h-3 text-amber-400" /> Mot de passe confidentiel
-                        </span>
-                        <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
-                          <span className="font-mono text-amber-400 font-bold text-xs select-all">
-                            {visiblePasswords[inv.id] ? safeText(inv.password, '(vide)') : '••••••••••••'}
-                          </span>
-                          <div className="flex items-center space-x-1.5 ml-2">
-                            <button
-                              onClick={() =>
-                                setVisiblePasswords((prev) => ({
-                                  ...prev,
-                                  [inv.id]: !prev[inv.id],
-                                }))
-                              }
-                              className="text-gray-400 hover:text-white p-1 transition"
-                              title={visiblePasswords[inv.id] ? 'Masquer' : 'Afficher le mot de passe'}
-                            >
-                              {visiblePasswords[inv.id] ? (
-                                <EyeOff className="w-3.5 h-3.5" />
-                              ) : (
-                                <Eye className="w-3.5 h-3.5" />
+                          {/* Col 5: Password */}
+                          <td className="p-3.5 align-top text-center">
+                            <div className="inline-flex items-center bg-gray-950 px-2 py-1 rounded-lg border border-gray-800 text-xs">
+                              <span className="font-mono text-amber-400 font-bold mr-1.5">
+                                {visiblePasswords[inv.id] ? safeText(inv.password, '(vide)') : '••••••'}
+                              </span>
+                              <button
+                                onClick={() =>
+                                  setVisiblePasswords((prev) => ({
+                                    ...prev,
+                                    [inv.id]: !prev[inv.id],
+                                  }))
+                                }
+                                className="text-gray-400 hover:text-white p-0.5 transition"
+                                title={visiblePasswords[inv.id] ? 'Masquer' : 'Afficher'}
+                              >
+                                {visiblePasswords[inv.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(inv.password || '');
+                                  setCopiedPassId(inv.id);
+                                  setTimeout(() => setCopiedPassId(null), 2500);
+                                }}
+                                className="text-gray-400 hover:text-amber-400 p-0.5 ml-1 transition"
+                                title="Copier"
+                              >
+                                {copiedPassId === inv.id ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                              </button>
+                              <button
+                                onClick={() => handleResetUserPassword(inv)}
+                                className="text-gray-400 hover:text-cyan-400 p-0.5 ml-1 transition"
+                                title="Réinitialiser"
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
+
+                          {/* Col 6: Actions */}
+                          <td className="p-3.5 align-top text-right">
+                            <div className="flex items-center justify-end space-x-1.5">
+                              <button
+                                onClick={() => handleCopyUserAccessEmail(inv)}
+                                className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 transition"
+                                title="Copier l'e-mail d'accès type"
+                              >
+                                <Mail className="w-3.5 h-3.5 text-amber-400" />
+                              </button>
+
+                              {inv.ndaText && (
+                                <button
+                                  onClick={() => setSelectedInvestorForNda(inv)}
+                                  className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 text-[10px] font-semibold transition"
+                                  title="Consulter le NDA bilatéral"
+                                >
+                                  NDA
+                                </button>
                               )}
-                            </button>
 
+                              <button
+                                onClick={() => {
+                                  setEditingUser(inv);
+                                  setEditingUserData({
+                                    name: inv.name || '',
+                                    company: inv.company || '',
+                                    email: inv.email || '',
+                                    password: inv.password || '',
+                                    role: inv.role || 'Investisseur',
+                                    phone: inv.phone || '',
+                                    status: inv.status || 'active',
+                                    isAdmin: !!inv.isAdmin,
+                                  });
+                                }}
+                                className="p-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 transition"
+                                title="Modifier les informations"
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
+
+                              {inv.email !== 'y.barberis@enr-courtage.fr' && (
+                                <button
+                                  onClick={() => handleDeleteUser(inv)}
+                                  className="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700 transition"
+                                  title="Supprimer définitivement"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* =============================================================== */
+              /* VUE FICHES DÉTAILLÉES                                           */
+              /* =============================================================== */
+              <div className="grid grid-cols-1 gap-3.5">
+                {filteredUsers.map((inv) => {
+                  const downloads = userDownloads?.[inv.email?.trim().toLowerCase()] || [];
+
+                  return (
+                    <div
+                      key={inv.id}
+                      className="p-4 rounded-xl bg-gray-800/60 border border-gray-700 text-xs space-y-3.5 shadow-lg hover:border-gray-600 transition"
+                    >
+                      {/* User Header */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-700/60 pb-3">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-xl bg-gray-900 border border-gray-700 flex items-center justify-center font-black text-amber-400 text-sm shadow-inner">
+                            {safeText(inv.name) ? safeText(inv.name).charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <div className="font-bold text-white flex flex-wrap items-center gap-2 text-sm">
+                              <span>{safeText(inv.name, 'Sans nom')}</span>
+                              <span className="text-gray-400 font-medium">({safeText(inv.company, 'Société non renseignée')})</span>
+                              {inv.isAdmin && (
+                                <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/40">
+                                  ⭐ Administrateur
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[11px] text-gray-400">
+                              {safeText(inv.role, 'Investisseur')} {safeText(inv.phone) ? `• Tél : ${safeText(inv.phone)}` : ''}
+                              <span> • Créé le : {new Date(inv.createdAt || Date.now()).toLocaleDateString('fr-FR')}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div>
+                          {inv.status === 'active' && (
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Accès Actif (NDA OK)
+                            </span>
+                          )}
+                          {inv.status === 'pending' && (
+                            <span className="px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5" /> En attente de validation
+                            </span>
+                          )}
+                          {(inv.status === 'rejected' || inv.status === 'suspended') && (
+                            <span className="px-3 py-1 rounded-full bg-red-500/15 text-red-400 border border-red-500/30 text-[11px] font-bold flex items-center gap-1.5">
+                              <XCircle className="w-3.5 h-3.5" /> Accès Désactivé
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Credentials Box */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-gray-900/90 p-3.5 rounded-xl border border-gray-800">
+                        {/* Email */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                            <Mail className="w-3 h-3 text-amber-400" /> Identifiant de connexion (E-mail)
+                          </span>
+                          <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
+                            <span className="font-mono text-white text-xs select-all truncate">{safeText(inv.email)}</span>
                             <button
                               onClick={() => {
-                                navigator.clipboard.writeText(inv.password || '');
-                                setCopiedPassId(inv.id);
-                                setTimeout(() => setCopiedPassId(null), 2500);
+                                navigator.clipboard.writeText(safeText(inv.email));
+                                setUserActionNotice(`Identifiant (${safeText(inv.email)}) copié !`);
+                                setTimeout(() => setUserActionNotice(''), 3000);
                               }}
-                              className="text-gray-400 hover:text-amber-400 p-1 transition"
-                              title="Copier le mot de passe"
+                              className="text-gray-400 hover:text-amber-400 ml-2 p-1 transition"
+                              title="Copier l'identifiant"
                             >
-                              {copiedPassId === inv.id ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
-                            </button>
-
-                            <button
-                              onClick={() => handleResetUserPassword(inv)}
-                              className="text-gray-400 hover:text-cyan-400 p-1 transition"
-                              title="Régénérer / Réinitialiser le mot de passe"
-                            >
-                              <RefreshCw className="w-3.5 h-3.5" />
+                              <Copy className="w-3.5 h-3.5" />
                             </button>
                           </div>
                         </div>
+
+                        {/* Password */}
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1">
+                            <KeyRound className="w-3 h-3 text-amber-400" /> Mot de passe confidentiel
+                          </span>
+                          <div className="flex items-center justify-between bg-gray-950 px-3 py-2 rounded-lg border border-gray-800">
+                            <span className="font-mono text-amber-400 font-bold text-xs select-all">
+                              {visiblePasswords[inv.id] ? safeText(inv.password, '(vide)') : '••••••••••••'}
+                            </span>
+                            <div className="flex items-center space-x-1.5 ml-2">
+                              <button
+                                onClick={() =>
+                                  setVisiblePasswords((prev) => ({
+                                    ...prev,
+                                    [inv.id]: !prev[inv.id],
+                                  }))
+                                }
+                                className="text-gray-400 hover:text-white p-1 transition"
+                                title={visiblePasswords[inv.id] ? 'Masquer' : 'Afficher le mot de passe'}
+                              >
+                                {visiblePasswords[inv.id] ? (
+                                  <EyeOff className="w-3.5 h-3.5" />
+                                ) : (
+                                  <Eye className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(inv.password || '');
+                                  setCopiedPassId(inv.id);
+                                  setTimeout(() => setCopiedPassId(null), 2500);
+                                }}
+                                className="text-gray-400 hover:text-amber-400 p-1 transition"
+                                title="Copier le mot de passe"
+                              >
+                                {copiedPassId === inv.id ? (
+                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                ) : (
+                                  <Copy className="w-3.5 h-3.5" />
+                                )}
+                              </button>
+
+                              <button
+                                onClick={() => handleResetUserPassword(inv)}
+                                className="text-gray-400 hover:text-cyan-400 p-1 transition"
+                                title="Régénérer / Réinitialiser le mot de passe"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Downloads Activity Box for this user */}
+                      <div className="bg-gray-900/90 p-3.5 rounded-xl border border-gray-800 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
+                            <Download className="w-3.5 h-3.5 text-cyan-400" />
+                            <span>Documents Data Room Téléchargés par cet utilisateur</span>
+                          </span>
+                          {downloads.length > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono text-[10px] font-bold border border-emerald-500/30 flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <span>{downloads.length} document{downloads.length > 1 ? 's' : ''} téléchargé{downloads.length > 1 ? 's' : ''}</span>
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full bg-gray-800 text-gray-500 font-mono text-[10px]">
+                              0 téléchargement
+                            </span>
+                          )}
+                        </div>
+
+                        {downloads.length === 0 ? (
+                          <div className="text-[11px] text-gray-500 italic py-1">
+                            Aucun document de la Data Room n'a encore été consulté ou téléchargé par cet investisseur.
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 pt-1">
+                            <div className="flex flex-wrap gap-1.5">
+                              {downloads.map((dl, dIdx) => (
+                                <div
+                                  key={dIdx}
+                                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gray-950 border border-gray-800 text-[11px] text-gray-300"
+                                >
+                                  <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                                    dl.portfolioId === 'volta' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-amber-500/20 text-amber-300'
+                                  }`}>
+                                    {dl.portfolioId === 'volta' ? 'VOLTA' : 'HÉLIOS'}
+                                  </span>
+                                  <span className="font-medium text-white truncate max-w-[220px]" title={dl.fileName}>
+                                    {dl.fileName}
+                                  </span>
+                                  <span className="text-gray-500 text-[10px] font-mono">
+                                    {new Date(dl.downloadedAt).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })} à {new Date(dl.downloadedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons Toolbar */}
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
+                        <button
+                          onClick={() => handleCopyUserAccessEmail(inv)}
+                          className="px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
+                        >
+                          <Mail className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{copiedUserAccessId === inv.id ? '✓ E-mail type copié !' : 'Copier e-mail d\'accès type'}</span>
+                        </button>
+
+                        <div className="flex items-center space-x-2">
+                          {inv.ndaText && (
+                            <button
+                              onClick={() => setSelectedInvestorForNda(inv)}
+                              className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
+                              title="Consulter le NDA bilatéral"
+                            >
+                              <FileText className="w-3.5 h-3.5" />
+                              <span>NDA</span>
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => {
+                              setEditingUser(inv);
+                              setEditingUserData({
+                                name: inv.name || '',
+                                company: inv.company || '',
+                                email: inv.email || '',
+                                password: inv.password || '',
+                                role: inv.role || 'Investisseur',
+                                phone: inv.phone || '',
+                                status: inv.status || 'active',
+                                isAdmin: !!inv.isAdmin,
+                              });
+                            }}
+                            className="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Modifier</span>
+                          </button>
+
+                          {inv.email !== 'y.barberis@enr-courtage.fr' && (
+                            <button
+                              onClick={() => handleDeleteUser(inv)}
+                              className="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700 transition"
+                              title="Supprimer définitivement l'utilisateur"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* MODAL : DÉPLACER UN DOCUMENT VERS UN AUTRE PORTEFEUILLE           */}
+        {/* ================================================================= */}
+        {movingDoc && (
+          <div className="fixed inset-0 z-70 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div className="flex items-center space-x-2 text-cyan-400 font-bold text-sm">
+                  <ArrowRightLeft className="w-5 h-5" />
+                  <span>Déplacer vers un autre portefeuille</span>
+                </div>
+                <button
+                  onClick={() => setMovingDoc(null)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-3.5 bg-gray-950 rounded-xl border border-gray-800 space-y-1.5 text-xs">
+                <span className="text-gray-400 block text-[11px]">Document sélectionné :</span>
+                <div className="font-bold text-white flex items-center gap-2">
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-cyan-500/20 text-cyan-300 font-bold shrink-0">
+                    {movingDoc.doc.type || 'PDF'}
+                  </span>
+                  <span className="break-all">{movingDoc.doc.name}</span>
+                </div>
+                <div className="text-[11px] text-gray-400 pt-1">
+                  Emplacement actuel : <strong className="text-amber-400">{movingDoc.sourcePortfolioId === 'volta' ? 'Projet VOLTA' : 'Projet HÉLIOS'}</strong> ({movingDoc.sourceCategory})
+                </div>
+              </div>
+
+              {/* Target Portfolio Selection */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-300">
+                  Choisir le portefeuille de destination :
+                </label>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setTargetMovePortfolio('helios')}
+                    className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 ${
+                      targetMovePortfolio === 'helios'
+                        ? 'bg-amber-500/20 border-amber-500 text-white ring-1 ring-amber-500'
+                        : 'bg-gray-800/60 border-gray-700 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <Sun className="w-5 h-5 text-amber-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-xs">☀️ Projet HÉLIOS</div>
+                      <div className="text-[10px] text-gray-400">Solaire PV</div>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTargetMovePortfolio('volta')}
+                    className={`p-3 rounded-xl border text-left transition flex items-center gap-2.5 ${
+                      targetMovePortfolio === 'volta'
+                        ? 'bg-cyan-500/20 border-cyan-500 text-white ring-1 ring-cyan-500'
+                        : 'bg-gray-800/60 border-gray-700 text-gray-400 hover:text-white'
+                    }`}
+                  >
+                    <Battery className="w-5 h-5 text-cyan-400 shrink-0" />
+                    <div>
+                      <div className="font-bold text-xs">🔋 Projet VOLTA</div>
+                      <div className="text-[10px] text-gray-400">Batteries BESS</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Target Category Selection */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-gray-300">
+                  Dossier / Catégorie cible :
+                </label>
+                <select
+                  value={targetMoveCategory}
+                  onChange={(e) => setTargetMoveCategory(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-cyan-400"
+                >
+                  <option value="Juridique">⚖️ Juridique & Baux (Promesses de bail, statuts...)</option>
+                  <option value="Technique">🔧 Technique & Plans (Fiches synoptiques, devis...)</option>
+                  <option value="Financier">📊 Financier & Business Plan</option>
+                  <option value="Urbanisme">🗺️ Urbanisme & Permis</option>
+                  <option value="Réseau">⚡ Réseau & Raccordement Enedis</option>
+                  <option value="Fournisseur">🏷️ Accord Fournisseur / Équipement</option>
+                </select>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setMovingDoc(null)}
+                  className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmMove}
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-gray-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+                >
+                  <ArrowRightLeft className="w-4 h-4" />
+                  <span>Confirmer le déplacement</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================= */}
+        {/* MODAL : HISTORIQUE DÉTAILLÉ DES TÉLÉCHARGEMENTS INVESTISSEUR      */}
+        {/* ================================================================= */}
+        {selectedUserDownloadsModal && (
+          <div className="fixed inset-0 z-70 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                  <Download className="w-5 h-5" />
+                  <span>Traçabilité des téléchargements — {selectedUserDownloadsModal.user.name}</span>
+                </div>
+                <button
+                  onClick={() => setSelectedUserDownloadsModal(null)}
+                  className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="text-xs text-gray-300">
+                Société : <strong className="text-white">{selectedUserDownloadsModal.user.company}</strong> ({selectedUserDownloadsModal.user.email})
+              </div>
+
+              <div className="max-h-72 overflow-y-auto space-y-2 pr-1">
+                {selectedUserDownloadsModal.downloads.map((dl, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 rounded-xl bg-gray-950 border border-gray-800 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                          dl.portfolioId === 'volta' ? 'bg-cyan-500/20 text-cyan-300' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {dl.portfolioId === 'volta' ? '🔋 VOLTA BESS' : '☀️ HÉLIOS PV'}
+                        </span>
+                        <span className="font-bold text-white truncate">{dl.fileName}</span>
+                      </div>
+                      <div className="text-[11px] text-gray-500 font-mono">
+                        Format : {dl.fileType || 'PDF'} {dl.fileSize ? `• ${dl.fileSize}` : ''}
                       </div>
                     </div>
 
-                    {/* Action Buttons Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-                      <button
-                        onClick={() => handleCopyUserAccessEmail(inv)}
-                        className="px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
-                      >
-                        <Mail className="w-3.5 h-3.5 text-amber-400" />
-                        <span>{copiedUserAccessId === inv.id ? '✓ E-mail type copié !' : 'Copier e-mail d\'accès type'}</span>
-                      </button>
-
-                      <div className="flex items-center space-x-2">
-                        {inv.ndaText && (
-                          <button
-                            onClick={() => setSelectedInvestorForNda(inv)}
-                            className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 text-xs font-semibold transition flex items-center gap-1.5"
-                            title="Consulter le NDA bilatéral"
-                          >
-                            <FileText className="w-3.5 h-3.5" />
-                            <span>NDA</span>
-                          </button>
-                        )}
-
-                        <button
-                          onClick={() => {
-                            setEditingUser(inv);
-                            setEditingUserData({
-                              name: inv.name || '',
-                              company: inv.company || '',
-                              email: inv.email || '',
-                              password: inv.password || '',
-                              role: inv.role || 'Investisseur',
-                              phone: inv.phone || '',
-                              status: inv.status || 'active',
-                              isAdmin: !!inv.isAdmin,
-                            });
-                          }}
-                          className="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
-                        >
-                          <Edit3 className="w-3.5 h-3.5" />
-                          <span>Modifier</span>
-                        </button>
-
-                        {inv.email !== 'y.barberis@enr-courtage.fr' && (
-                          <button
-                            onClick={() => handleDeleteUser(inv)}
-                            className="p-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-400 border border-gray-700 transition"
-                            title="Supprimer définitivement l'utilisateur"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] text-gray-400 font-mono block">
+                        {new Date(dl.downloadedAt).toLocaleDateString('fr-FR')}
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-mono font-bold block">
+                        {new Date(dl.downloadedAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
+
+              <div className="flex justify-end pt-2 border-t border-gray-800">
+                <button
+                  onClick={() => setSelectedUserDownloadsModal(null)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-semibold"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

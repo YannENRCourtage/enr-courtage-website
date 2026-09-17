@@ -96,6 +96,12 @@ export const useInvestorStore = create(
       // Custom Data Room files uploaded by Admin
       customDataRoom: {},
 
+      // Deleted default/demo Data Room documents per portfolio
+      deletedDefaultDocs: {},
+
+      // Tracking of document downloads by investor email
+      userDownloads: {},
+
       // Toggle orange projects filter
       toggleExcludeOrange: () => set((state) => ({ excludeOrange: !state.excludeOrange })),
 
@@ -122,14 +128,50 @@ export const useInvestorStore = create(
               ...state.customDataRoom,
               [portfolioId]: {
                 ...currentPortfolioDocs,
-                [categoryName]: [...currentCatFiles, newDoc],
+                [categoryName]: [...currentCatFiles.filter((f) => f.name !== newDoc.name), newDoc],
               },
             },
           };
         });
       },
 
-      // Delete document from Data Room
+      // Add batch documents to Data Room with individual categories
+      addBatchDocumentsToDataRoom: (portfolioId, filesList) => {
+        set((state) => {
+          const currentPortfolioDocs = { ...(state.customDataRoom[portfolioId] || {}) };
+
+          filesList.forEach((fileObj, idx) => {
+            const cat = fileObj.category || 'Juridique';
+            const catFiles = currentPortfolioDocs[cat] ? [...currentPortfolioDocs[cat]] : [];
+
+            const newDoc = {
+              id: 'DOC-' + Date.now() + '-' + idx,
+              name: fileObj.name,
+              type: fileObj.type || 'PDF',
+              size: fileObj.size || '1.0 Mo',
+              uploadedAt: new Date().toISOString(),
+              uploadedBy: 'Yann BARBERIS',
+              notes: fileObj.notes || '',
+              fileUrl: fileObj.fileUrl || null,
+              fileData: fileObj.fileData || null,
+            };
+
+            currentPortfolioDocs[cat] = [
+              ...catFiles.filter((f) => f.name !== newDoc.name),
+              newDoc,
+            ];
+          });
+
+          return {
+            customDataRoom: {
+              ...state.customDataRoom,
+              [portfolioId]: currentPortfolioDocs,
+            },
+          };
+        });
+      },
+
+      // Delete custom document from Data Room
       deleteDocumentFromDataRoom: (portfolioId, categoryName, docIdOrName) => {
         set((state) => {
           const currentPortfolioDocs = state.customDataRoom[portfolioId] || {};
@@ -146,6 +188,119 @@ export const useInvestorStore = create(
                 ...currentPortfolioDocs,
                 [categoryName]: filtered,
               },
+            },
+          };
+        });
+      },
+
+      // Delete default / demo document from Data Room
+      deleteDefaultDoc: (portfolioId, docName) => {
+        set((state) => {
+          const prev = state.deletedDefaultDocs?.[portfolioId] || [];
+          if (prev.includes(docName)) return state;
+          return {
+            deletedDefaultDocs: {
+              ...(state.deletedDefaultDocs || {}),
+              [portfolioId]: [...prev, docName],
+            },
+          };
+        });
+      },
+
+      // Delete a custom category or empty folder
+      deleteCategory: (portfolioId, categoryName) => {
+        set((state) => {
+          const portfolioCustom = { ...(state.customDataRoom?.[portfolioId] || {}) };
+          delete portfolioCustom[categoryName];
+
+          return {
+            customDataRoom: {
+              ...(state.customDataRoom || {}),
+              [portfolioId]: portfolioCustom,
+            },
+          };
+        });
+      },
+
+      // Move a document from one portfolio to another (supports custom or default documents)
+      moveDocument: ({ sourcePortfolioId, targetPortfolioId, doc, sourceCategory, targetCategory }) => {
+        set((state) => {
+          const sourceCustom = state.customDataRoom?.[sourcePortfolioId] || {};
+          const targetCustom = state.customDataRoom?.[targetPortfolioId] || {};
+
+          const sourceCatFiles = sourceCustom[sourceCategory] || [];
+          const existingIndex = sourceCatFiles.findIndex(
+            (f) => f.id === doc.id || f.name === doc.name
+          );
+
+          let docToMove = doc;
+          let newSourceCatFiles = sourceCatFiles;
+          const updatedDeletedDefaults = { ...(state.deletedDefaultDocs || {}) };
+
+          if (existingIndex !== -1) {
+            docToMove = sourceCatFiles[existingIndex];
+            newSourceCatFiles = sourceCatFiles.filter((_, idx) => idx !== existingIndex);
+          } else {
+            // It was a default file! Mark it as removed from source portfolio
+            const currentDeleted = updatedDeletedDefaults[sourcePortfolioId] || [];
+            if (!currentDeleted.includes(doc.name)) {
+              updatedDeletedDefaults[sourcePortfolioId] = [...currentDeleted, doc.name];
+            }
+          }
+
+          // Add to target customDataRoom under targetCategory
+          const targetCatFiles = targetCustom[targetCategory] || [];
+          const updatedTargetCatFiles = [
+            ...targetCatFiles.filter((f) => f.name !== docToMove.name),
+            {
+              ...docToMove,
+              id: docToMove.id || ('DOC-' + Date.now()),
+              movedFrom: sourcePortfolioId,
+              movedAt: new Date().toISOString(),
+            },
+          ];
+
+          return {
+            deletedDefaultDocs: updatedDeletedDefaults,
+            customDataRoom: {
+              ...(state.customDataRoom || {}),
+              [sourcePortfolioId]: {
+                ...sourceCustom,
+                [sourceCategory]: newSourceCatFiles,
+              },
+              [targetPortfolioId]: {
+                ...targetCustom,
+                [targetCategory]: updatedTargetCatFiles,
+              },
+            },
+          };
+        });
+      },
+
+      // Record a document download by an investor
+      recordDownload: ({ userEmail, userName, userCompany, portfolioId, portfolioName, fileName, fileSize, fileType }) => {
+        if (!userEmail) return;
+        const cleanEmail = userEmail.trim().toLowerCase();
+        set((state) => {
+          const prevMap = state.userDownloads || {};
+          const prevList = prevMap[cleanEmail] || [];
+
+          const newRecord = {
+            id: 'DL-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+            portfolioId: portfolioId || 'helios',
+            portfolioName: portfolioName || (portfolioId === 'volta' ? 'PROJET VOLTA' : 'PROJET HÉLIOS'),
+            fileName: fileName || 'Document',
+            fileSize: fileSize || '',
+            fileType: fileType || 'PDF',
+            userName: userName || '',
+            userCompany: userCompany || '',
+            downloadedAt: new Date().toISOString(),
+          };
+
+          return {
+            userDownloads: {
+              ...prevMap,
+              [cleanEmail]: [newRecord, ...prevList],
             },
           };
         });
@@ -870,6 +1025,55 @@ y.barberis@enr-courtage.fr
           }));
         } else {
           state.investors = INVESTORS;
+        }
+
+        // Initialize Data Room state containers if needed
+        state.deletedDefaultDocs = state.deletedDefaultDocs || {};
+        state.customDataRoom = state.customDataRoom || {};
+
+        if (!state.userDownloads || Object.keys(state.userDownloads).length === 0) {
+          state.userDownloads = {
+            'yannbarberis@msn.com': [
+              {
+                id: 'DL-SEED-01',
+                portfolioId: 'helios',
+                portfolioName: 'PROJET HÉLIOS',
+                fileName: 'Promesses de Bail (PdB) — Sites fermes',
+                fileType: 'PDF',
+                fileSize: '12.5 Mo',
+                downloadedAt: '2026-09-17T10:15:00.000Z',
+              },
+              {
+                id: 'DL-SEED-02',
+                portfolioId: 'volta',
+                portfolioName: 'PROJET VOLTA',
+                fileName: 'Fiches synoptiques — 31 sites BESS',
+                fileType: 'PDF',
+                fileSize: '22.4 Mo',
+                downloadedAt: '2026-09-17T11:42:00.000Z',
+              },
+            ],
+            'a.dupre@enee-energy.com': [
+              {
+                id: 'DL-SEED-03',
+                portfolioId: 'helios',
+                portfolioName: 'PROJET HÉLIOS',
+                fileName: 'Matrice économique consolidée',
+                fileType: 'XLSX',
+                fileSize: '1.8 Mo',
+                downloadedAt: '2026-09-16T16:20:00.000Z',
+              },
+              {
+                id: 'DL-SEED-04',
+                portfolioId: 'volta',
+                portfolioName: 'PROJET VOLTA',
+                fileName: 'Accord fournisseur batteries',
+                fileType: 'PDF',
+                fileSize: '3.2 Mo',
+                downloadedAt: '2026-09-17T09:05:00.000Z',
+              },
+            ],
+          };
         }
       },
     }

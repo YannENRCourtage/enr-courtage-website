@@ -20,16 +20,19 @@ export default function DataRoomSection({
   investorName = 'Investisseur',
   investorCompany = '',
 }) {
-  const { customDataRoom } = useInvestorStore();
+  const { customDataRoom, deletedDefaultDocs, recordDownload, currentInvestor } = useInvestorStore();
   const [downloadedFiles, setDownloadedFiles] = useState({});
 
-  // Merge default categories with custom uploaded files
+  // Merge default categories with custom uploaded files, respecting deletions
   const categories = useMemo(() => {
     if (!portfolio || !portfolio.dataRoom) return [];
     
+    const deletedForPortfolio = deletedDefaultDocs?.[portfolio.id] || [];
+
     const defaultCats = portfolio.dataRoom.categories.map((cat) => ({
       ...cat,
-      files: [...cat.files],
+      // Exclude deleted demo / default documents
+      files: (cat.files || []).filter((f) => !deletedForPortfolio.includes(f.name)),
     }));
 
     const customDocsForPortfolio = customDataRoom?.[portfolio.id] || {};
@@ -46,7 +49,7 @@ export default function DataRoomSection({
             existingCat.files.push(cf);
           }
         });
-      } else {
+      } else if (customFiles && customFiles.length > 0) {
         defaultCats.push({
           name: catName,
           icon: 'Paperclip',
@@ -55,8 +58,9 @@ export default function DataRoomSection({
       }
     });
 
-    return defaultCats;
-  }, [portfolio, customDataRoom]);
+    // Only return categories that still have files
+    return defaultCats.filter((cat) => cat.files && cat.files.length > 0);
+  }, [portfolio, customDataRoom, deletedDefaultDocs]);
 
   if (!portfolio || !portfolio.dataRoom) {
     return null;
@@ -69,7 +73,36 @@ export default function DataRoomSection({
       [file.name]: true,
     }));
 
-    // Generate certified confidential document placeholder
+    // Record download persistently for admin supervision
+    const activeEmail = currentInvestor?.email || 'investisseur@partenaire.fr';
+    const activeName = investorName || currentInvestor?.name || 'Investisseur';
+    const activeCompany = investorCompany || currentInvestor?.company || 'Investisseur Qualifié';
+
+    if (recordDownload) {
+      recordDownload({
+        userEmail: activeEmail,
+        userName: activeName,
+        userCompany: activeCompany,
+        portfolioId: portfolio.id,
+        portfolioName: portfolio.name,
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type,
+      });
+    }
+
+    // If file has actual data uploaded by admin, download that
+    if (file.fileData) {
+      const a = document.createElement('a');
+      a.href = file.fileData;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    // Otherwise generate certified confidential document placeholder
     const blob = new Blob(
       [
         `==============================================================================\n` +
@@ -78,7 +111,7 @@ export default function DataRoomSection({
         `==============================================================================\n\n` +
         `Portefeuille : ${portfolio.name} (${portfolio.type})\n` +
         `Document certifié : ${file.name}\n` +
-        `Bénéficiaire accrédité : ${investorName} (${investorCompany || 'Investisseur Qualifié'})\n` +
+        `Bénéficiaire accrédité : ${activeName} (${activeCompany})\n` +
         `Date d'accès & horodatage : ${new Date().toLocaleString('fr-FR')}\n` +
         `Statut juridique : Accord bilatéral de confidentialité (NDA) dument validé et contre-signé par Yann BARBERIS, Président d'ENR COURTAGE SAS.\n\n` +
         `[SYNTHÈSE DU DOSSIER]\n` +
