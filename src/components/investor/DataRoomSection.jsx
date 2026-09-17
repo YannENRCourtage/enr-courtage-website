@@ -1,6 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { FolderLock, FileText, Download, ShieldCheck, Scale, Wrench, Calculator, Map, Network, CheckCircle2, FileCode, Paperclip } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import { getDocumentBinary } from '@/services/fileStorageService';
+import { generateCertifiedPdfBlob } from '@/services/pdfCertificateService';
 
 const categoryIconMap = {
   Scale,
@@ -66,7 +68,7 @@ export default function DataRoomSection({
     return null;
   }
 
-  const handleDownload = (file) => {
+  const handleDownload = async (file) => {
     // Record download locally
     setDownloadedFiles((prev) => ({
       ...prev,
@@ -87,49 +89,79 @@ export default function DataRoomSection({
         portfolioName: portfolio.name,
         fileName: file.name,
         fileSize: file.size,
-        fileType: file.type,
+        fileType: file.type || 'PDF',
       });
     }
 
-    // If file has actual data uploaded by admin, download that
+    // Helper: Ensure the downloaded file extension is .pdf
+    const formatPdfFileName = (name) => {
+      if (!name) return 'Document.pdf';
+      const hasExt = /\.[a-zA-Z0-9]+$/.test(name);
+      if (!hasExt) return `${name}.pdf`;
+      if (file.type === 'PDF' && !name.toLowerCase().endsWith('.pdf')) {
+        return name.replace(/\.[^/.]+$/, '') + '.pdf';
+      }
+      return name;
+    };
+
+    // 1. Try to get original uploaded binary from IndexedDB
+    try {
+      const stored = await getDocumentBinary(file.id || file.name);
+      if (stored && stored.blob) {
+        const blob = stored.blob instanceof Blob ? stored.blob : new Blob([stored.blob], { type: stored.mimeType || 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = formatPdfFileName(stored.fileName || file.name);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        return;
+      }
+    } catch (e) {
+      console.warn('Error reading from IndexedDB:', e);
+    }
+
+    // 2. If file has base64 data URL
     if (file.fileData) {
       const a = document.createElement('a');
       a.href = file.fileData;
-      a.download = file.name;
+      a.download = formatPdfFileName(file.name);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       return;
     }
 
-    // Otherwise generate certified confidential document placeholder
-    const blob = new Blob(
-      [
-        `==============================================================================\n` +
-        `ENR COURTAGE — DATA ROOM TRANSACTIONNELLE M&A\n` +
-        `ACCÈS CERTIFIÉ SOUS ACCORD DE CONFIDENTIALITÉ BILATÉRAL VALIDÉ\n` +
-        `==============================================================================\n\n` +
-        `Portefeuille : ${portfolio.name} (${portfolio.type})\n` +
-        `Document certifié : ${file.name}\n` +
-        `Bénéficiaire accrédité : ${activeName} (${activeCompany})\n` +
-        `Date d'accès & horodatage : ${new Date().toLocaleString('fr-FR')}\n` +
-        `Statut juridique : Accord bilatéral de confidentialité (NDA) dument validé et contre-signé par Yann BARBERIS, Président d'ENR COURTAGE SAS.\n\n` +
-        `[SYNTHÈSE DU DOSSIER]\n` +
-        `Ce document est certifié conforme aux pièces versées dans la Data Room du portefeuille ${portfolio.name}.\n` +
-        `Les pièces d'exécution originales (plans, autorisations d'urbanisme purgées, devis de construction et promesses de bail) sont communicables sans restriction à vos conseils juridiques et techniques.\n\n` +
-        `Pour toute question ou demande de pièce complémentaire :\n` +
-        `Yann BARBERIS — y.barberis@enr-courtage.fr`
-      ],
-      { type: 'text/plain;charset=utf-8' }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${file.name.replace(/[^a-zA-Z0-9]/g, '_')}_CERTIFIE_CONFIDENTIEL.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    // 3. Otherwise generate authentic certified PDF document (ALWAYS REAL PDF)
+    try {
+      const pdfBlob = await generateCertifiedPdfBlob({
+        fileName: formatPdfFileName(file.name),
+        fileType: file.type || 'PDF',
+        fileSize: file.size || '1.2 Mo',
+        portfolioName: portfolio.name,
+        portfolioType: portfolio.type,
+        investorName: activeName,
+        investorCompany: activeCompany,
+        investorEmail: activeEmail,
+        categoryName: file.category || 'Documents Juridiques & Foncier',
+      });
+
+      if (pdfBlob) {
+        const url = URL.createObjectURL(pdfBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = formatPdfFileName(file.name);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        return;
+      }
+    } catch (err) {
+      console.error('Error generating certified PDF:', err);
+    }
   };
 
   return (

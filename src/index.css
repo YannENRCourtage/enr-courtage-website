@@ -508,4 +508,10 @@ input:-webkit-autofill:focus {
     page-break-inside: avoid !important;
     margin-bottom: 12px !important;
   }
+
+  /* When NDA modal is present, isolate print to the NDA document only */
+  body:has(#printable-nda-document) #root > *:not(:has(#printable-nda-document)),
+  body:has(#printable-nda-document) #root > div > *:not(:has(#printable-nda-document)) {
+    display: none !important;
+  }
 }

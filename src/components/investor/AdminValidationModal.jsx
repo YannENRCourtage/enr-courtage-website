@@ -49,6 +49,7 @@ import {
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
+import { storeDocumentBinary, deleteDocumentBinary } from '@/services/fileStorageService';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import ErrorBoundary from './ErrorBoundary';
 
@@ -141,6 +142,7 @@ export default function AdminValidationModal({
   const [docSize, setDocSize] = useState('1.5 Mo');
   const [docNotes, setDocNotes] = useState('');
   const [docFileData, setDocFileData] = useState(null);
+  const [singleRawFile, setSingleRawFile] = useState(null);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
 
   // Batch / Staging State
@@ -372,16 +374,21 @@ y.barberis@enr-courtage.fr`;
 
     if (files.length === 1) {
       const file = files[0];
+      setSingleRawFile(file);
       setDocName(file.name.replace(/\.[^/.]+$/, ''));
       const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
       setDocType(ext);
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
       setDocSize(`${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`);
 
-      // Read file for download
-      const reader = new FileReader();
-      reader.onload = () => setDocFileData(reader.result);
-      reader.readAsDataURL(file);
+      // Read small files as DataURL fallback
+      if (file.size < 2 * 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = () => setDocFileData(reader.result);
+        reader.readAsDataURL(file);
+      } else {
+        setDocFileData(null);
+      }
     }
 
     // Also populate stagedFiles for batch management
@@ -464,8 +471,20 @@ y.barberis@enr-courtage.fr`;
   };
 
   // Publish all staged files
-  const handlePublishStagedFiles = () => {
+  const handlePublishStagedFiles = async () => {
     if (stagedFiles.length === 0) return;
+
+    // Persist real file binaries into IndexedDB
+    for (const item of stagedFiles) {
+      if (item.rawFile) {
+        try {
+          await storeDocumentBinary(item.id, item.rawFile, item.name, item.rawFile.type || 'application/pdf');
+          await storeDocumentBinary(item.name, item.rawFile, item.name, item.rawFile.type || 'application/pdf');
+        } catch (err) {
+          console.warn('Erreur stockage binaire fichier:', err);
+        }
+      }
+    }
 
     addBatchDocumentsToDataRoom(selectedDataRoomPortfolio, stagedFiles);
     const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA (Batteries)' : 'HÉLIOS (PV)';
@@ -474,16 +493,31 @@ y.barberis@enr-courtage.fr`;
     setDocName('');
     setDocNotes('');
     setDocFileData(null);
+    setSingleRawFile(null);
     setTimeout(() => setUploadSuccessMsg(''), 5000);
   };
 
   // Handle Single Document Upload
-  const handleAddDocument = (e) => {
+  const handleAddDocument = async (e) => {
     e.preventDefault();
     if (!docName.trim()) return;
 
+    const docId = 'DOC-' + Date.now();
+    const finalDocName = docName.trim();
+
+    // Persist real file binary into IndexedDB
+    if (singleRawFile) {
+      try {
+        await storeDocumentBinary(docId, singleRawFile, finalDocName, singleRawFile.type || 'application/pdf');
+        await storeDocumentBinary(finalDocName, singleRawFile, finalDocName, singleRawFile.type || 'application/pdf');
+      } catch (err) {
+        console.warn('Erreur stockage binaire fichier:', err);
+      }
+    }
+
     addDocumentToDataRoom(selectedDataRoomPortfolio, docCategory, {
-      name: docName.trim(),
+      id: docId,
+      name: finalDocName,
       type: docType,
       size: docSize || '1.0 Mo',
       notes: docNotes,
@@ -491,10 +525,11 @@ y.barberis@enr-courtage.fr`;
     });
 
     const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA' : 'HÉLIOS';
-    setUploadSuccessMsg(`Document « ${docName} » publié dans la Data Room ${targetName} (${docCategory}) !`);
+    setUploadSuccessMsg(`Document « ${finalDocName} » publié dans la Data Room ${targetName} (${docCategory}) !`);
     setDocName('');
     setDocNotes('');
     setDocFileData(null);
+    setSingleRawFile(null);
     setTimeout(() => setUploadSuccessMsg(''), 4000);
   };
 
@@ -543,6 +578,12 @@ y.barberis@enr-courtage.fr`;
   const handleDeleteCustomDoc = (portfolioId, categoryName, docId, fileName) => {
     if (window.confirm(`Confirmez-vous la suppression du document « ${fileName} » ?`)) {
       deleteDocumentFromDataRoom(portfolioId, categoryName, docId);
+      try {
+        deleteDocumentBinary(docId);
+        deleteDocumentBinary(fileName);
+      } catch (err) {
+        // ignore
+      }
       setUploadSuccessMsg(`Document « ${fileName} » retiré de la Data Room.`);
       setTimeout(() => setUploadSuccessMsg(''), 4000);
     }

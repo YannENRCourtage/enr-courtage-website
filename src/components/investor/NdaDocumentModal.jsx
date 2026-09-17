@@ -50,7 +50,113 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
     : '09:30';
 
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById('printable-nda-document');
+    if (!printContent) {
+      window.print();
+      return;
+    }
+
+    // Remove any previous print iframe
+    const oldIframe = document.getElementById('nda-isolated-print-iframe');
+    if (oldIframe) {
+      oldIframe.remove();
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'nda-isolated-print-iframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+
+    // Copy document stylesheets & styles
+    let stylesHtml = '';
+    document.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => {
+      stylesHtml += node.outerHTML;
+    });
+
+    const clonedContent = printContent.cloneNode(true);
+
+    doc.write(`
+      <!DOCTYPE html>
+      <html lang="fr">
+        <head>
+          <meta charset="utf-8">
+          <title>Accord de Confidentialité Bilatéral (NDA) - ENR COURTAGE</title>
+          ${stylesHtml}
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 8mm 12mm;
+            }
+            *, *::before, *::after {
+              box-sizing: border-box !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            html, body {
+              background-color: #ffffff !important;
+              color: #0f172a !important;
+              margin: 0 !important;
+              padding: 0 !important;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            }
+            .nda-print-wrapper {
+              width: 100% !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            .nda-page {
+              box-sizing: border-box !important;
+              background: #ffffff !important;
+              border: 1px solid #e2e8f0 !important;
+              border-radius: 8px !important;
+              padding: 20px 24px !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            .nda-page-1 {
+              page-break-after: always !important;
+              break-after: page !important;
+              margin-bottom: 0 !important;
+            }
+            .nda-page-2 {
+              page-break-before: always !important;
+              break-before: page !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+              margin-top: 0 !important;
+            }
+            .no-print {
+              display: none !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="nda-print-wrapper">
+            ${clonedContent.innerHTML}
+          </div>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    // Trigger printing once iframe DOM and CSS are ready
+    setTimeout(() => {
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        iframe.remove();
+      }, 3000);
+    }, 400);
   };
 
   return (
@@ -115,7 +221,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
           {/* =============================================================== */}
           {/* FEUILLE / PAGE 1 DU CONTRAT                                     */}
           {/* =============================================================== */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-6 print:break-after-page">
+          <div className="nda-page nda-page-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-6 print:break-after-page">
             {/* Header Officiel de Page 1 */}
             <div className="border-b-2 border-slate-900 pb-4 flex items-start justify-between">
               <div>
@@ -244,7 +350,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
           {/* =============================================================== */}
           {/* FEUILLE / PAGE 2 DU CONTRAT                                     */}
           {/* =============================================================== */}
-          <div className="bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-6 print:break-before-page">
+          <div className="nda-page nda-page-2 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-6 print:break-before-page">
             {/* Header Officiel de Page 2 */}
             <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">

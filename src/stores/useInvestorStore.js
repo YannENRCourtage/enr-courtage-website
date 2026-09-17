@@ -112,7 +112,7 @@ export const useInvestorStore = create(
           const currentCatFiles = currentPortfolioDocs[categoryName] || [];
           
           const newDoc = {
-            id: 'DOC-' + Date.now(),
+            id: fileObj.id || ('DOC-' + Date.now()),
             name: fileObj.name,
             type: fileObj.type || 'PDF',
             size: fileObj.size || '1.0 Mo',
@@ -145,7 +145,7 @@ export const useInvestorStore = create(
             const catFiles = currentPortfolioDocs[cat] ? [...currentPortfolioDocs[cat]] : [];
 
             const newDoc = {
-              id: 'DOC-' + Date.now() + '-' + idx,
+              id: fileObj.id || ('DOC-' + Date.now() + '-' + idx),
               name: fileObj.name,
               type: fileObj.type || 'PDF',
               size: fileObj.size || '1.0 Mo',
