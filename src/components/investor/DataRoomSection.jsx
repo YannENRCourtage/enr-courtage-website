@@ -3,6 +3,7 @@ import { FolderLock, FileText, Download, ShieldCheck, Scale, Wrench, Calculator,
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { getDocumentBinary } from '@/services/fileStorageService';
 import { generateCertifiedPdfBlob } from '@/services/pdfCertificateService';
+import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 
 const categoryIconMap = {
   Scale,
@@ -103,6 +104,31 @@ export default function DataRoomSection({
       }
       return name;
     };
+
+    // 0. VÉRIFICATION PRIORITAIRE : Fichier réel hébergé sur le serveur (ex: PDB Batiot, Castebrunet, etc.)
+    const serverMatch = findMatchingServerDocument(file);
+    if (serverMatch && serverMatch.url) {
+      const a = document.createElement('a');
+      a.href = serverMatch.url;
+      a.download = serverMatch.fileName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    // 0b. Si le document dispose d'une URL directe explicite
+    if (file.fileUrl) {
+      const a = document.createElement('a');
+      a.href = file.fileUrl;
+      a.download = formatPdfFileName(file.name);
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
 
     // 1. Try to get original uploaded binary from IndexedDB
     try {

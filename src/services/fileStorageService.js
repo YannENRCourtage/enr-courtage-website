@@ -90,12 +90,21 @@ export async function getDocumentBinary(idOrName) {
           return;
         }
 
-        // Sinon chercher par fileName
+        // Sinon chercher par fileName avec normalisation tolérante
+        const normalizeStr = (s) => String(s || '').toLowerCase().replace(/\.pdf$/i, '').replace(/[^a-z0-9]/g, '');
+        const targetNorm = normalizeStr(idOrName);
+
         const cursorReq = store.openCursor();
         cursorReq.onsuccess = (e) => {
           const cursor = e.target.result;
           if (cursor) {
-            if (cursor.value.fileName === idOrName || cursor.value.fileName.includes(idOrName)) {
+            const rowFile = cursor.value.fileName || '';
+            const rowNorm = normalizeStr(rowFile);
+            if (
+              rowFile === idOrName ||
+              rowFile.includes(idOrName) ||
+              (targetNorm && (rowNorm === targetNorm || rowNorm.includes(targetNorm) || targetNorm.includes(rowNorm)))
+            ) {
               resolve(cursor.value);
               return;
             }

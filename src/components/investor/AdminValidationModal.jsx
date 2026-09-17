@@ -50,6 +50,7 @@ import {
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import { storeDocumentBinary, deleteDocumentBinary } from '@/services/fileStorageService';
+import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import ErrorBoundary from './ErrorBoundary';
 
@@ -395,6 +396,7 @@ y.barberis@enr-courtage.fr`;
     const newStaged = files.map((file, idx) => {
       const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
       const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+      const serverMatch = findMatchingServerDocument(file.name);
       return {
         id: 'STAGE-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
         name: file.name,
@@ -402,6 +404,7 @@ y.barberis@enr-courtage.fr`;
         size: `${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`,
         category: batchGlobalCategory || 'Juridique',
         rawFile: file,
+        fileUrl: serverMatch ? serverMatch.url : null,
       };
     });
 
@@ -434,6 +437,7 @@ y.barberis@enr-courtage.fr`;
         else if (sub.includes('fourn') || sub.includes('batterie') || sub.includes('panneau')) detectedCat = 'Fournisseur';
       }
 
+      const serverMatch = findMatchingServerDocument(file.name);
       return {
         id: 'STAGE-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
         name: file.name,
@@ -441,6 +445,7 @@ y.barberis@enr-courtage.fr`;
         size: `${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`,
         category: detectedCat,
         rawFile: file,
+        fileUrl: serverMatch ? serverMatch.url : null,
       };
     });
 
@@ -515,6 +520,8 @@ y.barberis@enr-courtage.fr`;
       }
     }
 
+    const serverMatch = findMatchingServerDocument(finalDocName) || (singleRawFile ? findMatchingServerDocument(singleRawFile.name) : null);
+
     addDocumentToDataRoom(selectedDataRoomPortfolio, docCategory, {
       id: docId,
       name: finalDocName,
@@ -522,6 +529,7 @@ y.barberis@enr-courtage.fr`;
       size: docSize || '1.0 Mo',
       notes: docNotes,
       fileData: docFileData,
+      fileUrl: serverMatch ? serverMatch.url : null,
     });
 
     const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA' : 'HÉLIOS';
