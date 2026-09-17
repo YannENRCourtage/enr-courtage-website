@@ -14,10 +14,12 @@ import {
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
-// Helper to generate initials from full name
+// Helper to generate initials from full name (strips parentheses like (MOA) and special characters)
 function getInitials(name = '') {
-  if (!name) return 'IN';
-  const parts = name.trim().split(/\s+/);
+  if (!name) return 'YB';
+  const clean = name.replace(/\(.*?\)/g, '').replace(/[^a-zA-ZÀ-ÿ\s-]/g, '').trim();
+  if (!clean) return 'YB';
+  const parts = clean.split(/\s+/).filter(Boolean);
   if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
@@ -27,6 +29,8 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
+  const rawInvestorName = currentInvestor?.name || 'Jean DUS';
+  const investorCleanName = rawInvestorName.replace(/\(.*?\)/g, '').trim() || rawInvestorName;
   const investorName = currentInvestor?.name || 'Jean DUS';
   const investorCompany = currentInvestor?.company || 'ENEE ENERGY PARTNERS';
   const investorRole = currentInvestor?.role || 'Directeur des Investissements';
@@ -50,8 +54,18 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto print:p-0 print:bg-white print:static">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full p-4 sm:p-8 shadow-2xl relative my-6 text-slate-900 print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none">
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md overflow-y-auto p-3 sm:p-6 flex flex-col items-center justify-start print:p-0 print:bg-white print:static">
+      {/* Floating always-visible close button in the top-right corner */}
+      <button
+        onClick={onClose}
+        className="fixed top-3 right-3 sm:top-5 sm:right-5 z-[70] no-print p-2.5 sm:p-3 rounded-full bg-slate-900/90 hover:bg-slate-800 text-white shadow-2xl border border-white/20 transition-all hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer"
+        title="Fermer le document (Échap)"
+        aria-label="Fermer le document"
+      >
+        <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+      </button>
+
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-4xl w-full p-4 sm:p-8 shadow-2xl relative my-4 sm:my-8 text-slate-900 print:border-none print:shadow-none print:p-0 print:m-0 print:max-w-none">
         {/* Modal Top Actions (Hidden on Print) */}
         <div className="no-print flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-4 mb-6">
           <div className="flex items-center space-x-3">
@@ -85,7 +99,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
               title="Fermer"
             >
               <X className="w-5 h-5" />
@@ -222,7 +236,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
                 <div className="px-2.5 py-1 bg-blue-50 border border-blue-300 rounded font-serif italic font-black text-blue-900 text-xs shadow-inner">
                   {investorInitials}
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">({investorName})</span>
+                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">({investorCleanName})</span>
               </div>
             </div>
           </div>
@@ -248,7 +262,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
                   ARTICLE 4 — STRICT NON-CONTOURNEMENT & PROTECTION DU FONCIER
                 </strong>
                 <p>
-                  Pendant la durée du présent accord et pour une période subséquente de deux (2) ans, la Partie Réceptrice s'interdit formellement de contacter, directement ou indirectement, les propriétaires fonciers, exploitants agricoles, bailleurs, mairies ou partenaires techniques identifiés au sein des dossiers transmis, dans le but de contractualiser en contournant ENR COURTAGE. Toute tentative de contournement engagera immédiatement la responsabilité délictuelle et contractuelle du contrevenant.
+                  Pendant la durée du présent accord et pour une période subséquente d'un (1) an, la Partie Réceptrice s'interdit formellement de contacter, directement ou indirectement, les propriétaires fonciers, exploitants agricoles, bailleurs, mairies ou partenaires techniques identifiés au sein des dossiers transmis, dans le but de contractualiser en contournant ENR COURTAGE. Toute tentative de contournement engagera immédiatement la responsabilité délictuelle et contractuelle du contrevenant.
                 </p>
               </div>
 
@@ -266,7 +280,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
                   ARTICLE 6 — DURÉE DE L'ACCORD
                 </strong>
                 <p>
-                  Le présent engagement prend effet à la date de sa signature électronique par les deux Parties et restera en vigueur pour une durée de <strong>deux (2) années</strong> à compter de cette date.
+                  Le présent engagement prend effet à la date de sa signature électronique par les deux Parties et restera en vigueur pour une durée d'<strong>un (1) an</strong> à compter de cette date.
                 </p>
               </div>
 
@@ -330,7 +344,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
                 </div>
 
                 <div className="text-xs space-y-0.5">
-                  <div><strong>Signataire :</strong> {investorName}</div>
+                  <div><strong>Signataire :</strong> {investorCleanName}</div>
                   <div className="text-slate-600"><strong>Qualité :</strong> {investorRole}</div>
                   <div className="text-[10px] text-slate-500 font-mono">Date : {signedDate} à {signedTimestamp}</div>
                 </div>
@@ -338,7 +352,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
                 {/* Stylized Realistic Signature Box for Investor */}
                 <div className="mt-3 p-3 bg-white rounded-lg border border-blue-300 shadow-sm flex flex-col items-center justify-center relative">
                   <div className="font-serif italic text-xl font-bold text-slate-900 tracking-wide select-none transform rotate-1">
-                    {investorName}
+                    {investorCleanName}
                   </div>
                   <div className="text-[9px] text-slate-400 font-mono mt-1">
                     Signature numérique certifiée • ID: INV-{investorInitials}-2026-OK
@@ -376,7 +390,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
                 <div className="px-2.5 py-1 bg-blue-50 border border-blue-300 rounded font-serif italic font-black text-blue-900 text-xs shadow-inner">
                   {investorInitials}
                 </div>
-                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">({investorName})</span>
+                <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">({investorCleanName})</span>
               </div>
             </div>
           </div>
