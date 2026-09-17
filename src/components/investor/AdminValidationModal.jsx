@@ -248,7 +248,7 @@ Vous pouvez dès à présent vous connecter pour accéder aux Teasers complets e
 
 Bien cordialement,
 Yann BARBERIS — ENR COURTAGE
-y.barberis@enr-courtage.fr | 05 35 54 85 99`;
+y.barberis@enr-courtage.fr`;
 
     navigator.clipboard.writeText(emailBody);
     setCopiedUserAccessId(user.id);

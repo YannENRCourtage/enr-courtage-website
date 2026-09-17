@@ -16,6 +16,8 @@ import {
   Layers,
   TableProperties,
   Printer,
+  SlidersHorizontal,
+  FileSignature,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -25,6 +27,8 @@ import InteractiveMap from './InteractiveMap';
 import SiteTable from './SiteTable';
 import DataRoomSection from './DataRoomSection';
 import OfferModal from './OfferModal';
+import NdaDocumentModal from './NdaDocumentModal';
+import InvestorContactModal from './InvestorContactModal';
 
 const iconMap = {
   Sun,
@@ -41,21 +45,23 @@ const iconMap = {
 export default function PortfolioDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentInvestor, excludeOrange } = useInvestorStore();
+  const { currentInvestor, excludeOrange, toggleExcludeOrange } = useInvestorStore();
 
   const portfolio = useMemo(() => investorService.getPortfolioById(id), [id]);
 
   const [selectedSiteIds, setSelectedSiteIds] = useState([]);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   if (!portfolio) {
     return (
-      <div className="min-h-screen bg-[#090d16] text-white flex flex-col items-center justify-center p-6 space-y-4">
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-4">
         <h2 className="text-2xl font-bold">Portefeuille introuvable</h2>
         <button
           onClick={() => navigate('/investisseurs/dashboard')}
-          className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-xl text-xs font-semibold"
+          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold"
         >
           Retour au tableau de bord
         </button>
@@ -66,18 +72,23 @@ export default function PortfolioDetailPage() {
   const isPv = portfolio.type === 'PV';
   const IconComponent = isPv ? Sun : Battery;
 
+  // Dynamic calculations when excludeOrange is toggled for PV (HELIOS)
+  const displaySitesCount = isPv && excludeOrange ? 25 : portfolio.sites.length;
+  const displayPower = isPv && excludeOrange ? '8,01 MWc' : portfolio.kpis.totalPower;
+  const displayPowerSub = isPv && excludeOrange ? '25 sites (4 projets urba exclus)' : portfolio.kpis.totalPowerSub;
+
   const accentStyles = isPv
     ? {
-        border: 'border-amber-500/30',
-        badge: 'bg-amber-500/20 text-amber-400 border-amber-500/40',
-        text: 'text-amber-400',
+        border: 'border-amber-300',
+        badge: 'bg-amber-100 text-amber-800 border-amber-300',
+        text: 'text-amber-600',
         gradient: 'from-amber-500 to-amber-600',
         btnGlow: 'shadow-amber-500/20',
       }
     : {
-        border: 'border-cyan-500/30',
-        badge: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40',
-        text: 'text-cyan-400',
+        border: 'border-cyan-300',
+        badge: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+        text: 'text-cyan-600',
         gradient: 'from-cyan-500 to-cyan-600',
         btnGlow: 'shadow-cyan-500/20',
       };
@@ -98,16 +109,18 @@ export default function PortfolioDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-gray-100 flex selection:bg-amber-500 selection:text-gray-950">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-amber-500 selection:text-white">
       {/* Vertical Sidebar */}
       <InvestorSidebar
         activePage={id === 'volta' ? 'volta' : 'helios'}
         onOpenCreateOffer={() => setIsOfferModalOpen(true)}
+        onOpenNda={() => setIsNdaModalOpen(true)}
+        onOpenContact={() => setIsContactModalOpen(true)}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Content Area */}
+      {/* Main Content Area (White / Slate-50 Background) */}
       <div className="flex-1 lg:pl-72 flex flex-col min-w-0">
         {/* Header */}
         <InvestorHeader
@@ -115,6 +128,7 @@ export default function PortfolioDetailPage() {
           showBackToDashboard={true}
           pageTitle={portfolio.name}
           pageTitleBadge={portfolio.typeBadge}
+          onOpenNda={() => setIsNdaModalOpen(true)}
         />
 
         {/* Main Container */}
@@ -123,39 +137,48 @@ export default function PortfolioDetailPage() {
           <div className="no-print flex items-center justify-between">
             <button
               onClick={() => navigate('/investisseurs/dashboard')}
-              className="flex items-center space-x-2 text-xs font-semibold text-gray-400 hover:text-white transition"
+              className="flex items-center space-x-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Retour au tableau de bord</span>
             </button>
 
-            <div className="flex items-center space-x-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span className="text-[11px] font-mono text-gray-400">Accès Data Room Vérifié & Débloqué</span>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setIsNdaModalOpen(true)}
+                className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-[11px] font-bold transition"
+              >
+                <FileSignature className="w-3.5 h-3.5 text-emerald-600" />
+                <span>NDA Bilatéral Signé</span>
+              </button>
+              <div className="hidden sm:flex items-center space-x-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[11px] font-mono text-slate-500">Accès Data Room Vérifié</span>
+              </div>
             </div>
           </div>
 
           {/* ================================================================= */}
-          {/* HERO SECTION DU PORTEFEUILLE                                      */}
+          {/* HERO SECTION DU PORTEFEUILLE (WHITE CARD)                        */}
           {/* ================================================================= */}
           <section
-            className={`rounded-2xl bg-gradient-to-b from-[#111827] to-[#0c1220] border p-6 sm:p-10 shadow-2xl relative overflow-hidden ${accentStyles.border}`}
+            className={`rounded-2xl bg-white border border-slate-200 p-6 sm:p-10 shadow-lg relative overflow-hidden`}
           >
             <div className="relative z-10 space-y-6">
-              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-gray-800 pb-6">
+              <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 pb-6">
                 <div>
                   <div className="flex items-center space-x-2 mb-2">
                     <span className={`px-3 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${accentStyles.badge}`}>
                       {portfolio.typeBadge}
                     </span>
-                    <span className="text-xs text-gray-400">
-                      Vendeur : <strong className="text-white">{portfolio.seller}</strong>
+                    <span className="text-xs text-slate-500">
+                      Vendeur : <strong className="text-slate-900">{portfolio.seller}</strong>
                     </span>
                   </div>
-                  <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tight flex items-center gap-3">
+                  <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
                     <span>{portfolio.name}</span>
                   </h1>
-                  <p className="text-gray-300 text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed">
+                  <p className="text-slate-600 text-xs sm:text-sm mt-2 max-w-3xl leading-relaxed">
                     {portfolio.description}
                   </p>
                 </div>
@@ -165,26 +188,26 @@ export default function PortfolioDetailPage() {
                   {/* Bouton Imprimer / PDF */}
                   <button
                     onClick={() => window.print()}
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-blue-500/20"
-                    title="Imprimer ou exporter le dossier en PDF (format paysage)"
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition flex items-center gap-2 border border-slate-300 shadow-sm"
+                    title="Imprimer ou exporter le dossier en PDF"
                   >
-                    <Printer className="w-4 h-4" />
+                    <Printer className="w-4 h-4 text-slate-600" />
                     <span>Imprimer / PDF</span>
                   </button>
 
                   {/* Bouton Accès Data Room */}
                   <a
                     href="#dataroom"
-                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+                    className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-2 shadow-sm"
                   >
                     <FolderLock className="w-4 h-4" />
-                    <span>Accès Data Room Dédiée</span>
+                    <span>Accès Data Room</span>
                   </a>
 
                   {/* Bouton Faire une proposition */}
                   <button
                     onClick={() => setIsOfferModalOpen(true)}
-                    className={`px-5 py-2.5 rounded-xl bg-gradient-to-r ${accentStyles.gradient} text-gray-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-lg ${accentStyles.btnGlow}`}
+                    className={`px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition flex items-center gap-2 shadow-md ${accentStyles.btnGlow}`}
                   >
                     <Coins className="w-4 h-4" />
                     <span>Faire une proposition</span>
@@ -192,29 +215,59 @@ export default function PortfolioDetailPage() {
                 </div>
               </div>
 
-              {/* Metrics */}
+              {/* SPECIFIC HELIOS FILTER: EXCLURE 4 PROJETS URBA */}
+              {isPv && (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center space-x-2.5">
+                    <SlidersHorizontal className="w-4 h-4 text-amber-700 shrink-0" />
+                    <div>
+                      <span className="text-xs font-bold text-amber-950 block">
+                        Filtre Urbanisme Portfolio HELIOS
+                      </span>
+                      <span className="text-[11px] text-amber-800">
+                        {excludeOrange
+                          ? '4 projets avec risques de délais urbanistiques sont actuellement exclus (puissance nette : 8,01 MWc sur 25 sites).'
+                          : 'Tous les 29 projets sont inclus dans le périmètre (puissance totale : 9,12 MWc).'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={toggleExcludeOrange}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm ${
+                      excludeOrange
+                        ? 'bg-amber-600 text-white hover:bg-amber-700'
+                        : 'bg-white text-amber-900 border border-amber-300 hover:bg-amber-100'
+                    }`}
+                  >
+                    <span>{excludeOrange ? '✓ 4 projets urba exclus (8,01 MWc)' : 'Exclure 4 projets urba (8,01 MWc)'}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Metrics Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-800">
-                  <div className="text-[11px] text-gray-400 uppercase font-medium">{portfolio.kpis.totalPowerLabel}</div>
-                  <div className={`text-2xl font-bold ${accentStyles.text}`}>{portfolio.kpis.totalPower}</div>
-                  {portfolio.kpis.totalPowerSub && (
-                    <div className="text-[10px] text-gray-500">{portfolio.kpis.totalPowerSub}</div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 uppercase font-medium">{portfolio.kpis.totalPowerLabel}</div>
+                  <div className={`text-2xl font-bold ${accentStyles.text}`}>{displayPower}</div>
+                  {displayPowerSub && (
+                    <div className="text-[10px] text-slate-500">{displayPowerSub}</div>
                   )}
                 </div>
-                <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-800">
-                  <div className="text-[11px] text-gray-400 uppercase font-medium">Nombre de sites</div>
-                  <div className="text-2xl font-bold text-white">{portfolio.sites.length} sites</div>
-                  <div className="text-[10px] text-emerald-400 font-medium">Sécurisés foncièrement</div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 uppercase font-medium">Nombre de sites</div>
+                  <div className="text-2xl font-bold text-slate-900">{displaySitesCount} sites</div>
+                  <div className="text-[10px] text-emerald-600 font-medium">Sécurisés foncièrement</div>
                 </div>
-                <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-800">
-                  <div className="text-[11px] text-gray-400 uppercase font-medium">{portfolio.kpis.metric1.label}</div>
-                  <div className="text-2xl font-bold text-white">{portfolio.kpis.metric1.value}</div>
-                  <div className="text-[10px] text-gray-400">{portfolio.kpis.metric1.sub}</div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 uppercase font-medium">{portfolio.kpis.metric1.label}</div>
+                  <div className="text-2xl font-bold text-slate-900">{portfolio.kpis.metric1.value}</div>
+                  <div className="text-[10px] text-slate-500">{portfolio.kpis.metric1.sub}</div>
                 </div>
-                <div className="bg-gray-800/40 p-4 rounded-xl border border-gray-800">
-                  <div className="text-[11px] text-gray-400 uppercase font-medium">{portfolio.kpis.metric2.label}</div>
-                  <div className="text-2xl font-bold text-emerald-400">{portfolio.kpis.metric2.value}</div>
-                  <div className="text-[10px] text-gray-400">{portfolio.kpis.metric2.sub}</div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  <div className="text-[11px] text-slate-500 uppercase font-medium">{portfolio.kpis.metric2.label}</div>
+                  <div className="text-2xl font-bold text-emerald-600">{portfolio.kpis.metric2.value}</div>
+                  <div className="text-[10px] text-slate-500">{portfolio.kpis.metric2.sub}</div>
                 </div>
               </div>
             </div>
@@ -227,13 +280,13 @@ export default function PortfolioDetailPage() {
             {portfolio.highlights.map((hl, idx) => (
               <div
                 key={idx}
-                className="bg-[#111827] border border-gray-800 rounded-xl p-5 space-y-2 hover:border-gray-700 transition"
+                className="bg-white border border-slate-200 rounded-xl p-5 space-y-2 hover:border-slate-300 shadow-sm transition"
               >
-                <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-white">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <div className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-slate-900">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>{hl.title}</span>
                 </div>
-                <p className="text-xs text-gray-400 leading-relaxed">{hl.text}</p>
+                <p className="text-xs text-slate-600 leading-relaxed">{hl.text}</p>
               </div>
             ))}
           </section>
@@ -241,29 +294,29 @@ export default function PortfolioDetailPage() {
           {/* ================================================================= */}
           {/* MATRICE ÉCONOMIQUE SPÉCIFIQUE                                     */}
           {/* ================================================================= */}
-          <section className="bg-[#111827] border border-gray-800 rounded-2xl p-6 sm:p-8 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-              <h3 className="text-base font-bold text-white uppercase tracking-wider">
+          <section className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-4 shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <h3 className="text-base font-bold text-slate-900 uppercase tracking-wider">
                 Paramètres Économiques & Justificatifs Disponibles
               </h3>
-              <span className="text-xs text-gray-400">Communicables sous NDA</span>
+              <span className="text-xs text-slate-500">Communicables sous NDA</span>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-gray-300">
-                <thead className="bg-gray-800/60 text-[11px] uppercase tracking-wider text-gray-400">
+              <table className="w-full text-left text-xs text-slate-700">
+                <thead className="bg-slate-50 text-[11px] uppercase tracking-wider text-slate-500 border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-4">Paramètre Clé</th>
                     <th className="py-2.5 px-4">Valeur Portefeuille</th>
                     <th className="py-2.5 px-4">Statut / Document Justificatif</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-800">
+                <tbody className="divide-y divide-slate-100">
                   {portfolio.economicMatrix.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-gray-800/40 transition">
-                      <td className="py-3 px-4 font-semibold text-white">{item.param}</td>
-                      <td className={`py-3 px-4 font-mono ${accentStyles.text}`}>{item.value}</td>
-                      <td className="py-3 px-4 text-emerald-400">{item.justification}</td>
+                    <tr key={idx} className="hover:bg-slate-50/80 transition">
+                      <td className="py-3 px-4 font-semibold text-slate-900">{item.param}</td>
+                      <td className={`py-3 px-4 font-mono font-bold ${accentStyles.text}`}>{item.value}</td>
+                      <td className="py-3 px-4 text-emerald-700 font-medium">{item.justification}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -286,13 +339,13 @@ export default function PortfolioDetailPage() {
           {/* PIPELINE & TABLEAU DES SITES AVEC SÉLECTION                      */}
           {/* ================================================================= */}
           <section id="sites" className="space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
               <div>
-                <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <TableProperties className="w-5 h-5 text-blue-400" />
-                  <span>Liste Complète des Sites ({portfolio.sites.length})</span>
+                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <TableProperties className="w-5 h-5 text-blue-600" />
+                  <span>Liste Complète des Sites ({displaySitesCount})</span>
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-slate-500 mt-0.5">
                   Cochez des sites pour soumettre une offre d'achat partielle, ou cliquez sur une ligne pour afficher la fiche détaillée.
                 </p>
               </div>
@@ -300,7 +353,7 @@ export default function PortfolioDetailPage() {
               {selectedSiteIds.length > 0 && (
                 <button
                   onClick={() => setIsOfferModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/20"
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-sm"
                 >
                   <Coins className="w-4 h-4" />
                   <span>Proposer une offre sur les {selectedSiteIds.length} site(s)</span>
@@ -338,10 +391,23 @@ export default function PortfolioDetailPage() {
             isOpen={isOfferModalOpen}
             onClose={() => setIsOfferModalOpen(false)}
           />
+
+          {/* Modal Consultation & Impression NDA Bilatéral */}
+          <NdaDocumentModal
+            isOpen={isNdaModalOpen}
+            onClose={() => setIsNdaModalOpen(false)}
+          />
+
+          {/* Modal Contact M&A */}
+          <InvestorContactModal
+            isOpen={isContactModalOpen}
+            onClose={() => setIsContactModalOpen(false)}
+            initialSubject={`Demande d'information M&A — Portefeuille ${portfolio.name}`}
+          />
         </main>
 
         {/* Footer */}
-        <footer className="border-t border-gray-800/80 bg-[#0c1220]/80 px-6 py-6 text-center text-xs text-gray-500">
+        <footer className="border-t border-slate-200 bg-white px-6 py-6 text-center text-xs text-slate-500">
           &copy; {new Date().getFullYear()} ENR COURTAGE — Plateforme Transactionnelle M&A Confidentielle.
         </footer>
       </div>

@@ -85,7 +85,7 @@ export default function DataRoomSection({
         `Ce document est certifié conforme aux pièces versées dans la Data Room du portefeuille ${portfolio.name}.\n` +
         `Les pièces d'exécution originales (plans, autorisations d'urbanisme purgées, devis de construction et promesses de bail) sont communicables sans restriction à vos conseils juridiques et techniques.\n\n` +
         `Pour toute question ou demande de pièce complémentaire :\n` +
-        `Yann BARBERIS — y.barberis@enr-courtage.fr — 05 35 54 85 99`
+        `Yann BARBERIS — y.barberis@enr-courtage.fr`
       ],
       { type: 'text/plain;charset=utf-8' }
     );

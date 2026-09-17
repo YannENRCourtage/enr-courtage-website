@@ -376,7 +376,7 @@ Bien cordialement,
 
 Yann BARBERIS
 Président — ENR COURTAGE
-y.barberis@enr-courtage.fr | 05 35 54 85 99
+y.barberis@enr-courtage.fr
 7 rue Gutenberg, 33700 Mérignac`;
 
         return {

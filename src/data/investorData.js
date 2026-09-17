@@ -330,7 +330,7 @@ export const PROCESS_STEPS = [
     step: 5,
     label: '05',
     title: 'Mandat de Négociation Exclusive',
-    description: 'Verrouillage de l\'accord négocié, période d\'exclusivité ferme et recours obligatoire à un avocat pour les actes définitifs.',
+    description: 'Verrouillage de l\'accord négocié, période d\'exclusivité ferme et préparation des actes définitifs de cession.',
     color: 'amber',
     icon: 'FileCheck',
   },
@@ -429,9 +429,8 @@ Pendant cette période, ENR COURTAGE s'interdit formellement :
 - D'accorder des accès Data Room ou d'engager des négociations parallèles.
 - De transférer ou hypothéquer les droits de développement en cause.
 
-ARTICLE 5 — OBLIGATION EXPRESSE DE RECOURS AUX SERVICES D'UN AVOCAT
-« LES PARTIES RECONNAISSENT FORMELLEMENT ET CONVIENNENT EXPRESSÉMENT QUE LA RÉDACTION, L'AUDIT JURIDIQUE ET LA CONCLUSION DES ACTES DÉFINITIFS DE CESSION (PROTOCOLE D'ACCORD DE CESSION, PROMESSE SYNALLAGMATIQUE OU UNILATÉRALE DE CESSION DE DROITS DE DÉVELOPPEMENT, BAUX EMPHYTÉOTIQUES, CONVENTION DE SÉQUESTRE ET CONTRATS D'ACCOMPAGNEMENT TECHNIQUE) NÉCESSITENT OBLIGATOIREMENT LE RECOURS AUX SERVICES D'UN AVOCAT INSCRIT AU BARREAU OU D'UN CABINET JURIDIQUE SPÉCIALISÉ EN DROIT DE L'ÉNERGIE ET DROIT DES AFFAIRES.
-Chaque Partie sera assistée de son propre Conseil juridique pour veiller à la parfaite sécurité juridique, réglementaire et fiscale du Closing. »
+ARTICLE 5 — CONCLUSION DES ACTES DÉFINITIFS DE CESSION
+Les Parties conviennent que la rédaction, l'audit juridique et la conclusion des actes définitifs de cession (protocole d'accord de cession, promesse de cession de droits de développement, baux emphytéotiques, convention de séquestre et contrats d'accompagnement technique) interviendront au cours de la période d'exclusivité selon le calendrier convenu entre les Parties.
 
 ARTICLE 6 — CONFIDENTIALITÉ ET LOI APPLICABLE
 Le présent accord est soumis au droit français. Tout différend relatif à sa validité, son interprétation ou son exécution sera soumis à la juridiction exclusive du Tribunal de Commerce de Bordeaux.

@@ -460,16 +460,16 @@ input:-webkit-autofill:focus {
   pointer-events: none;
 }
 
-/* --- Print PDF Optimization (Landscape Mode & Clean Formatting) --- */
+/* --- Print PDF Optimization (Clean Formatting & Documents) --- */
 @media print {
   @page {
-    size: landscape;
+    size: auto;
     margin: 8mm 10mm;
   }
   
   html, body {
-    background-color: #090d16 !important;
-    color: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     width: 100% !important;

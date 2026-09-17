@@ -33,6 +33,7 @@ import {
   ChevronRight,
   Send,
   Lock,
+  FileSignature,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -43,11 +44,15 @@ import ProcessTimeline from './ProcessTimeline';
 import AdminValidationModal from './AdminValidationModal';
 import OfferModal from './OfferModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
+import NdaDocumentModal from './NdaDocumentModal';
+import InvestorContactModal from './InvestorContactModal';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const adminTabParam = searchParams.get('adminTab');
+
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const {
     currentInvestor,
@@ -66,6 +71,7 @@ export default function InvestorDashboard() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [adminActiveTab, setAdminActiveTab] = useState(adminTabParam || null);
+  const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
 
   React.useEffect(() => {
     if (adminTabParam) {
@@ -151,24 +157,27 @@ export default function InvestorDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-gray-100 flex selection:bg-amber-500 selection:text-gray-950">
-      {/* Vertical Sidebar */}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-amber-500 selection:text-slate-950">
+      {/* Vertical Sidebar (Dark Contrast on Left) */}
       <InvestorSidebar
         activePage="dashboard"
         adminActiveTab={adminActiveTab}
         onSelectAdminTab={handleSelectAdminTab}
         onOpenCreateOffer={() => handleOpenCreateOffer(null)}
         onOpenAdmin={() => handleSelectAdminTab('requests')}
+        onOpenNda={() => setIsNdaModalOpen(true)}
+        onOpenContact={() => setIsContactModalOpen(true)}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 lg:pl-72 flex flex-col min-w-0">
+      {/* Main Content Area (White / Bright Background on Right) */}
+      <div className="flex-1 lg:pl-72 flex flex-col min-w-0 bg-slate-50">
         {/* Header */}
         <InvestorHeader
           onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
           onOpenAdmin={() => handleSelectAdminTab('requests')}
+          onOpenNda={() => setIsNdaModalOpen(true)}
           pageTitle={
             adminActiveTab
               ? "Console d'Administration & Supervision M&A"
@@ -178,15 +187,15 @@ export default function InvestorDashboard() {
         />
 
         {/* Main Content */}
-        <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
+        <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         {/* Admin Notification Banner */}
         {isAdmin && !adminActiveTab && (
-          <div className="bg-gradient-to-r from-amber-950/60 to-gray-900 border border-amber-500/40 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xl">
+          <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
             <div className="flex items-center space-x-3">
-              <span className="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span>
-              <div className="text-xs text-gray-200">
-                <span className="font-bold text-white">Espace Administrateur — Yann BARBERIS</span>
-                <span className="text-gray-400 block sm:inline sm:ml-2">
+              <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
+              <div className="text-xs text-slate-800">
+                <span className="font-bold text-slate-950">Espace Administrateur — Yann BARBERIS</span>
+                <span className="text-slate-600 block sm:inline sm:ml-2">
                   {pendingRequestsCount > 0
                     ? `Vous avez ${pendingRequestsCount} nouvelle(s) demande(s) d'accès investisseur en attente de contre-signature NDA.`
                     : "Aucune demande en attente de validation."}
@@ -196,11 +205,12 @@ export default function InvestorDashboard() {
 
             <button
               onClick={() => handleSelectAdminTab('requests')}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-xs flex items-center gap-1.5"
             >
+              <ShieldCheck className="w-4 h-4 text-slate-950" />
               <span>Gérer les accès & NDA</span>
               {pendingRequestsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-gray-950 text-amber-300 text-[10px] font-black">
+                <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black">
                   {pendingRequestsCount}
                 </span>
               )}
@@ -308,35 +318,39 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* TABLEAU DE BORD PERSONNEL INVESTISSEUR (HEADER DE BIENVENUE)     */}
         {/* ================================================================= */}
-        <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 via-[#0f172a] to-gray-900 border border-gray-800 p-6 sm:p-8 shadow-2xl">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
+        <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm">
           <div className="relative z-10 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800/80 pb-6">
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
               <div className="space-y-1.5">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-gray-400 uppercase tracking-widest">
-                  <Building className="w-4 h-4 text-amber-400" />
-                  <span className="text-amber-400 font-bold">{currentInvestor?.company || 'Investisseur Partenaire'}</span>
+                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                  <Building className="w-4 h-4 text-amber-600" />
+                  <span className="text-amber-800 font-bold">{currentInvestor?.company || 'Investisseur Partenaire'}</span>
                   <span>•</span>
                   <span>Espace Transactionnel M&A</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
                   Bienvenue, {currentInvestor?.name || 'Investisseur'}
                 </h1>
-                <p className="text-gray-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                <p className="text-slate-600 text-xs sm:text-sm max-w-2xl leading-relaxed">
                   Consultez les portefeuilles d'énergies renouvelables en cession, accédez à leurs Teasers et Data Rooms dédiés, et pilotez vos offres d'acquisition fermes ou partielles.
                 </p>
               </div>
 
-              {/* Status Badges */}
+              {/* Status Badges with Clickable NDA Modal */}
               <div className="flex flex-col sm:items-end gap-2 text-right">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-semibold">
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <button
+                  onClick={() => setIsNdaModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition shadow-2xs group cursor-pointer"
+                  title="Cliquer pour afficher, vérifier et imprimer votre NDA signé bilatéralement"
+                >
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition" />
                   <span>NDA Bilatéral Signé & Enregistré</span>
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/40 text-xs font-semibold">
-                  <FolderLock className="w-4 h-4 text-blue-400" />
+                  <span className="text-[10px] bg-emerald-200/70 text-emerald-900 px-1.5 py-0.2 rounded font-mono font-bold ml-1">
+                    Voir / Imprimer →
+                  </span>
+                </button>
+                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-xs font-semibold">
+                  <FolderLock className="w-4 h-4 text-blue-600" />
                   <span>Accès Data Room Intégral Débloqué</span>
                 </div>
               </div>
@@ -344,32 +358,32 @@ export default function InvestorDashboard() {
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-800">
-                <div className="text-[11px] text-gray-400 uppercase font-medium">Portefeuilles Disponibles</div>
-                <div className="text-2xl font-black text-amber-400 mt-1">2 Portefeuilles</div>
-                <div className="text-[10px] text-gray-400 mt-0.5">HÉLIOS (PV) & VOLTA (BESS)</div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase font-semibold">Portefeuilles Disponibles</div>
+                <div className="text-2xl font-black text-amber-700 mt-1">2 Portefeuilles</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">HÉLIOS (PV) & VOLTA (BESS)</div>
               </div>
 
-              <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-800">
-                <div className="text-[11px] text-gray-400 uppercase font-medium">Mes Propositions Déposées</div>
-                <div className="text-2xl font-black text-white mt-1">{myOffers.length} offre(s)</div>
-                <div className="text-[10px] text-emerald-400 font-medium mt-0.5">Totales ou partielles</div>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase font-semibold">Mes Propositions Déposées</div>
+                <div className="text-2xl font-black text-slate-900 mt-1">{myOffers.length} offre(s)</div>
+                <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Totales ou partielles</div>
               </div>
 
-              <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-800">
-                <div className="text-[11px] text-gray-400 uppercase font-medium">En Cours d'Étude</div>
-                <div className="text-2xl font-black text-cyan-400 mt-1">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase font-semibold">En Cours d'Étude</div>
+                <div className="text-2xl font-black text-cyan-700 mt-1">
                   {myOffers.filter((o) => o.status === 'submitted' || o.status === 'counter_by_admin' || o.status === 'counter_by_investor').length}
                 </div>
-                <div className="text-[10px] text-gray-400 mt-0.5">Cycles de négociation actifs</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Cycles de négociation actifs</div>
               </div>
 
-              <div className="bg-gray-800/50 p-4 rounded-xl border border-gray-800">
-                <div className="text-[11px] text-gray-400 uppercase font-medium">Mandats d'Exclusivité</div>
-                <div className="text-2xl font-black text-emerald-400 mt-1">
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+                <div className="text-[11px] text-slate-500 uppercase font-semibold">Mandats d'Exclusivité</div>
+                <div className="text-2xl font-black text-emerald-700 mt-1">
                   {myOffers.filter((o) => o.status === 'agreement_reached' || o.status === 'mandate_signed').length}
                 </div>
-                <div className="text-[10px] text-emerald-400 font-medium mt-0.5">Accords contractualisés</div>
+                <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Accords contractualisés</div>
               </div>
             </div>
           </div>
@@ -378,61 +392,61 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* SECTION 1 : PRINCIPE DE FONCTIONNEMENT DE LA PLATEFORME           */}
         {/* ================================================================= */}
-        <section id="fonctionnement" className="rounded-2xl bg-[#111827] border border-gray-800 p-6 sm:p-8 space-y-6 shadow-xl">
-          <div className="border-b border-gray-800 pb-4">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" /> Modalités Transactionnelles
+        <section id="fonctionnement" className="rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
+          <div className="border-b border-slate-200 pb-4">
+            <div className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-amber-600" /> Modalités Transactionnelles
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-white mt-1">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-950 mt-1">
               Fonctionnement de la Plateforme d'Acquisition
             </h2>
-            <p className="text-xs sm:text-sm text-gray-400 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
               Une plateforme M&A agile permettant de calibrer précisément votre périmètre d'investissement et de structurer des offres adaptées à votre politique de risque.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Pilier 1 */}
-            <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 space-y-2 hover:border-gray-700 transition">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-bold text-xs">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
+              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 font-bold text-xs">
                 1
               </div>
-              <h3 className="text-sm font-bold text-white">Teasers Dédiés par Portefeuille</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
+              <h3 className="text-sm font-bold text-slate-900">Teasers Dédiés par Portefeuille</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Chaque portefeuille (<strong>HÉLIOS PV 8,01 MWc</strong> et <strong>VOLTA BESS 15,50 MW</strong>) dispose de son Teaser autonome avec cartographie interactive, inventaire unitaire et Data Room dédiée. Aucun teaser n'est mutualisé.
               </p>
             </div>
 
             {/* Pilier 2 */}
-            <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 space-y-2 hover:border-gray-700 transition">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-xs">
+            <div className="bg-gray-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
+              <div className="w-8 h-8 rounded-lg bg-cyan-100 border border-cyan-300 flex items-center justify-center text-cyan-800 font-bold text-xs">
                 2
               </div>
-              <h3 className="text-sm font-bold text-white">Liberté Totale de Périmètre</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
+              <h3 className="text-sm font-bold text-slate-900">Liberté Totale de Périmètre</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Vous avez la liberté de formuler une offre sur un <strong>portefeuille entier</strong>, sur un ou plusieurs <strong>projets ciblés</strong> d'un portefeuille, ou sur les <strong>deux portefeuilles combinés</strong>.
               </p>
             </div>
 
             {/* Pilier 3 */}
-            <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 space-y-2 hover:border-gray-700 transition">
-              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-bold text-xs">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 font-bold text-xs">
                 3
               </div>
-              <h3 className="text-sm font-bold text-white">Tarif & Jalonnements Sur-Mesure</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
+              <h3 className="text-sm font-bold text-slate-900">Tarif & Jalonnements Sur-Mesure</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Proposez librement votre valorisation (€ HT) et sélectionnez vos versements parmi les <strong>4 jalons types</strong> de développement (Promesse, Urba purgé, PTF Enedis, RTB). <strong>Aucun jalon n'est imposé par défaut</strong>.
               </p>
             </div>
 
             {/* Pilier 4 */}
-            <div className="bg-gray-900/80 border border-gray-800 rounded-xl p-4 space-y-2 hover:border-gray-700 transition">
-              <div className="w-8 h-8 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 font-bold text-xs">
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
+              <div className="w-8 h-8 rounded-lg bg-purple-100 border border-purple-300 flex items-center justify-center text-purple-800 font-bold text-xs">
                 4
               </div>
-              <h3 className="text-sm font-bold text-white">Négociation & Mandat avec Avocat</h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Aller-retours d'offres et contre-propositions avec Yann BARBERIS. Dès accord mutuel, signature du <strong>Mandat de Négociation Exclusive (60 jours)</strong> avec <strong>recours obligatoire légal à un avocat</strong> pour les actes définitifs.
+              <h3 className="text-sm font-bold text-slate-900">Négociation & Mandat</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Aller-retours d'offres et contre-propositions avec Yann BARBERIS. Dès accord mutuel, signature du <strong>Mandat de Négociation Exclusive (60 jours)</strong> pour la finalisation des actes définitifs de cession.
               </p>
             </div>
           </div>
@@ -442,20 +456,20 @@ export default function InvestorDashboard() {
         {/* SECTION 2 : MES PROPOSITIONS D'ACHAT & NÉGOCIATIONS EN COURS      */}
         {/* ================================================================= */}
         <section id="mes-offres" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
             <div>
-              <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-400" />
+              <h2 className="text-xl font-bold text-slate-950 flex items-center gap-2">
+                <Coins className="w-5 h-5 text-amber-600" />
                 <span>Mes Propositions d'Achat & Négociations en cours ({myOffers.length})</span>
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-600 mt-0.5">
                 Suivez en temps réel l'étude de vos propositions, recevez les contre-propositions de Yann BARBERIS et régularisez vos Mandats d'Exclusivité.
               </p>
             </div>
 
             <button
               onClick={() => handleOpenCreateOffer(null)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-gray-950 font-bold text-xs transition shadow-md shadow-amber-500/20 flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-xs flex items-center gap-1.5"
             >
               <Coins className="w-4 h-4" />
               <span>Déposer une nouvelle offre</span>
@@ -463,19 +477,19 @@ export default function InvestorDashboard() {
           </div>
 
           {myOffers.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-gray-900/60 border border-gray-800 text-center space-y-4">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mx-auto">
+            <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center space-y-4 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 mx-auto">
                 <Coins className="w-6 h-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-white">Vous n'avez pas encore formulé d'offre d'achat</h3>
-                <p className="text-xs text-gray-400 max-w-md mx-auto">
+                <h3 className="text-base font-bold text-slate-900">Vous n'avez pas encore formulé d'offre d'achat</h3>
+                <p className="text-xs text-slate-600 max-w-md mx-auto">
                   Consultez les portefeuilles HÉLIOS et VOLTA ci-dessous, sélectionnez vos projets ou un portefeuille complet, et déposez votre offre avec votre propre échéancier par jalons.
                 </p>
               </div>
               <button
                 onClick={() => handleOpenCreateOffer(null)}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition shadow-lg shadow-amber-500/20"
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm"
               >
                 Formuler ma première proposition d'achat
               </button>
@@ -485,42 +499,42 @@ export default function InvestorDashboard() {
               {myOffers.map((offer) => (
                 <div
                   key={offer.id}
-                  className="rounded-2xl bg-[#111827] border border-gray-800 p-5 sm:p-6 space-y-4 shadow-xl relative overflow-hidden"
+                  className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 space-y-4 shadow-sm relative overflow-hidden"
                 >
                   {/* Top Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-800 pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2">
-                        <span className="text-base font-black text-white">{offer.portfolioName}</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-mono text-[10px] font-bold border border-amber-500/30">
+                        <span className="text-base font-black text-slate-950">{offer.portfolioName}</span>
+                        <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono text-[10px] font-bold border border-amber-300">
                           {offer.offerType === 'total'
                             ? `Portefeuille complet (${offer.selectedSitesCount} sites)`
                             : `Sélection partielle (${offer.selectedSitesCount} sites)`}
                         </span>
                       </div>
-                      <div className="text-[11px] text-gray-400 flex items-center gap-3">
-                        <span>Référence : <strong className="text-gray-300 font-mono">{offer.id}</strong></span>
+                      <div className="text-[11px] text-slate-500 flex items-center gap-3">
+                        <span>Référence : <strong className="text-slate-800 font-mono">{offer.id}</strong></span>
                         <span>• Déposée le : {new Date(offer.createdAt).toLocaleDateString('fr-FR')}</span>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <div className="text-[10px] text-gray-400 uppercase font-semibold">Montant Proposé</div>
-                      <div className="text-2xl font-black font-mono text-emerald-400">
+                      <div className="text-[10px] text-slate-500 uppercase font-semibold">Montant Proposé</div>
+                      <div className="text-2xl font-black font-mono text-emerald-700">
                         {new Intl.NumberFormat('fr-FR').format(offer.amountEur)} € HT
                       </div>
                     </div>
                   </div>
 
                   {/* TABLEAU DES JALONNEMENTS */}
-                  <div className="bg-gray-900/80 p-3 rounded-xl border border-gray-800 space-y-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" /> Échéancier de Paiement Proposé par Jalonnements
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-700" /> Échéancier de Paiement Proposé par Jalonnements
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-[11px] text-gray-300">
-                        <thead className="bg-gray-800/80 text-[10px] uppercase text-gray-400">
+                      <table className="w-full text-left text-[11px] text-slate-700">
+                        <thead className="bg-slate-100 text-[10px] uppercase text-slate-600">
                           <tr>
                             <th className="py-2 px-3">Jalon d'Exécution</th>
                             <th className="py-2 px-3">Modalité / Événement Déclencheur</th>
@@ -529,14 +543,14 @@ export default function InvestorDashboard() {
                             <th className="py-2 px-3 text-right">Montant (€ HT)</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-800">
+                        <tbody className="divide-y divide-slate-200">
                           {(offer.milestones || []).map((m, mIdx) => (
-                            <tr key={mIdx} className="hover:bg-gray-800/40">
-                              <td className="py-2 px-3 font-semibold text-white">{m.label}</td>
-                              <td className="py-2 px-3 text-gray-300">{m.targetCondition}</td>
-                              <td className="py-2 px-3 text-gray-400 font-mono">{m.targetDate}</td>
-                              <td className="py-2 px-3 text-right font-mono text-amber-400 font-bold">{m.percentage}%</td>
-                              <td className="py-2 px-3 text-right font-mono text-emerald-400 font-bold">
+                            <tr key={mIdx} className="hover:bg-slate-100/60">
+                              <td className="py-2 px-3 font-semibold text-slate-900">{m.label}</td>
+                              <td className="py-2 px-3 text-slate-600">{m.targetCondition}</td>
+                              <td className="py-2 px-3 text-slate-500 font-mono">{m.targetDate}</td>
+                              <td className="py-2 px-3 text-right font-mono text-amber-800 font-bold">{m.percentage}%</td>
+                              <td className="py-2 px-3 text-right font-mono text-emerald-700 font-bold">
                                 {new Intl.NumberFormat('fr-FR').format(m.amount)} €
                               </td>
                             </tr>
@@ -548,24 +562,20 @@ export default function InvestorDashboard() {
 
                   {/* Remarques */}
                   {offer.comments && (
-                    <div className="bg-gray-900/50 p-2.5 rounded-lg border border-gray-800 text-[11px] text-gray-300">
-                      <span className="font-bold text-gray-400 block mb-0.5">Vos Remarques & Conditions :</span>
+                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] text-slate-700">
+                      <span className="font-bold text-slate-900 block mb-0.5">Vos Remarques & Conditions :</span>
                       <span>"{offer.comments}"</span>
                     </div>
                   )}
 
-                  {/* ======================================================= */}
-                  {/* ZONE D'ÉTAT DE LA NÉGOCIATION & ALLER-RETOURS           */}
-                  {/* ======================================================= */}
-
                   {/* STATUT 1 : EN COURS D'ÉTUDE */}
                   {(offer.status === 'submitted' || offer.status === 'counter_by_investor') && (
-                    <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-500/30 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center space-x-2.5 text-xs text-amber-200">
-                        <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+                    <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center space-x-2.5 text-xs text-amber-900">
+                        <Clock className="w-4 h-4 text-amber-700 shrink-0" />
                         <div>
-                          <strong className="text-white">En cours d'étude par Yann BARBERIS (ENR COURTAGE)</strong>
-                          <span className="text-gray-400 block sm:inline sm:ml-2">
+                          <strong className="text-slate-900">En cours d'étude par Yann BARBERIS (ENR COURTAGE)</strong>
+                          <span className="text-slate-600 block sm:inline sm:ml-2">
                             {offer.status === 'counter_by_investor'
                               ? "Votre contre-proposition a été transmise à l'administrateur. Vous recevrez son retour prochainement."
                               : "Votre offre initiale est en cours d'analyse par le cédant. Vous serez notifié de son acceptation, refus ou contre-proposition."}
@@ -575,7 +585,7 @@ export default function InvestorDashboard() {
 
                       <button
                         onClick={() => handleOpenModifyOffer(offer)}
-                        className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200 text-xs font-semibold border border-gray-700 flex items-center gap-1.5 transition"
+                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold border border-slate-300 flex items-center gap-1.5 transition shadow-2xs"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                         <span>Modifier ma proposition</span>
@@ -585,24 +595,24 @@ export default function InvestorDashboard() {
 
                   {/* STATUT 2 : CONTRE-PROPOSITION DE YANN BARBERIS */}
                   {offer.status === 'counter_by_admin' && (
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/60 via-gray-900 to-amber-950/40 border-2 border-amber-500/60 space-y-3 shadow-xl animate-pulse">
+                    <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 via-white to-amber-50 border-2 border-amber-400 space-y-3 shadow-xs">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-amber-300 font-bold text-xs uppercase tracking-wider">
-                          <AlertCircle className="w-4 h-4 text-amber-400" />
+                        <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+                          <AlertCircle className="w-4 h-4 text-amber-700" />
                           <span>Contre-Proposition Reçue de Yann BARBERIS (ENR COURTAGE)</span>
                         </div>
-                        <span className="text-[10px] font-mono text-gray-400">Décision requise</span>
+                        <span className="text-[10px] font-mono text-slate-500 font-bold">Décision requise</span>
                       </div>
 
-                      <div className="bg-gray-950/80 p-3 rounded-lg border border-gray-800 space-y-2">
+                      <div className="bg-white p-3 rounded-lg border border-amber-200 space-y-2">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs text-gray-300">Montant révisé proposé par le cédant :</span>
-                          <span className="text-xl font-black font-mono text-amber-400">
+                          <span className="text-xs text-slate-700">Montant révisé proposé par le cédant :</span>
+                          <span className="text-xl font-black font-mono text-amber-800">
                             {new Intl.NumberFormat('fr-FR').format(offer.counterOffer?.amountEur || offer.amountEur)} € HT
                           </span>
                         </div>
                         {offer.counterOffer?.comments && (
-                          <p className="text-xs text-gray-300 italic border-t border-gray-800 pt-1.5">
+                          <p className="text-xs text-slate-600 italic border-t border-slate-100 pt-1.5">
                             "{offer.counterOffer.comments}"
                           </p>
                         )}
@@ -611,7 +621,7 @@ export default function InvestorDashboard() {
                       <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
                         <button
                           onClick={() => handleRejectOffer(offer.id)}
-                          className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-red-500/20 text-gray-300 hover:text-red-400 border border-gray-700 text-xs font-semibold transition flex items-center gap-1"
+                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 text-xs font-semibold transition flex items-center gap-1"
                         >
                           <X className="w-3.5 h-3.5" />
                           <span>Refuser</span>
@@ -619,7 +629,7 @@ export default function InvestorDashboard() {
 
                         <button
                           onClick={() => handleOpenCounterOffer(offer)}
-                          className="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold transition flex items-center gap-1.5"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                           <span>Faire une contre-proposition</span>
@@ -627,7 +637,7 @@ export default function InvestorDashboard() {
 
                         <button
                           onClick={() => handleAcceptCounter(offer.id)}
-                          className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-md shadow-emerald-600/20 flex items-center gap-1.5"
+                          className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5"
                         >
                           <Check className="w-3.5 h-3.5" />
                           <span>Accepter la proposition</span>
@@ -638,13 +648,13 @@ export default function InvestorDashboard() {
 
                   {/* STATUT 3 : ACCORD TROUVÉ -> SIGNATURE DU MANDAT */}
                   {offer.status === 'agreement_reached' && (
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/60 to-gray-900 border border-emerald-500/50 space-y-3">
+                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center space-x-2.5 text-emerald-300">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                        <div className="flex items-center space-x-2.5 text-emerald-900">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                           <div>
-                            <strong className="text-white text-sm">Accord Mutuel Trouvé !</strong>
-                            <p className="text-xs text-gray-300 mt-0.5">
+                            <strong className="text-slate-950 text-sm">Accord Mutuel Trouvé !</strong>
+                            <p className="text-xs text-slate-600 mt-0.5">
                               Les conditions financières et le calendrier de jalonnement ont été validés entre vous et Yann BARBERIS.
                             </p>
                           </div>
@@ -652,18 +662,18 @@ export default function InvestorDashboard() {
 
                         <button
                           onClick={() => setSelectedMandateOffer(offer)}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-600/25 flex items-center gap-2"
+                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2"
                         >
                           <FileCheck className="w-4 h-4" />
                           <span>Consulter & Signer le Mandat de Négociation Exclusive</span>
                         </button>
                       </div>
 
-                      {/* Rappel clause avocat obligatoire */}
-                      <div className="p-2.5 rounded-lg bg-emerald-900/20 border border-emerald-500/30 flex items-center gap-2 text-[11px] text-emerald-200">
-                        <Scale className="w-4 h-4 text-emerald-400 shrink-0" />
+                      {/* Rappel clause mandat exclusif */}
+                      <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex items-center gap-2 text-[11px] text-emerald-900">
+                        <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span>
-                          <strong>Clause impérative :</strong> La formalisation des actes définitifs de cession fera obligatoirement l'objet d'un accompagnement par un avocat d'affaires conformément aux termes du Mandat.
+                          <strong>Clause de sécurisation :</strong> La formalisation des actes définitifs de cession sera finalisée conformément aux termes du Mandat d'Exclusivité.
                         </span>
                       </div>
                     </div>
@@ -671,25 +681,25 @@ export default function InvestorDashboard() {
 
                   {/* STATUT 4 : MANDAT SIGNÉ & EN VIGUEUR */}
                   {offer.status === 'mandate_signed' && (
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-950/40 via-[#0c1a14] to-gray-900 border-2 border-emerald-500/60 space-y-2">
+                    <div className="p-4 rounded-xl bg-emerald-50/70 border-2 border-emerald-400 space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center space-x-2 text-emerald-300">
-                          <FileCheck className="w-5 h-5 text-emerald-400" />
+                        <div className="flex items-center space-x-2 text-emerald-900">
+                          <FileCheck className="w-5 h-5 text-emerald-600" />
                           <div>
-                            <strong className="text-white text-sm">
+                            <strong className="text-slate-950 text-sm">
                               Mandat de Négociation Exclusive Signé & Actif (60 jours)
                             </strong>
-                            <p className="text-xs text-gray-400">
-                              Accord d'exclusivité régularisé électroniquement par les deux parties. Rédaction des contrats définitifs en cours sous l'égide d'un avocat.
+                            <p className="text-xs text-slate-600">
+                              Accord d'exclusivité régularisé électroniquement par les deux parties. Rédaction des contrats définitifs en cours.
                             </p>
                           </div>
                         </div>
 
                         <button
                           onClick={() => setSelectedMandateOffer(offer)}
-                          className="px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition flex items-center gap-1.5"
+                          className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
                         >
-                          <FileCheck className="w-3.5 h-3.5" />
+                          <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Consulter / Télécharger le Mandat (PDF)</span>
                         </button>
                       </div>
@@ -698,11 +708,11 @@ export default function InvestorDashboard() {
 
                   {/* STATUT 5 : REFUSÉ */}
                   {offer.status === 'rejected' && (
-                    <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700 text-xs text-gray-400 flex items-center justify-between">
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
                       <span>Cette proposition n'a pas été retenue ou a été déclinée.</span>
                       <button
                         onClick={() => handleOpenCreateOffer(null)}
-                        className="text-amber-400 hover:underline font-semibold"
+                        className="text-amber-700 hover:underline font-bold"
                       >
                         Formuler une nouvelle proposition
                       </button>
@@ -718,12 +728,12 @@ export default function InvestorDashboard() {
         {/* SECTION 3 : LES 2 PORTEFEUILLES ACTUELLEMENT EN VENTE             */}
         {/* ================================================================= */}
         <section id="portefeuilles" className="space-y-4">
-          <div className="border-b border-gray-800 pb-3">
-            <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-400" />
+          <div className="border-b border-slate-200 pb-3">
+            <h2 className="text-xl font-bold text-slate-950 tracking-tight flex items-center gap-2">
+              <Layers className="w-5 h-5 text-amber-600" />
               <span>Portefeuilles Actuellement en Vente (2 Portefeuilles)</span>
             </h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-slate-600 mt-0.5">
               Cliquez sur un portefeuille pour entrer dans son <strong>Teaser dédié</strong> : cartographie interactive unitaire, tableau détaillé des sites et Data Room correspondante.
             </p>
           </div>
@@ -747,25 +757,25 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         <section
           id="offre"
-          className="no-print rounded-2xl bg-gradient-to-r from-amber-950/40 via-gray-900 to-cyan-950/40 border border-amber-500/30 p-6 sm:p-8 shadow-2xl relative overflow-hidden"
+          className="no-print rounded-2xl bg-gradient-to-r from-amber-50 via-white to-cyan-50 border border-amber-300 p-6 sm:p-8 shadow-sm relative overflow-hidden"
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold uppercase tracking-wider">
-                <Coins className="w-4 h-4 text-amber-400" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold uppercase tracking-wider">
+                <Coins className="w-4 h-4 text-amber-700" />
                 <span>Espace Transactionnel & Propositions</span>
               </div>
-              <h3 className="text-2xl font-black text-white">
+              <h3 className="text-2xl font-black text-slate-950">
                 Déposer une offre d'acquisition (Totale ou Partielle)
               </h3>
-              <p className="text-xs text-gray-300 max-w-2xl leading-relaxed">
+              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
                 Vous pouvez formuler une offre ferme ou indicative sur le portefeuille <strong>HÉLIOS (PV)</strong>, sur le portefeuille <strong>VOLTA (BESS)</strong>, ou sur les <strong>deux combinés</strong>, avec votre propre proposition d'échéancier par jalonnements.
               </p>
             </div>
 
             <button
               onClick={() => handleOpenCreateOffer(null)}
-              className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-gray-950 font-black text-xs uppercase tracking-wider transition transform hover:scale-[1.02] shadow-xl shadow-amber-500/25 flex items-center gap-2.5 shrink-0"
+              className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition transform hover:scale-[1.02] shadow-sm flex items-center gap-2.5 shrink-0"
             >
               <Coins className="w-4 h-4" />
               <span>Soumettre une Proposition d'Achat</span>
@@ -786,42 +796,35 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         <section
           id="contact-ma"
-          className="no-print rounded-2xl bg-gradient-to-br from-gray-900 via-[#111827] to-gray-900 border border-gray-800 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6"
+          className="no-print rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6"
         >
           <div className="space-y-2 text-center md:text-left">
-            <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/30 inline-block">
+            <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 inline-block font-bold">
               Interlocuteur M&A Dédié
             </span>
-            <h4 className="text-lg font-bold text-white">
+            <h4 className="text-lg font-bold text-slate-900">
               Une question sur la structuration ou la Data Room ?
             </h4>
-            <p className="text-xs text-gray-400 max-w-xl">
+            <p className="text-xs text-slate-600 max-w-xl">
               Yann BARBERIS et l'équipe transactionnelle ENR COURTAGE se tiennent à votre disposition pour vous accompagner dans l'analyse des dossiers et convenir d'une session de Questions/Réponses.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <a
-              href="mailto:contact@enr-courtage.fr?subject=[M%26A%20INVESTISSEURS]%20Demande%20d%27information%20portefeuilles"
-              className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition flex items-center gap-2 shadow-lg shadow-amber-500/20"
+            <button
+              onClick={() => setIsContactModalOpen(true)}
+              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-sm"
             >
               <Mail className="w-4 h-4" />
               <span>Contacter le pôle M&A</span>
-            </a>
-            <a
-              href="tel:+33535548599"
-              className="px-4 py-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-200 font-bold text-xs border border-gray-700 transition flex items-center gap-2"
-            >
-              <Phone className="w-4 h-4" />
-              <span>05 35 54 85 99</span>
-            </a>
+            </button>
           </div>
         </section>
         </>
       )}
 
         {/* ================================================================= */}
-        {/* MODALS : ADMIN, OFFRE & MANDAT                                    */}
+        {/* MODALS : ADMIN, OFFRE, MANDAT, NDA BILATÉRAL & CONTACT M&A        */}
         {/* ================================================================= */}
 
         {/* Modal Validation Administrateur (Yann BARBERIS) */}
@@ -848,12 +851,24 @@ export default function InvestorDashboard() {
             onClose={() => setSelectedMandateOffer(null)}
           />
         )}
+
+        {/* Modal Consultation & Impression du NDA Bilatéral Signé */}
+        <NdaDocumentModal
+          isOpen={isNdaModalOpen}
+          onClose={() => setIsNdaModalOpen(false)}
+        />
+
+        {/* Modal Formulaire de Contact M&A (Style Identique au Site) */}
+        <InvestorContactModal
+          isOpen={isContactModalOpen}
+          onClose={() => setIsContactModalOpen(false)}
+        />
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-800/80 bg-[#0c1220]/80 px-6 py-6 text-center text-xs text-gray-500 space-y-1">
+      <footer className="border-t border-slate-200 bg-white px-6 py-6 text-center text-xs text-slate-500 space-y-1">
         <p>&copy; {new Date().getFullYear()} ENR COURTAGE — Plateforme Transactionnelle M&A Confidentielle.</p>
-        <p className="text-[10px] text-gray-600">
+        <p className="text-[11px] text-slate-400">
           Les informations communiquées sont strictement confidentielles et réservées aux investisseurs accrédités ayant régularisé un NDA bilatéral.
         </p>
       </footer>

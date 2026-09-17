@@ -111,15 +111,15 @@ export default function ExclusiveMandateModal({
           </button>
         </div>
 
-        {/* Legal Alert: Obligation of Lawyer */}
+        {/* Legal Alert: Exclusivity */}
         <div className="mb-5 p-4 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-200 text-xs flex items-start gap-3">
-          <Scale className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <ShieldCheck className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <strong className="text-white block">
-              Clause Juridique Impérative — Recours aux services d'un Avocat
+              Sécurisation Transactionnelle & Période d'Exclusivité Ferme
             </strong>
             <p className="text-gray-300 leading-relaxed">
-              La régularisation des actes définitifs de cession (promesse de cession de droits de développement, baux emphytéotiques, séquestre et protocoles) requiert <strong>obligatoirement l'assistance d'un avocat</strong> pour chacune des Parties afin de garantir la conformité réglementaire et la sécurité de l'investissement.
+              La régularisation du Mandat de Négociation Exclusive verrouille le périmètre pour une durée ferme de <strong>60 jours ouvrés</strong> afin de formaliser sereinement les actes définitifs de cession.
             </p>
           </div>
         </div>

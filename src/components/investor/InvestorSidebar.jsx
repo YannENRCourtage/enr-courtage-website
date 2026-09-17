@@ -30,6 +30,8 @@ export default function InvestorSidebar({
   onSelectAdminTab = null,
   onOpenCreateOffer = null,
   onOpenAdmin = null,
+  onOpenNda = null,
+  onOpenContact = null,
   isOpenMobile = false,
   onCloseMobile = () => {},
 }) {
@@ -374,7 +376,14 @@ export default function InvestorSidebar({
               </button>
 
               <button
-                onClick={() => handleNavigate('/investisseurs/dashboard', '#contact-ma')}
+                onClick={() => {
+                  onCloseMobile();
+                  if (onOpenContact) {
+                    onOpenContact();
+                  } else {
+                    handleNavigate('/investisseurs/dashboard', '#contact-ma');
+                  }
+                }}
                 className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-gray-400 hover:bg-gray-800/60 hover:text-white transition text-left"
               >
                 <Mail className="w-4 h-4 text-blue-400 shrink-0" />
@@ -406,6 +415,15 @@ export default function InvestorSidebar({
               <span className="text-emerald-400 font-semibold flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" /> NDA Signé & Validé
               </span>
+              {onOpenNda && (
+                <button
+                  onClick={onOpenNda}
+                  className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-amber-300 font-bold transition flex items-center gap-1 text-[10px]"
+                  title="Consulter et imprimer le NDA signé bilatéral"
+                >
+                  <span>Voir NDA</span>
+                </button>
+              )}
             </div>
           </div>
 
