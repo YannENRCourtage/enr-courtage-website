@@ -143,20 +143,20 @@ export const PORTFOLIOS = [
     description: 'Portefeuille de projets photovoltaïques en toitures neuves et existantes, situés dans des bassins solaires stratégiques du Sud et Sud-Ouest de la France (Gers, Dordogne, Gironde, Landes, Gard, Haute-Garonne, Pyrénées-Atlantiques).',
     descriptionShort: 'Cession de droits de développement PV — toitures agricoles neuves et rénovations.',
     kpis: {
-      totalPower: '8.01 MWc',
-      totalPowerLabel: 'Puissance Ferme',
-      totalPowerSub: '(9.12 MWc bruts)',
-      sites: 25,
-      sitesLabel: 'sites sécurisés',
-      sitesStatus: '100% Urba OK',
-      metric1: { label: 'Bâtiments Neufs', value: '6.54 MWc', sub: '22 projets neufs' },
+      totalPower: '9.12 MWc',
+      totalPowerLabel: 'Puissance Totale',
+      totalPowerSub: '(29 sites au total)',
+      sites: 29,
+      sitesLabel: 'sites au total',
+      sitesStatus: 'Sécurisés foncièrement',
+      metric1: { label: 'Bâtiments Neufs', value: '7.65 MWc', sub: '26 projets neufs' },
       metric2: { label: 'Toitures Existantes', value: '1.47 MWc', sub: '3 rénovations' },
     },
     highlights: [
       {
         icon: 'ShieldCheck',
-        title: 'Sécurisation Urbanistique Assainie',
-        text: '25 projets au statut URBA OK purgé. Les 4 projets à risque urbanistique (Port-de-Lanne & Aumelas) sont temporairement exclus pour sécuriser le closing.',
+        title: 'Sécurisation Urbanistique & Foncière',
+        text: 'Maîtrise foncière et autorisations d\'urbanisme complètes. Fiches projets unitaires détaillées et auditables en Data Room.',
       },
       {
         icon: 'FileCheck',
@@ -187,8 +187,8 @@ export const PORTFOLIOS = [
       },
     ],
     economicMatrix: [
-      { param: 'Nombre de projets', value: '25 sites fermes (+4 conditionnels)', justification: 'Tableaux synoptiques & fiches unitaires' },
-      { param: 'Puissance globale', value: '8,01 MWc fermes (9,12 MWc bruts)', justification: 'Dimensionnements validés' },
+      { param: 'Nombre de projets', value: '29 sites', justification: 'Tableaux synoptiques & fiches unitaires' },
+      { param: 'Puissance globale', value: '9,12 MWc', justification: 'Dimensionnements validés' },
       { param: 'Sécurisation Foncière', value: 'Promesses de Bail signées avec exploitants', justification: '✓ PdB signées communicables sous NDA' },
       { param: 'Coût Foncier / Loyer', value: 'Selon baux emphytéotiques / toitures', justification: 'Loyer verrouillé contractuellement' },
       { param: 'Chiffrage Travaux / Équipement', value: 'Devis détaillés par bâtiment', justification: 'Devis émis & Accord fournisseur négocié' },
@@ -538,7 +538,7 @@ export const NDA_TEXT = generateBilateralNdaText();
 // ============================================================================
 // CAPACITÉ TOTALE CALCULÉE
 // ============================================================================
-export function computeGlobalKpis(portfolios, excludeOrange = true) {
+export function computeGlobalKpis(portfolios) {
   let totalPvKwc = 0;
   let pvSitesCount = 0;
   let bessMW = 0;
@@ -546,7 +546,7 @@ export function computeGlobalKpis(portfolios, excludeOrange = true) {
 
   portfolios.forEach((p) => {
     if (p.type === 'PV') {
-      const activeSites = excludeOrange ? p.sites.filter(s => !s.orange) : p.sites;
+      const activeSites = p.sites;
       totalPvKwc = activeSites.reduce((sum, s) => sum + (s.kwc || 0), 0);
       pvSitesCount = activeSites.length;
     } else if (p.type === 'BESS') {

@@ -45,7 +45,7 @@ const iconMap = {
 export default function PortfolioDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentInvestor, excludeOrange, toggleExcludeOrange } = useInvestorStore();
+  const { currentInvestor } = useInvestorStore();
 
   const portfolio = useMemo(() => investorService.getPortfolioById(id), [id]);
 
@@ -72,10 +72,9 @@ export default function PortfolioDetailPage() {
   const isPv = portfolio.type === 'PV';
   const IconComponent = isPv ? Sun : Battery;
 
-  // Dynamic calculations when excludeOrange is toggled for PV (HELIOS)
-  const displaySitesCount = isPv && excludeOrange ? 25 : portfolio.sites.length;
-  const displayPower = isPv && excludeOrange ? '8,01 MWc' : portfolio.kpis.totalPower;
-  const displayPowerSub = isPv && excludeOrange ? '25 sites (4 projets urba exclus)' : portfolio.kpis.totalPowerSub;
+  const displaySitesCount = portfolio.sites.length;
+  const displayPower = portfolio.kpis.totalPower;
+  const displayPowerSub = portfolio.kpis.totalPowerSub;
 
   const accentStyles = isPv
     ? {
@@ -215,36 +214,6 @@ export default function PortfolioDetailPage() {
                 </div>
               </div>
 
-              {/* SPECIFIC HELIOS FILTER: EXCLURE 4 PROJETS URBA */}
-              {isPv && (
-                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center space-x-2.5">
-                    <SlidersHorizontal className="w-4 h-4 text-amber-700 shrink-0" />
-                    <div>
-                      <span className="text-xs font-bold text-amber-950 block">
-                        Filtre Urbanisme Portfolio HELIOS
-                      </span>
-                      <span className="text-[11px] text-amber-800">
-                        {excludeOrange
-                          ? '4 projets avec risques de délais urbanistiques sont actuellement exclus (puissance nette : 8,01 MWc sur 25 sites).'
-                          : 'Tous les 29 projets sont inclus dans le périmètre (puissance totale : 9,12 MWc).'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={toggleExcludeOrange}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-sm ${
-                      excludeOrange
-                        ? 'bg-amber-600 text-white hover:bg-amber-700'
-                        : 'bg-white text-amber-900 border border-amber-300 hover:bg-amber-100'
-                    }`}
-                  >
-                    <span>{excludeOrange ? '✓ 4 projets urba exclus (8,01 MWc)' : 'Exclure 4 projets urba (8,01 MWc)'}</span>
-                  </button>
-                </div>
-              )}
-
               {/* Metrics Cards */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
@@ -331,7 +300,6 @@ export default function PortfolioDetailPage() {
             <InteractiveMap
               pvSites={isPv ? portfolio.sites : []}
               bessSites={!isPv ? portfolio.sites : []}
-              excludeOrange={isPv ? excludeOrange : false}
             />
           </section>
 
@@ -364,7 +332,6 @@ export default function PortfolioDetailPage() {
             <SiteTable
               sites={portfolio.sites}
               type={portfolio.type}
-              excludeOrange={isPv ? excludeOrange : false}
               showSelection={true}
               selectedSiteIds={selectedSiteIds}
               onToggleSiteSelect={handleToggleSiteSelect}

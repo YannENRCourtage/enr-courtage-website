@@ -31,9 +31,6 @@ export const useInvestorStore = create(
       // List of all investors (starts with default admin and demo accounts, then persisted)
       investors: INVESTORS,
 
-      // Filter: exclude 4 urban-risk projects (default true like in the reference teaser)
-      excludeOrange: true,
-
       // List of offers submitted
       offers: [
         {
@@ -193,9 +190,6 @@ export const useInvestorStore = create(
           };
         });
       },
-
-      // Toggle orange projects filter
-      toggleExcludeOrange: () => set((state) => ({ excludeOrange: !state.excludeOrange })),
 
       // Add document to Data Room
       addDocumentToDataRoom: (portfolioId, categoryName, fileObj) => {
@@ -611,8 +605,8 @@ Vos identifiants personnels de connexion sont les suivants :
 - Mot de passe : ${pass}
 
 Vous pouvez dès à présent vous connecter pour accéder à l'ensemble des éléments transactionnels :
-- Portefeuille HÉLIOS (PV 8.01 MWc fermes / 25 sites sécurisés)
-- Portefeuille VOLTA (BESS 15.50 MW / 31 sites standardisés 4x125 kW)
+- Portefeuille HÉLIOS (PV 9.12 MWc / 29 sites sécurisés)
+- Portefeuille VOLTA (BESS 15.50 MW / 31 sites 4x125 kW)
 - Teasers d'investissement et matrices économiques détaillées
 - Data Room virtuelle complète (fiches synoptiques, devis travaux, PdB, accord fournisseur BESS)
 - Formulaire de proposition d'achat indicatif (global ou partiel selon jalonnements)

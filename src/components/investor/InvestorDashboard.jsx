@@ -59,8 +59,6 @@ export default function InvestorDashboard() {
 
   const {
     currentInvestor,
-    excludeOrange,
-    toggleExcludeOrange,
     investors,
     offers,
     investorAcceptCounter,
@@ -484,7 +482,7 @@ export default function InvestorDashboard() {
               </div>
               <h3 className="text-sm font-bold text-slate-900">Teasers Dédiés par Portefeuille</h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Chaque portefeuille (<strong>HÉLIOS PV 8,01 MWc</strong> et <strong>VOLTA BESS 15,50 MW</strong>) dispose de son Teaser autonome avec cartographie interactive, inventaire unitaire et Data Room dédiée. Aucun teaser n'est mutualisé.
+                Chaque portefeuille (<strong>HÉLIOS PV 9,12 MWc</strong> et <strong>VOLTA BESS 15,50 MW</strong>) dispose de son Teaser autonome avec cartographie interactive, inventaire unitaire et Data Room dédiée. Aucun teaser n'est mutualisé.
               </p>
             </div>
 

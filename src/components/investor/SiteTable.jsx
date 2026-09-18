@@ -28,7 +28,6 @@ export default function SiteTable({
   sites = [],
   type = 'PV', // 'PV' | 'BESS'
   portfolioId = null,
-  excludeOrange = true,
   selectedSiteIds = [],
   onToggleSiteSelect = null,
   onSelectAll = null,
@@ -80,11 +79,6 @@ export default function SiteTable({
         return false;
       }
 
-      // Orange exclusion for PV
-      if (type === 'PV' && excludeOrange && site.orange) {
-        return false;
-      }
-
       // Type filter
       if (typeFilter !== 'ALL') {
         if (typeFilter === 'CONSTRUCTION' && site.type !== 'Construction') return false;
@@ -100,7 +94,7 @@ export default function SiteTable({
 
       return true;
     });
-  }, [sites, type, excludeOrange, typeFilter, searchTerm, currentDeleted]);
+  }, [sites, type, typeFilter, searchTerm, currentDeleted]);
 
   const allFilteredSelected = filteredSites.length > 0 && filteredSites.every((s) => selectedSiteIds.includes(s.id));
 
@@ -147,7 +141,7 @@ export default function SiteTable({
                   : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
               }`}
             >
-              Tous ({sites.filter((s) => !excludeOrange || !s.orange).length})
+              Tous ({sites.length})
             </button>
             <button
               onClick={() => setTypeFilter('CONSTRUCTION')}
@@ -449,8 +443,7 @@ export default function SiteTable({
       {/* Summary count */}
       <div className="text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2 font-medium">
         <span>
-          Affichage de <strong className="text-slate-900 font-bold">{filteredSites.length}</strong> projet(s){' '}
-          {excludeOrange && type === 'PV' ? '(projets urba à risque exclus)' : ''}
+          Affichage de <strong className="text-slate-900 font-bold">{filteredSites.length}</strong> projet(s)
           {currentSold.length > 0 ? ` • ${currentSold.length} projet(s) vendu(s)` : ''}
         </span>
         <span className="text-emerald-700 font-bold">Données certifiées conformes aux extractions</span>

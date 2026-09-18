@@ -384,7 +384,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
                   PRÉAMBULE
                 </strong>
                 <p>
-                  Les Parties sont entrées en discussions en vue d'étudier l'acquisition potentielle par l'Investisseur de droits de développement portant sur des centrales solaires photovoltaïques en toitures (Portefeuille HÉLIOS — 8,01 MWc) et/ou des unités de stockage d'énergie par batteries stationnaires (Portefeuille VOLTA — 15,50 MW). Dans ce cadre, ENR COURTAGE met à disposition de l'Investisseur des données hautement stratégiques, techniques et financières nécessitant une protection renforcée.
+                  Les Parties sont entrées en discussions en vue d'étudier l'acquisition potentielle par l'Investisseur de droits de développement portant sur des centrales solaires photovoltaïques en toitures (Portefeuille HÉLIOS — 9,12 MWc) et/ou des unités de stockage d'énergie par batteries stationnaires (Portefeuille VOLTA — 15,50 MW). Dans ce cadre, ENR COURTAGE met à disposition de l'Investisseur des données hautement stratégiques, techniques et financières nécessitant une protection renforcée.
                 </p>
               </div>
 

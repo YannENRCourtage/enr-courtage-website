@@ -6,7 +6,6 @@ import { Filter, Layers, Sun, Battery } from 'lucide-react';
 export default function InteractiveMap({
   pvSites = [],
   bessSites = [],
-  excludeOrange = true,
   className = '',
 }) {
   const mapContainerRef = useRef(null);
@@ -76,11 +75,10 @@ export default function InteractiveMap({
     // PV markers
     if (activeFilter === 'ALL' || activeFilter === 'PV') {
       pvSites.forEach((site) => {
-        if (excludeOrange && site.orange) return;
         if (!site.lat || !site.lng) return;
 
         const marker = L.marker([site.lat, site.lng], {
-          icon: createMarkerIcon('amber', site.orange),
+          icon: createMarkerIcon('amber', false),
         });
 
         marker.bindPopup(`
@@ -89,7 +87,7 @@ export default function InteractiveMap({
             <div style="font-size: 11px; color: #6b7280; margin-bottom: 4px;">${site.address || ''}</div>
             <div style="margin-top: 4px; display: flex; justify-content: space-between; gap: 8px;">
               <span>Puissance : <strong>${site.kwc} kWc</strong></span>
-              <span style="color: ${site.orange ? '#c2410c' : '#047857'}; font-weight: 600;">${site.statut}</span>
+              <span style="color: #047857; font-weight: 600;">${site.statut || 'URBA OK'}</span>
             </div>
             <div style="font-size: 10px; color: #4b5563; margin-top: 4px;">
               Typologie : ${site.type}
@@ -132,7 +130,7 @@ export default function InteractiveMap({
     if (bounds.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [30, 30] });
     }
-  }, [pvSites, bessSites, excludeOrange, activeFilter]);
+  }, [pvSites, bessSites, activeFilter]);
 
   return (
     <div className={`space-y-3 ${className}`}>
@@ -193,12 +191,6 @@ export default function InteractiveMap({
             <span className="w-3 h-3 rounded-full bg-amber-400 border border-white inline-block shadow-sm"></span>
             <span>Portefeuille PV HÉLIOS</span>
           </div>
-          {excludeOrange ? null : (
-            <div className="flex items-center space-x-2">
-              <span className="w-3 h-3 rounded-full bg-orange-500 border border-white inline-block shadow-sm"></span>
-              <span>Projets PV avec aléas urba</span>
-            </div>
-          )}
           <div className="flex items-center space-x-2">
             <span className="w-3 h-3 rounded-full bg-cyan-400 border border-white inline-block shadow-sm"></span>
             <span>Stockage BESS VOLTA</span>

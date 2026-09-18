@@ -74,7 +74,6 @@ export default function OfferModal({
     investorCounterOffer,
     soldSites = { helios: [], volta: [] },
     deletedSites = { helios: [], volta: [] },
-    excludeOrange = true,
   } = useInvestorStore();
 
   // Wizard Step: 1 = Périmètre & Projets, 2 = Tarif / Montant, 3 = Jalonnements
@@ -126,10 +125,9 @@ export default function OfferModal({
       const pKey = site.portfolioId === 'volta' ? 'volta' : 'helios';
       const isDeleted = deletedSites?.[pKey]?.includes(site.id);
       if (isDeleted) return false;
-      if (pKey === 'helios' && excludeOrange && site.orange) return false;
       return true;
     });
-  }, [targetPortfolio, heliosSites, voltaSites, deletedSites, excludeOrange]);
+  }, [targetPortfolio, heliosSites, voltaSites, deletedSites]);
 
   // Filter sites for search inside modal
   const filteredModalSites = useMemo(() => {
@@ -616,7 +614,7 @@ export default function OfferModal({
                     >
                       <div className="text-base mb-0.5">☀️</div>
                       <div className="font-bold">HÉLIOS (PV)</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">8.01 MWc / 25 sites</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">9.12 MWc / 29 sites</div>
                     </button>
 
                     <button

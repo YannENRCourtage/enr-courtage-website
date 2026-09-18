@@ -274,11 +274,11 @@ export default function InvestorSidebar({
                     <span className="text-xs font-bold text-white">HÉLIOS (PV)</span>
                   </div>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">
-                    8,01 MWc
+                    9,12 MWc
                   </span>
                 </div>
                 <div className="text-[10px] text-gray-400 pl-8 mt-1 flex items-center justify-between">
-                  <span>25 sites toitures</span>
+                  <span>29 sites toitures</span>
                   <span className="text-amber-400 font-mono text-[9px]">Consulter →</span>
                 </div>
               </button>

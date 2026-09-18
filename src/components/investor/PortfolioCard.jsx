@@ -5,30 +5,14 @@ import { useInvestorStore } from '@/stores/useInvestorStore';
 
 export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
   const navigate = useNavigate();
-  const { excludeOrange, toggleExcludeOrange } = useInvestorStore();
 
   const isPv = portfolio.type === 'PV';
   const isHelios = portfolio.id === 'helios';
   const IconComponent = isPv ? Sun : Battery;
 
-  // Dynamic KPIs for HELIOS depending on excludeOrange
-  const displayPower = isHelios
-    ? excludeOrange
-      ? '8.01 MWc'
-      : '9.12 MWc'
-    : portfolio.kpis.totalPower;
-
-  const displayPowerSub = isHelios
-    ? excludeOrange
-      ? '(25 sites sécurisés)'
-      : '(29 sites au total)'
-    : portfolio.kpis.totalPowerSub;
-
-  const displaySitesCount = isHelios
-    ? excludeOrange
-      ? 25
-      : 29
-    : portfolio.sites.length;
+  const displayPower = portfolio.kpis.totalPower;
+  const displayPowerSub = portfolio.kpis.totalPowerSub;
+  const displaySitesCount = portfolio.sites.length;
 
   const accentColor = isPv
     ? {
@@ -76,41 +60,6 @@ export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
             <IconComponent className="w-6 h-6" />
           </div>
         </div>
-
-        {/* HELIOS SPECIFIC: Urba Exclusion Toggle Switch */}
-        {isHelios && (
-          <div className="mt-4 p-3 bg-amber-50/70 rounded-xl border border-amber-200 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0">
-                <Filter className="w-3.5 h-3.5" />
-              </div>
-              <div className="text-xs">
-                <span className="font-black text-slate-900 block">Périmètre d'acquisition HÉLIOS</span>
-                <span className="text-[11px] text-slate-600">
-                  {excludeOrange
-                    ? '4 projets avec aléas urba exclus (25 sites fermes purgés)'
-                    : 'Périmètre brut complet (29 sites)'}
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={toggleExcludeOrange}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs ${
-                excludeOrange
-                  ? 'bg-amber-500 text-slate-950 hover:bg-amber-400'
-                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  excludeOrange ? 'bg-slate-950 animate-pulse' : 'bg-slate-400'
-                }`}
-              />
-              <span>{excludeOrange ? 'Exclure 4 projets urba (Actif)' : 'Inclure tous les sites (29 PV)'}</span>
-            </button>
-          </div>
-        )}
 
         {/* Description */}
         <div className="mt-4 text-xs text-slate-600 leading-relaxed space-y-1.5">

@@ -19,8 +19,8 @@ export const investorService = {
   },
 
   // Compute aggregated KPIs
-  getGlobalKpis: (excludeOrange = true) => {
-    return computeGlobalKpis(PORTFOLIOS, excludeOrange);
+  getGlobalKpis: () => {
+    return computeGlobalKpis(PORTFOLIOS);
   },
 
   // Get M&A process steps

@@ -48,6 +48,7 @@ import {
   Table,
   LayoutGrid,
   FileSignature,
+  MapPin,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -375,8 +376,8 @@ Voici vos identifiants d'accès à l'Espace Investisseurs d'ENR Courtage :
 - Mot de passe confidentiel : ${user.password}
 
 Vous pouvez dès à présent vous connecter pour accéder aux Teasers complets et aux Data Rooms des portefeuilles :
-- Portefeuille HÉLIOS (PV 8.01 MWc fermes / 25 sites sécurisés)
-- Portefeuille VOLTA (BESS 15.50 MW / 31 sites standardisés)
+- Portefeuille HÉLIOS (PV 9.12 MWc / 29 sites sécurisés)
+- Portefeuille VOLTA (BESS 15.50 MW / 31 sites)
 
 Bien cordialement,
 Yann BARBERIS — ENR COURTAGE
