@@ -47,13 +47,16 @@ import {
   FileCheck,
   Table,
   LayoutGrid,
+  FileSignature,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import { storeDocumentBinary, deleteDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
+import NdaDocumentModal from './NdaDocumentModal';
 import ErrorBoundary from './ErrorBoundary';
+import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 
 // Helper to guarantee safe string rendering in JSX
 function safeText(val, fallback = '') {
@@ -124,6 +127,8 @@ export default function AdminValidationModal({
   });
   const [editingUser, setEditingUser] = useState(null);
   const [editingUserData, setEditingUserData] = useState({});
+  const [newNdaFile, setNewNdaFile] = useState(null);
+  const [editingNdaFile, setEditingNdaFile] = useState(null);
   const [visiblePasswords, setVisiblePasswords] = useState({});
   const [copiedUserAccessId, setCopiedUserAccessId] = useState(null);
   const [copiedPassId, setCopiedPassId] = useState(null);
@@ -195,24 +200,49 @@ export default function AdminValidationModal({
     });
   }, [safeInvestors, userSearch, userStatusFilter]);
 
-  // Create User Handler
-  const handleCreateUser = (e) => {
+  // Create User Handler with optional uploaded signed NDA
+  const handleCreateUser = async (e) => {
     e.preventDefault();
     if (!newUserData.email || !newUserData.name) {
       alert('Veuillez renseigner au moins le nom et l\'adresse e-mail.');
       return;
     }
     const pass = newUserData.password.trim() || generateRandomPassword();
+
+    let ndaDataUrl = '';
+    const docId = 'nda_user_' + Date.now();
+    if (newNdaFile) {
+      try {
+        await storeDocumentBinary(docId, newNdaFile, newNdaFile.name);
+        if (newNdaFile.size <= 3.5 * 1024 * 1024) {
+          ndaDataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(newNdaFile);
+          });
+        }
+      } catch (err) {
+        console.warn('Erreur stockage NDA:', err);
+      }
+    }
+
     const res = adminAddUser({
       ...newUserData,
       password: pass,
+      ndaFileName: newNdaFile ? newNdaFile.name : '',
+      ndaFileSize: newNdaFile ? newNdaFile.size : 0,
+      ndaDocumentId: newNdaFile ? docId : '',
+      ndaFileBase64: ndaDataUrl,
+      hasUploadedSignedNda: !!newNdaFile,
+      status: 'active',
     });
     if (!res.success) {
       alert(res.error || 'Erreur lors de la création.');
       return;
     }
     setIsAddUserModalOpen(false);
-    setUserActionNotice(`Compte créé avec succès pour ${newUserData.name} (${newUserData.email}) ! Mot de passe : ${pass}`);
+    setUserActionNotice(`Compte créé avec succès pour ${newUserData.name} (${newUserData.email}) ! Mot de passe : ${pass}${newNdaFile ? ` — NDA signé (${newNdaFile.name}) rattaché` : ''}`);
     setVisiblePasswords((prev) => ({ ...prev, [res.user.id]: true }));
     setNewUserData({
       name: '',
@@ -224,16 +254,81 @@ export default function AdminValidationModal({
       isAdmin: false,
       status: 'active',
     });
+    setNewNdaFile(null);
     setTimeout(() => setUserActionNotice(''), 6000);
   };
 
+  // Upload signed NDA for existing user
+  const handleUploadNdaForUser = async (user, file) => {
+    if (!file) return;
+    try {
+      const docId = user.ndaDocumentId || ('nda_user_' + user.id + '_' + Date.now());
+      await storeDocumentBinary(docId, file, file.name);
+      let dataUrl = '';
+      if (file.size <= 3.5 * 1024 * 1024) {
+        dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = () => resolve('');
+          reader.readAsDataURL(file);
+        });
+      }
+      adminUpdateUser(user.id, {
+        ndaFileName: file.name,
+        ndaFileSize: file.size,
+        ndaDocumentId: docId,
+        ndaFileBase64: dataUrl,
+        hasUploadedSignedNda: true,
+        ndaSignedAt: new Date().toISOString(),
+        ndaSignedByAdmin: true,
+        status: 'active',
+        ndaText: `Document NDA original signé : ${file.name}`,
+      });
+      setUserActionNotice(`Document NDA signé (${file.name}) enregistré pour ${user.name} !`);
+      setTimeout(() => setUserActionNotice(''), 5000);
+    } catch (err) {
+      alert("Erreur lors de l'enregistrement du fichier NDA.");
+    }
+  };
+
   // Save Edit User Handler
-  const handleSaveEditUser = (e) => {
+  const handleSaveEditUser = async (e) => {
     e.preventDefault();
     if (!editingUser) return;
-    adminUpdateUser(editingUser.id, editingUserData);
+
+    let extraNdaFields = {};
+    if (editingNdaFile) {
+      try {
+        const docId = editingUser.ndaDocumentId || ('nda_user_' + editingUser.id + '_' + Date.now());
+        await storeDocumentBinary(docId, editingNdaFile, editingNdaFile.name);
+        let dataUrl = '';
+        if (editingNdaFile.size <= 3.5 * 1024 * 1024) {
+          dataUrl = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => resolve('');
+            reader.readAsDataURL(editingNdaFile);
+          });
+        }
+        extraNdaFields = {
+          ndaFileName: editingNdaFile.name,
+          ndaFileSize: editingNdaFile.size,
+          ndaDocumentId: docId,
+          ndaFileBase64: dataUrl,
+          hasUploadedSignedNda: true,
+          ndaSignedAt: new Date().toISOString(),
+          ndaSignedByAdmin: true,
+          ndaText: `Document NDA original signé : ${editingNdaFile.name}`,
+        };
+      } catch (err) {
+        console.warn('Erreur upload NDA:', err);
+      }
+    }
+
+    adminUpdateUser(editingUser.id, { ...editingUserData, ...extraNdaFields });
     setUserActionNotice(`Modifications enregistrées pour ${editingUserData.name || editingUser.name}.`);
     setEditingUser(null);
+    setEditingNdaFile(null);
     setTimeout(() => setUserActionNotice(''), 4000);
   };
 
@@ -318,7 +413,7 @@ y.barberis@enr-courtage.fr`;
   // Admin Negotiation Actions
   const handleOpenCounter = (offer) => {
     setCounteringOfferId(offer.id);
-    setCounterAmount(String(offer.amountEur || ''));
+    setCounterAmount(formatThousands(offer.amountEur || ''));
     setCounterComments('');
     const baseMilestones = (offer.milestones && offer.milestones.length > 0)
       ? offer.milestones
@@ -332,7 +427,7 @@ y.barberis@enr-courtage.fr`;
   };
 
   const handleSubmitCounter = (offerId) => {
-    const num = Number(String(counterAmount).replace(/\s/g, '').replace(',', '.'));
+    const num = parseThousands(counterAmount);
     if (isNaN(num) || num <= 0) {
       alert('Veuillez renseigner un montant valide en euros hors taxes.');
       return;
@@ -1203,7 +1298,7 @@ y.barberis@enr-courtage.fr`;
                               <input
                                 type="text"
                                 value={counterAmount}
-                                onChange={(e) => setCounterAmount(e.target.value)}
+                                onChange={(e) => setCounterAmount(formatThousands(e.target.value))}
                                 placeholder="ex: 4 000 000"
                                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400"
                               />
@@ -1225,13 +1320,18 @@ y.barberis@enr-courtage.fr`;
 
                           {/* Adjust Milestones % */}
                           <div className="space-y-2">
-                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                              Répartition des versements par jalon (Total exigé = 100%)
+                            <div className="flex items-center justify-between">
+                              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                                Répartition des versements par jalon (Total exigé = 100%)
+                              </div>
+                              <span className="text-[10px] font-mono font-bold text-emerald-400">
+                                Total : {counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0)}% (Équilibrage automatique)
+                              </span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                               {counterMilestones.map((m, idx) => (
                                 <div key={idx} className="bg-gray-900/90 p-2 rounded-lg border border-gray-700 text-xs space-y-1">
-                                  <div className="text-[10px] font-semibold text-gray-300 truncate">{m.label}</div>
+                                  <div className="text-[10px] font-semibold text-gray-300 truncate" title={m.label}>{m.label}</div>
                                   <div className="flex items-center gap-1.5">
                                     <input
                                       type="number"
@@ -1239,14 +1339,16 @@ y.barberis@enr-courtage.fr`;
                                       max="100"
                                       value={m.percentage}
                                       onChange={(e) => {
-                                        const val = Number(e.target.value);
                                         setCounterMilestones((prev) =>
-                                          prev.map((item, i) => (i === idx ? { ...item, percentage: val } : item))
+                                          autoBalanceMilestones(prev, idx, e.target.value)
                                         );
                                       }}
                                       className="w-16 px-2 py-1 bg-gray-800 border border-gray-600 rounded text-center text-amber-400 font-mono font-bold"
                                     />
                                     <span className="text-gray-400">%</span>
+                                    <span className="text-[10px] text-emerald-400 font-mono ml-auto">
+                                      {formatThousands(Math.round((parseThousands(counterAmount) * (Number(m.percentage) || 0)) / 100))} €
+                                    </span>
                                   </div>
                                 </div>
                               ))}
@@ -2112,15 +2214,37 @@ y.barberis@enr-courtage.fr`;
                                 <Mail className="w-3.5 h-3.5 text-amber-400" />
                               </button>
 
-                              {inv.ndaText && (
+                              {(inv.ndaText || inv.hasUploadedSignedNda || inv.ndaFileName) && (
                                 <button
                                   onClick={() => setSelectedInvestorForNda(inv)}
-                                  className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-cyan-300 border border-gray-700 text-[10px] font-semibold transition"
-                                  title="Consulter le NDA bilatéral"
+                                  className="px-2 py-1 rounded-lg bg-gray-800 hover:bg-cyan-500/20 text-cyan-300 border border-gray-700 hover:border-cyan-500/40 text-[10px] font-semibold transition flex items-center gap-1"
+                                  title="Consulter et télécharger le NDA bilatéral"
                                 >
-                                  NDA
+                                  <span>NDA</span>
+                                  {inv.hasUploadedSignedNda && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" title="PDF original signé rattaché"></span>
+                                  )}
                                 </button>
                               )}
+
+                              {/* Direct Upload / Remplacer le NDA signé PDF depuis l'ordinateur */}
+                              <label
+                                className="p-1.5 rounded-lg bg-gray-800 hover:bg-emerald-500/20 text-gray-400 hover:text-emerald-400 border border-gray-700 hover:border-emerald-500/40 cursor-pointer transition"
+                                title="Charger un document NDA signé (PDF depuis votre ordinateur)"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <input
+                                  type="file"
+                                  accept=".pdf,application/pdf"
+                                  className="hidden"
+                                  onChange={(e) => {
+                                    if (e.target.files?.[0]) {
+                                      handleUploadNdaForUser(inv, e.target.files[0]);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                />
+                              </label>
 
                               <button
                                 onClick={() => {
@@ -2699,6 +2823,55 @@ y.barberis@enr-courtage.fr`;
                   </div>
                 </div>
 
+                {/* Rattacher le NDA signé (PDF depuis l'ordinateur) */}
+                <div className="p-3 bg-gray-800/90 border border-amber-500/40 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-gray-200 font-bold flex items-center gap-1.5 text-xs">
+                      <FileSignature className="w-4 h-4 text-amber-400" />
+                      <span>Rattacher le NDA signé (Fichier PDF depuis votre ordinateur)</span>
+                    </label>
+                    <span className="text-[10px] text-amber-400 font-mono font-semibold">Optionnel</span>
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Si l'investisseur a déjà régularisé son accord, sélectionnez le fichier PDF sur votre ordinateur pour qu'il soit directement consultable et téléchargeable sur son interface.
+                  </p>
+
+                  {newNdaFile ? (
+                    <div className="flex items-center justify-between bg-gray-900 px-3 py-2 rounded-lg border border-emerald-500/40 text-xs">
+                      <div className="flex items-center space-x-2 text-emerald-300 truncate">
+                        <FileCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="truncate font-mono">{newNdaFile.name}</span>
+                        <span className="text-[10px] text-gray-500 font-mono shrink-0">
+                          ({(newNdaFile.size / 1024).toFixed(0)} Ko)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNewNdaFile(null)}
+                        className="text-gray-400 hover:text-red-400 p-1"
+                        title="Retirer ce fichier"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-gray-600 hover:border-amber-400 bg-gray-900/60 hover:bg-gray-900 text-gray-300 hover:text-white cursor-pointer transition text-xs font-semibold">
+                      <Upload className="w-4 h-4 text-amber-400" />
+                      <span>Parcourir et charger le NDA signé (.pdf)...</span>
+                      <input
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setNewNdaFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
                 <div className="flex items-center space-x-2 pt-1">
                   <input
                     type="checkbox"
@@ -2843,6 +3016,59 @@ y.barberis@enr-courtage.fr`;
                   </div>
                 </div>
 
+                {/* Upload / Remplacer le NDA signé (PDF depuis l'ordinateur) */}
+                <div className="p-3 bg-gray-800/90 border border-amber-500/40 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-gray-200 font-bold flex items-center gap-1.5 text-xs">
+                      <FileSignature className="w-4 h-4 text-amber-400" />
+                      <span>Document NDA Signé (PDF depuis votre ordinateur)</span>
+                    </label>
+                    {editingUser.ndaFileName && (
+                      <span className="text-[10px] text-emerald-400 font-mono font-semibold">
+                        Actuel : {editingUser.ndaFileName}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-gray-400">
+                    Chargez ou remplacez le document PDF original signé pour que l'investisseur puisse le consulter directement sur son espace.
+                  </p>
+
+                  {editingNdaFile ? (
+                    <div className="flex items-center justify-between bg-gray-900 px-3 py-2 rounded-lg border border-emerald-500/40 text-xs">
+                      <div className="flex items-center space-x-2 text-emerald-300 truncate">
+                        <FileCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span className="truncate font-mono">{editingNdaFile.name}</span>
+                        <span className="text-[10px] text-gray-500 font-mono shrink-0">
+                          ({(editingNdaFile.size / 1024).toFixed(0)} Ko)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditingNdaFile(null)}
+                        className="text-gray-400 hover:text-red-400 p-1"
+                        title="Retirer ce fichier"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex items-center justify-center gap-2 p-2.5 rounded-lg border border-dashed border-gray-600 hover:border-amber-400 bg-gray-900/60 hover:bg-gray-900 text-gray-300 hover:text-white cursor-pointer transition text-xs font-semibold">
+                      <Upload className="w-4 h-4 text-amber-400" />
+                      <span>{editingUser.ndaFileName ? 'Remplacer le NDA signé (.pdf)...' : 'Charger le NDA signé (.pdf)...'}</span>
+                      <input
+                        type="file"
+                        accept=".pdf,application/pdf"
+                        className="hidden"
+                        onChange={(e) => {
+                          if (e.target.files?.[0]) {
+                            setEditingNdaFile(e.target.files[0]);
+                          }
+                        }}
+                      />
+                    </label>
+                  )}
+                </div>
+
                 {editingUser.email !== 'y.barberis@enr-courtage.fr' && (
                   <div className="flex items-center space-x-2 pt-1">
                     <input
@@ -2878,36 +3104,13 @@ y.barberis@enr-courtage.fr`;
           </div>
         )}
 
-        {/* NDA Reader Sub-modal */}
+        {/* NDA Reader Modal using NdaDocumentModal */}
         {selectedInvestorForNda && (
-          <div className="fixed inset-0 z-60 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-gray-800 pb-3">
-                <h4 className="font-bold text-white text-sm">
-                  Accord de Confidentialité — {selectedInvestorForNda.company}
-                </h4>
-                <button
-                  onClick={() => setSelectedInvestorForNda(null)}
-                  className="text-gray-400 hover:text-white"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-
-              <div className="h-96 overflow-y-auto p-4 bg-gray-950 border border-gray-800 rounded-xl text-xs text-gray-300 font-sans space-y-3 whitespace-pre-line leading-relaxed">
-                {selectedInvestorForNda.ndaText}
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  onClick={() => setSelectedInvestorForNda(null)}
-                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg text-xs font-semibold"
-                >
-                  Fermer
-                </button>
-              </div>
-            </div>
-          </div>
+          <NdaDocumentModal
+            isOpen={!!selectedInvestorForNda}
+            investor={selectedInvestorForNda}
+            onClose={() => setSelectedInvestorForNda(null)}
+          />
         )}
 
         {/* Exclusive Mandate Modal for Admin (Yann BARBERIS) */}

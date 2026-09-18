@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   FileSignature,
@@ -11,8 +11,11 @@ import {
   User,
   Calendar,
   Sparkles,
+  FileText,
+  FileCheck,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import { getDocumentBinary } from '@/services/fileStorageService';
 
 // Helper to generate initials from full name (strips parentheses like (MOA) and special characters)
 function getInitials(name = '') {
@@ -24,26 +27,67 @@ function getInitials(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default function NdaDocumentModal({ isOpen, onClose }) {
-  const { currentInvestor } = useInvestorStore();
+export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
+  const { currentInvestor: storeInvestor } = useInvestorStore();
+  const activeInvestor = investor || storeInvestor;
+
+  const [uploadedPdfUrl, setUploadedPdfUrl] = useState(null);
+  const [isLoadingPdf, setIsLoadingPdf] = useState(false);
+  const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'generated'
+
+  useEffect(() => {
+    let objectUrl = null;
+    if (!isOpen || !activeInvestor) {
+      setUploadedPdfUrl(null);
+      return;
+    }
+
+    if (activeInvestor.ndaFileBase64) {
+      setUploadedPdfUrl(activeInvestor.ndaFileBase64);
+      setViewMode('pdf');
+      return;
+    }
+
+    const docId = activeInvestor.ndaDocumentId || ('nda_user_' + activeInvestor.id);
+    setIsLoadingPdf(true);
+    getDocumentBinary(docId).then((record) => {
+      if (record && record.blob) {
+        objectUrl = URL.createObjectURL(record.blob);
+        setUploadedPdfUrl(objectUrl);
+        setViewMode('pdf');
+      } else {
+        setViewMode('generated');
+      }
+      setIsLoadingPdf(false);
+    }).catch(() => {
+      setIsLoadingPdf(false);
+      setViewMode('generated');
+    });
+
+    return () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [isOpen, activeInvestor]);
 
   if (!isOpen) return null;
 
-  const rawInvestorName = currentInvestor?.name || 'Jean DUS';
+  const rawInvestorName = activeInvestor?.name || 'Jean DUS';
   const investorCleanName = rawInvestorName.replace(/\(.*?\)/g, '').trim() || rawInvestorName;
-  const investorName = currentInvestor?.name || 'Jean DUS';
-  const investorCompany = currentInvestor?.company || 'ENEE ENERGY PARTNERS';
-  const investorRole = currentInvestor?.role || 'Directeur des Investissements';
+  const investorName = activeInvestor?.name || 'Jean DUS';
+  const investorCompany = activeInvestor?.company || 'ENEE ENERGY PARTNERS';
+  const investorRole = activeInvestor?.role || 'Directeur des Investissements';
   const investorInitials = getInitials(investorName);
-  const signedDate = currentInvestor?.ndaSignedAt
-    ? new Date(currentInvestor.ndaSignedAt).toLocaleDateString('fr-FR', {
+  const signedDate = activeInvestor?.ndaSignedAt
+    ? new Date(activeInvestor.ndaSignedAt).toLocaleDateString('fr-FR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
       })
     : new Date().toLocaleDateString('fr-FR');
-  const signedTimestamp = currentInvestor?.ndaSignedAt
-    ? new Date(currentInvestor.ndaSignedAt).toLocaleTimeString('fr-FR', {
+  const signedTimestamp = activeInvestor?.ndaSignedAt
+    ? new Date(activeInvestor.ndaSignedAt).toLocaleTimeString('fr-FR', {
         hour: '2-digit',
         minute: '2-digit',
       })
@@ -193,15 +237,40 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handlePrint}
-              className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-sm"
-              title="Imprimer ou enregistrer en PDF"
-            >
-              <Printer className="w-4 h-4" />
-              <span>Imprimer / Télécharger PDF</span>
-            </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {uploadedPdfUrl && (
+              <>
+                <a
+                  href={uploadedPdfUrl}
+                  download={activeInvestor.ndaFileName || 'Accord_Confidentialite_Signe.pdf'}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-2 shadow-sm"
+                  title="Télécharger le document PDF original signé"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Télécharger le PDF signé</span>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => setViewMode((m) => (m === 'pdf' ? 'generated' : 'pdf'))}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5"
+                >
+                  <FileText className="w-3.5 h-3.5 text-amber-600" />
+                  <span>{viewMode === 'pdf' ? 'Transcription textuelle' : 'Document PDF original'}</span>
+                </button>
+              </>
+            )}
+
+            {(!uploadedPdfUrl || viewMode === 'generated') && (
+              <button
+                onClick={handlePrint}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-sm"
+                title="Imprimer ou enregistrer en PDF"
+              >
+                <Printer className="w-4 h-4" />
+                <span>Imprimer / Télécharger PDF</span>
+              </button>
+            )}
 
             <button
               onClick={onClose}
@@ -214,8 +283,37 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
         </div>
 
         {/* ================================================================= */}
-        {/* DOCUMENT CONTRACTUEL FORMALISÉ (PAGE 1 ET PAGE 2)                  */}
+        {/* VUE 1 : DOCUMENT PDF ORIGINAL CHARGÉ DEPUIS L'ORDINATEUR         */}
         {/* ================================================================= */}
+        {uploadedPdfUrl && viewMode === 'pdf' ? (
+          <div className="space-y-4">
+            <div className="p-3 bg-gradient-to-r from-amber-50 via-white to-amber-50 border border-amber-300 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
+              <div className="flex items-center space-x-2 text-slate-800">
+                <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Fichier original signé : <strong className="text-slate-950 font-mono">{activeInvestor.ndaFileName || 'Document_NDA_Signe.pdf'}</strong>
+                </span>
+              </div>
+              <a
+                href={uploadedPdfUrl}
+                download={activeInvestor.ndaFileName || 'Accord_Confidentialite_Signe.pdf'}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+              >
+                <Download className="w-3.5 h-3.5 text-amber-400" />
+                <span>Télécharger ce PDF</span>
+              </a>
+            </div>
+
+            <iframe
+              src={uploadedPdfUrl}
+              className="w-full h-[78vh] rounded-xl border border-slate-300 shadow-inner bg-slate-100"
+              title="Document NDA Signé Original"
+            />
+          </div>
+        ) : (
+        /* ================================================================= */
+        /* VUE 2 : DOCUMENT CONTRACTUEL FORMALISÉ (PAGE 1 ET PAGE 2)          */
+        /* ================================================================= */
         <div id="printable-nda-document" className="space-y-8 font-sans text-slate-800">
           
           {/* =============================================================== */}
@@ -501,6 +599,7 @@ export default function NdaDocumentModal({ isOpen, onClose }) {
             </div>
           </div>
         </div>
+        )}
 
         {/* Footer actions (Hidden on Print) */}
         <div className="no-print mt-6 pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3">

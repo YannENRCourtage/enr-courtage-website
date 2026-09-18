@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
+import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 
 // The 4 standard milestones from Image 2
 const STANDARD_MILESTONES = [
@@ -98,7 +99,7 @@ export default function OfferModal({
     if (existingOffer) {
       setTargetPortfolio(existingOffer.portfolioId || 'helios');
       setOfferType(existingOffer.offerType || 'total');
-      setAmountEur(String(existingOffer.amountEur || ''));
+      setAmountEur(existingOffer.amountEur ? formatThousands(existingOffer.amountEur) : '');
       setComments(existingOffer.comments || '');
 
       // Load existing milestones
@@ -145,7 +146,7 @@ export default function OfferModal({
   const sitesToIncludeCount =
     offerType === 'total' ? totalSitesCount : (selectedSiteIds.length || 1);
 
-  const numericAmount = parseFloat((amountEur || '0').replace(/\s/g, '').replace(',', '.'));
+  const numericAmount = parseThousands(amountEur);
 
   // Toggle milestone selection
   const handleToggleMilestone = (std) => {
@@ -154,32 +155,87 @@ export default function OfferModal({
       if (isCurrentlySelected) {
         const next = { ...prev };
         delete next[std.key];
+        // Rebalance remaining to sum to 100%
+        const remainingKeys = STANDARD_MILESTONES.map((s) => s.key).filter((k) => next[k]?.selected);
+        if (remainingKeys.length > 0) {
+          const equalShare = Math.floor(100 / remainingKeys.length);
+          const remainder = 100 - (equalShare * remainingKeys.length);
+          remainingKeys.forEach((k, idx) => {
+            next[k] = {
+              ...next[k],
+              percentage: equalShare + (idx === 0 ? remainder : 0),
+            };
+          });
+        }
         return next;
       } else {
-        return {
+        const next = {
           ...prev,
           [std.key]: {
             selected: true,
-            percentage: std.defaultPercent || 25,
+            percentage: 0,
             label: `Jalon — ${std.title}`,
             targetCondition: std.targetCondition,
             targetDate: std.targetDate,
           },
         };
+        const selectedKeys = STANDARD_MILESTONES.map((s) => s.key).filter((k) => next[k]?.selected);
+        if (selectedKeys.length > 0) {
+          const equalShare = Math.floor(100 / selectedKeys.length);
+          const remainder = 100 - (equalShare * selectedKeys.length);
+          selectedKeys.forEach((k, idx) => {
+            next[k] = {
+              ...next[k],
+              percentage: equalShare + (idx === 0 ? remainder : 0),
+            };
+          });
+        }
+        return next;
       }
     });
   };
 
-  // Change percentage of selected milestone
+  // Change percentage of selected milestone with auto-balance to 100%
   const handlePercentageChange = (key, newPercent) => {
-    const val = parseInt(newPercent) || 0;
-    setSelectedMilestonesMap((prev) => ({
-      ...prev,
-      [key]: {
-        ...prev[key],
-        percentage: val,
-      },
-    }));
+    const requested = parseInt(newPercent, 10);
+    const safeVal = isNaN(requested) ? 0 : requested;
+
+    setSelectedMilestonesMap((prev) => {
+      const selectedKeys = STANDARD_MILESTONES
+        .map((s) => s.key)
+        .filter((k) => prev[k]?.selected);
+
+      if (selectedKeys.length <= 1) {
+        return {
+          ...prev,
+          [key]: {
+            ...prev[key],
+            percentage: safeVal,
+          },
+        };
+      }
+
+      const changedIndex = selectedKeys.indexOf(key);
+      if (changedIndex === -1) return prev;
+
+      const currentMilestones = selectedKeys.map((k) => ({
+        key: k,
+        percentage: prev[k]?.percentage ?? 0,
+      }));
+
+      const balanced = autoBalanceMilestones(currentMilestones, changedIndex, safeVal);
+
+      const next = { ...prev };
+      balanced.forEach((item) => {
+        if (next[item.key]) {
+          next[item.key] = {
+            ...next[item.key],
+            percentage: item.percentage,
+          };
+        }
+      });
+      return next;
+    });
   };
 
   // Build active milestones list
@@ -572,7 +628,7 @@ export default function OfferModal({
                       autoFocus
                       required
                       value={amountEur}
-                      onChange={(e) => setAmountEur(e.target.value)}
+                      onChange={(e) => setAmountEur(formatThousands(e.target.value))}
                       placeholder="Ex : 2 500 000"
                       className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-base placeholder-gray-500 focus:outline-none focus:border-amber-400 transition"
                     />
@@ -689,7 +745,7 @@ export default function OfferModal({
                             <div className="flex items-center space-x-2 shrink-0">
                               <div className="text-right">
                                 <div className="text-[10px] text-gray-400 font-mono">
-                                  {new Intl.NumberFormat('fr-FR').format(computedEur)} €
+                                  {formatThousands(computedEur)} €
                                 </div>
                               </div>
                               <div className="flex items-center space-x-1">
@@ -716,7 +772,7 @@ export default function OfferModal({
                   <div className="text-gray-300">
                     <span>Montant total : </span>
                     <strong className="text-emerald-400 font-mono">
-                      {new Intl.NumberFormat('fr-FR').format(numericAmount)} € HT
+                      {formatThousands(numericAmount)} € HT
                     </strong>
                     <span className="text-gray-500 ml-2">({activeMilestones.length} jalon(s) actif(s))</span>
                   </div>

@@ -553,7 +553,21 @@ y.barberis@enr-courtage.fr
       },
 
       // Admin action: Add new user directly
-      adminAddUser: ({ name, company, email, password, role = 'Investisseur', phone = '', isAdmin = false, status = 'active' }) => {
+      adminAddUser: ({
+        name,
+        company,
+        email,
+        password,
+        role = 'Investisseur',
+        phone = '',
+        isAdmin = false,
+        status = 'active',
+        ndaFileName = '',
+        ndaFileSize = 0,
+        ndaDocumentId = '',
+        ndaFileBase64 = '',
+        hasUploadedSignedNda = false,
+      }) => {
         const cleanEmail = (email || '').trim().toLowerCase();
         const pass = (password || '').trim() || generateRandomPassword();
         const existing = get().investors.find((i) => i.email && i.email.trim().toLowerCase() === cleanEmail);
@@ -588,7 +602,14 @@ y.barberis@enr-courtage.fr
           ndaSignedAt: new Date().toISOString(),
           ndaSignedByAdmin: true,
           adminSignedAt: new Date().toISOString(),
-          ndaText,
+          hasUploadedSignedNda: !!hasUploadedSignedNda || !!ndaFileName,
+          ndaFileName: ndaFileName || '',
+          ndaFileSize: ndaFileSize || 0,
+          ndaDocumentId: ndaDocumentId || '',
+          ndaFileBase64: ndaFileBase64 || '',
+          ndaText: ndaFileName
+            ? `Document NDA original signé téléversé : ${ndaFileName}`
+            : ndaText,
           createdAt: new Date().toISOString(),
         };
 

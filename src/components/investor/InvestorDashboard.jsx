@@ -48,6 +48,7 @@ import ExclusiveMandateModal from './ExclusiveMandateModal';
 import NdaDocumentModal from './NdaDocumentModal';
 import InvestorContactModal from './InvestorContactModal';
 import ErrorBoundary from './ErrorBoundary';
+import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
@@ -169,7 +170,7 @@ export default function InvestorDashboard() {
 
   const handleOpenCounter = (offer) => {
     setCounteringOfferId(offer.id);
-    setCounterAmount(String(offer.amountEur || ''));
+    setCounterAmount(formatThousands(offer.amountEur || ''));
     setCounterComments('');
     const baseMilestones = (offer.milestones && offer.milestones.length > 0)
       ? offer.milestones
@@ -183,7 +184,7 @@ export default function InvestorDashboard() {
   };
 
   const handleSubmitCounter = (offerId) => {
-    const num = Number(String(counterAmount).replace(/\s/g, '').replace(',', '.'));
+    const num = parseThousands(counterAmount);
     if (isNaN(num) || num <= 0) {
       alert('Veuillez renseigner un montant valide en euros hors taxes.');
       return;
@@ -708,7 +709,7 @@ export default function InvestorDashboard() {
                               <input
                                 type="text"
                                 value={counterAmount}
-                                onChange={(e) => setCounterAmount(e.target.value)}
+                                onChange={(e) => setCounterAmount(formatThousands(e.target.value))}
                                 placeholder="ex: 4 000 000"
                                 className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-mono font-bold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                               />
@@ -730,8 +731,13 @@ export default function InvestorDashboard() {
 
                           {/* Adjust Milestones % */}
                           <div className="space-y-2">
-                            <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                              Répartition des versements par jalon (Total exigé = 100%)
+                            <div className="flex items-center justify-between">
+                              <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                                Répartition des versements par jalon (Total exigé = 100%)
+                              </div>
+                              <span className="text-[10px] font-mono font-bold text-emerald-700">
+                                Total : {counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0)}% (Équilibrage automatique)
+                              </span>
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                               {counterMilestones.map((m, idx) => (
@@ -744,14 +750,16 @@ export default function InvestorDashboard() {
                                       max="100"
                                       value={m.percentage}
                                       onChange={(e) => {
-                                        const val = Number(e.target.value);
                                         setCounterMilestones((prev) =>
-                                          prev.map((item, i) => (i === idx ? { ...item, percentage: val } : item))
+                                          autoBalanceMilestones(prev, idx, e.target.value)
                                         );
                                       }}
                                       className="w-16 px-2 py-1 bg-amber-50/50 border border-slate-300 rounded text-center text-amber-900 font-mono font-bold focus:outline-none focus:border-amber-500"
                                     />
                                     <span className="text-slate-500">%</span>
+                                    <span className="text-[10px] text-emerald-700 font-mono font-bold ml-auto">
+                                      {formatThousands(Math.round((parseThousands(counterAmount) * (Number(m.percentage) || 0)) / 100))} €
+                                    </span>
                                   </div>
                                 </div>
                               ))}
