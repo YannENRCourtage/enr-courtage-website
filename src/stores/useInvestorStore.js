@@ -108,6 +108,47 @@ export const useInvestorStore = create(
       // Sites supprimés du tableau par l'administrateur
       deletedSites: { helios: [], volta: [] },
 
+      // Affectation des documents aux projets : { [docIdentifier]: [siteId1, siteId2] }
+      documentSiteAssignments: {
+        'Promesse de bail signée — Parcelle CONSOLI (PRIGONRIEUX)': [4],
+        'Promesse_de_bail_CONSOLI_signe.pdf': [4],
+        'Promesse de bail signée — Batterie BATIOT (MONGAUSY)': [2],
+        'Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf': [2],
+        'Promesse de bail signée — Batterie CASTEBRUNET (CAUSSADE)': [10, 20, 22, 31],
+        'Promesse_de_bail_Castebrunet.pdf': [10, 20, 22, 31],
+      },
+
+      // Affecter un document à un ou plusieurs projets
+      assignDocumentToSites: (docIdentifier, siteIds) => {
+        if (!docIdentifier) return;
+        const cleanIds = Array.isArray(siteIds) ? siteIds.map(Number).filter((n) => !isNaN(n)) : [Number(siteIds)].filter((n) => !isNaN(n));
+        set((state) => {
+          const nextAssignments = { ...state.documentSiteAssignments };
+          if (Array.isArray(docIdentifier)) {
+            docIdentifier.filter(Boolean).forEach((id) => {
+              nextAssignments[id] = cleanIds;
+            });
+          } else {
+            nextAssignments[docIdentifier] = cleanIds;
+          }
+          return { documentSiteAssignments: nextAssignments };
+        });
+      },
+
+      // Retirer l'affectation d'un document pour un projet
+      unassignDocumentFromSite: (docIdentifier, siteId) => {
+        if (!docIdentifier) return;
+        set((state) => {
+          const current = state.documentSiteAssignments?.[docIdentifier] || [];
+          return {
+            documentSiteAssignments: {
+              ...state.documentSiteAssignments,
+              [docIdentifier]: current.filter((id) => id !== siteId),
+            },
+          };
+        });
+      },
+
       // Marquer / Démarquer un site comme Vendu !
       toggleSoldSite: (portfolioId, siteId) => {
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';

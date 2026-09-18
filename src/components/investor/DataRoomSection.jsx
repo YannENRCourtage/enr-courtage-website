@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   Paperclip,
   Eye,
+  Filter,
+  MapPin,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { getDocumentBinary } from '@/services/fileStorageService';
@@ -72,10 +74,35 @@ export default function DataRoomSection({
   investorName = 'Investisseur',
   investorCompany = '',
 }) {
-  const { customDataRoom, deletedDefaultDocs, recordDownload, currentInvestor } = useInvestorStore();
+  const { customDataRoom, deletedDefaultDocs, documentSiteAssignments = {}, recordDownload, currentInvestor } = useInvestorStore();
   const [downloadedFiles, setDownloadedFiles] = useState({});
+  const [selectedSiteFilter, setSelectedSiteFilter] = useState('ALL');
 
-  // Fusionner les catégories par défaut avec les fichiers personnalisés téléversés
+  // Helper pour savoir à quels sites un document est affecté
+  const getAssignedSitesForDoc = (file) => {
+    if (!file) return [];
+    const explicit = [
+      ...(file.siteIds || []),
+      ...(documentSiteAssignments[file.id] || []),
+      ...(documentSiteAssignments[file.name] || []),
+      ...(documentSiteAssignments[file.fileName] || []),
+    ].map(Number);
+
+    if (explicit.length > 0) return explicit;
+
+    // Détection automatique intelligente
+    const docLower = (file.name || '').toLowerCase();
+    const matched = [];
+    (portfolio?.sites || []).forEach((site) => {
+      const client = (site.client || '').toLowerCase();
+      const commune = (site.name || site.ville || '').toLowerCase();
+      if (client && client.length > 3 && docLower.includes(client)) matched.push(Number(site.id));
+      else if (commune && commune.length > 3 && docLower.includes(commune)) matched.push(Number(site.id));
+    });
+    return matched;
+  };
+
+  // Fusionner les catégories par défaut avec les fichiers personnalisés téléversés et appliquer le filtre de site
   const categories = useMemo(() => {
     if (!portfolio || !portfolio.dataRoom) return [];
 
@@ -108,8 +135,24 @@ export default function DataRoomSection({
       }
     });
 
-    return defaultCats.filter((cat) => cat.files && cat.files.length > 0);
-  }, [portfolio, customDataRoom, deletedDefaultDocs]);
+    // Appliquer le filtre par projet sélectionné
+    return defaultCats
+      .map((cat) => {
+        const filteredFiles = (cat.files || []).filter((file) => {
+          if (selectedSiteFilter === 'ALL') return true;
+          const assigned = getAssignedSitesForDoc(file);
+          if (selectedSiteFilter === 'GENERAL') {
+            return assigned.length === 0;
+          }
+          return assigned.includes(Number(selectedSiteFilter));
+        });
+        return {
+          ...cat,
+          files: filteredFiles,
+        };
+      })
+      .filter((cat) => cat.files && cat.files.length > 0);
+  }, [portfolio, customDataRoom, deletedDefaultDocs, documentSiteAssignments, selectedSiteFilter]);
 
   if (!portfolio || !portfolio.dataRoom) {
     return null;
@@ -288,8 +331,65 @@ export default function DataRoomSection({
         </div>
       </div>
 
+      {/* Project Filter Toolbar */}
+      <div className="mt-5 p-3.5 rounded-xl bg-gray-950/80 border border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-inner">
+        <div className="flex items-center space-x-2">
+          <Filter className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="text-xs font-bold text-gray-200">Consulter par projet spécifique :</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 flex-1 max-w-xl">
+          <select
+            value={selectedSiteFilter}
+            onChange={(e) => setSelectedSiteFilter(e.target.value)}
+            className="w-full sm:w-auto flex-1 px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white font-medium focus:outline-none focus:border-emerald-500 transition"
+          >
+            <option value="ALL">📁 Tous les documents du portefeuille ({portfolio.sites?.length || 0} projets)</option>
+            <option value="GENERAL">🌐 Documents généraux uniquement (non spécifiques)</option>
+            <optgroup label="Filtrer par projet individuel :">
+              {(portfolio.sites || []).map((site) => (
+                <option key={site.id} value={String(site.id)}>
+                  📍 Projet #{site.id} — {site.name || site.ville} ({site.kwc ? `${site.kwc} kWc` : `${site.kw || 500} kW`})
+                </option>
+              ))}
+            </optgroup>
+          </select>
+
+          {selectedSiteFilter !== 'ALL' && (
+            <button
+              onClick={() => setSelectedSiteFilter('ALL')}
+              className="text-xs px-2.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-emerald-400 border border-gray-700 font-semibold transition"
+            >
+              Afficher tout
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Filter Active Notice */}
+      {selectedSiteFilter !== 'ALL' && (
+        <div className="mt-2.5 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center justify-between">
+          <span>
+            {selectedSiteFilter === 'GENERAL' ? (
+              <>Filtre actif : <strong>Documents généraux du portefeuille</strong></>
+            ) : (
+              <>
+                Filtre actif : Documents affectés au <strong>Projet #{selectedSiteFilter} ({
+                  (portfolio.sites || []).find((s) => String(s.id) === String(selectedSiteFilter))?.name ||
+                  (portfolio.sites || []).find((s) => String(s.id) === String(selectedSiteFilter))?.ville ||
+                  'Site'
+                })</strong>
+              </>
+            )}
+          </span>
+          <span className="font-mono text-[11px] text-emerald-400">
+            {categories.reduce((acc, c) => acc + (c.files?.length || 0), 0)} document(s) trouvé(s)
+          </span>
+        </div>
+      )}
+
       {/* Categories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
         {categories.map((category, idx) => {
           const CatIcon = categoryIconMap[category.icon] || FileText;
 
@@ -307,25 +407,44 @@ export default function DataRoomSection({
               <div className="space-y-2">
                 {category.files.map((file, fIdx) => {
                   const isDownloaded = downloadedFiles[file.name];
+                  const assignedSites = getAssignedSitesForDoc(file);
 
                   return (
                     <div
                       key={fIdx}
-                      className="flex items-center justify-between p-2.5 rounded-lg bg-gray-900/60 border border-gray-800/80 hover:border-emerald-500/40 transition group"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-lg bg-gray-900/60 border border-gray-800/80 hover:border-emerald-500/40 transition group gap-2"
                     >
-                      <div className="flex items-center space-x-2.5 min-w-0">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700">
+                      <div className="flex items-start space-x-2.5 min-w-0 flex-1">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700 shrink-0 mt-0.5">
                           {file.type}
                         </span>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium text-gray-200 truncate group-hover:text-emerald-300 transition">
                             {file.name}
                           </p>
-                          <span className="text-[10px] text-gray-500">{file.size}</span>
+                          <div className="flex flex-wrap items-center gap-2 mt-0.5">
+                            <span className="text-[10px] text-gray-500">{file.size}</span>
+                            {assignedSites.length > 0 && (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                                <MapPin className="w-2.5 h-2.5 text-emerald-400" />
+                                {assignedSites.length === 1 ? (
+                                  <span>
+                                    Projet #{assignedSites[0]} (
+                                    {(portfolio.sites || []).find((s) => s.id === assignedSites[0])?.name ||
+                                     (portfolio.sites || []).find((s) => s.id === assignedSites[0])?.ville ||
+                                     'Site'}
+                                    )
+                                  </span>
+                                ) : (
+                                  <span>Affecté à {assignedSites.length} projets</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                      <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
                         {/* Bouton CONSULTER : Visualiseur PDF natif 24-25 pages */}
                         <button
                           onClick={() => handleView(file)}

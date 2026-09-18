@@ -1,6 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, CheckCircle2, Clock, Info, CheckSquare, Square, X, MapPin, Copy, Check, Trash2, Tag, ShieldAlert, RotateCcw, AlertTriangle } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  CheckCircle2,
+  Clock,
+  Info,
+  CheckSquare,
+  Square,
+  X,
+  MapPin,
+  Copy,
+  Check,
+  Trash2,
+  Tag,
+  ShieldAlert,
+  RotateCcw,
+  AlertTriangle,
+  FileText,
+  Download,
+  Eye,
+  ExternalLink,
+} from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import { getDocumentsForSite, downloadOrViewDoc } from '@/services/dataRoomDocumentService';
 
 export default function SiteTable({
   sites = [],
@@ -23,10 +45,20 @@ export default function SiteTable({
     currentInvestor,
     soldSites = { helios: [], volta: [] },
     deletedSites = { helios: [], volta: [] },
+    customDataRoom,
+    deletedDefaultDocs,
+    documentSiteAssignments,
+    recordDownload,
     toggleSoldSite,
     deleteSite,
     restoreSite,
   } = useInvestorStore();
+
+  const storeState = useMemo(() => ({
+    customDataRoom,
+    deletedDefaultDocs,
+    documentSiteAssignments,
+  }), [customDataRoom, deletedDefaultDocs, documentSiteAssignments]);
 
   const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email?.includes('barberis') || currentInvestor?.email === 'yann.barberis@enr-courtage.fr';
   const portfolioKey = (type === 'BESS' || String(portfolioId || '').toLowerCase().includes('volta')) ? 'volta' : 'helios';
@@ -187,6 +219,7 @@ export default function SiteTable({
                 {type === 'PV' ? 'Chiffrage Bâtiment HT' : 'Foncier / Loyer'}
               </th>
               <th className="py-3 px-3 text-center text-slate-700">Statut</th>
+              <th className="py-3 px-3 text-center text-emerald-800">Documents</th>
               <th className="py-3 px-3 text-center text-slate-600">Fiche</th>
               {isAdmin && (
                 <th className="py-3 px-3 text-center text-amber-900 bg-amber-100/70 font-bold">
@@ -209,6 +242,8 @@ export default function SiteTable({
                     ? `${new Intl.NumberFormat('fr-FR').format(site.cost)} €`
                     : 'Toiture existante'
                   : 'PdB 20 ans (3 k€/an)';
+
+              const siteDocs = getDocumentsForSite(site, portfolioKey, storeState);
 
               return (
                 <tr
@@ -331,6 +366,25 @@ export default function SiteTable({
                     )}
                   </td>
 
+                  {/* Documents Column */}
+                  <td className="py-3 px-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    {isSold ? (
+                      <span className="text-[10px] text-slate-400 font-mono">-</span>
+                    ) : siteDocs.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setActiveModalSite(site)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 hover:bg-emerald-200 text-emerald-900 border border-emerald-300 text-[10px] font-bold transition shadow-2xs cursor-pointer"
+                        title={`${siteDocs.length} document(s) affecté(s) - Cliquez pour consulter`}
+                      >
+                        <FileText className="w-3 h-3 text-emerald-700" />
+                        <span>{siteDocs.length} doc{siteDocs.length > 1 ? 's' : ''}</span>
+                      </button>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">Général</span>
+                    )}
+                  </td>
+
                   {/* Info Action */}
                   <td className="py-3 px-3 text-center">
                     {!isSold ? (
@@ -431,7 +485,7 @@ export default function SiteTable({
       {/* Site Detail Modal */}
       {activeModalSite && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 text-slate-900">
+          <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 text-slate-900 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-200 pb-3">
               <div>
                 <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-300 font-bold">
@@ -540,6 +594,85 @@ export default function SiteTable({
                 </div>
               )}
             </div>
+
+            {/* Documents associés à ce projet */}
+            {(() => {
+              const modalSiteDocs = getDocumentsForSite(activeModalSite, portfolioKey, storeState);
+              return (
+                <div className="space-y-2.5 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-emerald-700" />
+                      <span className="text-xs font-bold text-slate-900">
+                        Documents & Contrats associés ({modalSiteDocs.length})
+                      </span>
+                    </div>
+                    {modalSiteDocs.length > 0 && (
+                      <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
+                        Data Room
+                      </span>
+                    )}
+                  </div>
+
+                  {modalSiteDocs.length === 0 ? (
+                    <div className="p-3 text-center bg-white rounded-lg border border-dashed border-slate-300 text-slate-500 text-xs">
+                      <p className="font-medium">Aucun document spécifique affecté individuellement à ce projet.</p>
+                      <p className="text-[11px] text-slate-400 mt-0.5">
+                        Les documents généraux du portefeuille s'appliquent (consultables dans la section Data Room).
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
+                      {modalSiteDocs.map((doc, dIdx) => (
+                        <div
+                          key={dIdx}
+                          className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-200 hover:border-emerald-400 transition shadow-2xs"
+                        >
+                          <div className="min-w-0 flex-1 pr-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-1.5 py-0.5 rounded font-mono text-[9px] font-bold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                                {doc.type || 'PDF'}
+                              </span>
+                              <p className="text-xs font-bold text-slate-900 truncate" title={doc.name}>
+                                {doc.name}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
+                              <span className="font-semibold text-slate-600">{doc.category || 'Juridique'}</span>
+                              <span>•</span>
+                              <span>{doc.size || '1.5 Mo'}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Consulter */}
+                            <button
+                              type="button"
+                              onClick={() => downloadOrViewDoc(doc, { id: portfolioKey, type }, 'view', recordDownload)}
+                              className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-emerald-600 text-slate-700 hover:text-white border border-slate-300 hover:border-emerald-600 text-[11px] font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer"
+                              title="Consulter le document dans un nouvel onglet"
+                            >
+                              <Eye className="w-3 h-3 text-emerald-600" />
+                              <span>Consulter</span>
+                            </button>
+
+                            {/* Télécharger */}
+                            <button
+                              type="button"
+                              onClick={() => downloadOrViewDoc(doc, { id: portfolioKey, type }, 'download', recordDownload)}
+                              className="p-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-300 transition cursor-pointer"
+                              title="Télécharger le fichier physique"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Modal Actions */}
             <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200">

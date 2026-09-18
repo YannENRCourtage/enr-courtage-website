@@ -19,6 +19,7 @@ import {
   Search,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import { PORTFOLIOS } from '@/data/investorData';
 import { investorService } from '@/services/investorService';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 
@@ -103,7 +104,7 @@ export default function OfferModal({
   const [error, setError] = useState('');
 
   // Retrieve all raw sites
-  const allPortfolios = useMemo(() => investorService.getAllPortfolios(), []);
+  const allPortfolios = PORTFOLIOS;
   const heliosSites = useMemo(() => allPortfolios.find((p) => p.id === 'helios')?.sites || [], [allPortfolios]);
   const voltaSites = useMemo(() => allPortfolios.find((p) => p.id === 'volta')?.sites || [], [allPortfolios]);
 

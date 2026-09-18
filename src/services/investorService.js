@@ -9,6 +9,9 @@ export const investorService = {
   getPortfolios: () => {
     return PORTFOLIOS;
   },
+  getAllPortfolios: () => {
+    return PORTFOLIOS;
+  },
 
   // Get portfolio by ID
   getPortfolioById: (id) => {

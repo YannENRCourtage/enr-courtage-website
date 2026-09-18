@@ -95,6 +95,8 @@ export default function AdminValidationModal({
     deleteCategory,
     moveDocument,
     deletedDefaultDocs,
+    documentSiteAssignments,
+    assignDocumentToSites,
     userDownloads,
   } = useInvestorStore();
 
@@ -160,6 +162,12 @@ export default function AdminValidationModal({
   const [movingDoc, setMovingDoc] = useState(null); // { doc, sourceCategory, sourcePortfolioId }
   const [targetMovePortfolio, setTargetMovePortfolio] = useState('volta');
   const [targetMoveCategory, setTargetMoveCategory] = useState('Juridique');
+
+  // Document Site Assignment Modal State
+  const [assigningDoc, setAssigningDoc] = useState(null); // { doc, portfolioId }
+  const [assigningSiteIds, setAssigningSiteIds] = useState([]);
+  const [siteSearchFilter, setSiteSearchFilter] = useState('');
+  const [docAssignedSiteIds, setDocAssignedSiteIds] = useState([]); // for single upload
 
   // Offer Filter State
   const [offerPortfolioFilter, setOfferPortfolioFilter] = useState('all');
@@ -626,15 +634,64 @@ y.barberis@enr-courtage.fr`;
       notes: docNotes,
       fileData: docFileData,
       fileUrl: serverMatch ? serverMatch.url : null,
+      siteIds: docAssignedSiteIds,
     });
 
+    if (docAssignedSiteIds.length > 0) {
+      assignDocumentToSites([docId, finalDocName, singleRawFile?.name].filter(Boolean), docAssignedSiteIds);
+    }
+
     const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA' : 'HÉLIOS';
-    setUploadSuccessMsg(`Document « ${finalDocName} » publié dans la Data Room ${targetName} (${docCategory}) !`);
+    setUploadSuccessMsg(`Document « ${finalDocName} » publié dans la Data Room ${targetName} (${docCategory})${docAssignedSiteIds.length > 0 ? ` [affecté à ${docAssignedSiteIds.length} projet(s)]` : ''} !`);
     setDocName('');
     setDocNotes('');
     setDocFileData(null);
     setSingleRawFile(null);
+    setDocAssignedSiteIds([]);
     setTimeout(() => setUploadSuccessMsg(''), 4000);
+  };
+
+  // Handle Open Assign Document to Sites Modal
+  const handleOpenAssignModal = (file, currentPortId) => {
+    const pId = currentPortId || selectedDataRoomPortfolio;
+    const currentAssignments = [
+      ...(file.siteIds || []),
+      ...(documentSiteAssignments?.[file.id] || []),
+      ...(documentSiteAssignments?.[file.name] || []),
+      ...(documentSiteAssignments?.[file.fileName] || []),
+    ].map(Number);
+
+    setAssigningDoc({
+      doc: file,
+      portfolioId: pId,
+    });
+    setAssigningSiteIds([...new Set(currentAssignments)]);
+    setSiteSearchFilter('');
+  };
+
+  // Toggle site in assignment modal
+  const handleToggleAssignSite = (siteId) => {
+    const numId = Number(siteId);
+    setAssigningSiteIds((prev) =>
+      prev.includes(numId) ? prev.filter((id) => id !== numId) : [...prev, numId]
+    );
+  };
+
+  // Confirm Document Assignment
+  const handleConfirmAssignment = () => {
+    if (!assigningDoc?.doc) return;
+    const { doc } = assigningDoc;
+    const identifiers = [doc.id, doc.name, doc.fileName].filter(Boolean);
+    assignDocumentToSites(identifiers, assigningSiteIds);
+
+    setUploadSuccessMsg(
+      `✓ Affectation mise à jour pour « ${doc.name} » : ${
+        assigningSiteIds.length === 0 ? 'Document général' : `${assigningSiteIds.length} projet(s) associé(s)`
+      } !`
+    );
+    setAssigningDoc(null);
+    setAssigningSiteIds([]);
+    setTimeout(() => setUploadSuccessMsg(''), 5000);
   };
 
   // Handle Open Move Document Modal
@@ -1676,6 +1733,62 @@ y.barberis@enr-courtage.fr`;
                       className="w-full px-3.5 py-2 bg-gray-900 border border-gray-700 rounded-xl text-xs text-white focus:outline-none focus:border-amber-400"
                     />
                   </div>
+
+                  {/* Optional Project Assignment */}
+                  <div className="md:col-span-3 bg-gray-950 p-3 rounded-xl border border-gray-800 space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <label className="text-xs font-bold text-gray-300 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Affecter à un ou plusieurs projets spécifiques (optionnel) :</span>
+                      </label>
+                      <div className="flex items-center gap-2 text-[10px]">
+                        <button
+                          type="button"
+                          onClick={() => setDocAssignedSiteIds((currentPortfolioObj?.sites || []).map((s) => s.id))}
+                          className="text-amber-400 hover:underline"
+                        >
+                          Tout cocher
+                        </button>
+                        <span className="text-gray-600">•</span>
+                        <button
+                          type="button"
+                          onClick={() => setDocAssignedSiteIds([])}
+                          className="text-gray-400 hover:underline"
+                        >
+                          Aucun (général)
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="max-h-28 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-1.5 pr-1">
+                      {(currentPortfolioObj?.sites || []).map((site) => {
+                        const isChecked = docAssignedSiteIds.includes(site.id);
+                        return (
+                          <label
+                            key={site.id}
+                            className={`flex items-center gap-2 p-1.5 rounded-lg border text-[11px] cursor-pointer transition ${
+                              isChecked
+                                ? 'bg-emerald-500/15 border-emerald-500/40 text-white font-medium'
+                                : 'bg-gray-900 border-gray-800 text-gray-400 hover:bg-gray-800'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {
+                                setDocAssignedSiteIds((prev) =>
+                                  prev.includes(site.id) ? prev.filter((id) => id !== site.id) : [...prev, site.id]
+                                );
+                              }}
+                              className="rounded border-gray-700 text-emerald-500 focus:ring-0"
+                            />
+                            <span className="font-mono text-emerald-400">#{site.id}</span>
+                            <span className="truncate">{site.name || site.ville}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex justify-end pt-1">
@@ -1743,8 +1856,41 @@ y.barberis@enr-courtage.fr`;
                                 </span>
                               </div>
 
-                              <div className="flex items-center space-x-2 shrink-0 ml-2">
+                              <div className="flex items-center space-x-1.5 shrink-0 ml-2">
                                 <span className="text-[10px] text-gray-500 font-mono">{file.size}</span>
+
+                                {/* Assign to projects button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAssignModal(file, selectedDataRoomPortfolio)}
+                                  className={`px-2 py-0.5 rounded transition flex items-center gap-1 text-[10px] ${
+                                    (() => {
+                                      const assigned = [
+                                        ...(file.siteIds || []),
+                                        ...(documentSiteAssignments?.[file.id] || []),
+                                        ...(documentSiteAssignments?.[file.name] || []),
+                                        ...(documentSiteAssignments?.[file.fileName] || []),
+                                      ];
+                                      return assigned.length > 0
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                                        : 'bg-gray-800 hover:bg-amber-500/20 text-gray-400 hover:text-amber-300 border border-gray-700';
+                                    })()
+                                  }`}
+                                  title="Affecter ce document à un ou plusieurs projets (sites)"
+                                >
+                                  <MapPin className="w-3 h-3 text-emerald-400" />
+                                  <span>
+                                    {(() => {
+                                      const assigned = [
+                                        ...(file.siteIds || []),
+                                        ...(documentSiteAssignments?.[file.id] || []),
+                                        ...(documentSiteAssignments?.[file.name] || []),
+                                        ...(documentSiteAssignments?.[file.fileName] || []),
+                                      ];
+                                      return assigned.length > 0 ? `Affecté (${assigned.length})` : 'Affecter';
+                                    })()}
+                                  </span>
+                                </button>
                                 
                                 {/* Move document button */}
                                 <button
@@ -1785,8 +1931,41 @@ y.barberis@enr-courtage.fr`;
                                 </span>
                               </div>
 
-                              <div className="flex items-center space-x-2 shrink-0 ml-2">
+                              <div className="flex items-center space-x-1.5 shrink-0 ml-2">
                                 <span className="text-[10px] text-gray-400 font-mono">{file.size}</span>
+
+                                {/* Assign to projects button */}
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenAssignModal(file, selectedDataRoomPortfolio)}
+                                  className={`px-2 py-0.5 rounded transition flex items-center gap-1 text-[10px] ${
+                                    (() => {
+                                      const assigned = [
+                                        ...(file.siteIds || []),
+                                        ...(documentSiteAssignments?.[file.id] || []),
+                                        ...(documentSiteAssignments?.[file.name] || []),
+                                        ...(documentSiteAssignments?.[file.fileName] || []),
+                                      ];
+                                      return assigned.length > 0
+                                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                                        : 'bg-gray-800 hover:bg-amber-500/20 text-gray-400 hover:text-amber-300 border border-gray-700';
+                                    })()
+                                  }`}
+                                  title="Affecter ce document à un ou plusieurs projets (sites)"
+                                >
+                                  <MapPin className="w-3 h-3 text-emerald-400" />
+                                  <span>
+                                    {(() => {
+                                      const assigned = [
+                                        ...(file.siteIds || []),
+                                        ...(documentSiteAssignments?.[file.id] || []),
+                                        ...(documentSiteAssignments?.[file.name] || []),
+                                        ...(documentSiteAssignments?.[file.fileName] || []),
+                                      ];
+                                      return assigned.length > 0 ? `Affecté (${assigned.length})` : 'Affecter';
+                                    })()}
+                                  </span>
+                                </button>
 
                                 {/* Move document button */}
                                 <button
@@ -1860,8 +2039,42 @@ y.barberis@enr-courtage.fr`;
                               </span>
                             </div>
 
-                            <div className="flex items-center space-x-2 shrink-0 ml-2">
+                            <div className="flex items-center space-x-1.5 shrink-0 ml-2">
                               <span className="text-[10px] text-gray-400 font-mono">{file.size}</span>
+
+                              {/* Assign to projects button */}
+                              <button
+                                type="button"
+                                onClick={() => handleOpenAssignModal(file, selectedDataRoomPortfolio)}
+                                className={`px-2 py-0.5 rounded transition flex items-center gap-1 text-[10px] ${
+                                  (() => {
+                                    const assigned = [
+                                      ...(file.siteIds || []),
+                                      ...(documentSiteAssignments?.[file.id] || []),
+                                      ...(documentSiteAssignments?.[file.name] || []),
+                                      ...(documentSiteAssignments?.[file.fileName] || []),
+                                    ];
+                                    return assigned.length > 0
+                                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30'
+                                      : 'bg-gray-800 hover:bg-amber-500/20 text-gray-400 hover:text-amber-300 border border-gray-700';
+                                  })()
+                                }`}
+                                title="Affecter ce document à un ou plusieurs projets (sites)"
+                              >
+                                <MapPin className="w-3 h-3 text-emerald-400" />
+                                <span>
+                                  {(() => {
+                                    const assigned = [
+                                      ...(file.siteIds || []),
+                                      ...(documentSiteAssignments?.[file.id] || []),
+                                      ...(documentSiteAssignments?.[file.name] || []),
+                                      ...(documentSiteAssignments?.[file.fileName] || []),
+                                    ];
+                                    return assigned.length > 0 ? `Affecté (${assigned.length})` : 'Affecter';
+                                  })()}
+                                </span>
+                              </button>
+
                               <button
                                 type="button"
                                 onClick={() => handleOpenMoveModal(file, customCatName, selectedDataRoomPortfolio)}
@@ -2638,6 +2851,176 @@ y.barberis@enr-courtage.fr`;
             </div>
           </div>
         )}
+
+        {/* ================================================================= */}
+        {/* MODAL : AFFECTER UN DOCUMENT À DES PROJETS (SITES)                */}
+        {/* ================================================================= */}
+        {assigningDoc && (() => {
+          const activePortSites = portfolios.find((p) => p.id === assigningDoc.portfolioId)?.sites || [];
+          const filteredModalSites = activePortSites.filter((s) => {
+            if (!siteSearchFilter.trim()) return true;
+            const q = siteSearchFilter.toLowerCase();
+            return (
+              String(s.id).includes(q) ||
+              (s.name || '').toLowerCase().includes(q) ||
+              (s.ville || '').toLowerCase().includes(q) ||
+              (s.client || '').toLowerCase().includes(q) ||
+              String(s.dept || '').includes(q)
+            );
+          });
+
+          return (
+            <div className="fixed inset-0 z-70 bg-black/85 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-gray-900 border border-gray-700 rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between border-b border-gray-800 pb-3">
+                  <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                    <MapPin className="w-5 h-5" />
+                    <span>Affecter aux projets (sites)</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setAssigningDoc(null);
+                      setAssigningSiteIds([]);
+                    }}
+                    className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Doc Info */}
+                <div className="p-3 bg-gray-950 rounded-xl border border-gray-800 space-y-1 text-xs">
+                  <span className="text-gray-400 text-[11px] block">Document sélectionné :</span>
+                  <div className="font-bold text-white flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-emerald-500/20 text-emerald-300 font-bold shrink-0">
+                      {assigningDoc.doc.type || 'PDF'}
+                    </span>
+                    <span className="break-all">{assigningDoc.doc.name}</span>
+                  </div>
+                  <div className="text-[10px] text-gray-400 pt-0.5">
+                    Portefeuille : <strong className="text-amber-400">{assigningDoc.portfolioId === 'volta' ? 'VOLTA (Batteries)' : 'HÉLIOS (PV)'}</strong>
+                  </div>
+                </div>
+
+                {/* Quick actions & Search */}
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <label className="font-bold text-gray-300">
+                      Sélectionnez les projets associés ({assigningSiteIds.length} sélectionné(s)) :
+                    </label>
+                    <div className="flex items-center gap-2 text-[11px]">
+                      <button
+                        type="button"
+                        onClick={() => setAssigningSiteIds(activePortSites.map((s) => s.id))}
+                        className="text-amber-400 hover:underline"
+                      >
+                        Tout cocher
+                      </button>
+                      <span className="text-gray-600">•</span>
+                      <button
+                        type="button"
+                        onClick={() => setAssigningSiteIds([])}
+                        className="text-gray-400 hover:underline"
+                      >
+                        Tout décocher
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      value={siteSearchFilter}
+                      onChange={(e) => setSiteSearchFilter(e.target.value)}
+                      placeholder="Filtrer par n°, commune, département ou client..."
+                      className="w-full pl-8 pr-3 py-1.5 bg-gray-950 border border-gray-700 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+                </div>
+
+                {/* Sites List */}
+                <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1 border border-gray-800 rounded-xl p-2 bg-gray-950">
+                  {filteredModalSites.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500 text-xs italic">
+                      Aucun projet ne correspond à votre filtre.
+                    </div>
+                  ) : (
+                    filteredModalSites.map((site) => {
+                      const isChecked = assigningSiteIds.includes(site.id);
+                      return (
+                        <label
+                          key={site.id}
+                          className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer transition ${
+                            isChecked
+                              ? 'bg-emerald-500/15 border-emerald-500/40 text-white font-semibold'
+                              : 'bg-gray-900 border-gray-800 text-gray-300 hover:bg-gray-800 hover:border-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => handleToggleAssignSite(site.id)}
+                              className="rounded border-gray-700 text-emerald-500 focus:ring-0 shrink-0"
+                            />
+                            <div className="min-w-0 flex-1">
+                              <span className="font-mono text-emerald-400 text-[11px] font-bold mr-1.5">
+                                #{site.id}
+                              </span>
+                              <span className="text-white font-medium">{site.name || site.ville}</span>
+                              <span className="text-gray-400 text-[10px] ml-1.5">({site.dept})</span>
+                              {site.client && (
+                                <span className="block text-[10px] text-gray-400 truncate">
+                                  Client : {site.client}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-[10px] font-mono text-gray-400 shrink-0 ml-2">
+                            {site.kwc ? `${site.kwc} kWc` : `${site.kw || 500} kW`}
+                          </span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Modal Buttons */}
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-800">
+                  <span className="text-[11px] text-gray-400">
+                    {assigningSiteIds.length === 0 ? (
+                      <span className="text-gray-500 italic">Document général (sans filtre de site)</span>
+                    ) : (
+                      <span>Affecté à <strong>{assigningSiteIds.length} projet(s)</strong></span>
+                    )}
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAssigningDoc(null);
+                        setAssigningSiteIds([]);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-semibold"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleConfirmAssignment}
+                      className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-gray-950 font-black text-xs uppercase tracking-wider transition shadow-lg shadow-emerald-500/20 flex items-center gap-2"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Enregistrer l'affectation</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ================================================================= */}
         {/* MODAL : HISTORIQUE DÉTAILLÉ DES TÉLÉCHARGEMENTS INVESTISSEUR      */}
