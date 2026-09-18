@@ -21,6 +21,7 @@ import {
   FileSpreadsheet,
   Clock,
   Upload,
+  FileSignature,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
@@ -411,17 +412,21 @@ export default function InvestorSidebar({
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-gray-800/80">
-              <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> NDA Signé & Validé
-              </span>
+            <div className="pt-2 border-t border-gray-800/80 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" /> NDA Bilatéral Validé
+                </span>
+              </div>
               {onOpenNda && (
                 <button
+                  type="button"
                   onClick={onOpenNda}
-                  className="px-2 py-0.5 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 hover:text-amber-300 font-bold transition flex items-center gap-1 text-[10px]"
-                  title="Consulter et imprimer le NDA signé bilatéral"
+                  className="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold transition flex items-center justify-center gap-1.5 text-xs shadow-2xs cursor-pointer"
+                  title="Consulter et imprimer le NDA bilatéral signé"
                 >
-                  <span>Voir NDA</span>
+                  <FileSignature className="w-3.5 h-3.5" />
+                  <span>Consulter le NDA Signé</span>
                 </button>
               )}
             </div>

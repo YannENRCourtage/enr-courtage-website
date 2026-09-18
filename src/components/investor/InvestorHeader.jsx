@@ -59,14 +59,14 @@ export default function InvestorHeader({
 
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 font-mono">
+              <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 font-mono">
                 {pageTitleBadge}
               </span>
-              <span className="text-[11px] text-slate-500 font-medium hidden md:inline-block">
+              <span className="text-[11px] text-slate-400 font-medium hidden md:inline-block">
                 Strictement Confidentiel
               </span>
             </div>
-            <h1 className="text-sm sm:text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <h1 className="text-sm sm:text-base font-bold text-slate-950 tracking-tight flex items-center gap-2 mt-0.5">
               <span>{pageTitle || 'Portefeuilles PV & BESS'}</span>
             </h1>
           </div>
@@ -94,9 +94,9 @@ export default function InvestorHeader({
           {/* Expanded Connected User Info & Quick NDA Access */}
           {currentInvestor && (
             <div className="flex items-center space-x-3 pl-3 border-l border-slate-200">
-              {/* Profile Card Container (Enlarged) */}
+              {/* Profile Card Container */}
               <div className="flex items-center space-x-3 bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-xl px-3 py-1.5 transition">
-                <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center shadow-sm shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-slate-900 text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
                   {userInitials}
                 </div>
 
@@ -113,10 +113,10 @@ export default function InvestorHeader({
                 {onOpenNda && (
                   <button
                     onClick={onOpenNda}
-                    className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-300 text-[11px] font-bold transition ml-1 shadow-2xs"
+                    className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 text-[11px] font-semibold transition ml-1 cursor-pointer"
                     title="Consulter et imprimer le NDA bilatéral signé"
                   >
-                    <FileSignature className="w-3.5 h-3.5 text-emerald-700" />
+                    <FileSignature className="w-3.5 h-3.5 text-emerald-600" />
                     <span>NDA Signé</span>
                   </button>
                 )}

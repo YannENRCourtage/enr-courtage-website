@@ -257,27 +257,29 @@ export default function InvestorDashboard() {
         <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         {/* Admin Notification Banner */}
         {isAdmin && !adminActiveTab && (
-          <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-300 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 text-white shadow-sm">
             <div className="flex items-center space-x-3">
-              <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse"></span>
-              <div className="text-xs text-slate-800">
-                <span className="font-bold text-slate-950">Espace Administrateur — Yann BARBERIS</span>
-                <span className="text-slate-600 block sm:inline sm:ml-2">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+                <ShieldAlert className="w-4 h-4" />
+              </div>
+              <div className="text-xs">
+                <div className="font-bold text-white text-sm">Supervision Administrateur — Yann BARBERIS</div>
+                <div className="text-slate-400 mt-0.5">
                   {pendingRequestsCount > 0
                     ? `Vous avez ${pendingRequestsCount} nouvelle(s) demande(s) d'accès investisseur en attente de contre-signature NDA.`
-                    : "Aucune demande en attente de validation."}
-                </span>
+                    : "Aucune demande en attente. Tous les accès investisseurs sont à jour."}
+                </div>
               </div>
             </div>
 
             <button
               onClick={() => handleSelectAdminTab('requests')}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-xs flex items-center gap-1.5"
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm flex items-center gap-1.5"
             >
               <ShieldCheck className="w-4 h-4 text-slate-950" />
               <span>Gérer les accès & NDA</span>
               {pendingRequestsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black">
+                <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black animate-pulse">
                   {pendingRequestsCount}
                 </span>
               )}
@@ -387,39 +389,39 @@ export default function InvestorDashboard() {
         {/* ================================================================= */}
         {/* TABLEAU DE BORD PERSONNEL INVESTISSEUR (HEADER DE BIENVENUE)     */}
         {/* ================================================================= */}
-        <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm">
+        <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xs">
           <div className="relative z-10 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
-              <div className="space-y-1.5">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500 uppercase tracking-widest">
-                  <Building className="w-4 h-4 text-amber-600" />
-                  <span className="text-amber-800 font-bold">{currentInvestor?.company || 'Investisseur Partenaire'}</span>
-                  <span>•</span>
-                  <span>Espace Transactionnel M&A</span>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                  <Building className="w-3.5 h-3.5 text-slate-400" />
+                  <span className="text-slate-700 font-bold">{currentInvestor?.company || 'Investisseur Partenaire'}</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Espace M&A Confidentiel</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight">
+                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
                   Bienvenue, {currentInvestor?.name || 'Investisseur'}
                 </h1>
-                <p className="text-slate-600 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                  Consultez les portefeuilles d'énergies renouvelables en cession, accédez à leurs Teasers et Data Rooms dédiés, et pilotez vos offres d'acquisition fermes ou partielles.
+                <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
+                  Consultez les portefeuilles en cession, étudiez les fiches d'audit et Data Rooms, et pilotez vos offres d'acquisition fermes ou partielles.
                 </p>
               </div>
 
               {/* Status Badges with Clickable NDA Modal */}
-              <div className="flex flex-col sm:items-end gap-2 text-right">
+              <div className="flex flex-wrap sm:flex-col sm:items-end gap-2 text-right">
                 <button
                   onClick={() => setIsNdaModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold transition shadow-2xs group cursor-pointer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition cursor-pointer"
                   title="Cliquer pour afficher, vérifier et imprimer votre NDA signé bilatéralement"
                 >
-                  <ShieldCheck className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition" />
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
                   <span>NDA Bilatéral Signé & Enregistré</span>
-                  <span className="text-[10px] bg-emerald-200/70 text-emerald-900 px-1.5 py-0.2 rounded font-mono font-bold ml-1">
-                    Voir / Imprimer →
+                  <span className="text-[11px] font-bold text-emerald-700 underline ml-1">
+                    Consulter →
                   </span>
                 </button>
-                <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-800 border border-blue-200 text-xs font-semibold">
-                  <FolderLock className="w-4 h-4 text-blue-600" />
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
+                  <FolderLock className="w-3.5 h-3.5 text-slate-500" />
                   <span>Accès Data Room Intégral Débloqué</span>
                 </div>
               </div>
@@ -427,97 +429,64 @@ export default function InvestorDashboard() {
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
                 <div className="text-[11px] text-slate-500 uppercase font-semibold">Portefeuilles Disponibles</div>
-                <div className="text-2xl font-black text-amber-700 mt-1">2 Portefeuilles</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">HÉLIOS (PV) & VOLTA (BESS)</div>
+                <div className="text-2xl font-black text-slate-900 mt-1">2 Actifs</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">HÉLIOS (9,12 MWc) & VOLTA (15,50 MW)</div>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
                 <div className="text-[11px] text-slate-500 uppercase font-semibold">Mes Propositions Déposées</div>
                 <div className="text-2xl font-black text-slate-900 mt-1">{myOffers.length} offre(s)</div>
-                <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Totales ou partielles</div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">Totales ou partielles</div>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
-                <div className="text-[11px] text-slate-500 uppercase font-semibold">En Cours d'Étude</div>
+              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
+                <div className="text-[11px] text-slate-500 uppercase font-semibold">Négociations Actives</div>
                 <div className="text-2xl font-black text-cyan-700 mt-1">
                   {myOffers.filter((o) => o.status === 'submitted' || o.status === 'counter_by_admin' || o.status === 'counter_by_investor').length}
                 </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Cycles de négociation actifs</div>
+                <div className="text-[10px] text-slate-500 mt-0.5">Cycles en cours</div>
               </div>
 
-              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-2xs">
+              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
                 <div className="text-[11px] text-slate-500 uppercase font-semibold">Mandats d'Exclusivité</div>
                 <div className="text-2xl font-black text-emerald-700 mt-1">
                   {myOffers.filter((o) => o.status === 'agreement_reached' || o.status === 'mandate_signed').length}
                 </div>
-                <div className="text-[10px] text-emerald-700 font-bold mt-0.5">Accords contractualisés</div>
+                <div className="text-[10px] text-emerald-700 font-semibold mt-0.5">Accords formalisés</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* ================================================================= */}
-        {/* SECTION 1 : PRINCIPE DE FONCTIONNEMENT DE LA PLATEFORME           */}
+        {/* SECTION 1 : LES 2 PORTEFEUILLES EN CESSION (HÉLIOS & VOLTA)       */}
         {/* ================================================================= */}
-        <section id="fonctionnement" className="rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 space-y-6 shadow-sm">
-          <div className="border-b border-slate-200 pb-4">
-            <div className="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-600" /> Modalités Transactionnelles
+        <section id="portefeuilles" className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+            <div>
+              <h2 className="text-xl font-bold text-slate-950 tracking-tight flex items-center gap-2">
+                <Layers className="w-5 h-5 text-slate-700" />
+                <span>Portefeuilles en Cession (2 Actifs Disponibles)</span>
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Consultez les Teasers dédiés, cartographies interactives unitaires et Data Rooms transactionnelles.
+              </p>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-950 mt-1">
-              Fonctionnement de la Plateforme d'Acquisition
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-              Une plateforme M&A agile permettant de calibrer précisément votre périmètre d'investissement et de structurer des offres adaptées à votre politique de risque.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Pilier 1 */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
-              <div className="w-8 h-8 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 font-bold text-xs">
-                1
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {heliosPortfolio && (
+              <div id="helios">
+                <PortfolioCard portfolio={heliosPortfolio} />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Teasers Dédiés par Portefeuille</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Chaque portefeuille (<strong>HÉLIOS PV 9,12 MWc</strong> et <strong>VOLTA BESS 15,50 MW</strong>) dispose de son Teaser autonome avec cartographie interactive, inventaire unitaire et Data Room dédiée. Aucun teaser n'est mutualisé.
-              </p>
-            </div>
-
-            {/* Pilier 2 */}
-            <div className="bg-gray-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
-              <div className="w-8 h-8 rounded-lg bg-cyan-100 border border-cyan-300 flex items-center justify-center text-cyan-800 font-bold text-xs">
-                2
+            )}
+            {voltaPortfolio && (
+              <div id="volta">
+                <PortfolioCard portfolio={voltaPortfolio} />
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Liberté Totale de Périmètre</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Vous avez la liberté de formuler une offre sur un <strong>portefeuille entier</strong>, sur un ou plusieurs <strong>projets ciblés</strong> d'un portefeuille, ou sur les <strong>deux portefeuilles combinés</strong>.
-              </p>
-            </div>
-
-            {/* Pilier 3 */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
-              <div className="w-8 h-8 rounded-lg bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 font-bold text-xs">
-                3
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Tarif & Jalonnements Sur-Mesure</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Proposez librement votre valorisation (€ HT) et sélectionnez vos versements parmi les <strong>4 jalons types</strong> de développement (Promesse, Urba purgé, PTF Enedis, RTB). <strong>Aucun jalon n'est imposé par défaut</strong>.
-              </p>
-            </div>
-
-            {/* Pilier 4 */}
-            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 hover:border-slate-300 transition">
-              <div className="w-8 h-8 rounded-lg bg-purple-100 border border-purple-300 flex items-center justify-center text-purple-800 font-bold text-xs">
-                4
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Négociation & Mandat</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Aller-retours d'offres et contre-propositions avec Yann BARBERIS. Dès accord mutuel, signature du <strong>Mandat de Négociation Exclusive (60 jours)</strong> pour la finalisation des actes définitifs de cession.
-              </p>
-            </div>
+            )}
           </div>
         </section>
 
@@ -916,62 +885,97 @@ export default function InvestorDashboard() {
         </section>
 
         {/* ================================================================= */}
-        {/* SECTION 3 : LES 2 PORTEFEUILLES ACTUELLEMENT EN VENTE             */}
-        {/* ================================================================= */}
-        <section id="portefeuilles" className="space-y-4">
-          <div className="border-b border-slate-200 pb-3">
-            <h2 className="text-xl font-bold text-slate-950 tracking-tight flex items-center gap-2">
-              <Layers className="w-5 h-5 text-amber-600" />
-              <span>Portefeuilles Actuellement en Vente (2 Portefeuilles)</span>
-            </h2>
-            <p className="text-xs text-slate-600 mt-0.5">
-              Cliquez sur un portefeuille pour entrer dans son <strong>Teaser dédié</strong> : cartographie interactive unitaire, tableau détaillé des sites et Data Room correspondante.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {heliosPortfolio && (
-              <div id="helios">
-                <PortfolioCard portfolio={heliosPortfolio} />
-              </div>
-            )}
-            {voltaPortfolio && (
-              <div id="volta">
-                <PortfolioCard portfolio={voltaPortfolio} />
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 4 : PROPOSITION D'OFFRE MULTI-PORTEFEUILLES (CTA)          */}
+        {/* SECTION 3 : PROPOSITION D'OFFRE MULTI-PORTEFEUILLES (CTA)          */}
         {/* ================================================================= */}
         <section
           id="offre"
-          className="no-print rounded-2xl bg-gradient-to-r from-amber-50 via-white to-cyan-50 border border-amber-300 p-6 sm:p-8 shadow-sm relative overflow-hidden"
+          className="no-print rounded-2xl bg-slate-900 text-white border border-slate-800 p-6 sm:p-8 shadow-sm relative overflow-hidden"
         >
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="space-y-2 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold uppercase tracking-wider">
-                <Coins className="w-4 h-4 text-amber-700" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-amber-400 border border-slate-700 text-xs font-semibold uppercase tracking-wider">
+                <Coins className="w-3.5 h-3.5 text-amber-400" />
                 <span>Espace Transactionnel & Propositions</span>
               </div>
-              <h3 className="text-2xl font-black text-slate-950">
+              <h3 className="text-xl sm:text-2xl font-black text-white">
                 Déposer une offre d'acquisition (Totale ou Partielle)
               </h3>
-              <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+              <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
                 Vous pouvez formuler une offre ferme ou indicative sur le portefeuille <strong>HÉLIOS (PV)</strong>, sur le portefeuille <strong>VOLTA (BESS)</strong>, ou sur les <strong>deux combinés</strong>, avec votre propre proposition d'échéancier par jalonnements.
               </p>
             </div>
 
             <button
               onClick={() => handleOpenCreateOffer(null)}
-              className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-wider transition transform hover:scale-[1.02] shadow-sm flex items-center gap-2.5 shrink-0"
+              className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2.5 shrink-0"
             >
               <Coins className="w-4 h-4" />
               <span>Soumettre une Proposition d'Achat</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </section>
+
+        {/* ================================================================= */}
+        {/* SECTION 4 : CADRE TRANSACTIONNEL & PROCESSUS M&A                   */}
+        {/* ================================================================= */}
+        <section id="fonctionnement" className="rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
+          <div className="border-b border-slate-100 pb-4">
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Cadre Transactionnel
+            </div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-950 mt-1">
+              Fonctionnement de la Plateforme d'Acquisition
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
+              Une démarche M&A agile permettant de calibrer précisément votre périmètre d'investissement et de structurer des offres adaptées à votre politique de risque.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Pilier 1 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
+              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
+                1
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Teasers Dédiés</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Chaque portefeuille (HÉLIOS PV 9,12 MWc et VOLTA BESS 15,50 MW) dispose de son Teaser autonome avec cartographie et Data Room dédiée.
+              </p>
+            </div>
+
+            {/* Pilier 2 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
+              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
+                2
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Périmètre Libre</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Formulez une offre sur un portefeuille entier, sur un ensemble de projets ciblés, ou sur les deux portefeuilles combinés.
+              </p>
+            </div>
+
+            {/* Pilier 3 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
+              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
+                3
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Jalons Personnalisés</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Proposez librement votre valorisation (€ HT) et calibrez vos versements parmi les 4 jalons types de développement (Promesse, Urba, PTF, RTB).
+              </p>
+            </div>
+
+            {/* Pilier 4 */}
+            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
+              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
+                4
+              </div>
+              <h3 className="text-sm font-bold text-slate-900">Négociation & Mandat</h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Aller-retours directs avec Yann BARBERIS. Dès accord, signature du Mandat de Négociation Exclusive (60 jours).
+              </p>
+            </div>
           </div>
         </section>
 
@@ -1044,10 +1048,12 @@ export default function InvestorDashboard() {
         )}
 
         {/* Modal Consultation & Impression du NDA Bilatéral Signé */}
-        <NdaDocumentModal
-          isOpen={isNdaModalOpen}
-          onClose={() => setIsNdaModalOpen(false)}
-        />
+        <ErrorBoundary>
+          <NdaDocumentModal
+            isOpen={isNdaModalOpen}
+            onClose={() => setIsNdaModalOpen(false)}
+          />
+        </ErrorBoundary>
 
         {/* Modal Formulaire de Contact M&A (Style Identique au Site) */}
         <InvestorContactModal

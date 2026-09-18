@@ -30,6 +30,7 @@ function getInitials(name = '') {
 export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
   const { currentInvestor: storeInvestor } = useInvestorStore();
   const activeInvestor = investor || storeInvestor;
+  const currentInvestor = activeInvestor;
 
   const [uploadedPdfUrl, setUploadedPdfUrl] = useState(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
@@ -455,7 +456,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
                 ENR COURTAGE SAS & {investorCompany} — Suite des Clauses Contractuelles
               </span>
               <span className="text-[10px] font-mono text-slate-400">
-                Réf : NDA-{currentInvestor?.id || 'BILATERAL-2026'}
+                Réf : NDA-{activeInvestor?.id || 'BILATERAL-2026'}
               </span>
             </div>
 

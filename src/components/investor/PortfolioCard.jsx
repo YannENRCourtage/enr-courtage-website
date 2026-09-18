@@ -16,20 +16,20 @@ export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
 
   const accentColor = isPv
     ? {
-        border: 'border-amber-300 hover:border-amber-400',
-        badgeBg: 'bg-amber-50 text-amber-900 border-amber-300',
-        iconBox: 'bg-amber-100/70 border-amber-300 text-amber-800',
+        border: 'border-slate-200 hover:border-amber-400/80 hover:shadow-lg',
+        badgeBg: 'bg-amber-50 text-amber-800 border-amber-200',
+        iconBox: 'bg-amber-50 text-amber-700 border-amber-200',
         textAccent: 'text-amber-700',
-        button: 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold',
-        glow: 'shadow-sm hover:shadow-md',
+        button: 'bg-slate-900 hover:bg-slate-800 text-white font-bold',
+        glow: 'shadow-xs',
       }
     : {
-        border: 'border-cyan-300 hover:border-cyan-400',
-        badgeBg: 'bg-cyan-50 text-cyan-900 border-cyan-300',
-        iconBox: 'bg-cyan-100/70 border-cyan-300 text-cyan-800',
+        border: 'border-slate-200 hover:border-cyan-400/80 hover:shadow-lg',
+        badgeBg: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+        iconBox: 'bg-cyan-50 text-cyan-700 border-cyan-200',
         textAccent: 'text-cyan-700',
-        button: 'bg-cyan-600 hover:bg-cyan-500 text-white font-bold',
-        glow: 'shadow-sm hover:shadow-md',
+        button: 'bg-slate-900 hover:bg-slate-800 text-white font-bold',
+        glow: 'shadow-xs',
       };
 
   const handleNavigate = () => {

@@ -29,6 +29,7 @@ import DataRoomSection from './DataRoomSection';
 import OfferModal from './OfferModal';
 import NdaDocumentModal from './NdaDocumentModal';
 import InvestorContactModal from './InvestorContactModal';
+import ErrorBoundary from './ErrorBoundary';
 
 const iconMap = {
   Sun,
@@ -360,10 +361,12 @@ export default function PortfolioDetailPage() {
           />
 
           {/* Modal Consultation & Impression NDA Bilatéral */}
-          <NdaDocumentModal
-            isOpen={isNdaModalOpen}
-            onClose={() => setIsNdaModalOpen(false)}
-          />
+          <ErrorBoundary>
+            <NdaDocumentModal
+              isOpen={isNdaModalOpen}
+              onClose={() => setIsNdaModalOpen(false)}
+            />
+          </ErrorBoundary>
 
           {/* Modal Contact M&A */}
           <InvestorContactModal
