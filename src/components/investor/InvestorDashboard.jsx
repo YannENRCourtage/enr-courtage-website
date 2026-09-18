@@ -15,6 +15,7 @@ import {
   Phone,
   Mail,
   CheckCircle2,
+  XCircle,
   Clock,
   Check,
   X,
@@ -46,6 +47,7 @@ import OfferModal from './OfferModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import NdaDocumentModal from './NdaDocumentModal';
 import InvestorContactModal from './InvestorContactModal';
+import ErrorBoundary from './ErrorBoundary';
 
 export default function InvestorDashboard() {
   const navigate = useNavigate();
@@ -62,6 +64,9 @@ export default function InvestorDashboard() {
     offers,
     investorAcceptCounter,
     investorRejectCounter,
+    adminAcceptOffer,
+    adminRejectOffer,
+    adminCounterOffer,
   } = useInvestorStore();
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
@@ -153,6 +158,69 @@ export default function InvestorDashboard() {
     const reason = window.prompt("Indiquez un motif de refus à transmettre à ENR COURTAGE (optionnel) :");
     if (reason !== null) {
       investorRejectCounter(offerId, reason);
+    }
+  };
+
+  // Actions d'arbitrage M&A pour Yann BARBERIS (Accepter / Contre-proposition / Refuser)
+  const [counteringOfferId, setCounteringOfferId] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [counterComments, setCounterComments] = useState('');
+  const [counterMilestones, setCounterMilestones] = useState([]);
+
+  const handleOpenCounter = (offer) => {
+    setCounteringOfferId(offer.id);
+    setCounterAmount(String(offer.amountEur || ''));
+    setCounterComments('');
+    const baseMilestones = (offer.milestones && offer.milestones.length > 0)
+      ? offer.milestones
+      : [
+          { id: 1, label: 'Jalon 1 — Signature Promesse (Upfront)', percentage: 30, targetCondition: 'Closing signature promesse & mise sous séquestre', targetDate: 'T4 2026' },
+          { id: 2, label: 'Jalon 2 — Purge Urbanisme', percentage: 30, targetCondition: 'Attestation non-recours délivrée', targetDate: 'T1 2027' },
+          { id: 3, label: 'Jalon 3 — Accord Enedis PTF', percentage: 20, targetCondition: 'Acceptation PTF', targetDate: 'T3 2027' },
+          { id: 4, label: 'Jalon 4 — Ready to Build (RTB)', percentage: 20, targetCondition: 'Closing définitif & OS travaux', targetDate: 'T1 2028' },
+        ];
+    setCounterMilestones(baseMilestones.map((m) => ({ ...m })));
+  };
+
+  const handleSubmitCounter = (offerId) => {
+    const num = Number(String(counterAmount).replace(/\s/g, '').replace(',', '.'));
+    if (isNaN(num) || num <= 0) {
+      alert('Veuillez renseigner un montant valide en euros hors taxes.');
+      return;
+    }
+    const totalP = counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0);
+    if (totalP !== 100) {
+      alert(`La somme des pourcentages des jalonnements doit être égale à 100% (actuellement : ${totalP}%).`);
+      return;
+    }
+    const milestonesWithAmounts = counterMilestones.map((m) => ({
+      ...m,
+      percentage: Number(m.percentage),
+      amount: Math.round((num * Number(m.percentage)) / 100),
+    }));
+
+    adminCounterOffer(offerId, {
+      counterAmountEur: num,
+      counterMilestones: milestonesWithAmounts,
+      counterComments: counterComments,
+    });
+    setCounteringOfferId(null);
+  };
+
+  const handleAdminAccept = (offerId) => {
+    if (
+      window.confirm(
+        "Confirmez-vous l'acceptation définitive de cette proposition ? Les deux parties pourront procéder immédiatement à la signature du Mandat de Négociation Exclusive."
+      )
+    ) {
+      adminAcceptOffer(offerId);
+    }
+  };
+
+  const handleAdminReject = (offerId) => {
+    const reason = window.prompt("Indiquez un motif de refus à communiquer à l'investisseur (optionnel) :");
+    if (reason !== null) {
+      adminRejectOffer(offerId, reason);
     }
   };
 
@@ -305,13 +373,15 @@ export default function InvestorDashboard() {
             </div>
 
             {/* Embedded Admin Interface */}
-            <AdminValidationModal
-              isOpen={true}
-              isEmbedded={true}
-              initialTab={adminActiveTab}
-              onTabChange={(tab) => handleSelectAdminTab(tab)}
-              onClose={() => handleSelectAdminTab(null)}
-            />
+            <ErrorBoundary onReset={() => handleSelectAdminTab(null)}>
+              <AdminValidationModal
+                isOpen={true}
+                isEmbedded={true}
+                initialTab={adminActiveTab}
+                onTabChange={(tab) => handleSelectAdminTab(tab)}
+                onClose={() => handleSelectAdminTab(null)}
+              />
+            </ErrorBoundary>
           </div>
         ) : (
           <>
@@ -570,26 +640,141 @@ export default function InvestorDashboard() {
 
                   {/* STATUT 1 : EN COURS D'ÉTUDE */}
                   {(offer.status === 'submitted' || offer.status === 'counter_by_investor') && (
-                    <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center space-x-2.5 text-xs text-amber-900">
-                        <Clock className="w-4 h-4 text-amber-700 shrink-0" />
-                        <div>
-                          <strong className="text-slate-900">En cours d'étude par Yann BARBERIS (ENR COURTAGE)</strong>
-                          <span className="text-slate-600 block sm:inline sm:ml-2">
-                            {offer.status === 'counter_by_investor'
-                              ? "Votre contre-proposition a été transmise à l'administrateur. Vous recevrez son retour prochainement."
-                              : "Votre offre initiale est en cours d'analyse par le cédant. Vous serez notifié de son acceptation, refus ou contre-proposition."}
-                          </span>
+                    <div className="space-y-3">
+                      <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center space-x-2.5 text-xs text-amber-900">
+                          <Clock className="w-4 h-4 text-amber-700 shrink-0" />
+                          <div>
+                            <strong className="text-slate-900">En cours d'étude par Yann BARBERIS (ENR COURTAGE)</strong>
+                            <span className="text-slate-600 block sm:inline sm:ml-2">
+                              {offer.status === 'counter_by_investor'
+                                ? "Votre contre-proposition a été transmise à l'administrateur. Vous recevrez son retour prochainement."
+                                : "Votre offre initiale est en cours d'analyse par le cédant. Vous serez notifié de son acceptation, refus ou contre-proposition."}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Les 3 boutons de négociation : Accepter l'offre, Faire une contre-proposition, Refuser */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            onClick={() => handleAdminAccept(offer.id)}
+                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+                            title="Accepter définitivement cette offre"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>Accepter l'offre</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleOpenCounter(offer)}
+                            className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
+                            title="Faire une contre-proposition financière ou sur les jalons"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                            <span>Faire une contre-proposition</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleAdminReject(offer.id)}
+                            className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
+                            title="Refuser cette offre"
+                          >
+                            <XCircle className="w-3.5 h-3.5" />
+                            <span>Refuser</span>
+                          </button>
                         </div>
                       </div>
 
-                      <button
-                        onClick={() => handleOpenModifyOffer(offer)}
-                        className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-slate-800 text-xs font-semibold border border-slate-300 flex items-center gap-1.5 transition shadow-2xs"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                        <span>Modifier ma proposition</span>
-                      </button>
+                      {/* INLINE COUNTER-PROPOSAL FORM DIRECTLY ON DASHBOARD */}
+                      {counteringOfferId === offer.id && (
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/60 border-2 border-amber-400 space-y-4 animate-in fade-in shadow-sm">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                              <Edit3 className="w-4 h-4 text-amber-700" /> Rédiger une contre-proposition — Yann BARBERIS (ENR COURTAGE)
+                            </span>
+                            <button
+                              onClick={() => setCounteringOfferId(null)}
+                              className="text-slate-500 hover:text-slate-800 text-xs font-medium"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Nouveau Montant Global Proposé (€ HT)
+                              </label>
+                              <input
+                                type="text"
+                                value={counterAmount}
+                                onChange={(e) => setCounterAmount(e.target.value)}
+                                placeholder="ex: 4 000 000"
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-mono font-bold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                              />
+                            </div>
+
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                Commentaire / Justification de la contre-proposition
+                              </label>
+                              <input
+                                type="text"
+                                value={counterComments}
+                                onChange={(e) => setCounterComments(e.target.value)}
+                                placeholder="ex: Réajustement compte tenu des coûts de raccordement..."
+                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Adjust Milestones % */}
+                          <div className="space-y-2">
+                            <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
+                              Répartition des versements par jalon (Total exigé = 100%)
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                              {counterMilestones.map((m, idx) => (
+                                <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
+                                  <div className="text-[10px] font-semibold text-slate-700 truncate" title={m.label}>{m.label}</div>
+                                  <div className="flex items-center gap-1.5">
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      value={m.percentage}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value);
+                                        setCounterMilestones((prev) =>
+                                          prev.map((item, i) => (i === idx ? { ...item, percentage: val } : item))
+                                        );
+                                      }}
+                                      className="w-16 px-2 py-1 bg-amber-50/50 border border-slate-300 rounded text-center text-amber-900 font-mono font-bold focus:outline-none focus:border-amber-500"
+                                    />
+                                    <span className="text-slate-500">%</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-200">
+                            <button
+                              onClick={() => setCounteringOfferId(null)}
+                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-300 transition"
+                            >
+                              Annuler
+                            </button>
+                            <button
+                              onClick={() => handleSubmitCounter(offer.id)}
+                              className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-sm flex items-center gap-1.5"
+                            >
+                              <Send className="w-3.5 h-3.5" />
+                              <span>Transmettre la contre-proposition à l'investisseur</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
