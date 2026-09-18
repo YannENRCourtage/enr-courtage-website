@@ -102,6 +102,57 @@ export const useInvestorStore = create(
       // Tracking of document downloads by investor email
       userDownloads: {},
 
+      // Sites marqués comme "Vendu !" par l'administrateur
+      soldSites: { helios: [], volta: [] },
+
+      // Sites supprimés du tableau par l'administrateur
+      deletedSites: { helios: [], volta: [] },
+
+      // Marquer / Démarquer un site comme Vendu !
+      toggleSoldSite: (portfolioId, siteId) => {
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        set((state) => {
+          const currentSold = state.soldSites?.[pId] || [];
+          const isSold = currentSold.includes(siteId);
+          const newSold = isSold ? currentSold.filter((id) => id !== siteId) : [...currentSold, siteId];
+          return {
+            soldSites: {
+              ...state.soldSites,
+              [pId]: newSold,
+            },
+          };
+        });
+      },
+
+      // Supprimer un projet d'un portefeuille
+      deleteSite: (portfolioId, siteId) => {
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        set((state) => {
+          const currentDeleted = state.deletedSites?.[pId] || [];
+          if (currentDeleted.includes(siteId)) return state;
+          return {
+            deletedSites: {
+              ...state.deletedSites,
+              [pId]: [...currentDeleted, siteId],
+            },
+          };
+        });
+      },
+
+      // Restaurer un projet supprimé
+      restoreSite: (portfolioId, siteId) => {
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        set((state) => {
+          const currentDeleted = state.deletedSites?.[pId] || [];
+          return {
+            deletedSites: {
+              ...state.deletedSites,
+              [pId]: currentDeleted.filter((id) => id !== siteId),
+            },
+          };
+        });
+      },
+
       // Toggle orange projects filter
       toggleExcludeOrange: () => set((state) => ({ excludeOrange: !state.excludeOrange })),
 

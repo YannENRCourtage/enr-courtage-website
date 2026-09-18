@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Coins,
   X,
@@ -16,6 +16,7 @@ import {
   ArrowRight,
   ArrowLeft,
   Sparkles,
+  Search,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -65,7 +66,15 @@ export default function OfferModal({
   existingOffer = null,
   mode = 'create', // 'create' | 'modify' | 'counter_proposal'
 }) {
-  const { currentInvestor, submitOffer, modifyOffer, investorCounterOffer } = useInvestorStore();
+  const {
+    currentInvestor,
+    submitOffer,
+    modifyOffer,
+    investorCounterOffer,
+    soldSites = { helios: [], volta: [] },
+    deletedSites = { helios: [], volta: [] },
+    excludeOrange = true,
+  } = useInvestorStore();
 
   // Wizard Step: 1 = Périmètre & Projets, 2 = Tarif / Montant, 3 = Jalonnements
   const [currentStep, setCurrentStep] = useState(1);
@@ -75,7 +84,13 @@ export default function OfferModal({
   const [offerType, setOfferType] = useState(
     existingOffer ? existingOffer.offerType : (selectedSiteIds.length > 0 ? 'partial' : 'total')
   );
-  const [amountEur, setAmountEur] = useState(existingOffer ? String(existingOffer.amountEur) : '');
+  const [localSelectedSiteIds, setLocalSelectedSiteIds] = useState(
+    existingOffer?.selectedSiteIds || selectedSiteIds || []
+  );
+  const [siteSearchTerm, setSiteSearchTerm] = useState('');
+
+  const rawInitAmt = existingOffer ? (existingOffer.counterAmountEur || existingOffer.amountEur || '') : '';
+  const [amountEur, setAmountEur] = useState(rawInitAmt ? formatThousands(rawInitAmt) : '');
 
   // Step 3: Selected Milestones (NONE selected by default per user instruction)
   // Mapping: { [key]: { selected: boolean, percentage: number, label: string, targetCondition: string } }
@@ -86,6 +101,43 @@ export default function OfferModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedOffer, setSubmittedOffer] = useState(null);
   const [error, setError] = useState('');
+
+  // Retrieve all raw sites
+  const allPortfolios = useMemo(() => investorService.getAllPortfolios(), []);
+  const heliosSites = useMemo(() => allPortfolios.find((p) => p.id === 'helios')?.sites || [], [allPortfolios]);
+  const voltaSites = useMemo(() => allPortfolios.find((p) => p.id === 'volta')?.sites || [], [allPortfolios]);
+
+  // Compute available active sites for target portfolio
+  const availableSites = useMemo(() => {
+    let list = [];
+    if (targetPortfolio === 'helios') {
+      list = heliosSites.map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
+    } else if (targetPortfolio === 'volta') {
+      list = voltaSites.map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' }));
+    } else {
+      list = [
+        ...heliosSites.map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' })),
+        ...voltaSites.map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' })),
+      ];
+    }
+
+    return list.filter((site) => {
+      const pKey = site.portfolioId === 'volta' ? 'volta' : 'helios';
+      const isDeleted = deletedSites?.[pKey]?.includes(site.id);
+      if (isDeleted) return false;
+      if (pKey === 'helios' && excludeOrange && site.orange) return false;
+      return true;
+    });
+  }, [targetPortfolio, heliosSites, voltaSites, deletedSites, excludeOrange]);
+
+  // Filter sites for search inside modal
+  const filteredModalSites = useMemo(() => {
+    if (!siteSearchTerm.trim()) return availableSites;
+    const q = siteSearchTerm.toLowerCase();
+    return availableSites.filter((s) =>
+      `${s.name || s.ville || ''} ${s.cp || ''} ${s.dept || ''} ${s.client || ''} ${s.address || ''}`.toLowerCase().includes(q)
+    );
+  }, [availableSites, siteSearchTerm]);
 
   // Initialize or reset when opening modal
   useEffect(() => {
@@ -99,7 +151,9 @@ export default function OfferModal({
     if (existingOffer) {
       setTargetPortfolio(existingOffer.portfolioId || 'helios');
       setOfferType(existingOffer.offerType || 'total');
-      setAmountEur(existingOffer.amountEur ? formatThousands(existingOffer.amountEur) : '');
+      setLocalSelectedSiteIds(existingOffer.selectedSiteIds || selectedSiteIds || []);
+      const targetAmt = existingOffer.counterAmountEur || existingOffer.amountEur || '';
+      setAmountEur(targetAmt ? formatThousands(targetAmt) : '');
       setComments(existingOffer.comments || '');
 
       // Load existing milestones
@@ -135,6 +189,7 @@ export default function OfferModal({
       setCustomMilestones([]);
       setTargetPortfolio(portfolio?.id || 'helios');
       setOfferType(selectedSiteIds.length > 0 ? 'partial' : 'total');
+      setLocalSelectedSiteIds(selectedSiteIds || []);
       setAmountEur('');
       setComments('');
     }
@@ -142,11 +197,33 @@ export default function OfferModal({
 
   if (!isOpen) return null;
 
-  const totalSitesCount = portfolio?.sites?.length || (targetPortfolio === 'both' ? 56 : 25);
   const sitesToIncludeCount =
-    offerType === 'total' ? totalSitesCount : (selectedSiteIds.length || 1);
+    offerType === 'total' ? availableSites.length : localSelectedSiteIds.length;
 
   const numericAmount = parseThousands(amountEur);
+
+  // Toggle selection of a single site inside modal
+  const handleToggleLocalSite = (siteId) => {
+    setLocalSelectedSiteIds((prev) =>
+      prev.includes(siteId) ? prev.filter((id) => id !== siteId) : [...prev, siteId]
+    );
+  };
+
+  // Select all non-sold sites
+  const handleSelectAllLocalSites = () => {
+    const selectableIds = availableSites
+      .filter((s) => {
+        const pKey = s.portfolioId === 'volta' ? 'volta' : 'helios';
+        return !soldSites?.[pKey]?.includes(s.id);
+      })
+      .map((s) => s.id);
+    setLocalSelectedSiteIds(selectableIds);
+  };
+
+  // Clear all selected sites
+  const handleClearAllLocalSites = () => {
+    setLocalSelectedSiteIds([]);
+  };
 
   // Toggle milestone selection
   const handleToggleMilestone = (std) => {
@@ -261,6 +338,10 @@ export default function OfferModal({
   // Validate Step 1
   const handleNextFromStep1 = () => {
     setError('');
+    if (offerType === 'partial' && localSelectedSiteIds.length === 0) {
+      setError('Veuillez sélectionner au moins un projet pour votre offre d\'achat partielle.');
+      return;
+    }
     setCurrentStep(2);
   };
 
@@ -282,6 +363,12 @@ export default function OfferModal({
     if (isNaN(numericAmount) || numericAmount <= 0) {
       setError('Veuillez renseigner un montant valide en euros.');
       setCurrentStep(2);
+      return;
+    }
+
+    if (offerType === 'partial' && localSelectedSiteIds.length === 0) {
+      setError('Veuillez sélectionner au moins un projet pour votre offre partielle.');
+      setCurrentStep(1);
       return;
     }
 
@@ -309,7 +396,7 @@ export default function OfferModal({
         portfolioId: targetPortfolio,
         portfolioName: pName,
         offerType,
-        selectedSiteIds: offerType === 'total' ? [] : selectedSiteIds,
+        selectedSiteIds: offerType === 'total' ? [] : localSelectedSiteIds,
         selectedSitesCount: sitesToIncludeCount,
         amountEur: numericAmount,
         milestones: activeMilestones,
@@ -542,7 +629,7 @@ export default function OfferModal({
                     >
                       <div className="text-base mb-0.5">🔋</div>
                       <div className="font-bold">VOLTA (BESS)</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">15.50 MW / 31 sites</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">15.50 MW / {voltaSites.length} sites</div>
                     </button>
 
                     <button
@@ -556,7 +643,7 @@ export default function OfferModal({
                     >
                       <div className="text-base mb-0.5">⚡</div>
                       <div className="font-bold">Les Deux</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">23.51 MW / 56 sites</div>
+                      <div className="text-[10px] text-gray-400 mt-0.5">23.51 MW / {heliosSites.length + voltaSites.length} sites</div>
                     </button>
                   </div>
                 </div>
@@ -577,7 +664,7 @@ export default function OfferModal({
                     >
                       <div className="font-bold">Totalité du portefeuille</div>
                       <div className="text-[11px] text-gray-400 mt-0.5">
-                        L'ensemble des sites sécurisés ({targetPortfolio === 'both' ? '56' : targetPortfolio === 'volta' ? '31' : '25'} sites)
+                        L'ensemble des sites sécurisés ({availableSites.length} sites)
                       </div>
                     </button>
 
@@ -592,13 +679,140 @@ export default function OfferModal({
                     >
                       <div className="font-bold">Achat Partiel (Sélection)</div>
                       <div className="text-[11px] text-gray-400 mt-0.5">
-                        {selectedSiteIds.length > 0
-                          ? `${selectedSiteIds.length} site(s) sélectionné(s)`
+                        {localSelectedSiteIds.length > 0
+                          ? `${localSelectedSiteIds.length} site(s) sélectionné(s)`
                           : 'Sélection d\'un ou plusieurs sites unitaires'}
                       </div>
                     </button>
                   </div>
                 </div>
+
+                {/* SÉLECTION DES PROJETS UNITAIRES POUR ACHAT PARTIEL */}
+                {offerType === 'partial' && (
+                  <div className="p-3.5 bg-gray-800/70 border border-amber-500/30 rounded-xl space-y-3 animate-fadeIn">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-amber-300 block">
+                          Sélectionnez les projets visés par votre offre ({localSelectedSiteIds.length} / {availableSites.length} sélectionné(s))
+                        </span>
+                        <span className="text-[11px] text-gray-400">
+                          Cochez les projets souhaités. Les projets déjà vendus sont floutés et non sélectionnables.
+                        </span>
+                      </div>
+
+                      <div className="flex items-center space-x-1.5 text-xs">
+                        <button
+                          type="button"
+                          onClick={handleSelectAllLocalSites}
+                          className="px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 hover:text-white border border-gray-600 text-[11px] font-semibold transition flex items-center gap-1"
+                        >
+                          <CheckSquare className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Tout cocher</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleClearAllLocalSites}
+                          className="px-2.5 py-1 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 hover:text-white border border-gray-600 text-[11px] font-semibold transition"
+                        >
+                          Tout décocher
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                      <input
+                        type="text"
+                        value={siteSearchTerm}
+                        onChange={(e) => setSiteSearchTerm(e.target.value)}
+                        placeholder="Filtrer les projets par commune, département, client..."
+                        className="w-full pl-8 pr-8 py-2 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-400"
+                      />
+                      {siteSearchTerm && (
+                        <button
+                          type="button"
+                          onClick={() => setSiteSearchTerm('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* List of sites */}
+                    <div className="max-h-56 overflow-y-auto divide-y divide-gray-700/60 rounded-xl border border-gray-700 bg-gray-900/90 pr-1">
+                      {filteredModalSites.map((site) => {
+                        const pKey = site.portfolioId === 'volta' ? 'volta' : 'helios';
+                        const isSold = soldSites?.[pKey]?.includes(site.id);
+                        const isChecked = localSelectedSiteIds.includes(site.id);
+                        const powerText = site.kwc ? `${site.kwc} kWc` : `${site.kw || 500} kW`;
+
+                        return (
+                          <div
+                            key={`${site.portfolioId}-${site.id}`}
+                            onClick={() => !isSold && handleToggleLocalSite(site.id)}
+                            className={`p-2.5 flex items-center justify-between text-xs transition ${
+                              isSold
+                                ? 'opacity-40 cursor-not-allowed bg-gray-950/60'
+                                : isChecked
+                                ? 'bg-amber-500/15 text-white cursor-pointer'
+                                : 'hover:bg-gray-800/60 text-gray-300 cursor-pointer'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-2.5 min-w-0">
+                              <input
+                                type="checkbox"
+                                disabled={isSold}
+                                checked={isChecked && !isSold}
+                                onChange={() => {}}
+                                className="rounded border-gray-600 text-amber-500 focus:ring-0 shrink-0 cursor-pointer"
+                              />
+                              <div className="min-w-0 truncate">
+                                <div className="flex items-center space-x-2">
+                                  <span className="font-mono text-gray-400 text-[10px] font-bold">#{site.id}</span>
+                                  <span className={`font-bold text-white truncate text-xs ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                    {site.name || site.ville}
+                                  </span>
+                                  <span className={`px-1.5 py-0.2 rounded bg-gray-800 text-gray-300 font-mono text-[10px] border border-gray-700 ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                    Dép {site.dept || (site.cp ? site.cp.substring(0, 2) : '-')}
+                                  </span>
+                                  {targetPortfolio === 'both' && (
+                                    <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-gray-800 text-amber-400 border border-gray-700">
+                                      {site.portfolioName}
+                                    </span>
+                                  )}
+                                  {isSold && (
+                                    <span className="px-2 py-0.2 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wider shadow-xs">
+                                      Vendu !
+                                    </span>
+                                  )}
+                                </div>
+                                {site.client && (
+                                  <div className={`text-[10px] text-gray-500 truncate mt-0.5 ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                    Client : {site.client} • Typologie : {site.type}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="shrink-0 text-right ml-2">
+                              <span className={`font-mono font-bold text-amber-400 text-xs ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                {powerText}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+
+                      {filteredModalSites.length === 0 && (
+                        <div className="p-4 text-center text-xs text-gray-500">
+                          Aucun projet ne correspond à votre recherche.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="pt-3 flex justify-end">
                   <button
@@ -629,7 +843,7 @@ export default function OfferModal({
                       required
                       value={amountEur}
                       onChange={(e) => setAmountEur(formatThousands(e.target.value))}
-                      placeholder="Ex : 2 500 000"
+                      placeholder="Ex : 5 000 000"
                       className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white font-mono text-base placeholder-gray-500 focus:outline-none focus:border-amber-400 transition"
                     />
                     <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 font-mono">
