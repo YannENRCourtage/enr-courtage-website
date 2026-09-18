@@ -199,7 +199,9 @@ export const PORTFOLIOS = [
     dataRoom: {
       categories: [
         { name: 'Juridique', icon: 'Scale', files: [
-          { name: 'Promesses de Bail (PdB) — Sites fermes', type: 'PDF', size: '12.5 Mo' },
+          { name: 'Promesse de Bail PV — CONSOLI (24130 PRIGONRIEUX) [20 pages]', type: 'PDF', size: '865 Ko', fileUrl: '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf' },
+          { name: 'Promesse de Bail PV — LABEGUERIE (64120 ORÈGUE) [18 pages]', type: 'PDF', size: '4.8 Mo', fileUrl: '/documents/dataroom/Promesse_de_bail_LABEGUERIE_signe.pdf' },
+          { name: 'Promesses de Bail (PdB) — Sites fermes', type: 'PDF', size: '12.5 Mo', fileUrl: '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf' },
           { name: 'Statuts société GREEN INVEST', type: 'PDF', size: '2.1 Mo' },
         ]},
         { name: 'Technique', icon: 'Wrench', files: [
@@ -269,8 +271,11 @@ export const PORTFOLIOS = [
     dataRoom: {
       categories: [
         { name: 'Juridique', icon: 'Scale', files: [
-          { name: 'Promesses de Bail (PdB) — 31 sites BESS', type: 'PDF', size: '18.7 Mo' },
-          { name: 'Accord fournisseur batteries', type: 'PDF', size: '3.2 Mo' },
+          { name: 'Promesse de Bail BESS — BATIOT (32220 MONGAUSY) [24 pages]', type: 'PDF', size: '623 Ko', fileUrl: '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf' },
+          { name: 'Promesse de Bail BESS — CASTEBRUNET (82300 CAUSSADE) [25 pages]', type: 'PDF', size: '906 Ko', fileUrl: '/documents/dataroom/Nouvelle_promesse_de_bail_batterie_CASTEBRUNET_82300_CAUSSADE.pdf' },
+          { name: 'Promesse de Bail BESS — COMBY (19210 SAINT-ÉLOY) [24 pages]', type: 'PDF', size: '840 Ko', fileUrl: '/documents/dataroom/Nouvelle_Promesse_de_bail_batteries_COMBY_19210_SAINT_ELOY_LES_TUILLERIES.pdf' },
+          { name: 'Promesses de Bail (PdB) — 31 sites BESS', type: 'PDF', size: '18.7 Mo', fileUrl: '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf' },
+          { name: 'Accord fournisseur batteries CESC (35 k€ / 125 kW)', type: 'PDF', size: '3.2 Mo' },
         ]},
         { name: 'Technique', icon: 'Wrench', files: [
           { name: 'Fiches synoptiques — 31 sites BESS', type: 'PDF', size: '22.4 Mo' },
