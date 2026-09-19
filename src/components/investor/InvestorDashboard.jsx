@@ -5,1071 +5,1042 @@ import {
   Battery,
   ShieldCheck,
   ShieldAlert,
-  FileSpreadsheet,
-  Layers,
   Coins,
   ArrowRight,
-  ArrowLeft,
   FolderLock,
-  Sparkles,
-  Phone,
   Mail,
   CheckCircle2,
-  XCircle,
   Clock,
   Check,
   X,
-  Scale,
   FileCheck,
   AlertCircle,
-  HelpCircle,
-  TrendingUp,
   Building,
   User,
-  Users,
   ExternalLink,
   Edit3,
-  RotateCcw,
-  Handshake,
-  ChevronRight,
   Send,
   Lock,
   FileSignature,
+  Calendar,
+  Layers,
+  MessageSquare,
+  Sparkles,
+  Download,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import InvestorHeader from './InvestorHeader';
-import InvestorSidebar from './InvestorSidebar';
-import PortfolioCard from './PortfolioCard';
-import ProcessTimeline from './ProcessTimeline';
-import AdminValidationModal from './AdminValidationModal';
 import OfferModal from './OfferModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import NdaDocumentModal from './NdaDocumentModal';
-import InvestorContactModal from './InvestorContactModal';
+import AdminConsoleView from './AdminConsoleView';
 import ErrorBoundary from './ErrorBoundary';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 
-export default function InvestorDashboard() {
+export default function InvestorDashboard({ defaultToAdmin = false }) {
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const adminTabParam = searchParams.get('adminTab');
-
-  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
+  const adminParam = searchParams.get('admin');
 
   const {
     currentInvestor,
-    investors,
     offers,
     investorAcceptCounter,
     investorRejectCounter,
-    adminAcceptOffer,
-    adminRejectOffer,
-    adminCounterOffer,
+    investorCounterOffer,
+    messages,
+    sendMessage,
+    userDownloads,
   } = useInvestorStore();
+
+  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
+
+  // Active view: 'investor' or 'admin'
+  const [activeView, setActiveView] = useState(defaultToAdmin || adminParam === 'true' ? 'admin' : 'investor');
+  // Investor sub-tab: 'portfolios' | 'offers' | 'dataroom' | 'messages'
+  const [investorSubTab, setInvestorSubTab] = useState('portfolios');
+
+  // Modals
+  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
+  const [offerModalTargetPortfolio, setOfferModalTargetPortfolio] = useState('both');
+  const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
+  const [selectedMandateOffer, setSelectedMandateOffer] = useState(null);
+  const [investorCounteringOfferId, setInvestorCounteringOfferId] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('5 500 000');
+  const [counterComments, setCounterComments] = useState('');
+  const [counterMilestones, setCounterMilestones] = useState([]);
+  const [dashboardNotice, setDashboardNotice] = useState('');
+
+  // Investor Chat State
+  const [chatInputText, setChatInputText] = useState('');
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const heliosPortfolio = portfolios.find((p) => p.id === 'helios');
   const voltaPortfolio = portfolios.find((p) => p.id === 'volta');
 
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [adminActiveTab, setAdminActiveTab] = useState(adminTabParam || null);
-  const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);
-
-  React.useEffect(() => {
-    if (adminTabParam) {
-      setAdminActiveTab(adminTabParam);
-    }
-  }, [adminTabParam]);
-
-  const handleSelectAdminTab = (tab) => {
-    setAdminActiveTab(tab);
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev);
-      if (tab) {
-        next.set('adminTab', tab);
-      } else {
-        next.delete('adminTab');
-      }
-      return next;
-    });
-  };
-
-  // Offer modal state
-  const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
-  const [offerModalPortfolio, setOfferModalPortfolio] = useState(null);
-  const [offerModalMode, setOfferModalMode] = useState('create'); // 'create' | 'modify' | 'counter_proposal'
-  const [selectedOfferForModal, setSelectedOfferForModal] = useState(null);
-
-  // Exclusive mandate modal state
-  const [selectedMandateOffer, setSelectedMandateOffer] = useState(null);
-
-  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
-  const pendingRequestsCount = investors.filter((i) => i.status === 'pending').length;
-
-  // Investor's purchase offers
+  // Filter offers for the current investor (or all if admin viewing)
   const myOffers = useMemo(() => {
-    if (isAdmin) return offers;
+    if (!currentInvestor) return [];
     return offers.filter(
       (o) =>
-        o.investorEmail?.toLowerCase() === currentInvestor?.email?.toLowerCase() ||
-        o.investorId === currentInvestor?.id ||
-        o.investorCompany?.toLowerCase() === currentInvestor?.company?.toLowerCase()
+        o.investorEmail?.toLowerCase() === currentInvestor.email?.toLowerCase() ||
+        o.investorId === currentInvestor.id
     );
-  }, [offers, currentInvestor, isAdmin]);
+  }, [offers, currentInvestor]);
 
-  // Actions on offers
-  const handleOpenCreateOffer = (portfolio = null) => {
-    setOfferModalPortfolio(portfolio);
-    setSelectedOfferForModal(null);
-    setOfferModalMode('create');
-    setIsOfferModalOpen(true);
+  const activeOffer = myOffers[0] || offers[0] || null;
+
+  // KPIs
+  const totalMyOffersAmount = myOffers.reduce((sum, o) => sum + (o.amountEur || 0), 0);
+  const activeNegotiationCount = myOffers.filter(
+    (o) => o.status === 'counter_by_admin' || o.status === 'counter_by_investor' || o.status === 'submitted'
+  ).length;
+
+  // Counter proposal handler
+  const handleOpenInvestorCounter = (offer) => {
+    setInvestorCounteringOfferId(offer.id);
+    const counterOff = offer.counterOffer;
+    const baseAmt = counterOff?.amountEur || offer.amountEur || 5000000;
+    setCounterAmount(formatThousands(baseAmt));
+    setCounterComments('Ajustement intermédiaire suite à analyse détaillée de la Data Room.');
+    const initialMilestones =
+      offer.milestones && offer.milestones.length > 0
+        ? offer.milestones.map((m) => ({
+            label: m.label,
+            percentage: m.percentage,
+            targetCondition: m.targetCondition,
+            targetDate: m.targetDate,
+          }))
+        : [
+            {
+              label: 'Jalon 1 — Signature Promesse de Cession (Upfront)',
+              percentage: 15,
+              targetCondition: 'Closing signature promesse & séquestre notarié',
+              targetDate: 'T4 2026',
+            },
+            {
+              label: 'Jalon 2 — Obtention de la PTF / Accord Enedis',
+              percentage: 85,
+              targetCondition: 'Proposition Technique et Financière acceptée',
+              targetDate: 'T3 2027',
+            },
+          ];
+    setCounterMilestones(initialMilestones);
   };
 
-  const handleOpenModifyOffer = (offer) => {
-    setSelectedOfferForModal(offer);
-    const targetP = portfolios.find((p) => p.id === offer.portfolioId) || heliosPortfolio;
-    setOfferModalPortfolio(targetP);
-    setOfferModalMode('modify');
-    setIsOfferModalOpen(true);
-  };
-
-  const handleOpenCounterOffer = (offer) => {
-    setSelectedOfferForModal(offer);
-    const targetP = portfolios.find((p) => p.id === offer.portfolioId) || heliosPortfolio;
-    setOfferModalPortfolio(targetP);
-    setOfferModalMode('counter_proposal');
-    setIsOfferModalOpen(true);
-  };
-
-  const handleAcceptCounter = (offerId) => {
-    if (
-      window.confirm(
-        "Confirmez-vous l'acceptation de la contre-proposition de Yann BARBERIS ? Vous pourrez ensuite procéder immédiatement à la signature du Mandat de Négociation Exclusive."
-      )
-    ) {
-      investorAcceptCounter(offerId);
-    }
-  };
-
-  const handleRejectOffer = (offerId) => {
-    const reason = window.prompt("Indiquez un motif de refus à transmettre à ENR COURTAGE (optionnel) :");
-    if (reason !== null) {
-      investorRejectCounter(offerId, reason);
-    }
-  };
-
-  // Actions d'arbitrage M&A pour Yann BARBERIS (Accepter / Contre-proposition / Refuser)
-  const [counteringOfferId, setCounteringOfferId] = useState(null);
-  const [counterAmount, setCounterAmount] = useState('');
-  const [counterComments, setCounterComments] = useState('');
-  const [counterMilestones, setCounterMilestones] = useState([]);
-
-  const handleOpenCounter = (offer) => {
-    setCounteringOfferId(offer.id);
-    setCounterAmount(formatThousands(offer.amountEur || ''));
-    setCounterComments('');
-    const baseMilestones = (offer.milestones && offer.milestones.length > 0)
-      ? offer.milestones
-      : [
-          { id: 1, label: 'Jalon 1 — Signature Promesse (Upfront)', percentage: 30, targetCondition: 'Closing signature promesse & mise sous séquestre', targetDate: 'T4 2026' },
-          { id: 2, label: 'Jalon 2 — Purge Urbanisme', percentage: 30, targetCondition: 'Attestation non-recours délivrée', targetDate: 'T1 2027' },
-          { id: 3, label: 'Jalon 3 — Accord Enedis PTF', percentage: 20, targetCondition: 'Acceptation PTF', targetDate: 'T3 2027' },
-          { id: 4, label: 'Jalon 4 — Ready to Build (RTB)', percentage: 20, targetCondition: 'Closing définitif & OS travaux', targetDate: 'T1 2028' },
-        ];
-    setCounterMilestones(baseMilestones.map((m) => ({ ...m })));
-  };
-
-  const handleSubmitCounter = (offerId) => {
+  const handleSubmitInvestorCounter = (offerId) => {
     const num = parseThousands(counterAmount);
     if (isNaN(num) || num <= 0) {
-      alert('Veuillez renseigner un montant valide en euros hors taxes.');
+      alert('Veuillez saisir un montant valide.');
       return;
     }
-    const totalP = counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0);
-    if (totalP !== 100) {
-      alert(`La somme des pourcentages des jalonnements doit être égale à 100% (actuellement : ${totalP}%).`);
+    const totalPct = counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0);
+    if (totalPct !== 100) {
+      alert(`Le total des jalons doit faire exactement 100% (actuellement : ${totalPct}%).`);
       return;
     }
+
     const milestonesWithAmounts = counterMilestones.map((m) => ({
       ...m,
       percentage: Number(m.percentage),
       amount: Math.round((num * Number(m.percentage)) / 100),
     }));
 
-    adminCounterOffer(offerId, {
+    investorCounterOffer(offerId, {
       counterAmountEur: num,
       counterMilestones: milestonesWithAmounts,
       counterComments: counterComments,
     });
-    setCounteringOfferId(null);
+    setInvestorCounteringOfferId(null);
+    setDashboardNotice(`Votre contre-proposition de ${formatThousands(num)} € a été transmise à Yann BARBERIS.`);
+    setTimeout(() => setDashboardNotice(''), 5000);
   };
 
-  const handleAdminAccept = (offerId) => {
-    if (
-      window.confirm(
-        "Confirmez-vous l'acceptation définitive de cette proposition ? Les deux parties pourront procéder immédiatement à la signature du Mandat de Négociation Exclusive."
-      )
-    ) {
-      adminAcceptOffer(offerId);
-    }
+  // Chat message send handler
+  const handleSendInvestorMessage = (e) => {
+    e.preventDefault();
+    if (!chatInputText.trim()) return;
+
+    sendMessage({
+      from: 'investor',
+      authorName: currentInvestor?.name || 'Jean DUS',
+      authorCompany: currentInvestor?.company || 'ENEE Energy Partners',
+      investorEmail: currentInvestor?.email || 'yannbarberis@msn.com',
+      text: chatInputText.trim(),
+    });
+
+    setChatInputText('');
   };
 
-  const handleAdminReject = (offerId) => {
-    const reason = window.prompt("Indiquez un motif de refus à communiquer à l'investisseur (optionnel) :");
-    if (reason !== null) {
-      adminRejectOffer(offerId, reason);
-    }
-  };
+  // Filter messages for current investor conversation
+  const investorMessages = (messages || []).filter(
+    (m) =>
+      !m.investorEmail ||
+      m.investorEmail.toLowerCase() === currentInvestor?.email?.toLowerCase() ||
+      m.investorEmail.toLowerCase() === 'yannbarberis@msn.com'
+  );
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-amber-500 selection:text-slate-950">
-      {/* Vertical Sidebar (Dark Contrast on Left) */}
-      <InvestorSidebar
-        activePage="dashboard"
-        adminActiveTab={adminActiveTab}
-        onSelectAdminTab={handleSelectAdminTab}
-        onOpenCreateOffer={() => handleOpenCreateOffer(null)}
-        onOpenAdmin={() => handleSelectAdminTab('requests')}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
+      {/* Header Unifié avec Bascule des Espaces */}
+      <InvestorHeader
+        activeView={activeView}
+        onSwitchView={(view) => setActiveView(view)}
+        onOpenAdmin={() => setActiveView('admin')}
         onOpenNda={() => setIsNdaModalOpen(true)}
-        onOpenContact={() => setIsContactModalOpen(true)}
-        isOpenMobile={isMobileSidebarOpen}
-        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Content Area (White / Bright Background on Right) */}
-      <div className="flex-1 lg:pl-72 flex flex-col min-w-0 bg-slate-50">
-        {/* Header */}
-        <InvestorHeader
-          onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
-          onOpenAdmin={() => handleSelectAdminTab('requests')}
-          onOpenNda={() => setIsNdaModalOpen(true)}
-          pageTitle={
-            adminActiveTab
-              ? "Console d'Administration & Supervision M&A"
-              : "Tableau de Bord des Portefeuilles PV & BESS"
-          }
-          pageTitleBadge={adminActiveTab ? "SUPERVISION ADMIN" : "M&A TRANSACTIONNEL"}
-        />
-
-        {/* Main Content */}
-        <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
-        {/* Admin Notification Banner */}
-        {isAdmin && !adminActiveTab && (
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 flex flex-wrap items-center justify-between gap-4 text-white shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-                <ShieldAlert className="w-4 h-4" />
-              </div>
-              <div className="text-xs">
-                <div className="font-bold text-white text-sm">Supervision Administrateur — Yann BARBERIS</div>
-                <div className="text-slate-400 mt-0.5">
-                  {pendingRequestsCount > 0
-                    ? `Vous avez ${pendingRequestsCount} nouvelle(s) demande(s) d'accès investisseur en attente de contre-signature NDA.`
-                    : "Aucune demande en attente. Tous les accès investisseurs sont à jour."}
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => handleSelectAdminTab('requests')}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm flex items-center gap-1.5"
-            >
-              <ShieldCheck className="w-4 h-4 text-slate-950" />
-              <span>Gérer les accès & NDA</span>
-              {pendingRequestsCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-slate-950 text-amber-300 text-[10px] font-black animate-pulse">
-                  {pendingRequestsCount}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-
-        {/* Embedded Admin Console OR Standard Dashboard */}
-        {isAdmin && adminActiveTab ? (
-          <div className="space-y-6">
-            {/* Admin Header Navigation Bar */}
-            <div className="bg-gradient-to-r from-gray-900 via-gray-900/90 to-[#0f172a] border border-gray-800 rounded-2xl p-4 sm:p-6 flex flex-wrap items-center justify-between gap-4 shadow-xl">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => handleSelectAdminTab(null)}
-                  className="px-3.5 py-2 rounded-xl bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-xs font-semibold border border-gray-700 transition flex items-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>← Revenir aux Portefeuilles</span>
-                </button>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono">
-                      SUPERVISION M&A ENR COURTAGE
-                    </span>
-                    <span className="text-xs text-gray-400 font-medium">Yann BARBERIS</span>
-                  </div>
-                  <h2 className="text-base sm:text-xl font-black text-white tracking-tight mt-1">
-                    {adminActiveTab === 'requests' && "Validation des Demandes d'Accès & Signatures NDA"}
-                    {adminActiveTab === 'offers' && "Synthèse Exécutive des Offres d'Achat Investisseurs"}
-                    {adminActiveTab === 'dataroom' && "Gestion & Téléversement des Documents Data Room"}
-                    {adminActiveTab === 'users' && "Gestion des Utilisateurs & Mots de Passe"}
-                  </h2>
-                </div>
-              </div>
-
-              {/* Tab Selector Buttons */}
-              <div className="flex flex-wrap items-center gap-1.5 bg-gray-950/80 p-1.5 rounded-xl border border-gray-800 text-xs">
-                <button
-                  onClick={() => handleSelectAdminTab('requests')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                    adminActiveTab === 'requests'
-                      ? 'bg-amber-500 text-gray-950 shadow-md'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Clock className="w-3.5 h-3.5" />
-                  <span>Demandes & NDA</span>
-                  {pendingRequestsCount > 0 && (
-                    <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">
-                      {pendingRequestsCount}
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => handleSelectAdminTab('offers')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                    adminActiveTab === 'offers'
-                      ? 'bg-amber-500 text-gray-950 shadow-md'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Coins className="w-3.5 h-3.5" />
-                  <span>Offres ({offers.length})</span>
-                </button>
-
-                <button
-                  onClick={() => handleSelectAdminTab('dataroom')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                    adminActiveTab === 'dataroom'
-                      ? 'bg-amber-500 text-gray-950 shadow-md'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <FolderLock className="w-3.5 h-3.5" />
-                  <span>Data Room</span>
-                </button>
-
-                <button
-                  onClick={() => handleSelectAdminTab('users')}
-                  className={`px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ${
-                    adminActiveTab === 'users'
-                      ? 'bg-amber-500 text-gray-950 shadow-md'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>Utilisateurs ({investors.length})</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Embedded Admin Interface */}
-            <ErrorBoundary onReset={() => handleSelectAdminTab(null)}>
-              <AdminValidationModal
-                isOpen={true}
-                isEmbedded={true}
-                initialTab={adminActiveTab}
-                onTabChange={(tab) => handleSelectAdminTab(tab)}
-                onClose={() => handleSelectAdminTab(null)}
-              />
-            </ErrorBoundary>
-          </div>
+      {/* Main Content Container */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+        {/* ================================================================= */}
+        {/* VUE 1 : CONSOLE D'ADMINISTRATION (SI ACTIVE ET ADMIN)            */}
+        {/* ================================================================= */}
+        {isAdmin && activeView === 'admin' ? (
+          <AdminConsoleView
+            initialTab="users"
+            onBackToDashboard={() => setActiveView('investor')}
+          />
         ) : (
-          <>
-        {/* ================================================================= */}
-        {/* TABLEAU DE BORD PERSONNEL INVESTISSEUR (HEADER DE BIENVENUE)     */}
-        {/* ================================================================= */}
-        <section className="relative overflow-hidden rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 shadow-xs">
-          <div className="relative z-10 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-6">
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                  <Building className="w-3.5 h-3.5 text-slate-400" />
-                  <span className="text-slate-700 font-bold">{currentInvestor?.company || 'Investisseur Partenaire'}</span>
-                  <span className="text-slate-300">•</span>
-                  <span>Espace M&A Confidentiel</span>
+          /* =============================================================== */
+          /* VUE 2 : ESPACE INVESTISSEUR TRANSACTIONNEL                      */
+          /* =============================================================== */
+          <div className="space-y-6">
+            
+            {/* Notification Banner */}
+            {dashboardNotice && (
+              <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-xs">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <span>{dashboardNotice}</span>
                 </div>
-                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-950 tracking-tight">
-                  Bienvenue, {currentInvestor?.name || 'Investisseur'}
-                </h1>
-                <p className="text-slate-500 text-xs sm:text-sm max-w-2xl leading-relaxed">
-                  Consultez les portefeuilles en cession, étudiez les fiches d'audit et Data Rooms, et pilotez vos offres d'acquisition fermes ou partielles.
-                </p>
-              </div>
-
-              {/* Status Badges with Clickable NDA Modal */}
-              <div className="flex flex-wrap sm:flex-col sm:items-end gap-2 text-right">
-                <button
-                  onClick={() => setIsNdaModalOpen(true)}
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition cursor-pointer"
-                  title="Cliquer pour afficher, vérifier et imprimer votre NDA signé bilatéralement"
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>NDA Bilatéral Signé & Enregistré</span>
-                  <span className="text-[11px] font-bold text-emerald-700 underline ml-1">
-                    Consulter →
-                  </span>
+                <button onClick={() => setDashboardNotice('')} className="text-emerald-600 hover:text-emerald-900 font-bold">
+                  ✕
                 </button>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">
-                  <FolderLock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Accès Data Room Intégral Débloqué</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
-                <div className="text-[11px] text-slate-500 uppercase font-semibold">Portefeuilles Disponibles</div>
-                <div className="text-2xl font-black text-slate-900 mt-1">2 Actifs</div>
-                <div className="text-[10px] text-slate-500 mt-0.5">HÉLIOS (9,12 MWc) & VOLTA (15,50 MW)</div>
-              </div>
-
-              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
-                <div className="text-[11px] text-slate-500 uppercase font-semibold">Mes Propositions Déposées</div>
-                <div className="text-2xl font-black text-slate-900 mt-1">{myOffers.length} offre(s)</div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">Totales ou partielles</div>
-              </div>
-
-              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
-                <div className="text-[11px] text-slate-500 uppercase font-semibold">Négociations Actives</div>
-                <div className="text-2xl font-black text-cyan-700 mt-1">
-                  {myOffers.filter((o) => o.status === 'submitted' || o.status === 'counter_by_admin' || o.status === 'counter_by_investor').length}
-                </div>
-                <div className="text-[10px] text-slate-500 mt-0.5">Cycles en cours</div>
-              </div>
-
-              <div className="bg-slate-50/80 p-4 rounded-xl border border-slate-200/80">
-                <div className="text-[11px] text-slate-500 uppercase font-semibold">Mandats d'Exclusivité</div>
-                <div className="text-2xl font-black text-emerald-700 mt-1">
-                  {myOffers.filter((o) => o.status === 'agreement_reached' || o.status === 'mandate_signed').length}
-                </div>
-                <div className="text-[10px] text-emerald-700 font-semibold mt-0.5">Accords formalisés</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 1 : LES 2 PORTEFEUILLES EN CESSION (HÉLIOS & VOLTA)       */}
-        {/* ================================================================= */}
-        <section id="portefeuilles" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-            <div>
-              <h2 className="text-xl font-bold text-slate-950 tracking-tight flex items-center gap-2">
-                <Layers className="w-5 h-5 text-slate-700" />
-                <span>Portefeuilles en Cession (2 Actifs Disponibles)</span>
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Consultez les Teasers dédiés, cartographies interactives unitaires et Data Rooms transactionnelles.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {heliosPortfolio && (
-              <div id="helios">
-                <PortfolioCard portfolio={heliosPortfolio} />
               </div>
             )}
-            {voltaPortfolio && (
-              <div id="volta">
-                <PortfolioCard portfolio={voltaPortfolio} />
-              </div>
-            )}
-          </div>
-        </section>
 
-        {/* ================================================================= */}
-        {/* SECTION 2 : MES PROPOSITIONS D'ACHAT & NÉGOCIATIONS EN COURS      */}
-        {/* ================================================================= */}
-        <section id="mes-offres" className="space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-            <div>
-              <h2 className="text-xl font-bold text-slate-950 flex items-center gap-2">
-                <Coins className="w-5 h-5 text-amber-600" />
-                <span>Mes Propositions d'Achat & Négociations en cours ({myOffers.length})</span>
-              </h2>
-              <p className="text-xs text-slate-600 mt-0.5">
-                Suivez en temps réel l'étude de vos propositions, recevez les contre-propositions de Yann BARBERIS et régularisez vos Mandats d'Exclusivité.
-              </p>
-            </div>
-
-            <button
-              onClick={() => handleOpenCreateOffer(null)}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-xs flex items-center gap-1.5"
-            >
-              <Coins className="w-4 h-4" />
-              <span>Déposer une nouvelle offre</span>
-            </button>
-          </div>
-
-          {myOffers.length === 0 ? (
-            <div className="p-8 rounded-2xl bg-white border border-slate-200 text-center space-y-4 shadow-sm">
-              <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 mx-auto">
-                <Coins className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-900">Vous n'avez pas encore formulé d'offre d'achat</h3>
-                <p className="text-xs text-slate-600 max-w-md mx-auto">
-                  Consultez les portefeuilles HÉLIOS et VOLTA ci-dessous, sélectionnez vos projets ou un portefeuille complet, et déposez votre offre avec votre propre échéancier par jalons.
+            {/* BANDEAU D'ACCUEIL INVESTISSEUR */}
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
+                    Espace Investisseur Institutionnel
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span> NDA Bilatéral Actif
+                  </span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black text-[#0b192c] tracking-tight">
+                  Bienvenue, {currentInvestor?.name || 'Jean DUS'}{' '}
+                  <span className="text-slate-400 font-normal text-lg sm:text-xl ml-1">
+                    · {currentInvestor?.company || 'ENEE Energy Partners'}
+                  </span>
+                </h1>
+                <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
+                  Consultez les 2 portefeuilles disponibles en cession, examinez les justificatifs en Data Room et soumettez vos offres par jalons.
                 </p>
               </div>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => {
+                    setOfferModalTargetPortfolio('both');
+                    setIsOfferModalOpen(true);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <Coins className="w-4 h-4" />
+                  <span>+ Déposer une Offre d'Acquisition</span>
+                </button>
+
+                <button
+                  onClick={() => setInvestorSubTab('messages')}
+                  className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-200"
+                >
+                  <MessageSquare className="w-4 h-4 text-blue-600" />
+                  <span>Messagerie M&A</span>
+                </button>
+              </div>
+            </div>
+
+            {/* LES 4 COMPTEURS CLÉS (STYLE ÉPURÉ FOND BLANC & BORDURES COLORÉES) */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {/* KPI 1 : Portefeuilles Suivis */}
+              <div className="bg-white border-2 border-blue-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
+                  Portefeuilles Suivis
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-blue-950 mt-1">2 Actifs</div>
+                <div className="text-[11px] font-bold text-blue-600 mt-0.5">24.62 MW cumulés (PV + BESS)</div>
+              </div>
+
+              {/* KPI 2 : Offres Déposées */}
+              <div className="bg-white border-2 border-amber-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500"></div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-amber-700">
+                  Offres Déposées
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-amber-950 mt-1">
+                  {myOffers.length} Offre{myOffers.length > 1 ? 's' : ''}
+                </div>
+                <div className="text-[11px] font-bold text-amber-700 mt-0.5">
+                  {formatThousands(totalMyOffersAmount || 5000000)} € HT proposée
+                </div>
+              </div>
+
+              {/* KPI 3 : Négociation Active */}
+              <div className="bg-white border-2 border-purple-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-600"></div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-purple-700">
+                  Négociation Active
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-purple-950 mt-1">
+                  {activeNegotiationCount || 1} En Cours
+                </div>
+                <div className="text-[11px] font-bold text-purple-600 mt-0.5">
+                  Contre-proposition reçue (6.0 M€)
+                </div>
+              </div>
+
+              {/* KPI 4 : Data Room Débloquée */}
+              <div className="bg-white border-2 border-emerald-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
+                <div className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700">
+                  Data Room Débloquée
+                </div>
+                <div className="text-2xl sm:text-3xl font-black text-emerald-950 mt-1">12 Fichiers</div>
+                <div className="text-[11px] font-bold text-emerald-700 mt-0.5">Baux, devis, fiches techniques</div>
+              </div>
+            </div>
+
+            {/* SOUS-NAVIGATION INVESTISSEUR */}
+            <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-bold">
               <button
-                onClick={() => handleOpenCreateOffer(null)}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-sm"
+                onClick={() => setInvestorSubTab('portfolios')}
+                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                  investorSubTab === 'portfolios'
+                    ? 'bg-blue-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
               >
-                Formuler ma première proposition d'achat
+                <Layers className="w-4 h-4" />
+                <span>Portefeuilles en Cession (2)</span>
+              </button>
+
+              <button
+                onClick={() => setInvestorSubTab('offers')}
+                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                  investorSubTab === 'offers'
+                    ? 'bg-blue-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <Coins className="w-4 h-4" />
+                <span>Mes Offres & Négociations ({myOffers.length || 1})</span>
+              </button>
+
+              <button
+                onClick={() => setInvestorSubTab('dataroom')}
+                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                  investorSubTab === 'dataroom'
+                    ? 'bg-blue-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <FolderLock className="w-4 h-4" />
+                <span>Data Room Virtuelle (12)</span>
+              </button>
+
+              <button
+                onClick={() => setInvestorSubTab('messages')}
+                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                  investorSubTab === 'messages'
+                    ? 'bg-blue-600 text-white shadow-xs font-black'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span>Messagerie Directe M&A</span>
               </button>
             </div>
-          ) : (
-            <div className="space-y-5">
-              {myOffers.map((offer) => (
-                <div
-                  key={offer.id}
-                  className="rounded-2xl bg-white border border-slate-200 p-5 sm:p-6 space-y-4 shadow-sm relative overflow-hidden"
-                >
-                  {/* Top Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-base font-black text-slate-950">{offer.portfolioName}</span>
-                        <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-mono text-[10px] font-bold border border-amber-300">
-                          {offer.offerType === 'total'
-                            ? `Portefeuille complet (${offer.selectedSitesCount} sites)`
-                            : `Sélection partielle (${offer.selectedSitesCount} sites)`}
+
+            {/* ============================================================= */}
+            {/* SOUS-VUE A : PORTEFEUILLES DISPONIBLES EN CESSION             */}
+            {/* ============================================================= */}
+            {investorSubTab === 'portfolios' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* CARTE PORTEFEUILLE 1 : PROJET HÉLIOS (SOLAIRE PV 9,12 MWc) */}
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
+                        Solaire Toitures & Hangars
+                      </span>
+                      <span className="text-xs font-bold text-slate-500">
+                        Vendeur : <strong className="text-slate-800">GREEN INVEST</strong>
+                      </span>
+                    </div>
+
+                    <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
+                      Projet HÉLIOS — 9,12 MWc
+                    </h3>
+                    <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                      Grappe de 29 projets solaires toitures et hangars neufs/rénovations situés dans le Sud-Ouest (Gers, Dordogne, Gironde, Landes).
+                    </p>
+
+                    {/* Métriques Hélios */}
+                    <div className="grid grid-cols-3 gap-2.5 my-5">
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+                          Sites Sécurisés
+                        </span>
+                        <span className="text-lg font-black text-[#0b192c]">29 sites</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">100% PdB signées</span>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+                          Bâtiments Neufs
+                        </span>
+                        <span className="text-lg font-black text-amber-700">7,65 MWc</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">26 hangars</span>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+                          Toitures Exist.
+                        </span>
+                        <span className="text-lg font-black text-blue-700">1,47 MWc</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">3 rénovations</span>
+                      </div>
+                    </div>
+
+                    {/* Atouts */}
+                    <ul className="text-xs space-y-2 text-slate-600 font-medium border-t border-slate-100 pt-4">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Maîtrise foncière totale (Baux notariés 30 ans avec loyers fermes)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Devis travaux charpente & couverture déjà négociés</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Autorisations d'urbanisme (DP/PC) prêtes au dépôt</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                    <button
+                      onClick={() => navigate('/investisseurs/portefeuille/helios')}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Voir le Teaser & Cartographie</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOfferModalTargetPortfolio('helios');
+                        setIsOfferModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <Coins className="w-4 h-4" />
+                      <span>Faire une offre sur Hélios</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* CARTE PORTEFEUILLE 2 : PROJET VOLTA (BATTERIES BESS 15,50 MW) */}
+                <div className="bg-white border-2 border-cyan-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-cyan-400 transition-all relative">
+                  <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-xs">
+                    Optimisé Délibération CRE 2025-227
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <span className="px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider bg-cyan-50 text-cyan-800 border border-cyan-200">
+                        Stockage BESS Stand-Alone HTA
+                      </span>
+                      <span className="text-xs font-bold text-slate-500">
+                        Vendeur : <strong className="text-slate-800">ENR COURTAGE (100%)</strong>
+                      </span>
+                    </div>
+
+                    <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
+                      Projet VOLTA — 15,50 MW / 32,36 MWh
+                    </h3>
+                    <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                      Portefeuille homogène de 31 unités de 500 kW / 1 044 kWh (matériel CESC Mercury 261). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, Capacité RTE).
+                    </p>
+
+                    {/* Métriques Volta */}
+                    <div className="grid grid-cols-3 gap-2.5 my-5">
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+                          Unités 500 kW
+                        </span>
+                        <span className="text-lg font-black text-[#0b192c]">31 sites</span>
+                        <span className="text-[10px] font-bold text-cyan-700 block">&lt; 20 m² en DP</span>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+                          EBITDA Net An 1
+                        </span>
+                        <span className="text-lg font-black text-emerald-700">1,50 M€</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">Marge ~39%</span>
+                      </div>
+                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
+                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
+                          Payback Projet
+                        </span>
+                        <span className="text-lg font-black text-blue-700">4,8 ans</span>
+                        <span className="text-[10px] font-bold text-purple-700 block">Equity : 2,3 ans</span>
+                      </div>
+                    </div>
+
+                    {/* Atouts */}
+                    <ul className="text-xs space-y-2 text-slate-600 font-medium border-t border-slate-100 pt-4">
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-cyan-600 shrink-0" />
+                        <span>Exonération TURPE 7 sur l'électricité réinjectée (+440 k€/an économisés)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-cyan-600 shrink-0" />
+                        <span>Raccordements HTA 20 kV Enedis qualifiés (postes sources ODRE répertoriés)</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-cyan-600 shrink-0" />
+                        <span>Distance privée optimisée à 10 mètres (génie civil minimisé)</span>
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+                    <button
+                      onClick={() => navigate('/investisseurs/portefeuille/volta')}
+                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Voir la fiche & les 31 sites</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setOfferModalTargetPortfolio('volta');
+                        setIsOfferModalOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <Coins className="w-4 h-4" />
+                      <span>Faire une offre sur Volta</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================= */}
+            {/* SOUS-VUE B : MES OFFRES DÉPOSÉES & NÉGOCIATIONS               */}
+            {/* ============================================================= */}
+            {investorSubTab === 'offers' && (
+              <div className="space-y-6">
+                {activeOffer ? (
+                  <div className="bg-white border-2 border-amber-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
+                            {activeOffer.portfolioName || 'Offre Combinée (HÉLIOS + VOLTA)'}
+                          </span>
+                          <span className="text-xs text-slate-400 font-mono">Réf: {activeOffer.id}</span>
+                        </div>
+                        <h2 className="text-xl font-black text-[#0b192c] mt-1">
+                          Négociation Transactionnelle Active
+                        </h2>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-slate-400 block">Votre offre initiale déposée</span>
+                        <span className="text-2xl font-black text-slate-900">
+                          {formatThousands(activeOffer.amountEur)} € HT
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 flex items-center gap-3">
-                        <span>Référence : <strong className="text-slate-800 font-mono">{offer.id}</strong></span>
-                        <span>• Déposée le : {new Date(offer.createdAt).toLocaleDateString('fr-FR')}</span>
-                      </div>
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-[10px] text-slate-500 uppercase font-semibold">Montant Proposé</div>
-                      <div className="text-2xl font-black font-mono text-emerald-700">
-                        {new Intl.NumberFormat('fr-FR').format(offer.amountEur)} € HT
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TABLEAU DES JALONNEMENTS */}
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5 text-amber-700" /> Échéancier de Paiement Proposé par Jalonnements
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-[11px] text-slate-700">
-                        <thead className="bg-slate-100 text-[10px] uppercase text-slate-600">
-                          <tr>
-                            <th className="py-2 px-3">Jalon d'Exécution</th>
-                            <th className="py-2 px-3">Modalité / Événement Déclencheur</th>
-                            <th className="py-2 px-3">Échéance Estimée</th>
-                            <th className="py-2 px-3 text-right">Quote-part (%)</th>
-                            <th className="py-2 px-3 text-right">Montant (€ HT)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                          {(offer.milestones || []).map((m, mIdx) => (
-                            <tr key={mIdx} className="hover:bg-slate-100/60">
-                              <td className="py-2 px-3 font-semibold text-slate-900">{m.label}</td>
-                              <td className="py-2 px-3 text-slate-600">{m.targetCondition}</td>
-                              <td className="py-2 px-3 text-slate-500 font-mono">{m.targetDate}</td>
-                              <td className="py-2 px-3 text-right font-mono text-amber-800 font-bold">{m.percentage}%</td>
-                              <td className="py-2 px-3 text-right font-mono text-emerald-700 font-bold">
-                                {new Intl.NumberFormat('fr-FR').format(m.amount)} €
-                              </td>
+                    {/* Échéancier de paiement par jalons */}
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-blue-600" />
+                        <span>Échéancier de Paiement Proposé par Jalons d'Exécution</span>
+                      </h4>
+                      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-slate-50/50">
+                        <table className="w-full text-left text-xs">
+                          <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
+                            <tr>
+                              <th className="py-2.5 px-4">Jalon d'exécution</th>
+                              <th className="py-2.5 px-4">Modalité / Déclencheur</th>
+                              <th className="py-2.5 px-4">Échéance</th>
+                              <th className="py-2.5 px-4 text-center">Quote-part</th>
+                              <th className="py-2.5 px-4 text-right">Montant (€ HT)</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Remarques */}
-                  {offer.comments && (
-                    <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] text-slate-700">
-                      <span className="font-bold text-slate-900 block mb-0.5">Vos Remarques & Conditions :</span>
-                      <span>"{offer.comments}"</span>
-                    </div>
-                  )}
-
-                  {/* STATUT 1 : EN COURS D'ÉTUDE */}
-                  {(offer.status === 'submitted' || offer.status === 'counter_by_investor') && (
-                    <div className="space-y-3">
-                      <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-300 flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center space-x-2.5 text-xs text-amber-900">
-                          <Clock className="w-4 h-4 text-amber-700 shrink-0" />
-                          <div>
-                            <strong className="text-slate-900">En cours d'étude par Yann BARBERIS (ENR COURTAGE)</strong>
-                            <span className="text-slate-600 block sm:inline sm:ml-2">
-                              {offer.status === 'counter_by_investor'
-                                ? "Votre contre-proposition a été transmise à l'administrateur. Vous recevrez son retour prochainement."
-                                : "Votre offre initiale est en cours d'analyse par le cédant. Vous serez notifié de son acceptation, refus ou contre-proposition."}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Les 3 boutons de négociation : Accepter l'offre, Faire une contre-proposition, Refuser */}
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button
-                            onClick={() => handleAdminAccept(offer.id)}
-                            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
-                            title="Accepter définitivement cette offre"
-                          >
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                            <span>Accepter l'offre</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleOpenCounter(offer)}
-                            className="px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-sm"
-                            title="Faire une contre-proposition financière ou sur les jalons"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                            <span>Faire une contre-proposition</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleAdminReject(offer.id)}
-                            className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 hover:border-red-300 text-xs font-semibold transition flex items-center gap-1.5 shadow-2xs"
-                            title="Refuser cette offre"
-                          >
-                            <XCircle className="w-3.5 h-3.5" />
-                            <span>Refuser</span>
-                          </button>
-                        </div>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200 text-slate-800 font-medium">
+                            {(activeOffer.milestones || []).map((m, idx) => (
+                              <tr key={idx}>
+                                <td className="py-2.5 px-4 font-bold text-blue-900">{m.label}</td>
+                                <td className="py-2.5 px-4 text-slate-600">{m.targetCondition || '—'}</td>
+                                <td className="py-2.5 px-4 text-slate-500 font-mono">{m.targetDate || '—'}</td>
+                                <td className="py-2.5 px-4 text-center font-bold text-blue-700">{m.percentage}%</td>
+                                <td className="py-2.5 px-4 text-right font-black text-slate-900">
+                                  {formatThousands(m.amount)} €
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-
-                      {/* INLINE COUNTER-PROPOSAL FORM DIRECTLY ON DASHBOARD */}
-                      {counteringOfferId === offer.id && (
-                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/60 border-2 border-amber-400 space-y-4 animate-in fade-in shadow-sm">
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
-                              <Edit3 className="w-4 h-4 text-amber-700" /> Rédiger une contre-proposition — Yann BARBERIS (ENR COURTAGE)
-                            </span>
-                            <button
-                              onClick={() => setCounteringOfferId(null)}
-                              className="text-slate-500 hover:text-slate-800 text-xs font-medium"
-                            >
-                              Annuler
-                            </button>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                                Nouveau Montant Global Proposé (€ HT)
-                              </label>
-                              <input
-                                type="text"
-                                value={counterAmount}
-                                onChange={(e) => setCounterAmount(formatThousands(e.target.value))}
-                                placeholder="ex: 4 000 000"
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm text-slate-900 font-mono font-bold focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                              />
-                            </div>
-
-                            <div>
-                              <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">
-                                Commentaire / Justification de la contre-proposition
-                              </label>
-                              <input
-                                type="text"
-                                value={counterComments}
-                                onChange={(e) => setCounterComments(e.target.value)}
-                                placeholder="ex: Réajustement compte tenu des coûts de raccordement..."
-                                className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs text-slate-800 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Adjust Milestones % */}
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="text-[10px] font-bold text-slate-600 uppercase tracking-wider">
-                                Répartition des versements par jalon (Total exigé = 100%)
-                              </div>
-                              <span className="text-[10px] font-mono font-bold text-emerald-700">
-                                Total : {counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0)}% (Équilibrage automatique)
-                              </span>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                              {counterMilestones.map((m, idx) => (
-                                <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-xs space-y-1 shadow-2xs">
-                                  <div className="text-[10px] font-semibold text-slate-700 truncate" title={m.label}>{m.label}</div>
-                                  <div className="flex items-center gap-1.5">
-                                    <input
-                                      type="number"
-                                      min="0"
-                                      max="100"
-                                      value={m.percentage}
-                                      onChange={(e) => {
-                                        setCounterMilestones((prev) =>
-                                          autoBalanceMilestones(prev, idx, e.target.value)
-                                        );
-                                      }}
-                                      className="w-16 px-2 py-1 bg-amber-50/50 border border-slate-300 rounded text-center text-amber-900 font-mono font-bold focus:outline-none focus:border-amber-500"
-                                    />
-                                    <span className="text-slate-500">%</span>
-                                    <span className="text-[10px] text-emerald-700 font-mono font-bold ml-auto">
-                                      {formatThousands(Math.round((parseThousands(counterAmount) * (Number(m.percentage) || 0)) / 100))} €
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-200">
-                            <button
-                              onClick={() => setCounteringOfferId(null)}
-                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-slate-700 text-xs font-semibold border border-slate-300 transition"
-                            >
-                              Annuler
-                            </button>
-                            <button
-                              onClick={() => handleSubmitCounter(offer.id)}
-                              className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black transition shadow-sm flex items-center gap-1.5"
-                            >
-                              <Send className="w-3.5 h-3.5" />
-                              <span>Transmettre la contre-proposition à l'investisseur</span>
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  )}
 
-                  {/* STATUT 2 : CONTRE-PROPOSITION DE YANN BARBERIS */}
-                  {offer.status === 'counter_by_admin' && (
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 via-white to-amber-50 border-2 border-amber-400 space-y-3 shadow-xs">
+                    {/* Encadré Contre-proposition reçue avec les 3 boutons */}
+                    <div className="p-5 rounded-2xl bg-amber-50/80 border-2 border-amber-300 space-y-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
-                          <AlertCircle className="w-4 h-4 text-amber-700" />
-                          <span>Contre-Proposition Reçue de Yann BARBERIS (ENR COURTAGE)</span>
-                        </div>
-                        <span className="text-[10px] font-mono text-slate-500 font-bold">Décision requise</span>
-                      </div>
-
-                      <div className="bg-white p-3 rounded-lg border border-amber-200 space-y-2">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="text-xs text-slate-700">Montant révisé proposé par le cédant :</span>
-                          <span className="text-xl font-black font-mono text-amber-800">
-                            {new Intl.NumberFormat('fr-FR').format(offer.counterOffer?.amountEur || offer.amountEur)} € HT
+                        <div className="flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                          <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                            Contre-proposition reçue de Yann BARBERIS (ENR COURTAGE)
                           </span>
                         </div>
-                        {offer.counterOffer?.comments && (
-                          <p className="text-xs text-slate-600 italic border-t border-slate-100 pt-1.5">
-                            "{offer.counterOffer.comments}"
-                          </p>
-                        )}
+                        <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                          Décision requise
+                        </span>
                       </div>
 
-                      <div className="flex flex-wrap items-center justify-end gap-2.5 pt-1">
+                      <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                        {activeOffer.counterOffer?.comments ||
+                          "« Nous acceptons le principe de votre échelonnement, mais compte tenu de la forte avancée foncière sur les 31 sites BESS (tous en PdB signée) et du passage au TURPE 7, notre prix de réserve est fixé à : »"}
+                      </p>
+
+                      <div className="text-2xl font-black text-[#0b192c]">
+                        {formatThousands(activeOffer.counterOffer?.amountEur || 6000000)} € HT{' '}
+                        <span className="text-xs font-medium text-slate-500">
+                          (avec réajustement des quotes-parts d'échéance)
+                        </span>
+                      </div>
+
+                      {/* Les 3 boutons d'action immédiate */}
+                      <div className="flex flex-wrap items-center gap-3 pt-2">
                         <button
-                          onClick={() => handleRejectOffer(offer.id)}
-                          className="px-3 py-1.5 rounded-lg bg-white hover:bg-red-50 text-slate-700 hover:text-red-700 border border-slate-300 text-xs font-semibold transition flex items-center gap-1"
+                          onClick={() => {
+                            if (window.confirm("Confirmez-vous l'acceptation de la contre-proposition de Yann BARBERIS ? Vous pourrez ensuite procéder immédiatement à la signature du Mandat de Négociation Exclusive.")) {
+                              investorAcceptCounter(activeOffer.id);
+                              setSelectedMandateOffer(activeOffer);
+                              setDashboardNotice("Contre-proposition acceptée ! Vous pouvez signer le Mandat de Négociation Exclusive.");
+                            }
+                          }}
+                          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
                         >
-                          <X className="w-3.5 h-3.5" />
-                          <span>Refuser</span>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Accepter la contre-proposition ({formatThousands(activeOffer.counterOffer?.amountEur || 6000000)} €)</span>
                         </button>
 
                         <button
-                          onClick={() => handleOpenCounterOffer(offer)}
-                          className="px-3.5 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-xs font-bold transition flex items-center gap-1.5"
+                          onClick={() => handleOpenInvestorCounter(activeOffer)}
+                          className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <Edit3 className="w-4 h-4" />
                           <span>Faire une contre-proposition</span>
                         </button>
 
                         <button
-                          onClick={() => handleAcceptCounter(offer.id)}
-                          className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm flex items-center gap-1.5"
+                          onClick={() => {
+                            const reason = window.prompt("Indiquez un motif pour votre refus (optionnel) :");
+                            if (reason !== null) {
+                              investorRejectCounter(activeOffer.id, reason);
+                              setDashboardNotice("Vous avez décliné la contre-proposition.");
+                            }
+                          }}
+                          className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-300 transition-colors cursor-pointer"
                         >
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Accepter la proposition</span>
+                          Refuser
                         </button>
                       </div>
                     </div>
-                  )}
+                  </div>
+                ) : (
+                  <div className="py-12 text-center text-slate-500 text-xs bg-white rounded-3xl border border-slate-200">
+                    Vous n'avez pas encore déposé d'offre. Cliquez sur « Déposer une Offre » pour initier une négociation.
+                  </div>
+                )}
+              </div>
+            )}
 
-                  {/* STATUT 3 : ACCORD TROUVÉ -> SIGNATURE DU MANDAT */}
-                  {offer.status === 'agreement_reached' && (
-                    <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 space-y-3">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center space-x-2.5 text-emerald-900">
-                          <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            {/* ============================================================= */}
+            {/* SOUS-VUE C : DATA ROOM VIRTUELLE SÉCURISÉE                    */}
+            {/* ============================================================= */}
+            {investorSubTab === 'dataroom' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div>
+                    <span className="text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
+                      Chiffrement AES-256 • Traçabilité Horodatée
+                    </span>
+                    <h2 className="text-2xl font-black text-[#0b192c] tracking-tight mt-1">
+                      Documents du Portefeuille en Data Room
+                    </h2>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Consultez et téléchargez les pièces officielles vérifiées sous votre accord de confidentialité bilatéral.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Grille des 4 catégories */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  {/* Catégorie 1 : Juridique & Foncier */}
+                  <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                      <h4 className="text-xs font-black text-[#0b192c] uppercase tracking-wider">
+                        Juridique & Foncier (4 fichiers)
+                      </h4>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-400 transition">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
                           <div>
-                            <strong className="text-slate-950 text-sm">Accord Mutuel Trouvé !</strong>
-                            <p className="text-xs text-slate-600 mt-0.5">
-                              Les conditions financières et le calendrier de jalonnement ont été validés entre vous et Yann BARBERIS.
-                            </p>
+                            <div className="text-xs font-bold text-slate-900">Promesse de bail BESS — BATIOT (32220 Mongausy)</div>
+                            <div className="text-[10px] text-slate-400 font-medium">0.9 Mo • Acte notarié 24 pages • Signé 20 ans</div>
                           </div>
                         </div>
-
-                        <button
-                          onClick={() => setSelectedMandateOffer(offer)}
-                          className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2"
+                        <a
+                          href="/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf"
+                          download="Promesse_de_bail_BATIOT.pdf"
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-blue-700 font-bold text-xs transition flex items-center gap-1"
                         >
-                          <FileCheck className="w-4 h-4" />
-                          <span>Consulter & Signer le Mandat de Négociation Exclusive</span>
-                        </button>
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Télécharger</span>
+                        </a>
                       </div>
 
-                      {/* Rappel clause mandat exclusif */}
-                      <div className="p-2.5 rounded-lg bg-white border border-emerald-200 flex items-center gap-2 text-[11px] text-emerald-900">
-                        <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>
-                          <strong>Clause de sécurisation :</strong> La formalisation des actes définitifs de cession sera finalisée conformément aux termes du Mandat d'Exclusivité.
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-400 transition">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">Promesse de bail BESS — CASTEBRUNET (82300 Caussade)</div>
+                            <div className="text-[10px] text-slate-400 font-medium">1.1 Mo • Acte notarié 25 pages • Signé 20 ans</div>
+                          </div>
+                        </div>
+                        <a
+                          href="/documents/dataroom/Promesse_de_bail_Castebrunet.pdf"
+                          download="Promesse_de_bail_CASTEBRUNET.pdf"
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-blue-700 font-bold text-xs transition flex items-center gap-1"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Télécharger</span>
+                        </a>
+                      </div>
+
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-400 transition">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">Promesse de bail PV — CONSOLI (24130 Prigonrieux)</div>
+                            <div className="text-[10px] text-slate-400 font-medium">1.3 Mo • Acte notarié 30 ans • Hélios</div>
+                          </div>
+                        </div>
+                        <a
+                          href="/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf"
+                          download="Promesse_de_bail_CONSOLI.pdf"
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-blue-700 font-bold text-xs transition flex items-center gap-1"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Télécharger</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Catégorie 2 : Technique & Réseau HTA */}
+                  <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                      <h4 className="text-xs font-black text-[#0b192c] uppercase tracking-wider">
+                        Technique & Réseau HTA (3 fichiers)
+                      </h4>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-emerald-400 transition">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">Fiche Technique CESC Mercury 261 (LiFePO4)</div>
+                            <div className="text-[10px] text-slate-400 font-medium">1.8 Mo • Spécifications certifiées IEC 61850</div>
+                          </div>
+                        </div>
+                        <a
+                          href="/documents/dataroom/Fiche_Technique_CESC_Mercury_261.pdf"
+                          download="Fiche_Technique_CESC_Mercury_261.pdf"
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-emerald-700 font-bold text-xs transition flex items-center gap-1"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Télécharger</span>
+                        </a>
+                      </div>
+
+                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-emerald-400 transition">
+                        <div className="flex items-center gap-2.5">
+                          <span className="px-2 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded">XLSX</span>
+                          <div>
+                            <div className="text-xs font-bold text-slate-900">Matrice Caparéseau ODRE — 31 Postes Sources</div>
+                            <div className="text-[10px] text-slate-400 font-medium">3.4 Mo • Quotes-parts S3REnR & capacités Enedis</div>
+                          </div>
+                        </div>
+                        <a
+                          href="/documents/dataroom/Matrice_Capareseau_ODRE_31_Postes.xlsx"
+                          download="Matrice_Capareseau_ODRE_31_Postes.xlsx"
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-emerald-700 font-bold text-xs transition flex items-center gap-1"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Télécharger</span>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ============================================================= */}
+            {/* SOUS-VUE D : MESSAGERIE DIRECTE M&A                          */}
+            {/* ============================================================= */}
+            {investorSubTab === 'messages' && (
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm max-w-3xl mx-auto flex flex-col h-[520px]">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white font-black text-sm flex items-center justify-center shadow-xs">
+                      YB
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-black text-[#0b192c]">Yann BARBERIS</h3>
+                      <span className="text-xs text-slate-500 font-medium">Associé M&A • ENR COURTAGE</span>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> En ligne
+                  </span>
+                </div>
+
+                {/* Fil de discussion */}
+                <div className="flex-1 overflow-y-auto py-4 space-y-3">
+                  {investorMessages.map((msg) => {
+                    const isFromMe = msg.from === 'investor';
+
+                    return (
+                      <div
+                        key={msg.id}
+                        className={`flex items-start gap-2.5 max-w-[80%] ${
+                          isFromMe ? 'ml-auto flex-row-reverse' : ''
+                        }`}
+                      >
+                        <div
+                          className={`w-7 h-7 rounded-lg font-bold text-[10px] flex items-center justify-center shrink-0 ${
+                            isFromMe ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
+                          }`}
+                        >
+                          {isFromMe ? 'VOUS' : 'YB'}
+                        </div>
+
+                        <div
+                          className={`p-3 rounded-2xl text-xs font-medium ${
+                            isFromMe
+                              ? 'bg-blue-600 text-white rounded-tr-none shadow-xs'
+                              : 'bg-slate-100 text-slate-800 rounded-tl-none'
+                          }`}
+                        >
+                          <div>{msg.text}</div>
+                          <span
+                            className={`text-[9px] block mt-1 ${
+                              isFromMe ? 'text-blue-200' : 'text-slate-400'
+                            }`}
+                          >
+                            {msg.authorName} • {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Saisie d'un nouveau message */}
+                <form onSubmit={handleSendInvestorMessage} className="pt-3 border-t border-slate-100 flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    value={chatInputText}
+                    onChange={(e) => setChatInputText(e.target.value)}
+                    placeholder="Écrire un message à Yann BARBERIS..."
+                    className="flex-1 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:border-blue-600 shadow-inner"
+                  />
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>Envoyer</span>
+                    <Send className="w-3.5 h-3.5" />
+                  </button>
+                </form>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* Footer institutionnel */}
+      <footer className="border-t border-slate-200 bg-white px-4 sm:px-8 py-3 text-xs text-slate-500 flex flex-wrap items-center justify-between gap-2 mt-12">
+        <div>
+          <strong>ENR COURTAGE SAS</strong> • 7 Rue Gutenberg, 33700 Mérignac • RCS Bordeaux 881 500 552
+        </div>
+        <div className="text-[11px] text-slate-400">
+          Plateforme M&A Sécurisée • Conforme Délibération CRE 2025-227 & TURPE 7
+        </div>
+      </footer>
+
+      {/* =================================================================== */}
+      {/* MODALES : OFFRE, CONTRE-OFFRE, NDA BILATÉRAL & MANDAT D'EXCLUSIVITÉ  */}
+      {/* =================================================================== */}
+
+      {/* Modale Dépôt d'Offre */}
+      <OfferModal
+        isOpen={isOfferModalOpen}
+        onClose={() => setIsOfferModalOpen(false)}
+        defaultPortfolioId={offerModalTargetPortfolio}
+      />
+
+      {/* Modale Consultation NDA Bilatéral */}
+      <ErrorBoundary onReset={() => setIsNdaModalOpen(false)}>
+        <NdaDocumentModal
+          isOpen={isNdaModalOpen}
+          onClose={() => setIsNdaModalOpen(false)}
+          investor={currentInvestor}
+        />
+      </ErrorBoundary>
+
+      {/* Modale Mandat Exclusif */}
+      {selectedMandateOffer && (
+        <ExclusiveMandateModal
+          offer={selectedMandateOffer}
+          isOpen={!!selectedMandateOffer}
+          onClose={() => setSelectedMandateOffer(null)}
+        />
+      )}
+
+      {/* Modale Contre-Proposition Investisseur */}
+      {investorCounteringOfferId && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-amber-600" />
+                <h3 className="text-lg font-black text-[#0b192c]">Formuler une Contre-Proposition</h3>
+              </div>
+              <button
+                onClick={() => setInvestorCounteringOfferId(null)}
+                className="p-1 text-slate-400 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Nouveau Montant Global Proposé (€ HT) *
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    value={counterAmount}
+                    onChange={(e) => setCounterAmount(formatThousands(e.target.value))}
+                    className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-300 font-black text-sm text-slate-900"
+                  />
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">€ HT</span>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Commentaires / Justification de l'offre
+                </label>
+                <textarea
+                  rows={2}
+                  value={counterComments}
+                  onChange={(e) => setCounterComments(e.target.value)}
+                  className="w-full px-4 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs text-slate-800"
+                />
+              </div>
+
+              {/* Jalons inputs auto-équilibrés */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700">Répartition par jalons (Total requis = 100%)</span>
+                  <span className="font-mono font-bold text-emerald-700">
+                    Total : {counterMilestones.reduce((s, m) => s + (Number(m.percentage) || 0), 0)}%
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {counterMilestones.map((m, idx) => (
+                    <div key={idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+                      <div className="font-bold text-slate-800 text-[11px] truncate">{m.label}</div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={m.percentage}
+                          onChange={(e) =>
+                            setCounterMilestones((prev) =>
+                              autoBalanceMilestones(prev, idx, e.target.value)
+                            )
+                          }
+                          className="w-16 px-2 py-1 rounded-lg bg-white border border-slate-300 text-center font-bold text-blue-700"
+                        />
+                        <span className="text-slate-500">%</span>
+                        <span className="text-[11px] font-mono text-emerald-700 ml-auto font-bold">
+                          {formatThousands(
+                            Math.round((parseThousands(counterAmount) * (Number(m.percentage) || 0)) / 100)
+                          )} €
                         </span>
                       </div>
                     </div>
-                  )}
-
-                  {/* STATUT 4 : MANDAT SIGNÉ & EN VIGUEUR */}
-                  {offer.status === 'mandate_signed' && (
-                    <div className="p-4 rounded-xl bg-emerald-50/70 border-2 border-emerald-400 space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="flex items-center space-x-2 text-emerald-900">
-                          <FileCheck className="w-5 h-5 text-emerald-600" />
-                          <div>
-                            <strong className="text-slate-950 text-sm">
-                              Mandat de Négociation Exclusive Signé & Actif (60 jours)
-                            </strong>
-                            <p className="text-xs text-slate-600">
-                              Accord d'exclusivité régularisé électroniquement par les deux parties. Rédaction des contrats définitifs en cours.
-                            </p>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => setSelectedMandateOffer(offer)}
-                          className="px-3.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 text-emerald-800 border border-emerald-300 text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <FileCheck className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Consulter / Télécharger le Mandat (PDF)</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* STATUT 5 : REFUSÉ */}
-                  {offer.status === 'rejected' && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between">
-                      <span>Cette proposition n'a pas été retenue ou a été déclinée.</span>
-                      <button
-                        onClick={() => handleOpenCreateOffer(null)}
-                        className="text-amber-700 hover:underline font-bold"
-                      >
-                        Formuler une nouvelle proposition
-                      </button>
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 3 : PROPOSITION D'OFFRE MULTI-PORTEFEUILLES (CTA)          */}
-        {/* ================================================================= */}
-        <section
-          id="offre"
-          className="no-print rounded-2xl bg-slate-900 text-white border border-slate-800 p-6 sm:p-8 shadow-sm relative overflow-hidden"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="space-y-2 text-center md:text-left">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-800 text-amber-400 border border-slate-700 text-xs font-semibold uppercase tracking-wider">
-                <Coins className="w-3.5 h-3.5 text-amber-400" />
-                <span>Espace Transactionnel & Propositions</span>
               </div>
-              <h3 className="text-xl sm:text-2xl font-black text-white">
-                Déposer une offre d'acquisition (Totale ou Partielle)
-              </h3>
-              <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
-                Vous pouvez formuler une offre ferme ou indicative sur le portefeuille <strong>HÉLIOS (PV)</strong>, sur le portefeuille <strong>VOLTA (BESS)</strong>, ou sur les <strong>deux combinés</strong>, avec votre propre proposition d'échéancier par jalonnements.
-              </p>
-            </div>
 
-            <button
-              onClick={() => handleOpenCreateOffer(null)}
-              className="px-6 py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-2.5 shrink-0"
-            >
-              <Coins className="w-4 h-4" />
-              <span>Soumettre une Proposition d'Achat</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 4 : CADRE TRANSACTIONNEL & PROCESSUS M&A                   */}
-        {/* ================================================================= */}
-        <section id="fonctionnement" className="rounded-2xl bg-white border border-slate-200/90 p-6 sm:p-8 space-y-6 shadow-xs">
-          <div className="border-b border-slate-100 pb-4">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" /> Cadre Transactionnel
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-950 mt-1">
-              Fonctionnement de la Plateforme d'Acquisition
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-3xl leading-relaxed">
-              Une démarche M&A agile permettant de calibrer précisément votre périmètre d'investissement et de structurer des offres adaptées à votre politique de risque.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Pilier 1 */}
-            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
-                1
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setInvestorCounteringOfferId(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSubmitInvestorCounter(investorCounteringOfferId)}
+                  className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black shadow-xs"
+                >
+                  Transmettre à Yann BARBERIS
+                </button>
               </div>
-              <h3 className="text-sm font-bold text-slate-900">Teasers Dédiés</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Chaque portefeuille (HÉLIOS PV 9,12 MWc et VOLTA BESS 15,50 MW) dispose de son Teaser autonome avec cartographie et Data Room dédiée.
-              </p>
-            </div>
-
-            {/* Pilier 2 */}
-            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
-                2
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Périmètre Libre</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Formulez une offre sur un portefeuille entier, sur un ensemble de projets ciblés, ou sur les deux portefeuilles combinés.
-              </p>
-            </div>
-
-            {/* Pilier 3 */}
-            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
-                3
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Jalons Personnalisés</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Proposez librement votre valorisation (€ HT) et calibrez vos versements parmi les 4 jalons types de développement (Promesse, Urba, PTF, RTB).
-              </p>
-            </div>
-
-            {/* Pilier 4 */}
-            <div className="bg-slate-50/70 border border-slate-200/80 rounded-xl p-4 space-y-2">
-              <div className="w-7 h-7 rounded-lg bg-slate-200/80 text-slate-800 flex items-center justify-center font-bold text-xs">
-                4
-              </div>
-              <h3 className="text-sm font-bold text-slate-900">Négociation & Mandat</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Aller-retours directs avec Yann BARBERIS. Dès accord, signature du Mandat de Négociation Exclusive (60 jours).
-              </p>
             </div>
           </div>
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 5 : PROCESSUS STRUCTURÉ M&A (AVEC MANDAT D'EXCLUSIVITÉ)   */}
-        {/* ================================================================= */}
-        <section id="process">
-          <ProcessTimeline />
-        </section>
-
-        {/* ================================================================= */}
-        {/* SECTION 6 : CONTACT M&A ADVISORY                                  */}
-        {/* ================================================================= */}
-        <section
-          id="contact-ma"
-          className="no-print rounded-2xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6"
-        >
-          <div className="space-y-2 text-center md:text-left">
-            <span className="text-[10px] font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 inline-block font-bold">
-              Interlocuteur M&A Dédié
-            </span>
-            <h4 className="text-lg font-bold text-slate-900">
-              Une question sur la structuration ou la Data Room ?
-            </h4>
-            <p className="text-xs text-slate-600 max-w-xl">
-              Yann BARBERIS et l'équipe transactionnelle ENR COURTAGE se tiennent à votre disposition pour vous accompagner dans l'analyse des dossiers et convenir d'une session de Questions/Réponses.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <button
-              onClick={() => setIsContactModalOpen(true)}
-              className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition flex items-center gap-2 shadow-sm"
-            >
-              <Mail className="w-4 h-4" />
-              <span>Contacter le pôle M&A</span>
-            </button>
-          </div>
-        </section>
-        </>
+        </div>
       )}
-
-        {/* ================================================================= */}
-        {/* MODALS : ADMIN, OFFRE, MANDAT, NDA BILATÉRAL & CONTACT M&A        */}
-        {/* ================================================================= */}
-
-        {/* Modal Validation Administrateur (Yann BARBERIS) */}
-        <AdminValidationModal
-          isOpen={isAdminModalOpen}
-          onClose={() => setIsAdminModalOpen(false)}
-        />
-
-        {/* Modal Proposition d'Achat (Création / Modification / Contre-proposition) */}
-        <OfferModal
-          portfolio={offerModalPortfolio || heliosPortfolio}
-          selectedSiteIds={[]}
-          isOpen={isOfferModalOpen}
-          onClose={() => setIsOfferModalOpen(false)}
-          existingOffer={selectedOfferForModal}
-          mode={offerModalMode}
-        />
-
-        {/* Modal Mandat de Négociation Exclusive */}
-        {selectedMandateOffer && (
-          <ExclusiveMandateModal
-            offer={selectedMandateOffer}
-            isOpen={!!selectedMandateOffer}
-            onClose={() => setSelectedMandateOffer(null)}
-          />
-        )}
-
-        {/* Modal Consultation & Impression du NDA Bilatéral Signé */}
-        <ErrorBoundary>
-          <NdaDocumentModal
-            isOpen={isNdaModalOpen}
-            onClose={() => setIsNdaModalOpen(false)}
-          />
-        </ErrorBoundary>
-
-        {/* Modal Formulaire de Contact M&A (Style Identique au Site) */}
-        <InvestorContactModal
-          isOpen={isContactModalOpen}
-          onClose={() => setIsContactModalOpen(false)}
-        />
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white px-6 py-6 text-center text-xs text-slate-500 space-y-1">
-        <p>&copy; {new Date().getFullYear()} ENR COURTAGE — Plateforme Transactionnelle M&A Confidentielle.</p>
-        <p className="text-[11px] text-slate-400">
-          Les informations communiquées sont strictement confidentielles et réservées aux investisseurs accrédités ayant régularisé un NDA bilatéral.
-        </p>
-      </footer>
     </div>
-  </div>
-);
+  );
 }

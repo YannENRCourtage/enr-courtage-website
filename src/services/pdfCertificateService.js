@@ -46,7 +46,7 @@ export async function generateCertifiedPdfBlob({
     });
 
     // Titre de marque dans le bandeau
-    page.drawText('ENR COURTAGE ENERGIE', {
+    page.drawText('ENR COURTAGE', {
       x: 40,
       y: height - 42,
       size: 18,
@@ -253,7 +253,7 @@ export async function generateCertifiedPdfBlob({
     });
 
     // 5. Pied de page
-    page.drawText('ENR COURTAGE ENERGIE SAS • 28 Rue d\'Enghien, 75010 Paris • RCS Paris • www.enr-courtage.fr', {
+    page.drawText('ENR COURTAGE SAS • 28 Rue d\'Enghien, 75010 Paris • RCS Paris • www.enr-courtage.fr', {
       x: 80,
       y: 45,
       size: 7.5,

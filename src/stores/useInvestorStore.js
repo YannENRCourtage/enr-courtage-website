@@ -99,6 +99,46 @@ export const useInvestorStore = create(
       // Tracking of document downloads by investor email
       userDownloads: {},
 
+      // Centralized M&A messages between investors and Yann BARBERIS
+      messages: [
+        {
+          id: 'msg-1',
+          from: 'investor',
+          authorName: 'Jean DUS',
+          authorCompany: 'ENEE Energy Partners',
+          investorEmail: 'yannbarberis@msn.com',
+          text: 'Bonjour Yann, pouvez-vous nous confirmer que les 31 sites BESS bénéficient bien du tarif HTA1 Courte Utilisation sous CRE 2025-227 ?',
+          createdAt: '2026-09-17T14:15:00Z',
+        },
+        {
+          id: 'msg-2',
+          from: 'admin',
+          authorName: 'Yann BARBERIS',
+          authorCompany: 'ENR COURTAGE',
+          investorEmail: 'yannbarberis@msn.com',
+          text: "Bonjour Jean. Absolument, la délibération 2025-227 neutralise la part variable sur l'électricité réinjectée. Seules les 12% de pertes de cycle sont soumises à la CS. Nous avons versé la note de calcul exacte en Data Room.",
+          createdAt: '2026-09-17T14:28:00Z',
+        },
+      ],
+
+      sendMessage: ({ text, from, authorName, authorCompany, investorEmail }) => {
+        if (!text || !text.trim()) return;
+        set((state) => ({
+          messages: [
+            ...(state.messages || []),
+            {
+              id: 'msg-' + Date.now(),
+              from: from || 'investor',
+              authorName: authorName || 'Investisseur',
+              authorCompany: authorCompany || '',
+              investorEmail: investorEmail || '',
+              text: text.trim(),
+              createdAt: new Date().toISOString(),
+            },
+          ],
+        }));
+      },
+
       // Sites marqués comme "Vendu !" par l'administrateur
       soldSites: { helios: [], volta: [] },
 

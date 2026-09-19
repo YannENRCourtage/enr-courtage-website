@@ -215,8 +215,10 @@ function App() {
         
         {/* Espace Investisseurs (M&A Teasers PV & BESS) */}
         <Route path="/investisseurs" element={<InvestorAuthPage />} />
+        <Route path="/investisseurs/login" element={<InvestorAuthPage />} />
         <Route path="/investisseurs/nda" element={<ProtectedRoute requireNda={false}><NdaSignaturePage /></ProtectedRoute>} />
         <Route path="/investisseurs/dashboard" element={<ProtectedRoute><InvestorDashboard /></ProtectedRoute>} />
+        <Route path="/investisseurs/admin" element={<ProtectedRoute requireAdmin={true}><InvestorDashboard defaultToAdmin={true} /></ProtectedRoute>} />
         <Route path="/investisseurs/portefeuille/:id" element={<ProtectedRoute><PortfolioDetailPage /></ProtectedRoute>} />
       </Routes>
       <Toaster />

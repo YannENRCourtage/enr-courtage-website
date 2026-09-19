@@ -2,7 +2,7 @@ import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
-export default function ProtectedRoute({ children, requireNda = true }) {
+export default function ProtectedRoute({ children, requireNda = true, requireAdmin = false }) {
   const location = useLocation();
   const { currentInvestor } = useInvestorStore();
 
@@ -30,12 +30,18 @@ export default function ProtectedRoute({ children, requireNda = true }) {
     return <Navigate to="/investisseurs" state={{ from: location }} replace />;
   }
 
-  // 2. Pending admin validation
+  // 3. Admin check
+  const isAdmin = currentInvestor.isAdmin || currentInvestor.email === 'y.barberis@enr-courtage.fr';
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/investisseurs/dashboard" replace />;
+  }
+
+  // 4. Pending admin validation
   if (currentInvestor.status === 'pending') {
     return <Navigate to="/investisseurs" state={{ error: 'Compte en attente de validation' }} replace />;
   }
 
-  // 3. NDA Required check
+  // 5. NDA Required check
   if (requireNda && (!currentInvestor.ndaSignedAt || currentInvestor.status !== 'active')) {
     return <Navigate to="/investisseurs/nda" replace />;
   }

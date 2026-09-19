@@ -59,7 +59,7 @@ const BatterieSection = ({ scrollToContact }) => {
     "Recherche de terrains plats près des transformateurs électriques",
     "Versement d'un loyer pour la mise à disposition de l'espace",
     "Aucune intervention requise du propriétaire",
-    "Installation et maintenance assurées par ENR COURTAGE ENERGIE",
+    "Installation et maintenance assurées par ENR COURTAGE",
     "Revenus locatifs garantis pendant toute la durée du contrat"
   ];
 
@@ -169,7 +169,7 @@ const BatterieSection = ({ scrollToContact }) => {
               Notre solution de batterie de soutien
             </h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              ENR COURTAGE ENERGIE propose une solution innovante, compacte et efficace pour renforcer localement le réseau électrique.
+              ENR COURTAGE propose une solution innovante, compacte et efficace pour renforcer localement le réseau électrique.
             </p>
           </motion.div>
 

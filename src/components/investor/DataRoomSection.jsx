@@ -302,47 +302,46 @@ export default function DataRoomSection({
   };
 
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-gray-900 via-[#0c1220] to-gray-900 border border-emerald-500/30 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
-      {/* Glow background */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="rounded-3xl bg-white border border-slate-200 p-6 sm:p-8 shadow-sm relative overflow-hidden">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-gray-800 pb-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-5">
         <div className="flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-xs">
             <FolderLock className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
                 Data Room Virtuelle
               </span>
-              <span className="text-xs text-emerald-400 font-semibold">✓ NDA Bilatéral Actif</span>
+              <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" /> NDA Bilatéral Actif
+              </span>
             </div>
-            <h3 className="text-xl font-black text-white mt-1">
+            <h3 className="text-xl font-black text-slate-900 mt-1">
               Documents du portefeuille {portfolio.name}
             </h3>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 bg-gray-800/80 px-3 py-1.5 rounded-lg border border-gray-700 text-xs text-gray-300">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <span>Accès accordé à <strong className="text-white">{investorCompany || investorName}</strong></span>
+        <div className="flex items-center space-x-2 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-600">
+          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+          <span>Accès accordé à <strong className="text-slate-900">{investorCompany || investorName}</strong></span>
         </div>
       </div>
 
       {/* Project Filter Toolbar */}
-      <div className="mt-5 p-3.5 rounded-xl bg-gray-950/80 border border-gray-800 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-inner">
+      <div className="mt-5 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 shadow-inner">
         <div className="flex items-center space-x-2">
-          <Filter className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span className="text-xs font-bold text-gray-200">Consulter par projet spécifique :</span>
+          <Filter className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-800">Consulter par projet spécifique :</span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 flex-1 max-w-xl">
           <select
             value={selectedSiteFilter}
             onChange={(e) => setSelectedSiteFilter(e.target.value)}
-            className="w-full sm:w-auto flex-1 px-3 py-1.5 bg-gray-900 border border-gray-700 rounded-lg text-xs text-white font-medium focus:outline-none focus:border-emerald-500 transition"
+            className="w-full sm:w-auto flex-1 px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
           >
             <option value="ALL">📁 Tous les documents du portefeuille ({portfolio.sites?.length || 0} projets)</option>
             <option value="GENERAL">🌐 Documents généraux uniquement (non spécifiques)</option>
@@ -396,12 +395,12 @@ export default function DataRoomSection({
           return (
             <div
               key={idx}
-              className="bg-gray-800/40 border border-gray-800 rounded-xl p-4 hover:border-gray-700 transition"
+              className="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 hover:border-slate-300 transition"
             >
-              <div className="flex items-center space-x-2 text-xs font-bold text-white uppercase tracking-wider mb-3">
-                <CatIcon className="w-4 h-4 text-emerald-400" />
+              <div className="flex items-center space-x-2 text-xs font-bold text-slate-900 uppercase tracking-wider mb-3">
+                <CatIcon className="w-4 h-4 text-emerald-600" />
                 <span>{category.name}</span>
-                <span className="text-[10px] text-gray-500 font-normal">({category.files.length} fichiers)</span>
+                <span className="text-[10px] text-slate-400 font-normal">({category.files.length} fichiers)</span>
               </div>
 
               <div className="space-y-2">
@@ -412,21 +411,21 @@ export default function DataRoomSection({
                   return (
                     <div
                       key={fIdx}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between p-2.5 rounded-lg bg-gray-900/60 border border-gray-800/80 hover:border-emerald-500/40 transition group gap-2"
+                      className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-400 transition group gap-2 shadow-2xs"
                     >
                       <div className="flex items-start space-x-2.5 min-w-0 flex-1">
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-gray-800 text-gray-400 border border-gray-700 shrink-0 mt-0.5">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0 mt-0.5">
                           {file.type}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium text-gray-200 truncate group-hover:text-emerald-300 transition">
+                          <p className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-700 transition">
                             {file.name}
                           </p>
                           <div className="flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className="text-[10px] text-gray-500">{file.size}</span>
+                            <span className="text-[10px] text-slate-400">{file.size}</span>
                             {assignedSites.length > 0 && (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                                <MapPin className="w-2.5 h-2.5 text-emerald-400" />
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <MapPin className="w-2.5 h-2.5 text-emerald-600" />
                                 {assignedSites.length === 1 ? (
                                   <span>
                                     Projet #{assignedSites[0]} (
@@ -449,9 +448,9 @@ export default function DataRoomSection({
                         <button
                           onClick={() => handleView(file)}
                           title="Consulter le contrat PDF complet dans un nouvel onglet"
-                          className="text-xs px-2.5 py-1 rounded-md font-semibold bg-gray-800 hover:bg-emerald-600 text-gray-200 hover:text-white border border-gray-700 hover:border-emerald-500 transition flex items-center gap-1.5 shadow-xs"
+                          className="text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 transition flex items-center gap-1.5 cursor-pointer"
                         >
-                          <Eye className="w-3.5 h-3.5 text-emerald-400 group-hover:text-white" />
+                          <Eye className="w-3.5 h-3.5 text-emerald-600" />
                           <span>Consulter</span>
                         </button>
 
@@ -459,15 +458,15 @@ export default function DataRoomSection({
                         <button
                           onClick={() => handleDownload(file)}
                           title="Télécharger le fichier physique sur votre appareil"
-                          className={`text-xs px-2 py-1 rounded-md font-semibold transition flex items-center gap-1 ${
+                          className={`text-xs px-2.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer ${
                             isDownloaded
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 border border-gray-700'
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                           }`}
                         >
                           {isDownloaded ? (
                             <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
                               <span className="hidden sm:inline">Téléchargé</span>
                             </>
                           ) : (
@@ -487,9 +486,9 @@ export default function DataRoomSection({
         })}
       </div>
 
-      <div className="mt-6 pt-4 border-t border-gray-800 text-[11px] text-gray-400 flex items-center justify-between">
+      <div className="mt-6 pt-4 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between">
         <span>Toutes les consultations et téléchargements font l'objet d'une traçabilité horodatée.</span>
-        <span className="text-emerald-400 font-mono">Chiffrement AES-256</span>
+        <span className="text-emerald-700 font-mono font-bold">Chiffrement AES-256</span>
       </div>
     </div>
   );

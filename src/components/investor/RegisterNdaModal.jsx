@@ -117,11 +117,11 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8">
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-slate-900">
         <button
           onClick={handleResetAndClose}
-          className="absolute top-5 right-5 text-gray-400 hover:text-white p-1 rounded-lg hover:bg-gray-800 transition"
+          className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -129,49 +129,49 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
         {isSuccess ? (
           /* Success Screen */
           <div className="text-center py-6 space-y-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto text-2xl">
+            <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto text-2xl shadow-sm">
               <CheckCircle2 className="w-8 h-8" />
             </div>
 
             <div>
-              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 inline-block mb-2">
+              <span className="px-3 py-1 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block mb-2">
                 Demande transmise avec succès
               </span>
-              <h3 className="text-2xl font-black text-white">
+              <h3 className="text-2xl font-black text-slate-900">
                 Signature du NDA Enregistrée
               </h3>
-              <p className="text-xs text-gray-400 mt-2 max-w-md mx-auto leading-relaxed">
+              <p className="text-xs text-slate-500 mt-2 max-w-md mx-auto leading-relaxed">
                 Votre accord de confidentialité a été signé électroniquement et transmis à{' '}
-                <strong className="text-white">Monsieur Yann BARBERIS, Président d'ENR COURTAGE</strong>.
+                <strong className="text-slate-900">Monsieur Yann BARBERIS, Président d'ENR COURTAGE</strong>.
               </p>
             </div>
 
-            <div className="bg-gray-800/60 p-4 rounded-xl border border-gray-700 text-left text-xs space-y-2 max-w-md mx-auto">
+            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 text-left text-xs space-y-2 max-w-md mx-auto">
               <div className="flex justify-between">
-                <span className="text-gray-400">Société / Fonds :</span>
-                <span className="text-white font-bold">{companyName}</span>
+                <span className="text-slate-500">Société / Fonds :</span>
+                <span className="text-slate-900 font-bold">{companyName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Signataire :</span>
-                <span className="text-white">{representativeName} ({representativeRole})</span>
+                <span className="text-slate-500">Signataire :</span>
+                <span className="text-slate-800">{representativeName} ({representativeRole})</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Identifiant de connexion :</span>
-                <span className="text-amber-400 font-mono font-bold">{email}</span>
+                <span className="text-slate-500">Identifiant de connexion :</span>
+                <span className="text-amber-700 font-mono font-bold">{email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Statut :</span>
-                <span className="text-amber-400 font-semibold">En attente de validation & contre-signature</span>
+                <span className="text-slate-500">Statut :</span>
+                <span className="text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">En attente de validation & contre-signature</span>
               </div>
             </div>
 
-            <p className="text-xs text-gray-400 max-w-md mx-auto">
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
               Dès validation et contre-signature du NDA par la présidence, vous recevrez par e-mail votre mot de passe temporaire pour vous connecter et accéder à l'intégralité des portefeuilles et de la Data Room.
             </p>
 
             <button
               onClick={handleResetAndClose}
-              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-gray-950 font-bold text-xs transition"
+              className="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition shadow-md shadow-amber-500/20 cursor-pointer"
             >
               Retour à l'écran de connexion
             </button>
@@ -180,27 +180,27 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
           /* Registration Form & NDA Viewer */
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <div className="flex items-center space-x-2 text-xs font-semibold text-amber-400 uppercase tracking-wider mb-1">
+              <div className="flex items-center space-x-2 text-xs font-semibold text-amber-600 uppercase tracking-wider mb-1">
                 <FileSignature className="w-4 h-4" />
                 <span>Demande d'Accès & Accord de Confidentialité</span>
               </div>
-              <h3 className="text-xl font-bold text-white">
+              <h3 className="text-xl font-black text-slate-900">
                 Inscription à l'Espace Investisseurs
               </h3>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-slate-500 mt-0.5">
                 Renseignez les informations légales de votre entité pour générer automatiquement le NDA bilatéral conforme.
               </p>
             </div>
 
             {/* Tab switch between Form and Live NDA text */}
-            <div className="flex items-center space-x-2 bg-gray-800/80 p-1 rounded-xl border border-gray-700 text-xs">
+            <div className="flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">
               <button
                 type="button"
                 onClick={() => setActiveTab('form')}
-                className={`flex-1 py-1.5 rounded-lg font-semibold transition ${
+                className={`flex-1 py-1.5 rounded-lg font-semibold transition cursor-pointer ${
                   activeTab === 'form'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 1. Renseignements juridiques
@@ -208,21 +208,21 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={() => setActiveTab('preview')}
-                className={`flex-1 py-1.5 rounded-lg font-semibold transition flex items-center justify-center gap-1.5 ${
+                className={`flex-1 py-1.5 rounded-lg font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                   activeTab === 'preview'
-                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-white text-slate-900 shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3.5 h-3.5 text-amber-600" />
                 <span>2. Prévisualiser le NDA ({companyName || 'Société'})</span>
               </button>
             </div>
 
             {error && (
-              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{error}</span>
+              <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                <span className="font-semibold">{error}</span>
               </div>
             )}
 
@@ -231,7 +231,7 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                 {/* Company info */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Société / Fonds d'Investissement *
                     </label>
                     <input
@@ -240,11 +240,11 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       placeholder="Ex : Meridiam, Omnes, Mirova..."
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Forme Juridique *
                     </label>
                     <input
@@ -253,14 +253,14 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={legalForm}
                       onChange={(e) => setLegalForm(e.target.value)}
                       placeholder="Ex : SAS, SARL, SA, Fonds..."
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                 </div>
 
                 {/* Head Office */}
                 <div>
-                  <label className="block text-gray-300 font-bold mb-1">
+                  <label className="block text-slate-700 font-bold mb-1">
                     Adresse du Siège Social *
                   </label>
                   <input
@@ -269,14 +269,14 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                     value={headOffice}
                     onChange={(e) => setHeadOffice(e.target.value)}
                     placeholder="Ex : 4 Place de l'Opéra, 75002 Paris"
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                    className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                   />
                 </div>
 
                 {/* RCS */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Numéro RCS / SIREN *
                     </label>
                     <input
@@ -285,11 +285,11 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={rcsNumber}
                       onChange={(e) => setRcsNumber(e.target.value)}
                       placeholder="Ex : 812 345 678"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Ville du RCS *
                     </label>
                     <input
@@ -298,15 +298,15 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={rcsCity}
                       onChange={(e) => setRcsCity(e.target.value)}
                       placeholder="Ex : Paris, Bordeaux, Lyon..."
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                 </div>
 
                 {/* Representative */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-gray-800">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Nom & Prénom du Signataire *
                     </label>
                     <input
@@ -315,11 +315,11 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={representativeName}
                       onChange={(e) => setRepresentativeName(e.target.value)}
                       placeholder="Ex : Jean-Marc DUPONT"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Qualité / Fonction *
                     </label>
                     <input
@@ -328,7 +328,7 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={representativeRole}
                       onChange={(e) => setRepresentativeRole(e.target.value)}
                       placeholder="Ex : Directeur des Investissements, Président..."
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                 </div>
@@ -336,7 +336,7 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                 {/* Email & Phone */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1 flex items-center justify-between">
+                    <label className="block text-slate-700 font-bold mb-1 flex items-center justify-between">
                       <span>E-mail professionnel (Identifiant) *</span>
                     </label>
                     <input
@@ -345,11 +345,11 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="votre.email@societe.com"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition font-mono"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs font-mono"
                     />
                   </div>
                   <div>
-                    <label className="block text-gray-300 font-bold mb-1">
+                    <label className="block text-slate-700 font-bold mb-1">
                       Téléphone de contact
                     </label>
                     <input
@@ -357,7 +357,7 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="06 XX XX XX XX"
-                      className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:border-amber-400 transition"
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                     />
                   </div>
                 </div>
@@ -365,11 +365,11 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
             ) : (
               /* Live NDA Preview */
               <div className="space-y-2">
-                <div className="flex items-center justify-between text-[11px] text-gray-400">
+                <div className="flex items-center justify-between text-[11px] text-slate-500">
                   <span>Texte généré automatiquement avec vos coordonnées :</span>
-                  <span className="text-amber-400 font-mono">Droit français • Tribunal de Commerce de Bordeaux</span>
+                  <span className="text-amber-800 font-mono font-semibold">Droit français • Tribunal de Commerce de Bordeaux</span>
                 </div>
-                <div className="h-64 overflow-y-auto p-4 bg-gray-950/80 border border-gray-800 rounded-xl text-xs text-gray-300 font-sans space-y-3 leading-relaxed">
+                <div className="h-64 overflow-y-auto p-4 bg-slate-50 border border-slate-200 rounded-2xl text-xs text-slate-700 font-sans space-y-3 leading-relaxed">
                   {currentNdaText.split('\n\n').map((para, idx) => (
                     <p key={idx} className="whitespace-pre-line">
                       {para}
@@ -380,17 +380,17 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
             )}
 
             {/* Checkbox Agreement */}
-            <label className="flex items-start space-x-3 p-3.5 rounded-xl bg-gray-800/40 border border-gray-700/80 cursor-pointer hover:border-gray-600 transition">
+            <label className="flex items-start space-x-3 p-4 rounded-2xl bg-slate-50 border border-slate-200 cursor-pointer hover:border-slate-300 transition">
               <input
                 type="checkbox"
                 required
                 checked={hasAgreed}
                 onChange={(e) => setHasAgreed(e.target.checked)}
-                className="mt-0.5 rounded border-gray-600 text-amber-500 focus:ring-0 cursor-pointer"
+                className="mt-0.5 rounded border-slate-300 text-amber-500 focus:ring-0 cursor-pointer"
               />
-              <span className="text-xs text-gray-300 leading-relaxed">
+              <span className="text-xs text-slate-700 leading-relaxed">
                 Je certifie avoir le pouvoir d'engager la société{' '}
-                <strong className="text-white">{companyName || "[Société]"}</strong>. J'ai pris connaissance de l'ensemble des clauses du présent accord de confidentialité bilatéral et je le signe électroniquement.
+                <strong className="text-slate-900">{companyName || "[Société]"}</strong>. J'ai pris connaissance de l'ensemble des clauses du présent accord de confidentialité bilatéral et je le signe électroniquement.
               </span>
             </label>
 
@@ -399,7 +399,7 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
               <button
                 type="button"
                 onClick={handleResetAndClose}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-xs font-semibold transition"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition cursor-pointer"
               >
                 Annuler
               </button>
@@ -407,7 +407,7 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
               <button
                 type="submit"
                 disabled={isSubmitting || !hasAgreed}
-                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-gray-950 font-black rounded-xl text-xs uppercase tracking-wider shadow-lg shadow-amber-500/20 transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold rounded-xl text-xs uppercase tracking-wider shadow-md shadow-amber-500/20 transition flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isSubmitting ? (
                   <span>Transmission...</span>

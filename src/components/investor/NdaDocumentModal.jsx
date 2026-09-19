@@ -140,7 +140,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
           <style>
             @page {
               size: A4 portrait;
-              margin: 8mm 12mm;
+              margin: 6mm 10mm;
             }
             *, *::before, *::after {
               box-sizing: border-box !important;
@@ -163,8 +163,8 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
               box-sizing: border-box !important;
               background: #ffffff !important;
               border: 1px solid #e2e8f0 !important;
-              border-radius: 8px !important;
-              padding: 20px 24px !important;
+              border-radius: 6px !important;
+              padding: 16px 20px !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
             }
@@ -174,8 +174,6 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
               margin-bottom: 0 !important;
             }
             .nda-page-2 {
-              page-break-before: always !important;
-              break-before: page !important;
               page-break-after: avoid !important;
               break-after: avoid !important;
               margin-top: 0 !important;
@@ -315,12 +313,12 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
         /* ================================================================= */
         /* VUE 2 : DOCUMENT CONTRACTUEL FORMALISÉ (PAGE 1 ET PAGE 2)          */
         /* ================================================================= */
-        <div id="printable-nda-document" className="space-y-8 font-sans text-slate-800">
+        <div id="printable-nda-document" className="space-y-8 font-sans text-slate-800 print:space-y-0">
           
           {/* =============================================================== */}
           {/* FEUILLE / PAGE 1 DU CONTRAT                                     */}
           {/* =============================================================== */}
-          <div className="nda-page nda-page-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-6 print:break-after-page">
+          <div className="nda-page nda-page-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-5 print:break-after-page">
             {/* Header Officiel de Page 1 */}
             <div className="border-b-2 border-slate-900 pb-4 flex items-start justify-between">
               <div>
@@ -449,7 +447,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
           {/* =============================================================== */}
           {/* FEUILLE / PAGE 2 DU CONTRAT                                     */}
           {/* =============================================================== */}
-          <div className="nda-page nda-page-2 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-6 print:break-before-page">
+          <div className="nda-page nda-page-2 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-5 print:break-after-avoid">
             {/* Header Officiel de Page 2 */}
             <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
