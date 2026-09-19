@@ -23,7 +23,6 @@ export default function InvestorAuthPage() {
   const location = useLocation();
   const { login, currentInvestor } = useInvestorStore();
 
-  const [role, setRole] = useState('investor'); // 'investor' | 'admin'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -56,11 +55,7 @@ export default function InvestorAuthPage() {
       return;
     }
 
-    if (result.isAdmin) {
-      navigate('/investisseurs/dashboard');
-    } else {
-      navigate('/investisseurs/dashboard');
-    }
+    navigate('/investisseurs/dashboard');
   };
 
   return (
@@ -70,13 +65,9 @@ export default function InvestorAuthPage() {
         <EnrCourtageLogo onClick={() => navigate('/')} />
 
         <div className="flex items-center gap-3">
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Espace Transactionnel Sécurisé
-          </span>
-
           <button
             onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-xl transition cursor-pointer"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Retour au site</span>
@@ -173,45 +164,12 @@ export default function InvestorAuthPage() {
           {/* =============================================================== */}
           <div className="lg:col-span-6 bg-white border border-slate-200 rounded-3xl p-6 sm:p-9 shadow-sm flex flex-col justify-between">
             <div>
-              {/* En-tête formulaire avec Toggle de Rôle */}
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
-                <div>
-                  <h2 className="text-xl font-black text-[#0b192c]">Espace de Connexion</h2>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Veuillez sélectionner votre profil d'accès
-                  </p>
-                </div>
-
-                <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRole('investor');
-                      setError('');
-                    }}
-                    className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                      role === 'investor'
-                        ? 'bg-white text-slate-900 shadow-xs border border-slate-200/80 font-black'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Investisseur
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setRole('admin');
-                      setError('');
-                    }}
-                    className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                      role === 'admin'
-                        ? 'bg-white text-purple-900 shadow-xs border border-slate-200/80 font-black'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Administrateur
-                  </button>
-                </div>
+              {/* En-tête formulaire sans toggle */}
+              <div className="mb-6 pb-4 border-b border-slate-100">
+                <h2 className="text-xl font-black text-[#0b192c]">Espace de Connexion</h2>
+                <p className="text-xs text-slate-500 font-medium mt-0.5">
+                  Saisissez vos identifiants pour accéder à votre espace
+                </p>
               </div>
 
               {/* Message d'erreur */}
@@ -253,7 +211,7 @@ export default function InvestorAuthPage() {
                       required
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder={role === 'admin' ? 'y.barberis@enr-courtage.fr' : 'nom@societe.com'}
+                      placeholder="nom@societe.com"
                       className="w-full pl-4 pr-10 py-3 rounded-xl bg-slate-50 border border-slate-300 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-600 transition-colors shadow-inner"
                     />
                     <Mail className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />

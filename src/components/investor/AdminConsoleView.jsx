@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Users,
   Search,
@@ -36,6 +36,7 @@ import {
   Phone,
   FileCheck,
   Sparkles,
+  RotateCcw,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -52,7 +53,7 @@ function safeText(val, fallback = '') {
   return fallback;
 }
 
-export default function AdminConsoleView({ initialTab = 'users', onBackToDashboard }) {
+export default function AdminConsoleView({ initialTab = 'users', initialChatEmail = '', onBackToDashboard }) {
   const {
     investors,
     adminValidateInvestor,
@@ -84,7 +85,13 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
 
   const [activeSection, setActiveSection] = useState(initialTab); // 'users' | 'offers' | 'dataroom' | 'messages'
   const [userSearch, setUserSearch] = useState('');
-  const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'pending'
+  const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'pending' | 'rejected'
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveSection(initialTab);
+    }
+  }, [initialTab]);
 
   // Modals
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
@@ -134,8 +141,14 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
   const [assigningSiteIds, setAssigningSiteIds] = useState([]);
 
   // Central Messaging State
-  const [selectedChatEmail, setSelectedChatEmail] = useState('');
+  const [selectedChatEmail, setSelectedChatEmail] = useState(initialChatEmail || '');
   const [adminChatText, setAdminChatText] = useState('');
+
+  useEffect(() => {
+    if (initialChatEmail) {
+      setSelectedChatEmail(initialChatEmail);
+    }
+  }, [initialChatEmail]);
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const currentPortfolioObj = portfolios.find((p) => p.id === selectedDataRoomPortfolio);
@@ -143,6 +156,7 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
   const safeInvestors = Array.isArray(investors) ? investors : [];
   const safeOffers = Array.isArray(offers) ? offers : [];
   const pendingInvestorsCount = safeInvestors.filter((i) => i && i.status === 'pending').length;
+  const rejectedInvestorsCount = safeInvestors.filter((i) => i && i.status === 'rejected').length;
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
@@ -327,6 +341,17 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
     setTimeout(() => setUploadSuccessMsg(''), 4000);
   };
 
+  // Conversation users & active chat
+  const availableChatUsers = useMemo(() => {
+    return safeInvestors.filter((u) => !u.isAdmin);
+  }, [safeInvestors]);
+
+  const activeChatEmail = selectedChatEmail || availableChatUsers[0]?.email || 'yannbarberis@msn.com';
+
+  const activeChatUser = useMemo(() => {
+    return safeInvestors.find((u) => (u.email || '').toLowerCase() === activeChatEmail.toLowerCase()) || null;
+  }, [safeInvestors, activeChatEmail]);
+
   // Handle Admin Message Send
   const handleSendAdminMessage = (e) => {
     e.preventDefault();
@@ -336,15 +361,13 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
       from: 'admin',
       authorName: 'Yann BARBERIS',
       authorCompany: 'ENR COURTAGE',
-      investorEmail: selectedChatEmail || (filteredUsers[0]?.email || 'contact@investisseur.com'),
+      investorEmail: activeChatEmail,
       text: adminChatText.trim(),
     });
 
     setAdminChatText('');
   };
 
-  // Conversation emails
-  const activeChatEmail = selectedChatEmail || (filteredUsers[0]?.email || 'yannbarberis@msn.com');
   const chatMessages = (messages || []).filter(
     (m) => !m.investorEmail || m.investorEmail.toLowerCase() === activeChatEmail.toLowerCase()
   );
@@ -525,40 +548,39 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
                     onChange={(e) => setUserStatusFilter(e.target.value)}
                     className="px-2.5 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-700"
                   >
-                    <option value="all">Tous statuts</option>
+                    <option value="all">Tous statuts ({safeInvestors.length})</option>
                     <option value="active">Actifs uniquement</option>
                     <option value="pending">En attente ({pendingInvestorsCount})</option>
+                    <option value="rejected">Refusés ({rejectedInvestorsCount})</option>
                   </select>
                 </div>
               </div>
 
-              {/* Table des utilisateurs */}
-              <div className="overflow-x-auto rounded-2xl border border-slate-200">
-                <table className="w-full text-left text-xs">
+              {/* Table des utilisateurs (élargie & compacte) */}
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-xs">
+                <table className="w-full text-left text-xs border-collapse">
                   <thead className="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
                     <tr>
-                      <th className="py-3 px-4">Investisseur</th>
-                      <th className="py-3 px-4">Société / Fonds</th>
-                      <th className="py-3 px-4">E-mail / Contact</th>
-                      <th className="py-3 px-4 text-center">Statut Accès</th>
-                      <th className="py-3 px-4 text-center">Statut NDA</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Investisseur</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">Société & Contact</th>
+                      <th className="py-2.5 px-3.5 whitespace-nowrap">E-mail</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Statut Accès</th>
+                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">NDA Bilatéral</th>
+                      <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-800 font-medium">
                     {filteredUsers.map((inv) => {
-                      const userDowns = userDownloads?.[inv.email?.trim().toLowerCase()] || [];
-
                       return (
                         <tr key={inv.id} className="hover:bg-slate-50/80 transition-colors">
-                          {/* Nom */}
-                          <td className="py-3 px-4">
+                          {/* Nom & Rôle */}
+                          <td className="py-2.5 px-3.5 whitespace-nowrap">
                             <div className="flex items-center gap-2">
                               <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0">
                                 {safeText(inv.name) ? safeText(inv.name).charAt(0).toUpperCase() : 'U'}
                               </div>
-                              <div>
-                                <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                              <div className="flex flex-col">
+                                <div className="font-bold text-slate-900 flex items-center gap-1.5 leading-tight">
                                   <span>{safeText(inv.name, 'Sans nom')}</span>
                                   {inv.isAdmin && (
                                     <span className="px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 text-[9px] font-bold">
@@ -566,38 +588,42 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
                                     </span>
                                   )}
                                 </div>
-                                <div className="text-[10px] text-slate-400">{safeText(inv.role, 'Investisseur')}</div>
+                                <div className="text-[10px] text-slate-400 leading-tight">{safeText(inv.role, 'Investisseur')}</div>
                               </div>
                             </div>
                           </td>
 
-                          {/* Société */}
-                          <td className="py-3 px-4">
-                            <span className="font-bold text-slate-900">{safeText(inv.company, '—')}</span>
-                            {inv.phone && <div className="text-[10px] text-slate-400">{inv.phone}</div>}
+                          {/* Société & Téléphone */}
+                          <td className="py-2.5 px-3.5 whitespace-nowrap">
+                            <div className="font-bold text-slate-900 leading-tight">{safeText(inv.company, '—')}</div>
+                            {inv.phone && <div className="text-[10px] text-slate-400 font-mono leading-tight">{inv.phone}</div>}
                           </td>
 
                           {/* Email */}
-                          <td className="py-3 px-4 font-mono text-slate-600 text-[11px]">
+                          <td className="py-2.5 px-3.5 font-mono text-slate-600 text-[11px] whitespace-nowrap">
                             {safeText(inv.email)}
                           </td>
 
                           {/* Statut Accès */}
-                          <td className="py-3 px-4 text-center">
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
                             {inv.status === 'active' ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Actif
                               </span>
-                            ) : (
+                            ) : inv.status === 'pending' ? (
                               <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 animate-pulse">
                                 <Clock className="w-3 h-3" /> En attente
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                                <XCircle className="w-3 h-3 text-rose-600" /> Refusé
                               </span>
                             )}
                           </td>
 
                           {/* Statut NDA */}
-                          <td className="py-3 px-4 text-center">
-                            {inv.ndaSignedAt || inv.hasUploadedSignedNda || inv.ndaFileName ? (
+                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                            {inv.ndaSignedAt || inv.hasUploadedSignedNda || inv.ndaFileName || inv.ndaSignedByAdmin ? (
                               <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
                                 <Check className="w-3 h-3 text-emerald-600" /> Signé
                               </span>
@@ -607,12 +633,12 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
                           </td>
 
                           {/* Actions */}
-                          <td className="py-3 px-4 text-right">
+                          <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
                               {/* Voir NDA */}
                               <button
                                 onClick={() => setSelectedInvestorForNda(inv)}
-                                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer border border-slate-200"
+                                className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer border border-slate-200"
                                 title="Consulter et imprimer le NDA bilatéral signé"
                               >
                                 <FileSignature className="w-3 h-3 text-blue-600" />
@@ -621,19 +647,60 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
 
                               {/* Valider si en attente */}
                               {inv.status === 'pending' && (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      const pass = generateRandomPassword();
+                                      adminValidateInvestor(inv.id, pass);
+                                      setUserActionNotice(`Accès validé pour ${inv.company}. Mot de passe : ${pass}`);
+                                    }}
+                                    className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer"
+                                    title="Valider la demande et contre-signer le NDA"
+                                  >
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    <span>Valider</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      adminRejectInvestor(inv.id);
+                                      setUserActionNotice(`Demande de ${inv.company} refusée (historique conservé).`);
+                                    }}
+                                    className="px-2 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-[11px] transition border border-rose-200 flex items-center gap-1 cursor-pointer"
+                                    title="Refuser la demande sans supprimer le dossier"
+                                  >
+                                    <XCircle className="w-3 h-3 text-rose-600" />
+                                    <span>Refuser</span>
+                                  </button>
+                                </>
+                              )}
+
+                              {/* Réactiver si refusé */}
+                              {inv.status === 'rejected' && (
                                 <button
                                   onClick={() => {
                                     const pass = generateRandomPassword();
                                     adminValidateInvestor(inv.id, pass);
-                                    setUserActionNotice(`Accès validé pour ${inv.company}. Mot de passe : ${pass}`);
+                                    setUserActionNotice(`Accès validé et réactivé pour ${inv.company}. Mot de passe : ${pass}`);
                                   }}
-                                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer"
-                                  title="Valider la demande et contre-signer le NDA"
+                                  className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer"
+                                  title="Réactiver et valider cet investisseur"
                                 >
-                                  <CheckCircle2 className="w-3 h-3" />
-                                  <span>Valider</span>
+                                  <RotateCcw className="w-3 h-3" />
+                                  <span>Réactiver</span>
                                 </button>
                               )}
+
+                              {/* Contacter par message */}
+                              <button
+                                onClick={() => {
+                                  setSelectedChatEmail(inv.email);
+                                  setActiveSection('messages');
+                                }}
+                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition"
+                                title="Ouvrir la conversation avec cet investisseur"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5" />
+                              </button>
 
                               {/* Modifier */}
                               <button
@@ -651,7 +718,7 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
                               {!inv.isAdmin && (
                                 <button
                                   onClick={() => {
-                                    if (window.confirm(`Supprimer l'accès pour ${inv.name} (${inv.company}) ?`)) {
+                                    if (window.confirm(`Supprimer définitivement l'accès pour ${inv.name} (${inv.company}) ?`)) {
                                       adminDeleteUser(inv.id);
                                       setUserActionNotice(`Utilisateur ${inv.name} supprimé.`);
                                     }
@@ -1060,7 +1127,7 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
                     onChange={(e) => setSelectedChatEmail(e.target.value)}
                     className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800"
                   >
-                    {filteredUsers.map((u) => (
+                    {availableChatUsers.map((u) => (
                       <option key={u.id} value={u.email}>
                         {u.name} ({u.company})
                       </option>
@@ -1068,6 +1135,28 @@ export default function AdminConsoleView({ initialTab = 'users', onBackToDashboa
                   </select>
                 </div>
               </div>
+
+              {/* Bandeau d'information du contact actif */}
+              {activeChatUser && (
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-purple-600 text-white font-black text-xs flex items-center justify-center">
+                      {safeText(activeChatUser.name).charAt(0).toUpperCase() || 'I'}
+                    </div>
+                    <div>
+                      <div className="font-bold text-slate-900">
+                        {safeText(activeChatUser.name)} • <span className="text-slate-600">{safeText(activeChatUser.company)}</span>
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-400">
+                        {safeText(activeChatUser.email)} {activeChatUser.phone ? `• ${activeChatUser.phone}` : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
+                    Fil Direct Administrateur ↔ Investisseur
+                  </span>
+                </div>
+              )}
 
               {/* Boîte de discussion */}
               <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col h-[420px]">

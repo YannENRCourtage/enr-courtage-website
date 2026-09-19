@@ -630,8 +630,21 @@ export const useInvestorStore = create(
           createdAt: new Date().toISOString(),
         };
 
+        const notif = {
+          id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          target: 'admin',
+          type: 'registration_request',
+          title: `Nouvelle demande d'inscription : ${formData.representativeName || 'Investisseur'} (${formData.companyName || ''})`,
+          message: `Demande d'accès Data Room & NDA signée reçue. En attente de validation.`,
+          investorEmail: cleanEmail,
+          createdAt: new Date().toISOString(),
+          read: false,
+          linkTab: 'users',
+        };
+
         set((state) => ({
           investors: [newInvestor, ...state.investors],
+          notifications: [notif, ...(state.notifications || [])],
         }));
 
         return { success: true, investor: newInvestor };

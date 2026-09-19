@@ -60,6 +60,9 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   const [activeView, setActiveView] = useState(defaultToAdmin || adminParam === 'true' ? 'admin' : 'investor');
   // Investor sub-tab: 'portfolios' | 'offers' | 'dataroom' | 'messages'
   const [investorSubTab, setInvestorSubTab] = useState('portfolios');
+  // Admin navigation state from notifications
+  const [adminInitialTab, setAdminInitialTab] = useState('users');
+  const [adminSelectedChatEmail, setAdminSelectedChatEmail] = useState('');
 
   // Modals
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
@@ -74,6 +77,23 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
 
   // Investor Chat State
   const [chatInputText, setChatInputText] = useState('');
+
+  // Handle click on notification inside popover
+  const handleNavigateNotif = (notif) => {
+    if (!notif) return;
+    if (isAdmin) {
+      setActiveView('admin');
+      const targetTab = notif.linkTab || (notif.type === 'registration_request' ? 'users' : notif.type === 'offer' || notif.type === 'counter_proposal' ? 'offers' : 'messages');
+      setAdminInitialTab(targetTab);
+      if (notif.investorEmail) {
+        setAdminSelectedChatEmail(notif.investorEmail);
+      }
+    } else {
+      setActiveView('investor');
+      const targetSub = notif.linkTab || (notif.type === 'offer' || notif.type === 'counter_proposal' ? 'offers' : 'messages');
+      setInvestorSubTab(targetSub);
+    }
+  };
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const heliosPortfolio = portfolios.find((p) => p.id === 'helios');
@@ -194,6 +214,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
         onSwitchView={(view) => setActiveView(view)}
         onOpenAdmin={() => setActiveView('admin')}
         onOpenNda={() => setIsNdaModalOpen(true)}
+        onNavigateNotif={handleNavigateNotif}
       />
 
       {/* Main Content Container */}
@@ -203,7 +224,8 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
         {/* ================================================================= */}
         {isAdmin && activeView === 'admin' ? (
           <AdminConsoleView
-            initialTab="users"
+            initialTab={adminInitialTab}
+            initialChatEmail={adminSelectedChatEmail}
             onBackToDashboard={() => setActiveView('investor')}
           />
         ) : (

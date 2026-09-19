@@ -24,6 +24,7 @@ export default function InvestorHeader({
   pageTitleBadge = 'M&A TRANSACTIONNEL',
   activeView = 'investor', // 'investor' | 'admin'
   onSwitchView = null,
+  onNavigateNotif = null,
 }) {
   const navigate = useNavigate();
   const { currentInvestor, logout, investors, offers, notifications, markNotificationsAsRead } = useInvestorStore();
@@ -189,12 +190,20 @@ export default function InvestorHeader({
                     userNotifications.map((notif) => (
                       <div
                         key={notif.id}
-                        className={`p-3 rounded-xl border text-xs transition-colors ${
+                        onClick={() => {
+                          setIsNotifOpen(false);
+                          if (onNavigateNotif) {
+                            onNavigateNotif(notif);
+                          }
+                        }}
+                        className={`p-3 rounded-xl border text-xs transition-all cursor-pointer hover:scale-[1.01] hover:shadow-xs active:scale-[0.99] ${
                           notif.type === 'offer' || notif.type === 'counter_offer'
-                            ? 'bg-amber-50/60 border-amber-200 text-amber-950'
+                            ? 'bg-amber-50/60 border-amber-200 text-amber-950 hover:bg-amber-100/70'
                             : notif.type === 'offer_accepted'
-                            ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
-                            : 'bg-blue-50/50 border-blue-200 text-blue-950'
+                            ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950 hover:bg-emerald-100/70'
+                            : notif.type === 'registration_request'
+                            ? 'bg-purple-50/60 border-purple-200 text-purple-950 hover:bg-purple-100/70'
+                            : 'bg-blue-50/50 border-blue-200 text-blue-950 hover:bg-blue-100/70'
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2 mb-1">
@@ -209,6 +218,9 @@ export default function InvestorHeader({
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-600 leading-relaxed">{notif.message}</p>
+                        <span className="text-[10px] font-bold text-blue-600 hover:underline mt-1.5 inline-block">
+                          Ouvrir l'échange →
+                        </span>
                       </div>
                     ))
                   )}

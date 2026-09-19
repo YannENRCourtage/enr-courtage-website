@@ -61,6 +61,7 @@ const STANDARD_MILESTONES = [
 
 export default function OfferModal({
   portfolio = null,
+  defaultPortfolioId = null,
   selectedSiteIds = [],
   isOpen,
   onClose,
@@ -80,32 +81,96 @@ export default function OfferModal({
   const [currentStep, setCurrentStep] = useState(1);
 
   // Form State
-  const [targetPortfolio, setTargetPortfolio] = useState(portfolio?.id || existingOffer?.portfolioId || 'helios');
-  const [offerType, setOfferType] = useState(
-    existingOffer ? existingOffer.offerType : (selectedSiteIds.length > 0 ? 'partial' : 'total')
-  );
-  const [localSelectedSiteIds, setLocalSelectedSiteIds] = useState(
-    existingOffer?.selectedSiteIds || selectedSiteIds || []
-  );
+  const [targetPortfolio, setTargetPortfolio] = useState('helios');
+  const [offerType, setOfferType] = useState('total');
+  const [localSelectedSiteIds, setLocalSelectedSiteIds] = useState([]);
   const [siteSearchTerm, setSiteSearchTerm] = useState('');
-
-  const rawInitAmt = existingOffer ? (existingOffer.counterAmountEur || existingOffer.amountEur || '') : '';
-  const [amountEur, setAmountEur] = useState(rawInitAmt ? formatThousands(rawInitAmt) : '');
+  const [amountEur, setAmountEur] = useState('');
 
   // Step 3: Selected Milestones (NONE selected by default per user instruction)
   // Mapping: { [key]: { selected: boolean, percentage: number, label: string, targetCondition: string } }
   const [selectedMilestonesMap, setSelectedMilestonesMap] = useState({});
   const [customMilestones, setCustomMilestones] = useState([]);
 
-  const [comments, setComments] = useState(existingOffer?.comments || '');
+  const [comments, setComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedOffer, setSubmittedOffer] = useState(null);
   const [error, setError] = useState('');
+
+  const wasOpenRef = React.useRef(false);
 
   // Retrieve all raw sites
   const allPortfolios = PORTFOLIOS;
   const heliosSites = useMemo(() => allPortfolios.find((p) => p.id === 'helios')?.sites || [], [allPortfolios]);
   const voltaSites = useMemo(() => allPortfolios.find((p) => p.id === 'volta')?.sites || [], [allPortfolios]);
+
+  // Initialize or reset ONLY when modal opens
+  useEffect(() => {
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      setCurrentStep(1);
+      setError('');
+      setSubmittedOffer(null);
+      return;
+    }
+
+    if (isOpen && !wasOpenRef.current) {
+      wasOpenRef.current = true;
+      setCurrentStep(1);
+      setError('');
+      setSubmittedOffer(null);
+
+      const initialPortfolioId =
+        (portfolio && typeof portfolio === 'object' ? portfolio.id : portfolio) ||
+        defaultPortfolioId ||
+        existingOffer?.portfolioId ||
+        'helios';
+
+      if (existingOffer) {
+        setTargetPortfolio(existingOffer.portfolioId || initialPortfolioId);
+        setOfferType(existingOffer.offerType || 'total');
+        setLocalSelectedSiteIds(existingOffer.selectedSiteIds || selectedSiteIds || []);
+        const targetAmt = existingOffer.counterAmountEur || existingOffer.amountEur || '';
+        setAmountEur(targetAmt ? formatThousands(targetAmt) : '');
+        setComments(existingOffer.comments || '');
+
+        // Load existing milestones
+        const initialMap = {};
+        const customs = [];
+        (existingOffer.milestones || []).forEach((m) => {
+          const matchedStd = STANDARD_MILESTONES.find((std) => m.label?.includes(std.title));
+          if (matchedStd) {
+            initialMap[matchedStd.key] = {
+              selected: true,
+              percentage: m.percentage,
+              label: m.label,
+              targetCondition: m.targetCondition || matchedStd.targetCondition,
+              targetDate: m.targetDate || matchedStd.targetDate,
+            };
+          } else {
+            customs.push({
+              id: Date.now() + Math.random(),
+              label: m.label,
+              percentage: m.percentage,
+              targetCondition: m.targetCondition || '',
+              targetDate: m.targetDate || '',
+            });
+          }
+        });
+        setSelectedMilestonesMap(initialMap);
+        setCustomMilestones(customs);
+      } else {
+        // NEW OFFER
+        setSelectedMilestonesMap({});
+        setCustomMilestones([]);
+        setTargetPortfolio(initialPortfolioId);
+        const hasPreselected = selectedSiteIds && selectedSiteIds.length > 0;
+        setOfferType(hasPreselected ? 'partial' : 'total');
+        setLocalSelectedSiteIds(selectedSiteIds || []);
+        setAmountEur('');
+      }
+    }
+  }, [isOpen, portfolio, defaultPortfolioId, existingOffer, selectedSiteIds]);
 
   // Compute available active sites for target portfolio
   const availableSites = useMemo(() => {
@@ -137,62 +202,6 @@ export default function OfferModal({
       `${s.name || s.ville || ''} ${s.cp || ''} ${s.dept || ''} ${s.client || ''} ${s.address || ''}`.toLowerCase().includes(q)
     );
   }, [availableSites, siteSearchTerm]);
-
-  // Initialize or reset when opening modal
-  useEffect(() => {
-    if (!isOpen) {
-      setCurrentStep(1);
-      setError('');
-      setSubmittedOffer(null);
-      return;
-    }
-
-    if (existingOffer) {
-      setTargetPortfolio(existingOffer.portfolioId || 'helios');
-      setOfferType(existingOffer.offerType || 'total');
-      setLocalSelectedSiteIds(existingOffer.selectedSiteIds || selectedSiteIds || []);
-      const targetAmt = existingOffer.counterAmountEur || existingOffer.amountEur || '';
-      setAmountEur(targetAmt ? formatThousands(targetAmt) : '');
-      setComments(existingOffer.comments || '');
-
-      // Load existing milestones
-      const initialMap = {};
-      (existingOffer.milestones || []).forEach((m) => {
-        const matchedStd = STANDARD_MILESTONES.find((std) => m.label.includes(std.title));
-        if (matchedStd) {
-          initialMap[matchedStd.key] = {
-            selected: true,
-            percentage: m.percentage,
-            label: m.label,
-            targetCondition: m.targetCondition || matchedStd.targetCondition,
-            targetDate: m.targetDate || matchedStd.targetDate,
-          };
-        } else {
-          // Custom
-          setCustomMilestones((prev) => [
-            ...prev,
-            {
-              id: Date.now() + Math.random(),
-              label: m.label,
-              percentage: m.percentage,
-              targetCondition: m.targetCondition || '',
-              targetDate: m.targetDate || '',
-            },
-          ]);
-        }
-      });
-      setSelectedMilestonesMap(initialMap);
-    } else {
-      // NEW OFFER: Jalons NOT indicated by default!
-      setSelectedMilestonesMap({});
-      setCustomMilestones([]);
-      setTargetPortfolio(portfolio?.id || 'helios');
-      setOfferType(selectedSiteIds.length > 0 ? 'partial' : 'total');
-      setLocalSelectedSiteIds(selectedSiteIds || []);
-      setAmountEur('');
-      setComments('');
-    }
-  }, [isOpen, existingOffer, portfolio, selectedSiteIds]);
 
   if (!isOpen) return null;
 
