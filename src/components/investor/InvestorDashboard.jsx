@@ -82,14 +82,16 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   // Filter offers for the current investor (or all if admin viewing)
   const myOffers = useMemo(() => {
     if (!currentInvestor) return [];
+    if (isAdmin) return offers;
+    const cleanEmail = currentInvestor.email?.trim().toLowerCase();
     return offers.filter(
       (o) =>
-        o.investorEmail?.toLowerCase() === currentInvestor.email?.toLowerCase() ||
+        (o.investorEmail && o.investorEmail.trim().toLowerCase() === cleanEmail) ||
         o.investorId === currentInvestor.id
     );
-  }, [offers, currentInvestor]);
+  }, [offers, currentInvestor, isAdmin]);
 
-  const activeOffer = myOffers[0] || offers[0] || null;
+  const activeOffer = myOffers[0] || null;
 
   // KPIs
   const totalMyOffersAmount = myOffers.reduce((sum, o) => sum + (o.amountEur || 0), 0);
@@ -164,9 +166,9 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
 
     sendMessage({
       from: 'investor',
-      authorName: currentInvestor?.name || 'Jean DUS',
-      authorCompany: currentInvestor?.company || 'ENEE Energy Partners',
-      investorEmail: currentInvestor?.email || 'yannbarberis@msn.com',
+      authorName: currentInvestor?.name || 'Investisseur',
+      authorCompany: currentInvestor?.company || '',
+      investorEmail: (currentInvestor?.email || '').trim().toLowerCase(),
       text: chatInputText.trim(),
     });
 
@@ -174,12 +176,15 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   };
 
   // Filter messages for current investor conversation
-  const investorMessages = (messages || []).filter(
-    (m) =>
-      !m.investorEmail ||
-      m.investorEmail.toLowerCase() === currentInvestor?.email?.toLowerCase() ||
-      m.investorEmail.toLowerCase() === 'yannbarberis@msn.com'
-  );
+  const investorMessages = useMemo(() => {
+    if (!currentInvestor) return [];
+    const myEmail = (currentInvestor.email || '').trim().toLowerCase();
+    return (messages || []).filter((m) => {
+      if (isAdmin) return true;
+      const msgEmail = (m.investorEmail || '').trim().toLowerCase();
+      return msgEmail === myEmail;
+    });
+  }, [messages, currentInvestor, isAdmin]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
@@ -223,18 +228,10 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             {/* BANDEAU D'ACCUEIL INVESTISSEUR */}
             <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-wrap items-center justify-between gap-4">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-xs font-black uppercase tracking-wider text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md border border-blue-200">
-                    Espace Investisseur Institutionnel
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-300">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span> NDA Bilatéral Actif
-                  </span>
-                </div>
                 <h1 className="text-2xl sm:text-3xl font-black text-[#0b192c] tracking-tight">
-                  Bienvenue, {currentInvestor?.name || 'Jean DUS'}{' '}
+                  Bienvenue, {currentInvestor?.name || 'Investisseur'}{' '}
                   <span className="text-slate-400 font-normal text-lg sm:text-xl ml-1">
-                    · {currentInvestor?.company || 'ENEE Energy Partners'}
+                    · {currentInvestor?.company || 'Partenaire M&A'}
                   </span>
                 </h1>
                 <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
@@ -286,7 +283,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                   {myOffers.length} Offre{myOffers.length > 1 ? 's' : ''}
                 </div>
                 <div className="text-[11px] font-bold text-amber-700 mt-0.5">
-                  {formatThousands(totalMyOffersAmount || 5000000)} € HT proposée
+                  {myOffers.length > 0 ? `${formatThousands(totalMyOffersAmount)} € HT proposée` : 'Aucune offre active'}
                 </div>
               </div>
 
@@ -297,10 +294,14 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                   Négociation Active
                 </div>
                 <div className="text-2xl sm:text-3xl font-black text-purple-950 mt-1">
-                  {activeNegotiationCount || 1} En Cours
+                  {activeNegotiationCount} En Cours
                 </div>
                 <div className="text-[11px] font-bold text-purple-600 mt-0.5">
-                  Contre-proposition reçue (6.0 M€)
+                  {activeNegotiationCount > 0
+                    ? (activeOffer?.status === 'counter_by_admin'
+                        ? `Contre-proposition reçue (${formatThousands(activeOffer?.counterOffer?.amountEur || 0)} €)`
+                        : 'Négociation en cours')
+                    : 'Aucune négociation active'}
                 </div>
               </div>
 
@@ -338,7 +339,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                 }`}
               >
                 <Coins className="w-4 h-4" />
-                <span>Mes Offres & Négociations ({myOffers.length || 1})</span>
+                <span>Mes Offres & Négociations ({myOffers.length})</span>
               </button>
 
               <button
@@ -557,6 +558,16 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                             {activeOffer.portfolioName || 'Offre Combinée (HÉLIOS + VOLTA)'}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">Réf: {activeOffer.id}</span>
+                          {activeOffer.status === 'counter_by_admin' && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-200 animate-pulse">
+                              Contre-proposition reçue
+                            </span>
+                          )}
+                          {activeOffer.status === 'submitted' && (
+                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-200">
+                              En cours d'étude
+                            </span>
+                          )}
                         </div>
                         <h2 className="text-xl font-black text-[#0b192c] mt-1">
                           Négociation Transactionnelle Active
@@ -604,74 +615,147 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       </div>
                     </div>
 
-                    {/* Encadré Contre-proposition reçue avec les 3 boutons */}
-                    <div className="p-5 rounded-2xl bg-amber-50/80 border-2 border-amber-300 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
-                          <span className="text-xs font-black uppercase tracking-wider text-amber-900">
-                            Contre-proposition reçue de Yann BARBERIS (ENR COURTAGE)
+                    {/* Encadré Contre-proposition reçue (UNIQUEMENT si l'admin a fait une contre-proposition) */}
+                    {activeOffer.status === 'counter_by_admin' && activeOffer.counterOffer && (
+                      <div className="p-5 rounded-2xl bg-amber-50/80 border-2 border-amber-300 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                            <span className="text-xs font-black uppercase tracking-wider text-amber-900">
+                              Contre-proposition reçue de Yann BARBERIS (ENR COURTAGE)
+                            </span>
+                          </div>
+                          <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                            Décision requise
                           </span>
                         </div>
-                        <span className="text-[11px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
-                          Décision requise
+
+                        <p className="text-xs text-slate-700 font-medium leading-relaxed">
+                          {activeOffer.counterOffer?.comments ||
+                            "Proposition financière ajustée suite à l'analyse de votre dossier."}
+                        </p>
+
+                        <div className="text-2xl font-black text-[#0b192c]">
+                          {formatThousands(activeOffer.counterOffer?.amountEur)} € HT{' '}
+                          <span className="text-xs font-medium text-slate-500">
+                            (avec réajustement des quotes-parts d'échéance)
+                          </span>
+                        </div>
+
+                        {/* Les 3 boutons d'action immédiate */}
+                        <div className="flex flex-wrap items-center gap-3 pt-2">
+                          <button
+                            onClick={() => {
+                              if (window.confirm("Confirmez-vous l'acceptation de la contre-proposition de Yann BARBERIS ? Vous pourrez ensuite procéder immédiatement à la signature du Mandat de Négociation Exclusive.")) {
+                                investorAcceptCounter(activeOffer.id);
+                                setSelectedMandateOffer(activeOffer);
+                                setDashboardNotice("Contre-proposition acceptée ! Vous pouvez signer le Mandat de Négociation Exclusive.");
+                              }
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Accepter la contre-proposition ({formatThousands(activeOffer.counterOffer?.amountEur)} €)</span>
+                          </button>
+
+                          <button
+                            onClick={() => handleOpenInvestorCounter(activeOffer)}
+                            className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                            <span>Faire une contre-proposition</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              const reason = window.prompt("Indiquez un motif pour votre refus (optionnel) :");
+                              if (reason !== null) {
+                                investorRejectCounter(activeOffer.id, reason);
+                                setDashboardNotice("Vous avez décliné la contre-proposition.");
+                              }
+                            }}
+                            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-300 transition-colors cursor-pointer"
+                          >
+                            Refuser
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Statut : Offre déposée en cours d'étude */}
+                    {activeOffer.status === 'submitted' && (
+                      <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 text-blue-900 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                          <span>Offre déposée avec succès. Votre proposition est en cours d'examen par Yann BARBERIS.</span>
+                        </div>
+                        <span className="font-bold text-[11px] bg-blue-100 px-2.5 py-1 rounded-md text-blue-800">
+                          En attente de retour
                         </span>
                       </div>
+                    )}
 
-                      <p className="text-xs text-slate-700 font-medium leading-relaxed">
-                        {activeOffer.counterOffer?.comments ||
-                          "« Nous acceptons le principe de votre échelonnement, mais compte tenu de la forte avancée foncière sur les 31 sites BESS (tous en PdB signée) et du passage au TURPE 7, notre prix de réserve est fixé à : »"}
-                      </p>
-
-                      <div className="text-2xl font-black text-[#0b192c]">
-                        {formatThousands(activeOffer.counterOffer?.amountEur || 6000000)} € HT{' '}
-                        <span className="text-xs font-medium text-slate-500">
-                          (avec réajustement des quotes-parts d'échéance)
+                    {/* Statut : Contre-proposition envoyée par l'investisseur */}
+                    {activeOffer.status === 'counter_by_investor' && (
+                      <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>
+                            Votre contre-proposition de {formatThousands(activeOffer.counterOffer?.amountEur || activeOffer.amountEur)} € a été transmise à Yann BARBERIS.
+                          </span>
+                        </div>
+                        <span className="font-bold text-[11px] bg-amber-100 px-2.5 py-1 rounded-md text-amber-800">
+                          En cours d'arbitrage
                         </span>
                       </div>
+                    )}
 
-                      {/* Les 3 boutons d'action immédiate */}
-                      <div className="flex flex-wrap items-center gap-3 pt-2">
+                    {/* Statut : Accord trouvé */}
+                    {(activeOffer.status === 'agreement_reached' || activeOffer.status === 'mandate_signed') && (
+                      <div className="p-4 rounded-2xl bg-emerald-50/80 border border-emerald-300 text-emerald-900 text-xs flex items-center justify-between">
+                        <div className="flex items-center gap-2.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>
+                            Accord transactionnel convenu à {formatThousands(activeOffer.amountEur)} € HT.
+                          </span>
+                        </div>
                         <button
-                          onClick={() => {
-                            if (window.confirm("Confirmez-vous l'acceptation de la contre-proposition de Yann BARBERIS ? Vous pourrez ensuite procéder immédiatement à la signature du Mandat de Négociation Exclusive.")) {
-                              investorAcceptCounter(activeOffer.id);
-                              setSelectedMandateOffer(activeOffer);
-                              setDashboardNotice("Contre-proposition acceptée ! Vous pouvez signer le Mandat de Négociation Exclusive.");
-                            }
-                          }}
-                          className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
+                          onClick={() => setSelectedMandateOffer(activeOffer)}
+                          className="font-bold text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl shadow-2xs transition cursor-pointer"
                         >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Accepter la contre-proposition ({formatThousands(activeOffer.counterOffer?.amountEur || 6000000)} €)</span>
-                        </button>
-
-                        <button
-                          onClick={() => handleOpenInvestorCounter(activeOffer)}
-                          className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow-xs transition-all active:scale-95 flex items-center gap-2 cursor-pointer"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                          <span>Faire une contre-proposition</span>
-                        </button>
-
-                        <button
-                          onClick={() => {
-                            const reason = window.prompt("Indiquez un motif pour votre refus (optionnel) :");
-                            if (reason !== null) {
-                              investorRejectCounter(activeOffer.id, reason);
-                              setDashboardNotice("Vous avez décliné la contre-proposition.");
-                            }
-                          }}
-                          className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 font-bold text-xs border border-slate-300 transition-colors cursor-pointer"
-                        >
-                          Refuser
+                          {activeOffer.status === 'mandate_signed' ? 'Consulter le Mandat Signé' : 'Signer le Mandat d\'Exclusivité'}
                         </button>
                       </div>
-                    </div>
+                    )}
+
+                    {/* Statut : Rejeté */}
+                    {activeOffer.status === 'rejected' && (
+                      <div className="p-4 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 text-xs">
+                        Cette proposition d'offre n'a pas été retenue ou a été déclinée. Vous pouvez formuler une nouvelle offre d'acquisition.
+                      </div>
+                    )}
                   </div>
                 ) : (
-                  <div className="py-12 text-center text-slate-500 text-xs bg-white rounded-3xl border border-slate-200">
-                    Vous n'avez pas encore déposé d'offre. Cliquez sur « Déposer une Offre » pour initier une négociation.
+                  <div className="py-16 px-6 text-center bg-white rounded-3xl border border-slate-200 shadow-sm space-y-4">
+                    <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                      <Coins className="w-7 h-7" />
+                    </div>
+                    <div className="max-w-md mx-auto">
+                      <h3 className="text-base font-black text-[#0b192c]">Aucune offre déposée pour le moment</h3>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Vous n'avez pas encore formulé d'offre d'acquisition sur les portefeuilles HÉLIOS ou VOLTA. Vous pouvez déposer une offre globale ou partielle avec échéancier de paiement personnalisé.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setOfferModalTargetPortfolio('both');
+                        setIsOfferModalOpen(true);
+                      }}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+                    >
+                      <Coins className="w-4 h-4" />
+                      <span>+ Déposer une Offre d'Acquisition</span>
+                    </button>
                   </div>
                 )}
               </div>

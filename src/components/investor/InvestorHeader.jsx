@@ -26,11 +26,28 @@ export default function InvestorHeader({
   onSwitchView = null,
 }) {
   const navigate = useNavigate();
-  const { currentInvestor, logout, investors, offers } = useInvestorStore();
+  const { currentInvestor, logout, investors, offers, notifications, markNotificationsAsRead } = useInvestorStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const pendingCount = investors.filter((i) => i && i.status === 'pending').length;
   const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
+
+  const userTarget = isAdmin ? 'admin' : (currentInvestor?.email || '').trim().toLowerCase();
+  const userNotifications = (notifications || []).filter((n) => {
+    if (isAdmin) {
+      return n.target === 'admin';
+    }
+    return n.target && n.target.toLowerCase() === userTarget;
+  });
+  const unreadCount = userNotifications.filter((n) => !n.read).length;
+
+  const handleToggleNotif = () => {
+    const nextState = !isNotifOpen;
+    setIsNotifOpen(nextState);
+    if (!isNotifOpen && unreadCount > 0) {
+      markNotificationsAsRead(isAdmin ? 'admin' : userTarget);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -51,7 +68,7 @@ export default function InvestorHeader({
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-8 py-3 shadow-xs transition-all duration-200 no-print">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
         
-        {/* Left Side: Official Logo & Security Badge */}
+        {/* Left Side: Official Logo */}
         <div className="flex items-center gap-4">
           {onToggleMobileMenu && (
             <button
@@ -74,52 +91,34 @@ export default function InvestorHeader({
           )}
 
           <EnrCourtageLogo onClick={() => navigate('/investisseurs/dashboard')} />
-
-          <span className="hidden xl:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Espace Transactionnel Sécurisé
-          </span>
         </div>
 
-        {/* Center: Navigation Switcher (Inspired by Kimi prototype) */}
-        <div className="hidden md:flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold shadow-inner">
-          <button
-            onClick={() => {
-              if (onSwitchView) onSwitchView('investor');
-              else navigate('/investisseurs/dashboard');
-            }}
-            className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-              activeView === 'investor'
-                ? 'bg-white text-[#0b192c] shadow-xs border border-slate-200/80 font-black'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <User className="w-3.5 h-3.5 text-blue-600" />
-            <span>Espace Investisseur</span>
-          </button>
-
-          {isAdmin && (
+        {/* Center: Navigation Switcher (Admin Only) */}
+        {isAdmin && (
+          <div className="hidden md:flex items-center">
             <button
               onClick={() => {
-                if (onSwitchView) onSwitchView('admin');
-                else if (onOpenAdmin) onOpenAdmin();
-                else navigate('/investisseurs/admin');
+                if (activeView === 'admin') {
+                  if (onSwitchView) onSwitchView('investor');
+                  else navigate('/investisseurs/dashboard');
+                } else {
+                  if (onSwitchView) onSwitchView('admin');
+                  else if (onOpenAdmin) onOpenAdmin();
+                  else navigate('/investisseurs/admin');
+                }
               }}
-              className={`px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeView === 'admin'
-                  ? 'bg-white text-purple-950 shadow-xs border border-slate-200/80 font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className="px-3.5 py-1.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-950 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
             >
               <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-              <span>Console Administrateur</span>
+              <span>{activeView === 'admin' ? 'Retour aux Portefeuilles' : 'Console Administrateur'}</span>
               {pendingCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">
                   {pendingCount}
                 </span>
               )}
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Right Side: Profile Card, Notification Bell & Logout */}
         <div className="flex items-center gap-3">
@@ -150,49 +149,74 @@ export default function InvestorHeader({
             </div>
           )}
 
-          {/* Notification Bell */}
+          {/* Dynamic Notification Bell */}
           <div className="relative">
             <button
-              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              onClick={handleToggleNotif}
               className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
-              title="Notifications M&A"
+              title={unreadCount > 0 ? `${unreadCount} notification(s) non lue(s)` : 'Notifications M&A'}
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full"></span>
+              {unreadCount > 0 && (
+                <>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                </>
+              )}
             </button>
 
             {/* Floating Notification Popover */}
             {isNotifOpen && (
-              <div className="absolute top-12 right-0 z-50 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 text-xs space-y-3">
+              <div className="absolute top-12 right-0 z-50 w-80 sm:w-96 bg-white border border-slate-200 rounded-2xl shadow-xl p-4 text-xs space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <span className="font-black text-slate-900 uppercase tracking-wider text-[11px]">
-                    Mises à jour M&A
-                  </span>
-                  <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded-full">
-                    Plateforme Active
+                  <div className="flex items-center gap-2">
+                    <Bell className="w-3.5 h-3.5 text-blue-600" />
+                    <span className="font-black text-slate-900 uppercase tracking-wider text-[11px]">
+                      Notifications M&A
+                    </span>
+                  </div>
+                  <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                    {userNotifications.length} reçue{userNotifications.length > 1 ? 's' : ''}
                   </span>
                 </div>
 
-                <div className="space-y-2">
-                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
-                    <span className="font-bold block text-xs">Portefeuilles Disponibles</span>
-                    <span className="text-slate-600 text-[11px]">
-                      HÉLIOS (9,12 MWc PV) & VOLTA (15,50 MW BESS) sont ouverts aux offres d'acquisition.
-                    </span>
-                  </div>
-
-                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900">
-                    <span className="font-bold block text-xs">Data Room Ouverte</span>
-                    <span className="text-slate-600 text-[11px]">
-                      12 documents complets (baux notariés, études techniques, modélisations) consultables sous NDA.
-                    </span>
-                  </div>
+                <div className="max-h-72 overflow-y-auto space-y-2 pr-0.5">
+                  {userNotifications.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-xs">
+                      Aucune nouvelle notification pour le moment.
+                    </div>
+                  ) : (
+                    userNotifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        className={`p-3 rounded-xl border text-xs transition-colors ${
+                          notif.type === 'offer' || notif.type === 'counter_offer'
+                            ? 'bg-amber-50/60 border-amber-200 text-amber-950'
+                            : notif.type === 'offer_accepted'
+                            ? 'bg-emerald-50/60 border-emerald-200 text-emerald-950'
+                            : 'bg-blue-50/50 border-blue-200 text-blue-950'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2 mb-1">
+                          <span className="font-bold text-xs leading-snug">{notif.title}</span>
+                          <span className="text-[10px] text-slate-400 shrink-0 font-mono">
+                            {notif.createdAt
+                              ? new Date(notif.createdAt).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : ''}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">{notif.message}</p>
+                      </div>
+                    ))
+                  )}
                 </div>
 
                 <button
                   onClick={() => setIsNotifOpen(false)}
-                  className="w-full py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition-colors"
+                  className="w-full py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[11px] font-bold text-slate-700 transition-colors cursor-pointer"
                 >
                   Fermer
                 </button>

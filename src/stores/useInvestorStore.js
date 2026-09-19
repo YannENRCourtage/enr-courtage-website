@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { INVESTORS, generateBilateralNdaText } from '@/data/investorData';
+import { formatThousands } from '@/utils/mnaUtils';
+
 
 // Immediately purge any legacy test sessions from browser localStorage
 if (typeof window !== 'undefined' && window.localStorage) {
@@ -99,6 +101,23 @@ export const useInvestorStore = create(
       // Tracking of document downloads by investor email
       userDownloads: {},
 
+      // Centralized M&A notifications (dynamic: message, proposal, counter-proposal)
+      notifications: [],
+
+      markNotificationsAsRead: (target) => {
+        set((state) => ({
+          notifications: (state.notifications || []).map((n) => {
+            if (target === 'admin' && n.target === 'admin') {
+              return { ...n, read: true };
+            }
+            if (target && n.target && n.target.toLowerCase() === target.toLowerCase()) {
+              return { ...n, read: true };
+            }
+            return n;
+          }),
+        }));
+      },
+
       // Centralized M&A messages between investors and Yann BARBERIS
       messages: [
         {
@@ -123,19 +142,43 @@ export const useInvestorStore = create(
 
       sendMessage: ({ text, from, authorName, authorCompany, investorEmail }) => {
         if (!text || !text.trim()) return;
-        set((state) => ({
-          messages: [
-            ...(state.messages || []),
-            {
-              id: 'msg-' + Date.now(),
-              from: from || 'investor',
-              authorName: authorName || 'Investisseur',
-              authorCompany: authorCompany || '',
+        const msg = {
+          id: 'msg-' + Date.now(),
+          from: from || 'investor',
+          authorName: authorName || 'Investisseur',
+          authorCompany: authorCompany || '',
+          investorEmail: investorEmail || '',
+          text: text.trim(),
+          createdAt: new Date().toISOString(),
+        };
+
+        const newNotif = from === 'investor'
+          ? {
+              id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+              target: 'admin',
+              type: 'message',
+              title: `Nouveau message de ${authorName || 'Investisseur'}`,
+              message: text.trim().length > 80 ? text.trim().substring(0, 80) + '...' : text.trim(),
               investorEmail: investorEmail || '',
-              text: text.trim(),
               createdAt: new Date().toISOString(),
-            },
-          ],
+              read: false,
+              linkTab: 'messages',
+            }
+          : {
+              id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+              target: investorEmail || '',
+              type: 'message',
+              title: 'Nouveau message de Yann BARBERIS (ENR COURTAGE)',
+              message: text.trim().length > 80 ? text.trim().substring(0, 80) + '...' : text.trim(),
+              investorEmail: investorEmail || '',
+              createdAt: new Date().toISOString(),
+              read: false,
+              linkTab: 'messages',
+            };
+
+        set((state) => ({
+          messages: [...(state.messages || []), msg],
+          notifications: [newNotif, ...(state.notifications || [])],
         }));
       },
 
@@ -840,8 +883,21 @@ y.barberis@enr-courtage.fr
           updatedAt: new Date().toISOString(),
         };
 
+        const notif = {
+          id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+          target: 'admin',
+          type: 'offer',
+          title: `Nouvelle offre reçue : ${current?.name || 'Investisseur'} (${current?.company || 'M&A'})`,
+          message: `Offre indicative de ${formatThousands(offerData.amountEur)} € déposée sur ${offerData.portfolioName || 'le portefeuille'}.`,
+          investorEmail: current?.email || '',
+          createdAt: new Date().toISOString(),
+          read: false,
+          linkTab: 'offers',
+        };
+
         set((state) => ({
           offers: [newOffer, ...state.offers],
+          notifications: [notif, ...(state.notifications || [])],
         }));
 
         return { success: true, offer: newOffer };
@@ -884,9 +940,11 @@ y.barberis@enr-courtage.fr
 
       // Admin Action: Accept investor offer directly
       adminAcceptOffer: (offerId) => {
-        set((state) => ({
-          offers: state.offers.map((off) => {
+        let acceptedOffer = null;
+        set((state) => {
+          const updatedOffers = state.offers.map((off) => {
             if (off.id !== offerId) return off;
+            acceptedOffer = off;
             return {
               ...off,
               status: 'agreement_reached',
@@ -904,15 +962,38 @@ y.barberis@enr-courtage.fr
                 },
               ],
             };
-          }),
-        }));
+          });
+
+          const notifs = acceptedOffer?.investorEmail
+            ? [
+                {
+                  id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                  target: acceptedOffer.investorEmail,
+                  type: 'offer_accepted',
+                  title: 'Offre acceptée par ENR COURTAGE !',
+                  message: `Votre offre de ${formatThousands(acceptedOffer.amountEur)} € a été acceptée par Yann BARBERIS. Prêt pour signature du Mandat d'Exclusivité.`,
+                  investorEmail: acceptedOffer.investorEmail,
+                  createdAt: new Date().toISOString(),
+                  read: false,
+                  linkTab: 'offers',
+                },
+              ]
+            : [];
+
+          return {
+            offers: updatedOffers,
+            notifications: [...notifs, ...(state.notifications || [])],
+          };
+        });
       },
 
       // Admin Action: Reject offer
       adminRejectOffer: (offerId, reason = '') => {
-        set((state) => ({
-          offers: state.offers.map((off) => {
+        let rejectedOffer = null;
+        set((state) => {
+          const updatedOffers = state.offers.map((off) => {
             if (off.id !== offerId) return off;
+            rejectedOffer = off;
             return {
               ...off,
               status: 'rejected',
@@ -929,15 +1010,38 @@ y.barberis@enr-courtage.fr
                 },
               ],
             };
-          }),
-        }));
+          });
+
+          const notifs = rejectedOffer?.investorEmail
+            ? [
+                {
+                  id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                  target: rejectedOffer.investorEmail,
+                  type: 'offer_rejected',
+                  title: 'Mise à jour concernant votre offre',
+                  message: reason || 'Votre offre n\'a pas été retenue par le Cédant.',
+                  investorEmail: rejectedOffer.investorEmail,
+                  createdAt: new Date().toISOString(),
+                  read: false,
+                  linkTab: 'offers',
+                },
+              ]
+            : [];
+
+          return {
+            offers: updatedOffers,
+            notifications: [...notifs, ...(state.notifications || [])],
+          };
+        });
       },
 
       // Admin Action: Send Counter-Proposal
       adminCounterOffer: (offerId, { counterAmountEur, counterMilestones, counterComments }) => {
-        set((state) => ({
-          offers: state.offers.map((off) => {
+        let targetedOffer = null;
+        set((state) => {
+          const updatedOffers = state.offers.map((off) => {
             if (off.id !== offerId) return off;
+            targetedOffer = off;
             return {
               ...off,
               status: 'counter_by_admin',
@@ -962,8 +1066,29 @@ y.barberis@enr-courtage.fr
                 },
               ],
             };
-          }),
-        }));
+          });
+
+          const notifs = targetedOffer?.investorEmail
+            ? [
+                {
+                  id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+                  target: targetedOffer.investorEmail,
+                  type: 'counter_offer',
+                  title: 'Contre-proposition reçue de Yann BARBERIS',
+                  message: `Nouvelle proposition de ${formatThousands(counterAmountEur)} € sur votre offre ${targetedOffer.portfolioName || ''}.`,
+                  investorEmail: targetedOffer.investorEmail,
+                  createdAt: new Date().toISOString(),
+                  read: false,
+                  linkTab: 'offers',
+                },
+              ]
+            : [];
+
+          return {
+            offers: updatedOffers,
+            notifications: [...notifs, ...(state.notifications || [])],
+          };
+        });
       },
 
       // Investor Action: Accept Admin Counter-Proposal
@@ -1020,9 +1145,11 @@ y.barberis@enr-courtage.fr
 
       // Investor Action: Send Counter-Proposal back to Admin
       investorCounterOffer: (offerId, { counterAmountEur, counterMilestones, counterComments }) => {
-        set((state) => ({
-          offers: state.offers.map((off) => {
+        let targetedOffer = null;
+        set((state) => {
+          const updatedOffers = state.offers.map((off) => {
             if (off.id !== offerId) return off;
+            targetedOffer = off;
             return {
               ...off,
               status: 'counter_by_investor',
@@ -1047,8 +1174,25 @@ y.barberis@enr-courtage.fr
                 },
               ],
             };
-          }),
-        }));
+          });
+
+          const notif = {
+            id: 'notif-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+            target: 'admin',
+            type: 'counter_offer',
+            title: `Contre-proposition reçue : ${targetedOffer?.investorName || 'Investisseur'} (${targetedOffer?.investorCompany || ''})`,
+            message: `Nouvelle proposition de ${formatThousands(counterAmountEur)} € sur ${targetedOffer?.portfolioName || 'le portefeuille'}.`,
+            investorEmail: targetedOffer?.investorEmail || '',
+            createdAt: new Date().toISOString(),
+            read: false,
+            linkTab: 'offers',
+          };
+
+          return {
+            offers: updatedOffers,
+            notifications: [notif, ...(state.notifications || [])],
+          };
+        });
       },
 
       // Sign Mandat de Négociation Exclusive
