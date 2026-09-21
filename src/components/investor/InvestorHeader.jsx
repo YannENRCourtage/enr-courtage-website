@@ -27,11 +27,45 @@ export default function InvestorHeader({
   onNavigateNotif = null,
 }) {
   const navigate = useNavigate();
-  const { currentInvestor, logout, investors, offers, notifications, markNotificationsAsRead } = useInvestorStore();
+  const { currentInvestor, logout, investors, offers, notifications, markNotificationsAsRead, messages } = useInvestorStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  const pendingCount = investors.filter((i) => i && i.status === 'pending').length;
   const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
+
+  // Dynamic count of unanswered messages
+  // For Admin: Count of unique investor conversations where the LAST message was sent by the investor
+  // For Investor: Count of messages sent by admin that are unread
+  const unansweredMessagesCount = React.useMemo(() => {
+    if (isAdmin) {
+      const messagesByInvestor = {};
+      (messages || []).forEach((m) => {
+        const email = (m.investorEmail || '').trim().toLowerCase();
+        if (!email) return;
+        if (!messagesByInvestor[email]) {
+          messagesByInvestor[email] = [];
+        }
+        messagesByInvestor[email].push(m);
+      });
+
+      let count = 0;
+      Object.entries(messagesByInvestor).forEach(([email, msgs]) => {
+        const sorted = [...msgs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        const lastMsg = sorted[sorted.length - 1];
+        if (lastMsg && lastMsg.from === 'investor') {
+          count++;
+        }
+      });
+      return count;
+    } else {
+      const myEmail = (currentInvestor?.email || '').trim().toLowerCase();
+      const myMessages = (messages || []).filter(
+        (m) => (m.investorEmail || '').trim().toLowerCase() === myEmail
+      );
+      const sorted = [...myMessages].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      const lastMsg = sorted[sorted.length - 1];
+      return lastMsg && lastMsg.from === 'admin' ? 1 : 0;
+    }
+  }, [messages, isAdmin, currentInvestor]);
 
   const userTarget = isAdmin ? 'admin' : (currentInvestor?.email || '').trim().toLowerCase();
   const userNotifications = (notifications || []).filter((n) => {
@@ -112,9 +146,9 @@ export default function InvestorHeader({
             >
               <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
               <span>{activeView === 'admin' ? 'Retour aux Portefeuilles' : 'Console Administrateur'}</span>
-              {pendingCount > 0 && (
+              {unansweredMessagesCount > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">
-                  {pendingCount}
+                  {unansweredMessagesCount}
                 </span>
               )}
             </button>

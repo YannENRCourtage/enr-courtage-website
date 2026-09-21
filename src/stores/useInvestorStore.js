@@ -1209,7 +1209,7 @@ y.barberis@enr-courtage.fr
       },
 
       // Sign Mandat de Négociation Exclusive
-      signMandate: (offerId, signatoryType) => {
+      signMandate: (offerId, signatoryType, customSignatoryData = {}) => {
         const now = new Date().toISOString();
         set((state) => ({
           offers: state.offers.map((off) => {
@@ -1225,11 +1225,18 @@ y.barberis@enr-courtage.fr
               ...mandate,
               investorSigned: signatoryType === 'investor' ? true : mandate.investorSigned,
               investorSignedAt: signatoryType === 'investor' ? now : mandate.investorSignedAt,
+              investorSignatoryName: customSignatoryData.signatoryName || mandate.investorSignatoryName || off.investorName,
+              investorSignatoryRole: customSignatoryData.signatoryRole || mandate.investorSignatoryRole || 'Directeur des Investissements',
+              investorSignatoryCompany: customSignatoryData.signatoryCompany || mandate.investorSignatoryCompany || off.investorCompany,
               adminSigned: signatoryType === 'admin' ? true : mandate.adminSigned,
               adminSignedAt: signatoryType === 'admin' ? now : mandate.adminSignedAt,
             };
 
             const bothSigned = updatedMandate.investorSigned && updatedMandate.adminSigned;
+
+            const signeeLabel = signatoryType === 'admin'
+              ? 'Yann BARBERIS (Président — ENR COURTAGE)'
+              : `${updatedMandate.investorSignatoryName} (${updatedMandate.investorSignatoryRole}, ${updatedMandate.investorSignatoryCompany})`;
 
             return {
               ...off,
@@ -1240,9 +1247,9 @@ y.barberis@enr-courtage.fr
                 ...(off.history || []),
                 {
                   type: 'mandate_signature',
-                  author: signatoryType === 'admin' ? 'Yann BARBERIS (ENR COURTAGE)' : off.investorName,
+                  author: signeeLabel,
                   authorRole: signatoryType,
-                  comments: `Signature électronique du Mandat de Négociation Exclusive validée par ${signatoryType === 'admin' ? 'ENR COURTAGE' : off.investorCompany}.`,
+                  comments: `Signature électronique certifiée du Mandat de Négociation Exclusive par ${signeeLabel}.`,
                   date: now,
                 },
               ],

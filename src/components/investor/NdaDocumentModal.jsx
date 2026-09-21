@@ -169,13 +169,9 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
               break-inside: avoid !important;
             }
             .nda-page-1 {
-              page-break-after: always !important;
-              break-after: page !important;
-              margin-bottom: 0 !important;
+              margin-bottom: 8px !important;
             }
             .nda-page-2 {
-              page-break-after: avoid !important;
-              break-after: avoid !important;
               margin-top: 0 !important;
             }
             .no-print {
@@ -318,7 +314,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
           {/* =============================================================== */}
           {/* FEUILLE / PAGE 1 DU CONTRAT                                     */}
           {/* =============================================================== */}
-          <div className="nda-page nda-page-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-5 print:break-after-page">
+          <div className="nda-page nda-page-1 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-5">
             {/* Header Officiel de Page 1 */}
             <div className="border-b-2 border-slate-900 pb-4 flex items-start justify-between">
               <div>
@@ -447,7 +443,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
           {/* =============================================================== */}
           {/* FEUILLE / PAGE 2 DU CONTRAT                                     */}
           {/* =============================================================== */}
-          <div className="nda-page nda-page-2 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-5 print:break-after-avoid">
+          <div className="nda-page nda-page-2 bg-white border border-slate-200 rounded-xl p-6 sm:p-8 shadow-sm space-y-5 relative print:border-none print:shadow-none print:p-5">
             {/* Header Officiel de Page 2 */}
             <div className="border-b border-slate-200 pb-3 flex items-center justify-between">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-500">
