@@ -527,36 +527,50 @@ export default function TeaserSitesTable({
           </tbody>
 
           {/* Footer Consolidated Totals */}
-          <tfoot className="border-t-2 border-slate-300 bg-slate-100 font-bold text-xs text-slate-900">
-            <tr>
-              <td className="py-3.5 px-3 text-center font-mono text-slate-400">-</td>
-              <td className="py-3.5 px-3 text-center font-mono text-slate-400">-</td>
-              <td className="py-3.5 px-4 font-black uppercase tracking-wider text-slate-900">
-                TOTAL CONSOLIDÉ ({allSitesCombined.length} SITES {isPv ? 'PV' : 'STANDARDISÉS'})
-              </td>
-              <td className="py-3.5 px-3 text-center text-slate-400">-</td>
-              <td className="py-3.5 px-4 text-slate-600 font-medium">
-                {isPv ? 'Exploitants contractualisés' : '31 Baux notariés signés'}
-              </td>
-              <td className="py-3.5 px-3 text-slate-800 font-mono">
-                {isPv ? '26 Neufs / 3 Toitures' : '31 Postes HTA'}
-              </td>
-              <td className="py-3.5 px-3 text-right font-mono text-slate-800">
-                {isPv ? '~52 000 m²' : '7,2 km moy.'}
-              </td>
-              <td className="py-3.5 px-3 text-right font-mono text-slate-800">
-                {isPv ? '4,45 M€ HT' : '50,1 k€ moy.'}
-              </td>
-              <td className="py-3.5 px-3 text-right font-mono font-black text-emerald-700 text-sm">
-                {isPv ? '9,12 MWc' : '1 718 578 €'}
-              </td>
-              <td className="py-3.5 px-3 text-center font-mono text-slate-800">
-                {isPv ? `${allSitesCombined.filter((s) => !currentSold.includes(s.id)).length} DISPONIBLES` : '4,6 ans'}
-              </td>
-              <td className="py-3.5 px-3 text-center text-emerald-600 font-bold">✓</td>
-              {isAdmin && <td className="py-3.5 px-3 text-center text-purple-700 font-bold bg-purple-50/50">Admin</td>}
-            </tr>
-          </tfoot>
+          {(() => {
+            const activeSites = allSitesCombined.filter((s) => !currentSold.includes(s.id));
+            const activeKwc = activeSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+            const activeKw = activeSites.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
+            const activePvCost = activeSites.reduce((sum, s) => sum + (Number(s.cost) || 0), 0);
+            const activePvSurface = activeSites.reduce((sum, s) => sum + Math.round((Number(s.kwc) || 315) * 5.8), 0);
+            const neufsCount = activeSites.filter((s) => s.type === 'Construction').length;
+            const toitCount = activeSites.filter((s) => s.type === 'Toitures').length;
+            const powerRatio = allSitesCombined.length > 0 ? (activeSites.length / allSitesCombined.length) : 1;
+            const activeBessEbitda = Math.round(1718578 * powerRatio);
+
+            return (
+              <tfoot className="border-t-2 border-slate-300 bg-slate-100 font-bold text-xs text-slate-900">
+                <tr>
+                  <td className="py-3.5 px-3 text-center font-mono text-slate-400">-</td>
+                  <td className="py-3.5 px-3 text-center font-mono text-slate-400">-</td>
+                  <td className="py-3.5 px-4 font-black uppercase tracking-wider text-slate-900">
+                    TOTAL DISPONIBLE ({activeSites.length} / {allSitesCombined.length} SITES)
+                  </td>
+                  <td className="py-3.5 px-3 text-center text-slate-400">-</td>
+                  <td className="py-3.5 px-4 text-slate-600 font-medium">
+                    {isPv ? `${activeSites.length} exploitants sécurisés` : `${activeSites.length} baux notariés signés`}
+                  </td>
+                  <td className="py-3.5 px-3 text-slate-800 font-mono">
+                    {isPv ? `${neufsCount} Neufs / ${toitCount} Toitures` : `${activeSites.length} Postes HTA`}
+                  </td>
+                  <td className="py-3.5 px-3 text-right font-mono text-slate-800">
+                    {isPv ? `~${new Intl.NumberFormat('fr-FR').format(activePvSurface)} m²` : '7,2 km moy.'}
+                  </td>
+                  <td className="py-3.5 px-3 text-right font-mono text-slate-800">
+                    {isPv ? `${(activePvCost / 1000000).toFixed(2).replace('.', ',')} M€ HT` : '50,1 k€ moy.'}
+                  </td>
+                  <td className="py-3.5 px-3 text-right font-mono font-black text-emerald-700 text-sm">
+                    {isPv ? `${(activeKwc / 1000).toFixed(2).replace('.', ',')} MWc` : `${new Intl.NumberFormat('fr-FR').format(activeBessEbitda)} €`}
+                  </td>
+                  <td className="py-3.5 px-3 text-center font-mono text-slate-800">
+                    {isPv ? `${activeSites.length} DISPONIBLES` : '4,6 ans'}
+                  </td>
+                  <td className="py-3.5 px-3 text-center text-emerald-600 font-bold">✓</td>
+                  {isAdmin && <td className="py-3.5 px-3 text-center text-purple-700 font-bold bg-purple-50/50">Admin</td>}
+                </tr>
+              </tfoot>
+            );
+          })()}
         </table>
       </div>
 

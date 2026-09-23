@@ -60,6 +60,8 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     userDownloads,
   } = useInvestorStore();
 
+  const isAdmin = !!(currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr');
+
   // Active view: 'investor' or 'admin' (Admin defaults to 'admin' console)
   const [activeView, setActiveView] = useState(() => {
     if (defaultToAdmin || adminParam === 'true') return 'admin';
@@ -72,7 +74,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     if (isAdmin && !defaultToAdmin && !adminParam) {
       setActiveView('admin');
     }
-  }, [isAdmin]);
+  }, [isAdmin, defaultToAdmin, adminParam]);
   // Investor sub-tab: 'portfolios' | 'offers' | 'dataroom' | 'messages'
   const [investorSubTab, setInvestorSubTab] = useState(() => {
     if (typeof window !== 'undefined') {

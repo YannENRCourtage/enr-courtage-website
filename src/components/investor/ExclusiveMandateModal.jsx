@@ -16,11 +16,11 @@ export default function ExclusiveMandateModal({
   isOpen,
   onClose,
 }) {
-  const { currentInvestor, signMandate, isAdmin } = useInvestorStore();
+  const { currentInvestor, signMandate } = useInvestorStore();
 
   if (!isOpen || !offer) return null;
 
-  const userIsAdmin = isAdmin();
+  const userIsAdmin = !!(currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr');
   const mandateState = offer.mandate || {
     investorSigned: false,
     investorSignedAt: null,

@@ -82,7 +82,7 @@ const fmtEur = (v) => {
 export default function PortfolioDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentInvestor } = useInvestorStore();
+  const { currentInvestor, soldSites, deletedSites, customSites } = useInvestorStore();
 
   const portfolio = useMemo(() => investorService.getPortfolioById(id), [id]);
 
@@ -92,24 +92,103 @@ export default function PortfolioDetailPage() {
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
-  if (!portfolio) {
-    return (
-      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-4">
-        <h2 className="text-2xl font-black text-[#0b192c]">Portefeuille introuvable</h2>
-        <button
-          onClick={() => navigate('/investisseurs/dashboard')}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
-        >
-          Retour au tableau de bord
-        </button>
-      </div>
-    );
-  }
+  const isPv = portfolio?.type === 'PV';
+  const portfolioKey = isPv ? 'helios' : 'volta';
+  const teaser = portfolio?.teaserData || {};
 
-  const isPv = portfolio.type === 'PV';
-  const teaser = portfolio.teaserData || {};
-  const displaySitesCount = portfolio.sites.length;
-  const displayPower = portfolio.kpis.totalPower;
+  const currentSold = soldSites?.[portfolioKey] || [];
+  const currentDeleted = deletedSites?.[portfolioKey] || [];
+  const currentCustom = customSites?.[portfolioKey] || [];
+
+  // All combined sites (excluding deleted ones)
+  const allSitesCombined = useMemo(() => {
+    if (!portfolio) return [];
+    return [...(portfolio.sites || []), ...currentCustom].filter((s) => !currentDeleted.includes(s.id));
+  }, [portfolio, currentCustom, currentDeleted]);
+
+  // Active available sites (excluding sold ones)
+  const activeAvailableSites = useMemo(() => {
+    return allSitesCombined.filter((s) => !currentSold.includes(s.id));
+  }, [allSitesCombined, currentSold]);
+
+  const displaySitesCount = activeAvailableSites.length;
+
+  // Total power and ratio
+  const { displayPower, displayPowerSub, powerRatio } = useMemo(() => {
+    if (isPv) {
+      const basePowerKwc = 9120; // 9.12 MWc
+      const activePowerKwc = activeAvailableSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+      const ratio = basePowerKwc > 0 ? (activePowerKwc / basePowerKwc) : 1;
+      const formatted = `${(activePowerKwc / 1000).toFixed(2).replace('.', ',')} MWc`;
+      const sub = `(${activeAvailableSites.length} site${activeAvailableSites.length > 1 ? 's' : ''} au total)`;
+      return { displayPower: formatted, displayPowerSub: sub, powerRatio: ratio };
+    } else {
+      const basePowerKw = 15500; // 15.50 MW
+      const activePowerKw = activeAvailableSites.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
+      const ratio = basePowerKw > 0 ? (activePowerKw / basePowerKw) : 1;
+      const formatted = `${(activePowerKw / 1000).toFixed(2).replace('.', ',')} MW`;
+      const sub = `${activeAvailableSites.length} site${activeAvailableSites.length > 1 ? 's' : ''} de 500 kW`;
+      return { displayPower: formatted, displayPowerSub: sub, powerRatio: ratio };
+    }
+  }, [isPv, activeAvailableSites]);
+
+  // Dynamic Financial KPIs
+  const dynamicFinancialKpis = useMemo(() => {
+    if (!teaser.financialKpis) return [];
+    if (isPv) {
+      return [
+        { label: 'TRI PROJET', value: '12,8%', sub: 'Levier bancaire 80/20', detail: "Appel d'Offres Simplifié (AOS)", color: 'amber' },
+        { label: 'PAYBACK', value: '7,2 ans', sub: 'Après service de dette', detail: 'Amortissement accéléré CAPEX', color: 'emerald' },
+        { label: 'PRODUCTIBLE', value: '1 280 kWh/kWc', sub: 'Irradiation Sud-Ouest', detail: 'Données Météo France P50', color: 'white' },
+        { label: 'CA ANNUEL', value: fmtEur(1142000 * powerRatio), sub: 'Tarif AOS ~0,082 €/kWh', detail: "Appel d'Offres Simplifié", color: 'white' },
+        { label: 'MARGE NETTE', value: '>58%', sub: 'OPEX < 15 €/MWc/an', detail: 'Maintenance incluse forfait', color: 'emerald' },
+        { label: 'VALEUR TOTALE', value: fmtEur(4820000 * powerRatio), sub: 'Valorisation du périmètre', detail: `Droits de développement ${displaySitesCount} sites`, color: 'amber' },
+      ];
+    } else {
+      return [
+        { label: 'TRI / EQUITY', value: '20,5%', sub: '>17% min de marché', detail: 'SRI Bancabilité élevée', color: 'cyan' },
+        { label: 'PAYBACK NET', value: '4,6 ans', sub: 'Seuil < 5 ans', detail: 'Retour sur investissement court-moyen', color: 'emerald' },
+        { label: 'EBITDA NET / AN', value: fmtEur(1720000 * powerRatio), sub: 'Marge net >61%', detail: 'Résultat après loyer & maintenance', color: 'white' },
+        { label: 'BANCABILITÉ DSCR', value: '2,34x', sub: 'Classement favorable', detail: 'Ratio couverture dette > 1.5x requis', color: 'white' },
+        { label: 'GAIN TURPE7', value: `+${fmtEur(439073 * powerRatio)}`, sub: 'Délibéré CRE 2025-227', detail: 'Facturation réseau réduit de ~50%', color: 'emerald' },
+        { label: 'CASH CYCLE CLAIR', value: fmtEur(7230000 * powerRatio), sub: 'Estimation CA brut / an', detail: `Consolidé ${displaySitesCount} stations BESS`, color: 'cyan' },
+      ];
+    }
+  }, [teaser.financialKpis, isPv, powerRatio, displaySitesCount]);
+
+  // Dynamic Revenue Architecture
+  const dynamicRevenueArchitecture = useMemo(() => {
+    if (isPv) {
+      const caVal = Math.round(1142000 * powerRatio);
+      return {
+        total: fmtEur(caVal),
+        totalLabel: "CA annuel prévisionnel (Hypothèse AOS ~0,082 €/kWh)",
+        sources: [
+          {
+            name: "Appels d'Offres Simplifiés (Hypothèse AOS ~0,082 €/kWh)",
+            value: `${new Intl.NumberFormat('fr-FR').format(caVal)} €`,
+            pct: '100%',
+            color: '#f59e0b',
+          },
+        ],
+      };
+    } else {
+      const totalCa = Math.round(2860000 * powerRatio);
+      const fcrVal = Math.round(2076882 * powerRatio);
+      const spotVal = Math.round(504780 * powerRatio);
+      const mdcVal = Math.round(271253 * powerRatio);
+      return {
+        total: fmtEur(totalCa),
+        totalLabel: 'CA annuel brut consolidé / an',
+        cycleLabel: '2,85% de stockage net/cycle',
+        sources: [
+          { name: 'Réserve Primaire en Fréq (FCR) & PICASSO', value: `${new Intl.NumberFormat('fr-FR').format(fcrVal)} €`, pct: '72%', color: '#06b6d4' },
+          { name: 'Arbitrage SPOT (Day-Ahead & Intraday)', value: `${new Intl.NumberFormat('fr-FR').format(spotVal)} €`, pct: '18%', color: '#22d3ee' },
+          { name: 'Marché de Capacité 41% PP2 (14kw)', value: `${new Intl.NumberFormat('fr-FR').format(mdcVal)} €`, pct: '10%', color: '#67e8f9' },
+        ],
+      };
+    }
+  }, [isPv, powerRatio]);
 
   // Selection handlers
   const handleToggleSiteSelect = (siteId) => {
@@ -121,13 +200,65 @@ export default function PortfolioDetailPage() {
   const handleClearSelection = () => setSelectedSiteIds([]);
 
   // Prepare donut chart data
-  const donutData = (teaser.revenueArchitecture?.sources || []).map((s) => ({
-    name: s.name,
-    value: parseFloat(s.value.replace(/[^\d]/g, '')),
-    fill: s.color,
-    displayValue: s.value,
-    pct: s.pct,
-  }));
+  const donutData = useMemo(() => {
+    return (dynamicRevenueArchitecture?.sources || []).map((s) => ({
+      name: s.name,
+      value: parseFloat(s.value.replace(/[^\d]/g, '')) || 1,
+      fill: s.color,
+      displayValue: s.value,
+      pct: s.pct,
+    }));
+  }, [dynamicRevenueArchitecture]);
+
+  // Dynamic TURPE 7 Comparison (BESS)
+  const dynamicTurpeComparison = useMemo(() => {
+    if (isPv || !teaser.turpeComparison) return null;
+    const gainConsol = Math.round(439073 * powerRatio);
+    const oldTot = Math.round(697586 * powerRatio);
+    const newTot = Math.round(257627 * powerRatio);
+    return {
+      rows: [
+        { component: 'Composante Soutirage brut (CS)', oldRegime: "Même si sur 10,7% de l'énergie chargée", newRegime: 'Exonération totale sur 80% et spécial', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(241986 * powerRatio))} € / an` },
+        { component: 'Composante Prix de Puissance (CS Pss)', oldRegime: 'Tarification longue durée analogie', newRegime: 'HTN+Courrier du batteur (15,20 €/MWh)', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(60219 * powerRatio))} € / an` },
+        { component: 'Pertes Réseau Non Récupérables', oldRegime: 'Double taxation si même maille régional', newRegime: 'Strictement limitée au 1,5% des pertes', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(89571 * powerRatio))} € / an` },
+        { component: 'Composante Gestion & Comptage (CG/CC)', oldRegime: 'Forfaits conventionnels', newRegime: 'Comptage + quadrants inté-relevé directe (0,14 €/an)', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(49297 * powerRatio))} € / an` },
+      ],
+      total: {
+        label: 'TOTAL FACTURE ANNUELLE RÉSEAU',
+        oldTotal: `${new Intl.NumberFormat('fr-FR').format(oldTot)} € / an`,
+        newTotal: `${new Intl.NumberFormat('fr-FR').format(newTot)} € / an (-63%)`,
+        gain: `+${new Intl.NumberFormat('fr-FR').format(gainConsol)} € / an`,
+      },
+      consolidatedGain: `Gain Consolidé : +${new Intl.NumberFormat('fr-FR').format(gainConsol)} € / an net`,
+    };
+  }, [isPv, teaser.turpeComparison, powerRatio]);
+
+  // Dynamic Financial Projection (20 years)
+  const dynamicFinancialProjection = useMemo(() => {
+    return (teaser.financialProjection || []).map((row) => ({
+      year: row.year,
+      ca: Math.round(row.ca * powerRatio),
+      ebitda: Math.round(row.ebitda * powerRatio),
+      cashflow: Math.round(row.cashflow * powerRatio),
+    }));
+  }, [teaser.financialProjection, powerRatio]);
+
+  // Dynamic Cumulative KPIs
+  const dynamicCumulativeKpis = useMemo(() => {
+    if (isPv) {
+      return [
+        { label: 'CA CUMULÉ 20 ANS', value: fmtEur(25800000 * powerRatio), sub: 'Hypothèse AOS = 0.082 €/kWh' },
+        { label: 'EBITDA NET CUMULÉ 20 ANS', value: fmtEur(15430000 * powerRatio), sub: 'Marge opérationnelle > 58%' },
+        { label: 'CASH-FLOW NET POST-DETTES 20 ANS', value: fmtEur(10380000 * powerRatio), sub: 'Après service de dette bancaire 80/20' },
+      ];
+    } else {
+      return [
+        { label: 'CA CUMULÉ 20 ANS', value: fmtEur(67040000 * powerRatio), sub: 'Croissance tendancielle à +3.0%' },
+        { label: 'EBITDA NET CUMULÉ 20 ANS', value: fmtEur(40970000 * powerRatio), sub: 'Marge opérationnelle > 60% bottom line' },
+        { label: 'CASH-FLOW NET POST-DETTES 20 ANS', value: fmtEur(27950000 * powerRatio), sub: 'En réinvestissement fict. D.Net sur horizon 2037+' },
+      ];
+    }
+  }, [isPv, powerRatio]);
 
   // Differentiated borders and backgrounds for KPI cards
   const kpiCardStyles = [
@@ -146,6 +277,20 @@ export default function PortfolioDetailPage() {
     { border: 'border-2 border-amber-200 hover:border-amber-400', iconBg: 'bg-amber-100 text-amber-700', bullet: 'bg-amber-600', tag: 'text-amber-700 bg-amber-50 border-amber-200' },
     { border: 'border-2 border-indigo-200 hover:border-indigo-400', iconBg: 'bg-indigo-100 text-indigo-700', bullet: 'bg-indigo-600', tag: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
   ];
+
+  if (!portfolio) {
+    return (
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-4">
+        <h2 className="text-2xl font-black text-[#0b192c]">Portefeuille introuvable</h2>
+        <button
+          onClick={() => navigate('/investisseurs/dashboard')}
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
+        >
+          Retour au tableau de bord
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-blue-600 selection:text-white">
@@ -227,7 +372,7 @@ export default function PortfolioDetailPage() {
                       {displayPower}
                     </div>
                     <div className="text-xs text-white/90 font-medium mt-1">
-                      {portfolio.kpis.totalPowerSub}
+                      {displayPowerSub}
                     </div>
                   </div>
 
@@ -261,7 +406,7 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 2 — KPIs FINANCIERS                                   */}
           {/* ============================================================= */}
-          {teaser.financialKpis && (
+          {dynamicFinancialKpis && dynamicFinancialKpis.length > 0 && (
             <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
@@ -280,7 +425,7 @@ export default function PortfolioDetailPage() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-                  {teaser.financialKpis.map((kpi, idx) => {
+                  {dynamicFinancialKpis.map((kpi, idx) => {
                     const style = kpiCardStyles[idx % kpiCardStyles.length];
                     return (
                       <div
@@ -358,7 +503,7 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 4 — ARCHITECTURE DES REVENUS + STATION SPECS          */}
           {/* ============================================================= */}
-          {teaser.revenueArchitecture && (
+          {dynamicRevenueArchitecture && (
             <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left: Revenue Donut */}
@@ -368,11 +513,11 @@ export default function PortfolioDetailPage() {
                       ARCHITECTURE DES REVENUS
                     </div>
                     <h3 className="text-lg font-black text-[#0b192c] mt-1">
-                      {!isPv ? `Value Stacking à 2 Cycles Quotidiens (${teaser.revenueArchitecture.total} / an)` : (<>Revenus Sécurisés par Appel d'Offres Simplifié<br /><span className="text-blue-700">({teaser.revenueArchitecture.total} / an)</span></>)}
+                      {!isPv ? `Value Stacking à 2 Cycles Quotidiens (${dynamicRevenueArchitecture.total} / an)` : (<>Revenus Sécurisés par Appel d'Offres Simplifié<br /><span className="text-blue-700">({dynamicRevenueArchitecture.total} / an)</span></>)}
                     </h3>
-                    {teaser.revenueArchitecture.cycleLabel && (
+                    {dynamicRevenueArchitecture.cycleLabel && (
                       <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold mt-1.5 inline-block">
-                        {teaser.revenueArchitecture.cycleLabel}
+                        {dynamicRevenueArchitecture.cycleLabel}
                       </span>
                     )}
                   </div>
@@ -400,13 +545,13 @@ export default function PortfolioDetailPage() {
                       </ResponsiveContainer>
                       <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                         <div className="text-[10px] text-slate-500 uppercase font-black">CA Total / an</div>
-                        <div className="text-xl font-black text-blue-700">{teaser.revenueArchitecture.total}</div>
+                        <div className="text-xl font-black text-blue-700">{dynamicRevenueArchitecture.total}</div>
                       </div>
                     </div>
 
                     {/* Revenue Sources */}
                     <div className="flex-1 space-y-4 w-full">
-                      {teaser.revenueArchitecture.sources.map((src, i) => (
+                      {dynamicRevenueArchitecture.sources.map((src, i) => (
                         <div key={i} className="flex items-start gap-3">
                           <span className="w-3 h-3 rounded-full shrink-0 mt-1 shadow-2xs" style={{ backgroundColor: src.color }} />
                           <div className="flex-1 min-w-0">
@@ -507,8 +652,8 @@ export default function PortfolioDetailPage() {
 
               <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white p-2">
                 <InteractiveMap
-                  pvSites={isPv ? portfolio.sites : []}
-                  bessSites={!isPv ? portfolio.sites : []}
+                  pvSites={isPv ? allSitesCombined : []}
+                  bessSites={!isPv ? allSitesCombined : []}
                   darkTheme={false}
                 />
               </div>
@@ -535,7 +680,7 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 7 — COMPARATIF TURPE (BESS ONLY)                     */}
           {/* ============================================================= */}
-          {!isPv && teaser.turpeComparison && (
+          {!isPv && dynamicTurpeComparison && (
             <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-4">
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
@@ -549,7 +694,7 @@ export default function PortfolioDetailPage() {
                       </h3>
                     </div>
                     <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black shadow-2xs">
-                      {teaser.turpeComparison.consolidatedGain}
+                      {dynamicTurpeComparison.consolidatedGain}
                     </div>
                   </div>
 
@@ -566,7 +711,7 @@ export default function PortfolioDetailPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {teaser.turpeComparison.rows.map((row, i) => (
+                        {dynamicTurpeComparison.rows.map((row, i) => (
                           <tr key={i} className="hover:bg-slate-50 transition">
                             <td className="py-3 px-4 text-slate-900 font-bold">{row.component}</td>
                             <td className="py-3 px-4 text-slate-500 font-medium">{row.oldRegime}</td>
@@ -577,12 +722,12 @@ export default function PortfolioDetailPage() {
                       </tbody>
                       <tfoot className="border-t-2 border-slate-300 bg-slate-100 font-bold text-slate-900">
                         <tr>
-                          <td className="py-3.5 px-4 font-black uppercase tracking-wider">{teaser.turpeComparison.total.label}</td>
-                          <td className="py-3.5 px-4 text-rose-700 font-mono font-bold">{teaser.turpeComparison.total.oldTotal}</td>
-                          <td className="py-3.5 px-4 text-emerald-800 font-mono font-bold">{teaser.turpeComparison.total.newTotal}</td>
+                          <td className="py-3.5 px-4 font-black uppercase tracking-wider">{dynamicTurpeComparison.total.label}</td>
+                          <td className="py-3.5 px-4 text-rose-700 font-mono font-bold">{dynamicTurpeComparison.total.oldTotal}</td>
+                          <td className="py-3.5 px-4 text-emerald-800 font-mono font-bold">{dynamicTurpeComparison.total.newTotal}</td>
                           <td className="py-3.5 px-4 text-right">
                             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-black text-xs border border-emerald-200">
-                              {teaser.turpeComparison.total.gain}
+                              {dynamicTurpeComparison.total.gain}
                             </span>
                           </td>
                         </tr>
@@ -597,7 +742,7 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 8 — TRAJECTOIRE FINANCIÈRE 15 ANS                     */}
           {/* ============================================================= */}
-          {teaser.financialProjection && teaser.financialProjection.length > 0 && (
+          {dynamicFinancialProjection && dynamicFinancialProjection.length > 0 && (
             <section className="bg-white px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-6">
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
@@ -613,7 +758,7 @@ export default function PortfolioDetailPage() {
 
                   <div className="h-[350px] w-full pt-4">
                     <ResponsiveContainer width="100%" height="100%">
-                      <ComposedChart data={teaser.financialProjection} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                      <ComposedChart data={dynamicFinancialProjection} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
                           dataKey="year"
@@ -669,9 +814,9 @@ export default function PortfolioDetailPage() {
                 </div>
 
                 {/* Cumulative KPIs */}
-                {teaser.cumulativeKpis && (
+                {dynamicCumulativeKpis && dynamicCumulativeKpis.length > 0 && (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {teaser.cumulativeKpis.map((kpi, i) => (
+                    {dynamicCumulativeKpis.map((kpi, i) => (
                       <div
                         key={i}
                         className="bg-slate-50 border border-slate-200 rounded-3xl p-5 text-center space-y-1 shadow-2xs"

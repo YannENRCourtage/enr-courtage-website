@@ -5,14 +5,61 @@ import { useInvestorStore } from '@/stores/useInvestorStore';
 
 export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
   const navigate = useNavigate();
+  const { soldSites, deletedSites, customSites } = useInvestorStore();
 
   const isPv = portfolio.type === 'PV';
-  const isHelios = portfolio.id === 'helios';
+  const portfolioKey = isPv ? 'helios' : 'volta';
   const IconComponent = isPv ? Sun : Battery;
 
-  const displayPower = portfolio.kpis.totalPower;
-  const displayPowerSub = portfolio.kpis.totalPowerSub;
-  const displaySitesCount = portfolio.sites.length;
+  const currentSold = soldSites?.[portfolioKey] || [];
+  const currentDeleted = deletedSites?.[portfolioKey] || [];
+  const currentCustom = customSites?.[portfolioKey] || [];
+
+  const allSitesCombined = React.useMemo(() => {
+    return [...(portfolio.sites || []), ...currentCustom].filter((s) => !currentDeleted.includes(s.id));
+  }, [portfolio.sites, currentCustom, currentDeleted]);
+
+  const activeSites = React.useMemo(() => {
+    return allSitesCombined.filter((s) => !currentSold.includes(s.id));
+  }, [allSitesCombined, currentSold]);
+
+  const displaySitesCount = activeSites.length;
+
+  const displayPower = React.useMemo(() => {
+    if (isPv) {
+      const totalKwc = activeSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+      return `${(totalKwc / 1000).toFixed(2).replace('.', ',')} MWc`;
+    } else {
+      const totalKw = activeSites.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
+      return `${(totalKw / 1000).toFixed(2).replace('.', ',')} MW`;
+    }
+  }, [isPv, activeSites]);
+
+  const displayPowerSub = isPv
+    ? `(${activeSites.length} site${activeSites.length > 1 ? 's' : ''} au total)`
+    : `${activeSites.length} site${activeSites.length > 1 ? 's' : ''} de 500 kW`;
+
+  // Dynamic PV metrics
+  const pvConstrSites = activeSites.filter((s) => s.type === 'Construction');
+  const pvConstrPower = pvConstrSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+  const pvToitSites = activeSites.filter((s) => s.type === 'Toitures');
+  const pvToitPower = pvToitSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+
+  const dynamicMetric1 = isPv
+    ? {
+        label: 'Bâtiments Neufs',
+        value: `${(pvConstrPower / 1000).toFixed(2).replace('.', ',')} MWc`,
+        sub: `${pvConstrSites.length} projet${pvConstrSites.length > 1 ? 's' : ''} neuf${pvConstrSites.length > 1 ? 's' : ''}`,
+      }
+    : portfolio.kpis.metric1;
+
+  const dynamicMetric2 = isPv
+    ? {
+        label: 'Toitures Existantes',
+        value: `${(pvToitPower / 1000).toFixed(2).replace('.', ',')} MWc`,
+        sub: `${pvToitSites.length} rénovation${pvToitSites.length > 1 ? 's' : ''}`,
+      }
+    : portfolio.kpis.metric2;
 
   const accentColor = isPv
     ? {
@@ -79,14 +126,14 @@ export default function PortfolioCard({ portfolio, onOpenDataRoom }) {
             <div className="text-[10px] text-slate-500 font-medium">{displayPowerSub}</div>
           </div>
           <div className="text-center border-x border-slate-200">
-            <div className="text-[11px] text-slate-500 uppercase font-semibold">{portfolio.kpis.metric1.label}</div>
-            <div className="text-xl font-black text-slate-900">{portfolio.kpis.metric1.value}</div>
-            <div className="text-[10px] text-slate-500">{portfolio.kpis.metric1.sub}</div>
+            <div className="text-[11px] text-slate-500 uppercase font-semibold">{dynamicMetric1.label}</div>
+            <div className="text-xl font-black text-slate-900">{dynamicMetric1.value}</div>
+            <div className="text-[10px] text-slate-500">{dynamicMetric1.sub}</div>
           </div>
           <div className="text-center">
-            <div className="text-[11px] text-slate-500 uppercase font-semibold">{portfolio.kpis.metric2.label}</div>
-            <div className="text-xl font-black text-emerald-700">{portfolio.kpis.metric2.value}</div>
-            <div className="text-[10px] text-slate-500">{portfolio.kpis.metric2.sub}</div>
+            <div className="text-[11px] text-slate-500 uppercase font-semibold">{dynamicMetric2.label}</div>
+            <div className="text-xl font-black text-emerald-700">{dynamicMetric2.value}</div>
+            <div className="text-[10px] text-slate-500">{dynamicMetric2.sub}</div>
           </div>
         </div>
 
