@@ -35,7 +35,7 @@ export default function InvestorSidebar({
   const { currentInvestor, logout, offers, investors } = useInvestorStore();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   const pendingCount = investors.filter((i) => i.status === 'pending').length;
 
   const myOffers = offers.filter(

@@ -59,7 +59,7 @@ export default function SiteTable({
     documentSiteAssignments,
   }), [customDataRoom, deletedDefaultDocs, documentSiteAssignments]);
 
-  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email?.includes('barberis') || currentInvestor?.email === 'yann.barberis@enr-courtage.fr';
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   const portfolioKey = (type === 'BESS' || String(portfolioId || '').toLowerCase().includes('volta')) ? 'volta' : 'helios';
   const currentDeleted = deletedSites?.[portfolioKey] || [];
   const currentSold = soldSites?.[portfolioKey] || [];

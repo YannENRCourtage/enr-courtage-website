@@ -39,8 +39,12 @@ import ErrorBoundary from './ErrorBoundary';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 import InvestorSidebar from './InvestorSidebar';
 import InvestorContactModal from './InvestorContactModal';
+import { useInactivityTimeout } from '@/hooks/useInactivityTimeout';
 
 export default function InvestorDashboard({ defaultToAdmin = false }) {
+  // Déconnexion automatique après 60 minutes d'inactivité
+  useInactivityTimeout();
+
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const adminParam = searchParams.get('admin');
@@ -60,12 +64,12 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     userDownloads,
   } = useInvestorStore();
 
-  const isAdmin = !!(currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr');
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
 
   // Active view: 'investor' or 'admin' (Admin defaults to 'admin' console)
   const [activeView, setActiveView] = useState(() => {
     if (defaultToAdmin || adminParam === 'true') return 'admin';
-    if (currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr') return 'admin';
+    if (currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr') return 'admin';
     return 'investor';
   });
 
@@ -377,7 +381,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     </div>
 
                     <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                      Projet HÉLIOS — 9,12 MWc
+                      Projets HÉLIOS — 9,12 MWc
                     </h3>
                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
                       Grappe de 29 projets solaires toitures et hangars neufs/rénovations situés dans le Sud-Ouest (Gers, Dordogne, Gironde, Landes).
@@ -428,7 +432,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                   <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                     <button
                       onClick={() => navigate('/investisseurs/portefeuille/helios')}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                     >
                       <span>Accès Portefeuille</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -464,7 +468,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     </div>
 
                     <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                      Projet VOLTA — 15,50 MW / 32,36 MWh
+                      Projets VOLTA — 15,50 MW / 32,36 MWh
                     </h3>
                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
                       Portefeuille homogène de 31 unités de 500 kW / 1 044 kWh (matériel CESC Mercury 261). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, Capacité RTE).
@@ -515,7 +519,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                   <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                     <button
                       onClick={() => navigate('/investisseurs/portefeuille/volta')}
-                      className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                     >
                       <span>Accès Portefeuille</span>
                       <ArrowRight className="w-3.5 h-3.5" />

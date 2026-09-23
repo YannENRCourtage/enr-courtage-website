@@ -34,7 +34,7 @@ export default function InvestorAuthPage() {
   // If already authenticated, redirect to appropriate space
   useEffect(() => {
     if (currentInvestor) {
-      if (currentInvestor.isAdmin || currentInvestor.email === 'y.barberis@enr-courtage.fr') {
+      if (currentInvestor.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr') {
         navigate('/investisseurs/dashboard', { replace: true });
       } else if (currentInvestor.status === 'active' && currentInvestor.ndaSignedByAdmin) {
         navigate('/investisseurs/dashboard', { replace: true });

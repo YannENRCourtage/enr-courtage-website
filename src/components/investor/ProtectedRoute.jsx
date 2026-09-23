@@ -31,7 +31,7 @@ export default function ProtectedRoute({ children, requireNda = true, requireAdm
   }
 
   // 3. Admin check
-  const isAdmin = currentInvestor.isAdmin || currentInvestor.email === 'y.barberis@enr-courtage.fr';
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   if (requireAdmin && !isAdmin) {
     return <Navigate to="/investisseurs/dashboard" replace />;
   }

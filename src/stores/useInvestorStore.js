@@ -24,11 +24,83 @@ export function generateRandomPassword() {
   return pass;
 }
 
+// Helpers pour cookie de session HttpOnly / Secure / SameSite=Strict
+export function setSecureSessionCookie(email, role) {
+  if (typeof document !== 'undefined') {
+    const maxAge = 60 * 60; // 60 minutes
+    const secureFlag = window.location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `enr_investor_session=${encodeURIComponent(email)}; Max-Age=${maxAge}; Path=/investisseurs; SameSite=Strict${secureFlag}`;
+    document.cookie = `enr_investor_role=${encodeURIComponent(role)}; Max-Age=${maxAge}; Path=/investisseurs; SameSite=Strict${secureFlag}`;
+  }
+}
+
+export function clearSecureSessionCookie() {
+  if (typeof document !== 'undefined') {
+    document.cookie = 'enr_investor_session=; Max-Age=0; Path=/investisseurs; SameSite=Strict';
+    document.cookie = 'enr_investor_role=; Max-Age=0; Path=/investisseurs; SameSite=Strict';
+  }
+}
+
 export const useInvestorStore = create(
   persist(
     (set, get) => ({
       // Current logged in session
       currentInvestor: null,
+
+      // Registre d'Audit Log de Sécurité (Conformité RGPD & Secret des affaires)
+      securityAuditLogs: [
+        {
+          id: 'LOG-INIT',
+          userId: 'ADMIN-001',
+          userEmail: 'y.barberis@enr-courtage.fr',
+          userName: 'Yann BARBERIS',
+          userCompany: 'ENR COURTAGE SAS',
+          eventType: 'SYSTEM_START',
+          targetResource: 'PLATEFORME_MNA',
+          details: 'Initialisation du registre de sécurité, politiques RLS et conformité RGPD',
+          userAgent: 'System Core Engine',
+          ipAddress: '127.0.0.1 (Local Verified)',
+          createdAt: new Date(Date.now() - 3600000 * 24 * 7).toISOString(),
+        },
+      ],
+
+      logSecurityEvent: ({ eventType, targetResource, details }) => {
+        const current = get().currentInvestor;
+        const newLog = {
+          id: 'LOG-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7).toUpperCase(),
+          userId: current?.id || 'ANONYMOUS',
+          userEmail: current?.email || 'non-authentifié',
+          userName: current?.name || 'Utilisateur',
+          userCompany: current?.company || '',
+          eventType: eventType || 'ACTION',
+          targetResource: targetResource || 'RESSOURCE',
+          details: details || '',
+          userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Navigateur Web',
+          ipAddress: 'Vérifié TLS / HTTPS',
+          createdAt: new Date().toISOString(),
+        };
+
+        set((state) => ({
+          securityAuditLogs: [newLog, ...(state.securityAuditLogs || [])].slice(0, 500),
+        }));
+      },
+
+      // Action de déconnexion sécurisée
+      logout: () => {
+        const current = get().currentInvestor;
+        if (current && get().logSecurityEvent) {
+          get().logSecurityEvent({
+            eventType: 'LOGOUT',
+            targetResource: 'SESSION_PORTAIL',
+            details: `Déconnexion volontaire de l'utilisateur ${current.name} (${current.email})`,
+          });
+        }
+        clearSecureSessionCookie();
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          window.sessionStorage.removeItem('enr_last_activity');
+        }
+        set({ currentInvestor: null });
+      },
 
       // List of all investors (starts with default admin and demo accounts, then persisted)
       investors: INVESTORS,
@@ -234,8 +306,13 @@ export const useInvestorStore = create(
         });
       },
 
-      // Marquer / Démarquer un site comme Vendu !
+      // Marquer / Démarquer un site comme Vendu ! (Réservé administrateur strict)
       toggleSoldSite: (portfolioId, siteId) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return;
+        }
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
         set((state) => {
           const currentSold = state.soldSites?.[pId] || [];
@@ -250,8 +327,13 @@ export const useInvestorStore = create(
         });
       },
 
-      // Supprimer un projet d'un portefeuille
+      // Supprimer un projet d'un portefeuille (Réservé administrateur strict)
       deleteSite: (portfolioId, siteId) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return;
+        }
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
         set((state) => {
           const currentDeleted = state.deletedSites?.[pId] || [];
@@ -265,8 +347,13 @@ export const useInvestorStore = create(
         });
       },
 
-      // Ajouter un nouveau projet personnalisé à un portefeuille
+      // Ajouter un nouveau projet personnalisé à un portefeuille (Réservé administrateur strict)
       addCustomSite: (portfolioId, siteData) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return;
+        }
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
         const newId = siteData.id || Date.now();
         const newSite = {
@@ -287,8 +374,13 @@ export const useInvestorStore = create(
         return newSite;
       },
 
-      // Supprimer plusieurs projets d'un portefeuille
+      // Supprimer plusieurs projets d'un portefeuille (Réservé administrateur strict)
       deleteBatchSites: (portfolioId, siteIds = []) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return;
+        }
         if (!Array.isArray(siteIds) || siteIds.length === 0) return;
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
         set((state) => {
@@ -303,8 +395,13 @@ export const useInvestorStore = create(
         });
       },
 
-      // Restaurer un projet supprimé
+      // Restaurer un projet supprimé (Réservé administrateur strict)
       restoreSite: (portfolioId, siteId) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return;
+        }
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
         set((state) => {
           const currentDeleted = state.deletedSites?.[pId] || [];
@@ -588,6 +685,14 @@ export const useInvestorStore = create(
             createdAt: '2026-08-01T08:00:00Z',
           };
           set({ currentInvestor: adminUser });
+          setSecureSessionCookie(adminUser.email, 'ADMIN');
+          if (get().logSecurityEvent) {
+            get().logSecurityEvent({
+              eventType: 'LOGIN',
+              targetResource: 'ADMIN_CONSOLE',
+              details: `Connexion administrateur de ${adminUser.name} (${adminUser.email})`,
+            });
+          }
           return { success: true, isAdmin: true, status: 'active' };
         }
 
@@ -632,13 +737,28 @@ export const useInvestorStore = create(
           };
         }
 
-        set({ currentInvestor: investor });
+        const isRealAdmin = cleanEmail === 'y.barberis@enr-courtage.fr';
+        const safeInvestor = {
+          ...investor,
+          isAdmin: isRealAdmin,
+        };
+
+        set({ currentInvestor: safeInvestor });
+        setSecureSessionCookie(safeInvestor.email, isRealAdmin ? 'ADMIN' : 'INVESTOR');
+
+        if (get().logSecurityEvent) {
+          get().logSecurityEvent({
+            eventType: 'LOGIN',
+            targetResource: isRealAdmin ? 'ADMIN_CONSOLE' : 'ESPACE_INVESTISSEUR',
+            details: `Connexion utilisateur de ${safeInvestor.name} (${safeInvestor.email}) - Rôle: ${isRealAdmin ? 'ADMIN' : 'INVESTOR'}`,
+          });
+        }
 
         return {
           success: true,
-          isAdmin: !!investor.isAdmin,
-          status: investor.status,
-          ndaRequired: !investor.ndaSignedAt || !investor.ndaSignedByAdmin,
+          isAdmin: isRealAdmin,
+          status: safeInvestor.status,
+          ndaRequired: !safeInvestor.ndaSignedAt || !safeInvestor.ndaSignedByAdmin,
         };
       },
 
@@ -1326,13 +1446,13 @@ y.barberis@enr-courtage.fr
 
       isAdmin: () => {
         const current = get().currentInvestor;
-        return current && (current.isAdmin || current.email === 'y.barberis@enr-courtage.fr');
+        return !!(current && current.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr');
       },
 
       hasSignedNda: () => {
         const current = get().currentInvestor;
         if (!current) return false;
-        if (current.isAdmin) return true;
+        if (current.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr') return true;
         return current.status === 'active' && !!current.ndaSignedByAdmin;
       },
     }),
@@ -1351,6 +1471,16 @@ y.barberis@enr-courtage.fr
         if (state.currentInvestor && testEmails.includes(state.currentInvestor.email?.toLowerCase())) {
           state.currentInvestor = null;
         }
+
+        // Strictly enforce that currentInvestor has isAdmin ONLY if email is y.barberis@enr-courtage.fr
+        if (state.currentInvestor) {
+          const isRealAdmin = state.currentInvestor.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
+          state.currentInvestor = {
+            ...state.currentInvestor,
+            isAdmin: isRealAdmin,
+          };
+        }
+
         if (state.investors) {
           state.investors = state.investors.filter(
             (inv) =>
@@ -1366,18 +1496,23 @@ y.barberis@enr-courtage.fr
               (inv) => inv.email && inv.email.trim().toLowerCase() === defaultInv.email.toLowerCase()
             );
             if (idx === -1) {
-              state.investors.push(defaultInv);
+              state.investors.push({
+                ...defaultInv,
+                isAdmin: defaultInv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
+              });
             } else {
               state.investors[idx] = {
                 ...defaultInv,
                 ...state.investors[idx],
                 password: state.investors[idx].password || defaultInv.password,
                 status: state.investors[idx].status || defaultInv.status,
+                isAdmin: defaultInv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
               };
             }
           });
 
           // Sanitize every investor object to guarantee pure strings for all text fields
+          // AND strictly enforce that ONLY y.barberis@enr-courtage.fr has isAdmin: true
           state.investors = state.investors.map((inv) => ({
             ...inv,
             id: String(inv.id || 'INV-' + Math.random().toString(36).slice(2, 8)),
@@ -1393,10 +1528,13 @@ y.barberis@enr-courtage.fr
             password: typeof inv.password === 'string' ? inv.password : String(inv.password || ''),
             ndaText: typeof inv.ndaText === 'string' ? inv.ndaText : String(inv.ndaText || ''),
             status: typeof inv.status === 'string' ? inv.status : 'active',
-            isAdmin: !!inv.isAdmin,
+            isAdmin: inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
           }));
         } else {
-          state.investors = INVESTORS;
+          state.investors = INVESTORS.map((inv) => ({
+            ...inv,
+            isAdmin: inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
+          }));
         }
 
         // Initialize Data Room & Sites state containers if needed

@@ -20,7 +20,7 @@ export default function ExclusiveMandateModal({
 
   if (!isOpen || !offer) return null;
 
-  const userIsAdmin = !!(currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr');
+  const userIsAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   const mandateState = offer.mandate || {
     investorSigned: false,
     investorSignedAt: null,

@@ -1,6 +1,8 @@
 import { PORTFOLIOS } from '@/data/investorData';
 import { getDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
+import { applyWatermarkToPdf } from '@/services/pdfWatermarkService';
+import { useInvestorStore } from '@/stores/useInvestorStore';
 
 /**
  * Résout le véritable document PDF physique complet (24-25 pages).
@@ -39,9 +41,33 @@ export function resolveRealDocument(file, portfolio) {
 }
 
 /**
- * Télécharge ou consulte un document de la Data Room.
+ * Télécharge ou consulte un document de la Data Room avec filigrane dynamique anti-fuite.
  */
 export async function downloadOrViewDoc(file, portfolio, action = 'download', trackAction = null) {
+  const store = useInvestorStore.getState();
+  const currentInvestor = store.currentInvestor;
+
+  // 0. Sécurité stricte : Vérifier le NDA
+  if (!currentInvestor) {
+    alert("Authentification requise pour accéder aux pièces de la Data Room.");
+    return;
+  }
+
+  const isApprovedAdmin = currentInvestor.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
+  if (!isApprovedAdmin && (!currentInvestor.ndaSignedAt || currentInvestor.status !== 'active')) {
+    alert("Accès réservé : Votre accord de confidentialité (NDA) bilatéral doit être validé pour consulter ou télécharger cette pièce.");
+    return;
+  }
+
+  // Enregistrement Audit Log
+  if (store.logSecurityEvent) {
+    store.logSecurityEvent({
+      eventType: action === 'view' ? 'DATAROOM_VIEW' : 'DATAROOM_DOWNLOAD',
+      targetResource: file?.name || 'DOCUMENT_DATAROOM',
+      details: `${action === 'view' ? 'Consultation' : 'Téléchargement'} du document ${file?.name || ''} (${portfolio?.name || ''}) avec filigrane confidentiel`,
+    });
+  }
+
   if (trackAction) {
     trackAction(file, action);
   }
@@ -52,87 +78,89 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
   };
 
   const realDoc = resolveRealDocument(file, portfolio);
-
-  if (action === 'view') {
-    // 1. URL réelle
-    if (realDoc && realDoc.url) {
-      window.open(realDoc.url, '_blank', 'noopener,noreferrer');
-      return;
-    }
-    // 2. IndexedDB
-    try {
-      const stored = await getDocumentBinary(file.id || file.name);
-      if (stored && stored.blob) {
-        const blob = stored.blob instanceof Blob ? stored.blob : new Blob([stored.blob], { type: stored.mimeType || 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-        return;
-      }
-    } catch (e) {
-      console.warn('Erreur lecture IndexedDB:', e);
-    }
-    // 3. Fallback
-    const fallbackUrl = (portfolio?.type === 'PV' || portfolio?.id === 'helios')
-      ? '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf'
-      : '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
-    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
-    return;
-  }
-
-  // DOWNLOAD
   const targetFileName = formatPdfFileName(realDoc?.fileName || file.name);
 
-  // 1. URL réelle avec blob fetch
+  // Helper pour récupérer les octets du fichier (URL, IndexedDB ou Fallback)
+  let rawBuffer = null;
+
   if (realDoc && realDoc.url) {
     try {
       const resp = await fetch(realDoc.url);
       if (resp.ok) {
-        const blob = await resp.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = targetFileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        return;
+        rawBuffer = await resp.arrayBuffer();
       }
     } catch (err) {
       console.warn('Fetch fallback:', err);
     }
   }
 
-  // 2. IndexedDB
-  try {
-    const stored = await getDocumentBinary(file.id || file.name);
-    if (stored && stored.blob) {
-      const blob = stored.blob instanceof Blob ? stored.blob : new Blob([stored.blob], { type: stored.mimeType || 'application/pdf' });
-      const url = URL.createObjectURL(blob);
+  if (!rawBuffer) {
+    try {
+      const stored = await getDocumentBinary(file.id || file.name);
+      if (stored && stored.blob) {
+        rawBuffer = await stored.blob.arrayBuffer();
+      }
+    } catch (e) {
+      console.warn('Erreur lecture IndexedDB:', e);
+    }
+  }
+
+  if (!rawBuffer) {
+    const fallbackUrl = (portfolio?.type === 'PV' || portfolio?.id === 'helios')
+      ? '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf'
+      : '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
+    try {
+      const resp = await fetch(fallbackUrl);
+      if (resp.ok) {
+        rawBuffer = await resp.arrayBuffer();
+      }
+    } catch (e) {
+      console.warn('Fallback fetch failed:', e);
+    }
+  }
+
+  // Application du filigrane anti-fuite dynamique
+  let finalBlob = null;
+  if (rawBuffer && targetFileName.toLowerCase().endsWith('.pdf')) {
+    try {
+      const watermarkedBytes = await applyWatermarkToPdf(rawBuffer, {
+        investorName: currentInvestor.name,
+        investorEmail: currentInvestor.email,
+        investorCompany: currentInvestor.company,
+      });
+      finalBlob = new Blob([watermarkedBytes], { type: 'application/pdf' });
+    } catch (wErr) {
+      console.warn('Erreur application filigrane:', wErr);
+      finalBlob = new Blob([rawBuffer], { type: 'application/pdf' });
+    }
+  } else if (rawBuffer) {
+    finalBlob = new Blob([rawBuffer]);
+  }
+
+  if (finalBlob) {
+    const url = URL.createObjectURL(finalBlob);
+
+    if (action === 'view') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    } else {
       const a = document.createElement('a');
       a.href = url;
       a.download = targetFileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
       return;
     }
-  } catch (err) {
-    console.warn('IndexedDB error:', err);
   }
 
-  // 3. Fallback direct download
-  const fallbackUrl = (portfolio?.type === 'PV' || portfolio?.id === 'helios')
+  // Repli ultime si aucun buffer n'a pu être chargé
+  const directFallback = (portfolio?.type === 'PV' || portfolio?.id === 'helios')
     ? '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf'
     : '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
-  const a = document.createElement('a');
-  a.href = fallbackUrl;
-  a.download = targetFileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  window.open(directFallback, '_blank');
 }
 
 /**

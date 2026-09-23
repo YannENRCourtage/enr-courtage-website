@@ -64,7 +64,7 @@ export default function TeaserSitesTable({
 
   const isPv = portfolio?.type === 'PV';
   const portfolioKey = isPv ? 'helios' : 'volta';
-  const isAdmin = !!(currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr' || currentInvestor?.email?.includes('barberis'));
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
 
   const currentSold = soldSites?.[portfolioKey] || [];
   const currentDeleted = deletedSites?.[portfolioKey] || [];

@@ -8,6 +8,9 @@ import {
   FileSignature,
   ShieldCheck,
   Save,
+  Download,
+  Info,
+  Lock,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
@@ -41,6 +44,52 @@ export default function InvestorSettingsModal({ isOpen, onClose, onOpenNda }) {
       setIsSaved(false);
       onClose();
     }, 1200);
+  };
+
+  // Exportation des données personnelles conformément à l'article 20 du RGPD (Portabilité des données)
+  const handleExportData = () => {
+    const exportPayload = {
+      dateExportUtc: new Date().toISOString(),
+      reglementation: "Conformité RGPD (Règlement UE 2016/679) — Droit à la portabilité des données (Art. 20)",
+      responsableTraitement: "ENR COURTAGE SAS — 7 Rue Gutenberg, 33700 Mérignac",
+      contactDpo: "contact@enr-courtage.fr",
+      finaliteTraitement: "Instruction des transactions M&A de cession d'actifs ENR et exécution de l'accord de confidentialité (NDA)",
+      dureeConservation: "Durée de validité du NDA (24 mois) ou de la relation contractuelle",
+      profilInvestisseur: {
+        id: currentInvestor?.id || '',
+        nom: currentInvestor?.name || name,
+        email: currentInvestor?.email || email,
+        entreprise: currentInvestor?.company || company,
+        role: currentInvestor?.role || 'Investisseur',
+        telephone: currentInvestor?.phone || phone,
+        adresse: currentInvestor?.address || address,
+        statutCompte: currentInvestor?.status || 'active',
+        dateCreation: currentInvestor?.createdAt || '',
+      },
+      accordConfidentialiteNda: {
+        ndaSigneParInvestisseur: !!(currentInvestor?.userNdaSignedAt || currentInvestor?.ndaSignedAt),
+        dateSignatureInvestisseur: currentInvestor?.userNdaSignedAt || currentInvestor?.ndaSignedAt || null,
+        ndaContresigneParAdmin: !!currentInvestor?.ndaSignedByAdmin,
+        dateContresignatureAdmin: currentInvestor?.ndaSignedByAdminAt || currentInvestor?.ndaSignedAt || null,
+      },
+      offresMnaDeposees: (useInvestorStore.getState().offers || []).filter(
+        (o) =>
+          o.investorEmail?.toLowerCase() === (currentInvestor?.email || email).toLowerCase() ||
+          o.investorId === currentInvestor?.id
+      ),
+      telechargementsDataRoomEnregistres:
+        useInvestorStore.getState().userDownloads?.[(currentInvestor?.email || email).toLowerCase()] || [],
+    };
+
+    const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `donnees_personnelles_enr_courtage_${(currentInvestor?.name || 'investisseur').replace(/[\s\W]+/g, '_').toLowerCase()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -168,6 +217,56 @@ export default function InvestorSettingsModal({ isOpen, onClose, onOpenNda }) {
                 placeholder="Ex : 12 Avenue des Champs-Élysées, 75008 Paris"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium text-xs focus:outline-none focus:border-blue-600 focus:bg-white transition"
               />
+            </div>
+          </div>
+
+          {/* CONFORMITÉ RGPD & PROTECTION DES DONNÉES */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-800">
+                    Conformité RGPD & Protection des Données Personnelles
+                  </h4>
+                  <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
+                    Conformément au Règlement Général sur la Protection des Données (RGPD - UE 2016/679), vos données d'identification,
+                    coordonnées et interactions sur la Data Room sont collectées exclusivement pour l'exécution de l'Accord de Confidentialité (NDA)
+                    et l'instruction des offres d'acquisition M&amp;A.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-600 space-y-1 bg-white p-3 rounded-xl border border-slate-200/80">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="font-semibold text-slate-700">Responsable de Traitement :</span>
+                <span className="text-slate-500">ENR COURTAGE SAS (Bordeaux n° 881 500 552)</span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="font-semibold text-slate-700">Délégué à la Protection (DPO) :</span>
+                <a href="mailto:contact@enr-courtage.fr" className="text-blue-600 hover:underline font-medium">
+                  contact@enr-courtage.fr
+                </a>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="font-semibold text-slate-700">Durée de conservation :</span>
+                <span className="text-slate-500">24 mois à compter de la signature du NDA</span>
+              </div>
+            </div>
+
+            <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span className="text-[11px] text-slate-500">
+                Droit à la portabilité (Art. 20 RGPD) :
+              </span>
+              <button
+                type="button"
+                onClick={handleExportData}
+                className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[11px] transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Download className="w-3.5 h-3.5 text-slate-600" />
+                <span>Exporter mes données personnelles (JSON)</span>
+              </button>
             </div>
           </div>
 
