@@ -35,6 +35,7 @@ import OfferModal from './OfferModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import NdaDocumentModal from './NdaDocumentModal';
 import AdminConsoleView from './AdminConsoleView';
+import ErrorBoundary from './ErrorBoundary';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 import InvestorSidebar from './InvestorSidebar';
 import InvestorContactModal from './InvestorContactModal';
@@ -43,6 +44,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const adminParam = searchParams.get('admin');
+  const tabParam = searchParams.get('tab');
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isContactModalOpen, setIsContactModalOpen] = useState(false);
@@ -63,7 +65,29 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   // Active view: 'investor' or 'admin'
   const [activeView, setActiveView] = useState(defaultToAdmin || adminParam === 'true' ? 'admin' : 'investor');
   // Investor sub-tab: 'portfolios' | 'offers' | 'dataroom' | 'messages'
-  const [investorSubTab, setInvestorSubTab] = useState('portfolios');
+  const [investorSubTab, setInvestorSubTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#mes-offres' || tabParam === 'offers') return 'offers';
+      if (window.location.hash === '#contact-ma' || tabParam === 'messages') return 'messages';
+    }
+    return 'portfolios';
+  });
+
+  // Listen for hash changes to switch sub-tabs smoothly
+  React.useEffect(() => {
+    const handleHash = () => {
+      if (window.location.hash === '#mes-offres' || searchParams.get('tab') === 'offers') {
+        setActiveView('investor');
+        setInvestorSubTab('offers');
+      } else if (window.location.hash === '#contact-ma' || searchParams.get('tab') === 'messages') {
+        setActiveView('investor');
+        setInvestorSubTab('messages');
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [searchParams]);
   // Admin navigation state from notifications
   const [adminInitialTab, setAdminInitialTab] = useState('users');
   const [adminSelectedChatEmail, setAdminSelectedChatEmail] = useState('');
@@ -215,6 +239,10 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
       {/* Sidebar Latérale intégrée */}
       <InvestorSidebar
         activePage="dashboard"
+        onSelectInvestorTab={(tab) => {
+          setActiveView('investor');
+          setInvestorSubTab(tab);
+        }}
         onOpenCreateOffer={() => {
           setOfferModalTargetPortfolio('both');
           setIsOfferModalOpen(true);
@@ -578,7 +606,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             {/* SOUS-VUE B : MES OFFRES DÉPOSÉES & NÉGOCIATIONS               */}
             {/* ============================================================= */}
             {investorSubTab === 'offers' && (
-              <div className="space-y-6">
+              <div id="mes-offres" className="space-y-6">
                 {activeOffer ? (
                   <div className="bg-white border-2 border-amber-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
                     <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">

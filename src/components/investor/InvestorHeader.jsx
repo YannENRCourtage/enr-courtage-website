@@ -21,7 +21,7 @@ export default function InvestorHeader({
   onOpenNda = null,
   showBackToDashboard = false,
   pageTitle = null,
-  pageTitleBadge = 'M&A TRANSACTIONNEL',
+  pageTitleBadge = null,
   activeView = 'investor', // 'investor' | 'admin'
   onSwitchView = null,
   onNavigateNotif = null,
@@ -170,19 +170,19 @@ export default function InvestorHeader({
         {/* Right Side: Profile Card, Notification Bell & Logout */}
         <div className="flex items-center gap-3">
           {currentInvestor && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs shrink-0 min-w-[190px] sm:min-w-[240px]">
+              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
                 {currentInvestor?.avatar ? (
                   <img src={currentInvestor.avatar} alt="Avatar" className="w-full h-full object-cover" />
                 ) : (
                   userInitials
                 )}
               </div>
-              <div className="text-left leading-tight hidden sm:block">
-                <div className="text-xs font-bold text-slate-900 whitespace-nowrap">
+              <div className="text-left leading-tight hidden sm:block min-w-0 flex-1">
+                <div className="text-xs font-black text-slate-900 whitespace-nowrap">
                   {currentInvestor.name || 'Investisseur'}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                <div className="text-[11px] text-slate-500 font-semibold whitespace-nowrap">
                   {currentInvestor.company || 'Partenaire M&A'}
                 </div>
               </div>
@@ -190,7 +190,7 @@ export default function InvestorHeader({
               {onOpenNda && (
                 <button
                   onClick={onOpenNda}
-                  className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition cursor-pointer ml-1"
+                  className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition cursor-pointer ml-auto shrink-0"
                   title="Consulter et imprimer le NDA signé"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>

@@ -22,6 +22,7 @@ export default function InvestorSidebar({
   activePage = 'dashboard', // 'dashboard' | 'helios' | 'volta'
   adminActiveTab = null, // 'requests' | 'offers' | 'dataroom' | 'users' | null
   onSelectAdminTab = null,
+  onSelectInvestorTab = null,
   onOpenCreateOffer = null,
   onOpenAdmin = null,
   onOpenNda = null,
@@ -305,7 +306,13 @@ export default function InvestorSidebar({
 
             <div className="space-y-1">
               <button
-                onClick={() => handleNavigate('/investisseurs/dashboard', '#mes-offres')}
+                onClick={() => {
+                  onCloseMobile();
+                  if (onSelectInvestorTab) {
+                    onSelectInvestorTab('offers');
+                  }
+                  handleNavigate('/investisseurs/dashboard', '#mes-offres');
+                }}
                 className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-800/60 hover:text-white transition text-left cursor-pointer"
               >
                 <div className="flex items-center space-x-2.5">
@@ -337,44 +344,44 @@ export default function InvestorSidebar({
               )}
             </div>
           </div>
+        </div>
 
-          {/* Action buttons: Contact + Paramètres sur la même ligne, puis Se déconnecter */}
-          <div className="space-y-2">
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => {
-                  onCloseMobile();
-                  if (onOpenContact) {
-                    onOpenContact();
-                  } else {
-                    handleNavigate('/investisseurs/dashboard', '#contact-ma');
-                  }
-                }}
-                className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-bold transition cursor-pointer"
-                title="Contacter le pôle M&A"
-              >
-                <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span>Contact</span>
-              </button>
-
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-bold transition cursor-pointer"
-                title="Gérer mes paramètres"
-              >
-                <Settings className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                <span>Paramètres</span>
-              </button>
-            </div>
+        {/* Action buttons pinned at the bottom-left of the sidebar */}
+        <div className="p-4 border-t border-gray-800/80 bg-[#0c1220] space-y-2 shrink-0">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => {
+                onCloseMobile();
+                if (onOpenContact) {
+                  onOpenContact();
+                } else {
+                  handleNavigate('/investisseurs/dashboard', '#contact-ma');
+                }
+              }}
+              className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-bold transition cursor-pointer"
+              title="Contacter le pôle M&A"
+            >
+              <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span>Contact</span>
+            </button>
 
             <button
-              onClick={handleLogout}
-              className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-gray-900/60 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-gray-800 hover:border-red-500/30 text-xs font-semibold transition cursor-pointer"
+              onClick={() => setIsSettingsOpen(true)}
+              className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-bold transition cursor-pointer"
+              title="Gérer mes paramètres"
             >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Se déconnecter</span>
+              <Settings className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span>Paramètres</span>
             </button>
           </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-gray-900/60 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-gray-800 hover:border-red-500/30 text-xs font-semibold transition cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span>Se déconnecter</span>
+          </button>
         </div>
       </aside>
 
