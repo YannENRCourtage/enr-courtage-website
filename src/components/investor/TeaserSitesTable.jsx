@@ -190,7 +190,7 @@ export default function TeaserSitesTable({
                 {isPv ? 'SURFACE EST.' : 'DIST. HTA'}
               </th>
               <th className="py-3 px-3 text-right text-slate-700">
-                {isPv ? 'COÛT TRAVAUX HT' : 'QUOTE-PART S3RENR'}
+                {isPv ? 'COÛT TRAVAUX HT HORS PV' : 'QUOTE-PART S3RENR'}
               </th>
               <th className="py-3 px-3 text-right text-emerald-700">
                 {isPv ? 'PUISSANCE' : 'EBITDA AN 1'}
@@ -366,7 +366,7 @@ export default function TeaserSitesTable({
       {/* MODAL : FICHE DÉTAILLÉE DU SITE & DOCUMENTS DATA ROOM         */}
       {/* ============================================================= */}
       {activeModalSite && (
-        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+        <div className="fixed inset-0 z-[1000] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
           <div className="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl text-slate-900 space-y-4 max-h-[90vh] overflow-y-auto">
             {/* Header */}
             <div className="flex items-start justify-between border-b border-slate-100 pb-3">

@@ -35,13 +35,17 @@ import OfferModal from './OfferModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import NdaDocumentModal from './NdaDocumentModal';
 import AdminConsoleView from './AdminConsoleView';
-import ErrorBoundary from './ErrorBoundary';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
+import InvestorSidebar from './InvestorSidebar';
+import InvestorContactModal from './InvestorContactModal';
 
 export default function InvestorDashboard({ defaultToAdmin = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const adminParam = searchParams.get('admin');
+
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   const {
     currentInvestor,
@@ -207,18 +211,34 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   }, [messages, currentInvestor, isAdmin]);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between selection:bg-cyan-500 selection:text-white">
-      {/* Header Unifié avec Bascule des Espaces */}
-      <InvestorHeader
-        activeView={activeView}
-        onSwitchView={(view) => setActiveView(view)}
-        onOpenAdmin={() => setActiveView('admin')}
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-blue-600 selection:text-white">
+      {/* Sidebar Latérale intégrée */}
+      <InvestorSidebar
+        activePage="dashboard"
+        onOpenCreateOffer={() => {
+          setOfferModalTargetPortfolio('both');
+          setIsOfferModalOpen(true);
+        }}
         onOpenNda={() => setIsNdaModalOpen(true)}
-        onNavigateNotif={handleNavigateNotif}
+        onOpenContact={() => setIsContactModalOpen(true)}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
-      {/* Main Content Container */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+      {/* Main Content Area */}
+      <div className="flex-1 lg:pl-72 flex flex-col min-w-0">
+        {/* Header Unifié avec Bascule des Espaces */}
+        <InvestorHeader
+          onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
+          activeView={activeView}
+          onSwitchView={(view) => setActiveView(view)}
+          onOpenAdmin={() => setActiveView('admin')}
+          onOpenNda={() => setIsNdaModalOpen(true)}
+          onNavigateNotif={handleNavigateNotif}
+        />
+
+        {/* Main Content Container */}
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
         {/* ================================================================= */}
         {/* VUE 1 : CONSOLE D'ADMINISTRATION (SI ACTIVE ET ADMIN)            */}
         {/* ================================================================= */}
@@ -999,6 +1019,14 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
           </div>
         </div>
       )}
+
+      {/* Modale de contact M&A */}
+      <InvestorContactModal
+        isOpen={isContactModalOpen}
+        onClose={() => setIsContactModalOpen(false)}
+        initialSubject="Demande d'information M&A — Espace Investisseur"
+      />
+      </div>
     </div>
   );
 }

@@ -310,23 +310,15 @@ export default function DataRoomSection({
             <FolderLock className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
-                Data Room Virtuelle
-              </span>
-              <span className="text-xs text-emerald-700 font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" /> NDA Bilatéral Actif
-              </span>
-            </div>
-            <h3 className="text-xl font-black text-slate-900 mt-1">
+            <h3 className="text-xl font-black text-slate-900">
               Documents du portefeuille {portfolio.name}
             </h3>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 bg-slate-50 px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-600">
-          <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Accès accordé à <strong className="text-slate-900">{investorCompany || investorName}</strong></span>
+        <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-xl border border-blue-200 text-xs font-black text-blue-700 shadow-2xs uppercase tracking-wider">
+          <FolderLock className="w-4 h-4 text-blue-600" />
+          <span>DATA ROOM</span>
         </div>
       </div>
 

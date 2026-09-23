@@ -115,21 +115,22 @@ export default function InvestorHeader({
             </button>
           )}
 
-          {showBackToDashboard && (
+          {showBackToDashboard ? (
             <button
               onClick={() => navigate('/investisseurs/dashboard')}
-              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center justify-center text-slate-700 hover:text-slate-900 transition mr-1"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 flex items-center gap-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 transition mr-2 cursor-pointer shadow-2xs"
               title="Retour aux Portefeuilles"
             >
               <ArrowLeft className="w-4 h-4" />
+              <span>Retour</span>
             </button>
+          ) : (
+            <EnrCourtageLogo onClick={() => navigate('/investisseurs/dashboard')} />
           )}
 
-          <EnrCourtageLogo onClick={() => navigate('/investisseurs/dashboard')} />
-
           {pageTitle && (
-            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-slate-200">
-              <span className="text-xs font-black text-[#0b192c] tracking-tight">{pageTitle}</span>
+            <div className="flex items-center gap-2 pl-1">
+              <span className="text-xs sm:text-sm font-black text-[#0b192c] tracking-tight">{pageTitle}</span>
               {pageTitleBadge && (
                 <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
                   {pageTitleBadge}

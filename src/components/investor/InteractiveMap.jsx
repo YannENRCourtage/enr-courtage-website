@@ -250,7 +250,7 @@ export default function InteractiveMap({
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
         {/* Map Informational Overlay Card (Bottom Left) */}
-        <div className={`absolute bottom-4 left-4 z-[400] max-w-sm backdrop-blur-md border rounded-2xl p-3.5 shadow-xl text-[11px] space-y-1.5 pointer-events-auto ${
+        <div className={`absolute bottom-4 left-4 z-10 max-w-sm backdrop-blur-md border rounded-2xl p-3.5 shadow-xl text-[11px] space-y-1.5 pointer-events-auto ${
           darkTheme
             ? 'bg-slate-950/90 border-slate-700/80 text-white'
             : 'bg-white/95 border-slate-200 text-slate-900'

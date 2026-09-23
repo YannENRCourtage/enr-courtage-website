@@ -166,7 +166,6 @@ export default function PortfolioDetailPage() {
           onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
           showBackToDashboard={true}
           pageTitle={`ENR COURTAGE M&A • PORTEFEUILLE CONSOLIDÉ ${isPv ? 'PV' : 'BESS'} ${displayPower}`}
-          pageTitleBadge={isPv ? 'SOLAIRE 9,12 MWc' : 'STOCKAGE 15,50 MW'}
           onOpenNda={() => setIsNdaModalOpen(true)}
         />
 
@@ -180,17 +179,6 @@ export default function PortfolioDetailPage() {
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-between gap-8">
               {/* Left: Title & Description */}
               <div className="space-y-4 max-w-2xl">
-                <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider ${
-                    isPv ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
-                  }`}>
-                    {isPv ? 'Solaire Toitures & Hangars' : 'Stockage Électrique BESS'}
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">
-                    Vendeur : <strong className="text-slate-800">{isPv ? 'GREEN INVEST' : 'VOLTA SAS'}</strong>
-                  </span>
-                </div>
-
                 <h1 className="text-3xl sm:text-5xl font-black text-[#0b192c] tracking-tight">
                   PORTEFEUILLE{' '}
                   <span className={isPv ? 'text-amber-600' : 'text-blue-700'}>
@@ -307,11 +295,11 @@ export default function PortfolioDetailPage() {
                     THÈSE D'INVESTISSEMENT
                   </div>
                   <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
-                    Les 4 Piliers Fondateurs de la Supériorité de {isPv ? 'HÉLIOS' : 'VOLTA'}
+                    Les {teaser.pillars.length} Piliers Fondateurs de la Supériorité de {isPv ? 'HÉLIOS' : 'VOLTA'}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className={`grid grid-cols-1 sm:grid-cols-2 ${teaser.pillars.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
                   {teaser.pillars.map((pillar, idx) => {
                     const PillarIcon = pillarIconMap[pillar.icon] || CheckCircle2;
                     const style = pillarStyles[idx % pillarStyles.length];
@@ -361,7 +349,7 @@ export default function PortfolioDetailPage() {
                       ARCHITECTURE DES REVENUS
                     </div>
                     <h3 className="text-lg font-black text-[#0b192c] mt-1">
-                      Value Stacking à {!isPv ? '2 Cycles Quotidiens' : 'Tarif Garanti'} ({teaser.revenueArchitecture.total} / an)
+                      {!isPv ? `Value Stacking à 2 Cycles Quotidiens (${teaser.revenueArchitecture.total} / an)` : `Revenus Sécurisés par Appel d'Offres Simplifié (${teaser.revenueArchitecture.total} / an)`}
                     </h3>
                     {teaser.revenueArchitecture.cycleLabel && (
                       <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold mt-1.5 inline-block">
@@ -429,14 +417,16 @@ export default function PortfolioDetailPage() {
                           Spécifications de la {isPv ? 'Toiture' : 'Station'} Type
                         </h3>
                       </div>
-                      <div className="flex gap-1.5">
-                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200">
-                          {isPv ? 'PV' : 'BESS'}
-                        </span>
-                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
-                          {isPv ? '315 kWc' : '500 kW'}
-                        </span>
-                      </div>
+                      {!isPv && (
+                        <div className="flex gap-1.5">
+                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200">
+                            BESS
+                          </span>
+                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            500 kW
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-0 divide-y divide-slate-100 pt-1">
@@ -537,22 +527,19 @@ export default function PortfolioDetailPage() {
           </section>
 
           {/* ============================================================= */}
-          {/* SECTION 7 — COMPARATIF TURPE                                  */}
+          {/* SECTION 7 — COMPARATIF TURPE (BESS ONLY)                     */}
           {/* ============================================================= */}
-          {teaser.turpeComparison && (
+          {!isPv && teaser.turpeComparison && (
             <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-4">
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
                       <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black">
-                        {isPv ? 'CADRE RÉGLEMENTAIRE CRE' : 'LE LEVIER RÉGLEMENTAIRE CLÉ DU DÉVELOPPEMENT'}
+                        LE LEVIER RÉGLEMENTAIRE CLÉ DU DÉVELOPPEMENT
                       </div>
                       <h3 className="text-lg font-black text-[#0b192c] mt-1">
-                        {isPv
-                          ? 'Régime Tarifaire S21 CRE — Obligation d\'Achat 20 Ans'
-                          : 'Comparatif Analytique : Ancien Régime vs Régime TURPE 7 Délibéré CRE 2025-227'
-                        }
+                        Comparatif Analytique : Ancien Régime vs Régime TURPE 7 Délibéré CRE 2025-227
                       </h3>
                     </div>
                     <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black shadow-2xs">
@@ -708,11 +695,7 @@ export default function PortfolioDetailPage() {
               {/* Left: Transaction Details */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
                 <div>
-                  <div className="text-[11px] text-emerald-700 uppercase tracking-widest font-black flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    DATA ROOM OUVERTE • NON-BINDING & VALIDÉ
-                  </div>
-                  <h3 className="text-xl font-black text-[#0b192c] mt-2 tracking-tight">
+                  <h3 className="text-xl font-black text-[#0b192c] tracking-tight">
                     Modalités de Cession & Accès aux Livrables de Transaction
                   </h3>
                 </div>
@@ -726,15 +709,7 @@ export default function PortfolioDetailPage() {
                 <div className="grid grid-cols-2 gap-3 text-xs text-slate-700 font-semibold pt-1">
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Fiches synoptiques & Bilans PV</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Conditions de Prix Batteries CESC</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Dossiers de raccordement Enedis</span>
+                    <span>{isPv ? 'Fiches synoptiques & Bilans PV' : 'Fiches synoptiques & Dimensionnements'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -745,12 +720,6 @@ export default function PortfolioDetailPage() {
 
               {/* Right: CTA Card */}
               <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
-                <div className="text-center text-xs text-slate-600 font-extrabold uppercase tracking-wider border-b border-slate-100 pb-3">
-                  ENR COURTAGE Infrastructure
-                  <br />
-                  <span className="text-[#0b192c] text-sm font-black">Département Stockage & Flexibilité Réseau</span>
-                </div>
-
                 <div className="space-y-2 text-xs">
                   <div className="flex items-center justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500 font-medium">Statut du Processus :</span>
@@ -761,7 +730,7 @@ export default function PortfolioDetailPage() {
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500 font-medium">Format de Cession :</span>
-                    <span className="text-slate-900 font-bold">100% Titres SPV ou Clé en Main</span>
+                    <span className="text-slate-900 font-bold">{isPv ? 'Par projet ou portefeuille complet' : 'Portefeuille complet'}</span>
                   </div>
                   <div className="flex items-center justify-between py-2 border-b border-slate-100">
                     <span className="text-slate-500 font-medium">Calendrier Prévisionnel :</span>
@@ -813,7 +782,7 @@ export default function PortfolioDetailPage() {
             </p>
             <p className="text-[10px] text-slate-500 font-medium">
               {isPv
-                ? 'Sources : Étude PV HÉLIOS 29 Sites • Régime Tarifaire S21 Délibération CRE • Spécifications standard Hangars & Toitures Solaire'
+                ? 'Sources : Étude PV HÉLIOS 29 Sites • Cadre Appel d\'Offres Simplifié (AOS) • Spécifications standard Hangars & Toitures Solaire'
                 : 'Sources : Étude BESS 31 Sites Septembre 2025 • Régime TURPE 7 Délibération CRE N° 2024-227 • Spécifications standard BESS LFP/NMC'}
             </p>
             <p className="text-[10px] text-slate-500 pt-1 font-medium">

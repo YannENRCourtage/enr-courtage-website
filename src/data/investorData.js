@@ -221,10 +221,10 @@ export const PORTFOLIOS = [
     },
     teaserData: {
       financialKpis: [
-        { label: 'TRI PROJET', value: '12,8%', sub: 'Levier bancaire 80/20', detail: 'Tarif S21 CRE garanti 20 ans', color: 'amber' },
+        { label: 'TRI PROJET', value: '12,8%', sub: 'Levier bancaire 80/20', detail: 'Appel d\'Offres Simplifié (AOS)', color: 'amber' },
         { label: 'PAYBACK', value: '7,2 ans', sub: 'Après service de dette', detail: 'Amortissement accéléré CAPEX', color: 'emerald' },
         { label: 'PRODUCTIBLE', value: '1 280 kWh/kWc', sub: 'Irradiation Sud-Ouest', detail: 'Données Météo France P50', color: 'white' },
-        { label: 'CA ANNUEL', value: '1,14 M€', sub: 'Tarif moyen 108 €/MWh', detail: 'Obligation d\'achat S21 (CRE)', color: 'white' },
+        { label: 'CA ANNUEL', value: '1,14 M€', sub: 'Tarif AOS ~0,082 €/kWh', detail: 'Appel d\'Offres Simplifié', color: 'white' },
         { label: 'MARGE NETTE', value: '>58%', sub: 'OPEX < 15 €/MWc/an', detail: 'Maintenance incluse forfait', color: 'emerald' },
         { label: 'VALEUR TOTALE', value: '4,82 M€', sub: 'Valorisation du périmètre', detail: 'Droits de développement 29 sites', color: 'amber' },
       ],
@@ -238,7 +238,6 @@ export const PORTFOLIOS = [
             'Maîtrise foncière contractualisée 20 ans',
             'Fiches projets unitaires détaillées en Data Room',
           ],
-          bottomStat: { label: '86% des sites déjà purgés URBA', value: true },
         },
         {
           icon: 'FileCheck',
@@ -246,21 +245,7 @@ export const PORTFOLIOS = [
           items: [
             'Devis charpente métallique détaillés par bâtiment',
             'Fondations, couverture et raccordement chiffrés',
-            'Accord fournisseur négocié sur les modules PV',
-            'CAPEX moyen : 0,85 €/Wc tout compris',
           ],
-          bottomStat: { label: 'CAPEX consolidé < 7,8 M€ HT', value: true },
-        },
-        {
-          icon: 'Landmark',
-          title: 'Tarif d\'Achat Garanti CRE S21 sur 20 Ans',
-          items: [
-            'Obligation d\'achat EDF OA sur 20 ans',
-            'Tarif moyen pondéré : 108 €/MWh',
-            'Indexation annuelle CRE intégrée',
-            'Revenus prévisibles et bancables',
-          ],
-          bottomStat: { label: 'CA garanti contractuellement 20 ans', value: true },
         },
         {
           icon: 'Zap',
@@ -271,40 +256,24 @@ export const PORTFOLIOS = [
             'Orientation optimale toitures neuves',
             'Productible supérieur à la moyenne nationale',
           ],
-          bottomStat: { label: 'Rendement supérieur +12% vs moyenne nationale', value: true },
         },
       ],
       revenueArchitecture: {
         total: '1,14 M€',
-        totalLabel: 'CA annuel garanti (OA S21)',
-        cycleLabel: 'Productible P50 garanti',
+        totalLabel: 'CA annuel prévisionnel (AOS ~0,082 €/kWh)',
         sources: [
-          { name: 'Obligation d\'Achat EDF OA (S21 CRE)', value: '982 450 €', pct: '86%', color: '#f59e0b' },
-          { name: 'Complément de Rémunération (CR)', value: '114 200 €', pct: '10%', color: '#fbbf24' },
-          { name: 'Certificats d\'Économie d\'Énergie (CEE)', value: '45 680 €', pct: '4%', color: '#fcd34d' },
+          { name: 'Appels d\'Offres Simplifiés (AOS ~0,082 €/kWh)', value: '1 142 000 €', pct: '100%', color: '#f59e0b' },
         ],
       },
       stationSpecs: [
-        { label: 'Technologie & Typologie', value: 'Modules PV monocristallin 500Wc+' },
         { label: 'Type de construction', value: 'Hangars agricoles neufs & toitures existantes' },
         { label: 'Puissance unitaire moyenne', value: '315 kWc (de 101 à 680 kWc)' },
         { label: 'Surface toiture moyenne', value: '~1 800 m² par bâtiment' },
-        { label: 'Onduleurs', value: 'String inverters Huawei/SMA' },
         { label: 'Raccordement', value: 'BT/HTA selon puissance (< 250 kVA en BT)' },
         { label: 'Durée bail / foncier', value: 'Bail emphytéotique 20 ans renouvelable' },
-        { label: 'Statut urbanisme', value: '25/29 URBA OK — 4 en cours' },
       ],
       cycleTimeline: [],
-      turpeComparison: {
-        rows: [
-          { component: 'Tarif d\'Achat OA S21', oldRegime: 'Ancien guichet < 100 kWc', newRegime: 'CRE S21 > 100 kWc — Tarif garanti 20 ans', gain: 'Sécurisé' },
-          { component: 'Obligation d\'Achat', oldRegime: 'Contrat à durée limitée', newRegime: 'Engagement EDF OA ferme 20 ans', gain: 'Garanti' },
-          { component: 'TURPE Injection', oldRegime: 'Composante injection standard', newRegime: 'Injection PV exonérée de TURPE', gain: 'Exonéré' },
-          { component: 'Certificats CEE', oldRegime: 'Non éligible anciens tarifs', newRegime: 'CEE BAT-EQ-127 applicables', gain: '+ 45 k€' },
-        ],
-        total: { label: 'REVENUS CONSOLIDÉS ANNUELS', oldTotal: '—', newTotal: '1 142 330 € / an', gain: 'Garanti OA 20 ans' },
-        consolidatedGain: 'Tarif d\'achat S21 CRE garanti sur 20 ans',
-      },
+      turpeComparison: null,
       financialProjection: [
         { year: 2026, ca: 380000, ebitda: 210000, cashflow: 140000 },
         { year: 2027, ca: 980000, ebitda: 568000, cashflow: 380000 },
@@ -323,7 +292,7 @@ export const PORTFOLIOS = [
         { year: 2040, ca: 1447000, ebitda: 878000, cashflow: 645000 },
       ],
       cumulativeKpis: [
-        { label: 'CA CUMULÉ 15 ANS', value: '18,12 M€', sub: 'Tarif S21 CRE indexé annuellement' },
+        { label: 'CA CUMULÉ 15 ANS', value: '18,12 M€', sub: '' },
         { label: 'EBITDA NET CUMULÉ 15 ANS', value: '10,77 M€', sub: 'Marge opérationnelle > 58%' },
         { label: 'CASH-FLOW NET POST-DETTES 15 ANS', value: '6,96 M€', sub: 'Après service de dette bancaire 80/20' },
       ],

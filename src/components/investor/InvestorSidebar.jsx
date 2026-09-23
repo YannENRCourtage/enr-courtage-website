@@ -338,78 +338,34 @@ export default function InvestorSidebar({
             </div>
           </div>
 
-          {/* Section: Contact Direct (Section simplifiée sans les liens supprimés) */}
-          <div>
-            <div className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 px-3 mb-2">
-              Assistance & Échanges
+          {/* Action buttons: Contact + Paramètres sur la même ligne, puis Se déconnecter */}
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => {
+                  onCloseMobile();
+                  if (onOpenContact) {
+                    onOpenContact();
+                  } else {
+                    handleNavigate('/investisseurs/dashboard', '#contact-ma');
+                  }
+                }}
+                className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-bold transition cursor-pointer"
+                title="Contacter le pôle M&A"
+              >
+                <Mail className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>Contact</span>
+              </button>
+
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="flex items-center justify-center space-x-1.5 px-2.5 py-2.5 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-bold transition cursor-pointer"
+                title="Gérer mes paramètres"
+              >
+                <Settings className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <span>Paramètres</span>
+              </button>
             </div>
-            <button
-              onClick={() => {
-                onCloseMobile();
-                if (onOpenContact) {
-                  onOpenContact();
-                } else {
-                  handleNavigate('/investisseurs/dashboard', '#contact-ma');
-                }
-              }}
-              className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-800/60 hover:text-white transition text-left cursor-pointer"
-            >
-              <Mail className="w-4 h-4 text-blue-400 shrink-0" />
-              <span>Contact Pôle M&A</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom: Profile & Paramètres & Admin & Logout */}
-        <div className="p-4 border-t border-gray-800 bg-[#090d16]/90 space-y-2.5">
-          {/* User profile card */}
-          <div className="p-3 rounded-xl bg-gray-900/90 border border-gray-800">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
-                {currentInvestor?.logoUrl ? (
-                  <img src={currentInvestor.logoUrl} alt="Logo" className="w-full h-full object-contain p-0.5" />
-                ) : (
-                  <span>{currentInvestor?.name ? currentInvestor.name.charAt(0).toUpperCase() : 'U'}</span>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-bold text-white truncate">
-                  {currentInvestor?.name || 'Investisseur'}
-                </div>
-                <div className="text-[10px] text-gray-400 truncate">
-                  {currentInvestor?.company || 'Société Partenaire'}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Admin console button for Yann BARBERIS */}
-          {isAdmin && (
-            <button
-              onClick={() => handleAdminSelect('requests')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold transition shadow-sm cursor-pointer"
-            >
-              <div className="flex items-center space-x-2">
-                <ShieldAlert className="w-4 h-4 text-amber-400" />
-                <span>Console M&A (Admin)</span>
-              </div>
-              {pendingCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-amber-500 text-gray-950 text-[10px] font-black">
-                  {pendingCount}
-                </span>
-              )}
-            </button>
-          )}
-
-          {/* Action buttons: Paramètres + Se déconnecter */}
-          <div className="space-y-1.5">
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-semibold transition cursor-pointer"
-            >
-              <Settings className="w-3.5 h-3.5 text-blue-400" />
-              <span>Paramètres</span>
-            </button>
 
             <button
               onClick={handleLogout}
