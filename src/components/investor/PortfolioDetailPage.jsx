@@ -349,7 +349,7 @@ export default function PortfolioDetailPage() {
                       ARCHITECTURE DES REVENUS
                     </div>
                     <h3 className="text-lg font-black text-[#0b192c] mt-1">
-                      {!isPv ? `Value Stacking à 2 Cycles Quotidiens (${teaser.revenueArchitecture.total} / an)` : `Revenus Sécurisés par Appel d'Offres Simplifié (${teaser.revenueArchitecture.total} / an)`}
+                      {!isPv ? `Value Stacking à 2 Cycles Quotidiens (${teaser.revenueArchitecture.total} / an)` : (<>Revenus Sécurisés par Appel d'Offres Simplifié<br /><span className="text-blue-700">({teaser.revenueArchitecture.total} / an)</span></>)}
                     </h3>
                     {teaser.revenueArchitecture.cycleLabel && (
                       <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold mt-1.5 inline-block">
@@ -386,23 +386,20 @@ export default function PortfolioDetailPage() {
                     </div>
 
                     {/* Revenue Sources */}
-                    <div className="flex-1 space-y-3 w-full">
+                    <div className="flex-1 space-y-4 w-full">
                       {teaser.revenueArchitecture.sources.map((src, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <span className="w-3 h-3 rounded-full shrink-0 mt-0.5 shadow-2xs" style={{ backgroundColor: src.color }} />
+                          <span className="w-3 h-3 rounded-full shrink-0 mt-1 shadow-2xs" style={{ backgroundColor: src.color }} />
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs text-slate-800 font-bold truncate">{src.name}</div>
+                            <div className="text-sm font-black text-slate-900 mb-0.5">{src.value}</div>
+                            <div className="text-xs text-slate-800 font-bold">{src.name}</div>
                             <div className="text-[11px] text-slate-500 font-medium">{src.pct} du CA</div>
                           </div>
-                          <div className="text-xs font-black text-slate-900 whitespace-nowrap">{src.value}</div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="text-[11px] text-slate-500 italic pt-2 border-t border-slate-100 font-medium">
-                    {teaser.revenueArchitecture.totalLabel}
-                  </div>
                 </div>
 
                 {/* Right: Station Specs */}
@@ -416,17 +413,7 @@ export default function PortfolioDetailPage() {
                         <h3 className="text-lg font-black text-[#0b192c] mt-1">
                           Spécifications de la {isPv ? 'Toiture' : 'Station'} Type
                         </h3>
-                      </div>
-                      {!isPv && (
-                        <div className="flex gap-1.5">
-                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200">
-                            BESS
-                          </span>
-                          <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            500 kW
-                          </span>
-                        </div>
-                      )}
+                    </div>
                     </div>
 
                     <div className="space-y-0 divide-y divide-slate-100 pt-1">
@@ -601,7 +588,7 @@ export default function PortfolioDetailPage() {
                       BUSINESS PLAN AUDITÉ
                     </div>
                     <h3 className="text-lg font-black text-[#0b192c] mt-1">
-                      Trajectoire Financière Consolidée sur 15 Ans (2026 à 2040)
+                      Trajectoire Financière Consolidée sur 20 Ans (2026 à 2045)
                     </h3>
                   </div>
 
@@ -703,6 +690,7 @@ export default function PortfolioDetailPage() {
                 <p className="text-xs text-slate-600 leading-relaxed font-medium">
                   Votre accord de confidentialité étant vérifié et validé, l'intégralité du dossier d'acquisition du portefeuille{' '}
                   <strong className="text-slate-900 font-black">{isPv ? 'HÉLIOS' : 'VOLTA'}</strong> est accessible dès maintenant.
+                  <br /><br />
                   Vous pouvez télécharger les documents d'audit technique, les promesses de bail signées et les matrices économiques en accès direct.
                 </p>
 
@@ -713,7 +701,7 @@ export default function PortfolioDetailPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Modèle financier dynamique 15 ans</span>
+                    <span>Modèle financier dynamique 20 ans</span>
                   </div>
                 </div>
               </div>
@@ -786,7 +774,7 @@ export default function PortfolioDetailPage() {
                 : 'Sources : Étude BESS 31 Sites Septembre 2025 • Régime TURPE 7 Délibération CRE N° 2024-227 • Spécifications standard BESS LFP/NMC'}
             </p>
             <p className="text-[10px] text-slate-500 pt-1 font-medium">
-              7 Rue Gutenberg, 33700 Mérignac • RCS Bordeaux 881 500 552 • Capital : 10 000 € • <a href="mailto:contact@enr-courtage.fr" className="text-blue-700 hover:underline">contact@enr-courtage.fr</a>
+              7 Rue Gutenberg, 33700 Mérignac • RCS Bordeaux 881 500 552 • <a href="mailto:contact@enr-courtage.fr" className="text-blue-700 hover:underline">contact@enr-courtage.fr</a>
             </p>
             <p className="text-[10px] text-slate-400">
               &copy; {new Date().getFullYear()} ENR COURTAGE — Plateforme Transactionnelle M&A Confidentielle.

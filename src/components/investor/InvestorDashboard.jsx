@@ -331,60 +331,6 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
               </div>
             </div>
 
-            {/* LES 4 COMPTEURS CLÉS (STYLE ÉPURÉ FOND BLANC & BORDURES COLORÉES) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* KPI 1 : Portefeuilles Suivis */}
-              <div className="bg-white border-2 border-blue-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
-                <div className="text-[10px] uppercase tracking-wider font-extrabold text-blue-700">
-                  Portefeuilles Suivis
-                </div>
-                <div className="text-2xl sm:text-3xl font-black text-blue-950 mt-1">2 Actifs</div>
-                <div className="text-[11px] font-bold text-blue-600 mt-0.5">24.62 MW cumulés (PV + BESS)</div>
-              </div>
-
-              {/* KPI 2 : Offres Déposées */}
-              <div className="bg-white border-2 border-amber-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500"></div>
-                <div className="text-[10px] uppercase tracking-wider font-extrabold text-amber-700">
-                  Offres Déposées
-                </div>
-                <div className="text-2xl sm:text-3xl font-black text-amber-950 mt-1">
-                  {myOffers.length} Offre{myOffers.length > 1 ? 's' : ''}
-                </div>
-                <div className="text-[11px] font-bold text-amber-700 mt-0.5">
-                  {myOffers.length > 0 ? `${formatThousands(totalMyOffersAmount)} € HT proposée` : 'Aucune offre active'}
-                </div>
-              </div>
-
-              {/* KPI 3 : Négociation Active */}
-              <div className="bg-white border-2 border-purple-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-indigo-600"></div>
-                <div className="text-[10px] uppercase tracking-wider font-extrabold text-purple-700">
-                  Négociation Active
-                </div>
-                <div className="text-2xl sm:text-3xl font-black text-purple-950 mt-1">
-                  {activeNegotiationCount} En Cours
-                </div>
-                <div className="text-[11px] font-bold text-purple-600 mt-0.5">
-                  {activeNegotiationCount > 0
-                    ? (activeOffer?.status === 'counter_by_admin'
-                        ? `Contre-proposition reçue (${formatThousands(activeOffer?.counterOffer?.amountEur || 0)} €)`
-                        : 'Négociation en cours')
-                    : 'Aucune négociation active'}
-                </div>
-              </div>
-
-              {/* KPI 4 : Data Room Débloquée */}
-              <div className="bg-white border-2 border-emerald-200 rounded-2xl p-4 shadow-xs relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-500"></div>
-                <div className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-700">
-                  Data Room Débloquée
-                </div>
-                <div className="text-2xl sm:text-3xl font-black text-emerald-950 mt-1">12 Fichiers</div>
-                <div className="text-[11px] font-bold text-emerald-700 mt-0.5">Baux, devis, fiches techniques</div>
-              </div>
-            </div>
 
             {/* SOUS-NAVIGATION INVESTISSEUR */}
             <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto text-xs font-bold">
