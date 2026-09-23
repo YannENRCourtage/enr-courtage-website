@@ -177,20 +177,39 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           <section className="relative bg-white border-b border-slate-200 px-4 sm:px-12 py-10 sm:py-14">
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-between gap-8">
-              {/* Left: Title & Description */}
-              <div className="space-y-4 max-w-2xl">
-                <h1 className="text-3xl sm:text-5xl font-black text-[#0b192c] tracking-tight">
-                  PORTEFEUILLE{' '}
-                  <span className={isPv ? 'text-amber-600' : 'text-blue-700'}>
-                    {isPv ? 'HÉLIOS' : 'VOLTA'}
-                  </span>
-                </h1>
-                <p className="text-slate-600 text-sm leading-relaxed font-medium">
-                  {portfolio.description}
-                  {portfolio.descriptionShort && (
-                    <span className="block mt-2 text-slate-500 text-xs font-normal leading-relaxed">{portfolio.descriptionShort}</span>
-                  )}
-                </p>
+              {/* Left: Title, Description & Action Button */}
+              <div className="space-y-6 max-w-2xl flex flex-col justify-between">
+                <div className="space-y-4">
+                  <h1 className="text-3xl sm:text-5xl font-black text-[#0b192c] tracking-tight">
+                    PORTEFEUILLE{' '}
+                    <span className={isPv ? 'text-amber-600' : 'text-blue-700'}>
+                      {isPv ? 'HÉLIOS' : 'VOLTA'}
+                    </span>
+                  </h1>
+                  <p className="text-slate-600 text-sm leading-relaxed font-medium">
+                    {portfolio.description}
+                    {portfolio.descriptionShort && (
+                      <span className="block mt-2 text-slate-500 text-xs font-normal leading-relaxed">{portfolio.descriptionShort}</span>
+                    )}
+                  </p>
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setSelectedSiteIds([]);
+                      setIsOfferModalOpen(true);
+                    }}
+                    className={`px-5 py-3 rounded-2xl font-black text-xs uppercase tracking-wider transition flex items-center gap-2 cursor-pointer shadow-md active:scale-95 text-white ${
+                      isPv
+                        ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-amber-600/20'
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-blue-600/20'
+                    }`}
+                  >
+                    <Coins className="w-4 h-4" />
+                    <span>+ Déposer une offre d'Acquisition</span>
+                  </button>
+                </div>
               </div>
 
               {/* Right: Volume Consolidé Gradient Card + CTAs + Print Button */}

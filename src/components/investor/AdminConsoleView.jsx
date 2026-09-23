@@ -45,6 +45,7 @@ import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 import NdaDocumentModal from './NdaDocumentModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
+import TeaserSitesTable from './TeaserSitesTable';
 import ErrorBoundary from './ErrorBoundary';
 
 function safeText(val, fallback = '') {
@@ -508,6 +509,23 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
             </span>
             <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-mono">
               {(messages || []).length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveSection('projects')}
+            className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+              activeSection === 'projects'
+                ? 'bg-purple-50 text-purple-900 font-black border border-purple-200'
+                : 'text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-amber-600" />
+              <span>Gestion des Projets</span>
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-mono">
+              2 Portefeuilles
             </span>
           </button>
         </div>
@@ -1160,7 +1178,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
               {/* Boîte de discussion */}
               <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col h-[420px]">
-                <div className="flex-1 overflow-y-auto space-y-3 py-2">
+                <div className="flex-1 overflow-y-auto space-y-3 py-2 pr-4 sm:pr-6">
                   {chatMessages.length === 0 ? (
                     <div className="text-center py-12 text-slate-400 text-xs">
                       Aucun message échangé pour l'instant avec cet investisseur.
@@ -1172,8 +1190,8 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       return (
                         <div
                           key={msg.id}
-                          className={`flex items-start gap-2.5 max-w-[80%] ${
-                            isAdminMsg ? 'ml-auto flex-row-reverse' : ''
+                          className={`flex items-start gap-2.5 max-w-[78%] sm:max-w-[65%] ${
+                            isAdminMsg ? 'ml-auto flex-row-reverse mr-2 sm:mr-3' : 'mr-auto'
                           }`}
                         >
                           <div
@@ -1224,6 +1242,51 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                     <Send className="w-3.5 h-3.5" />
                   </button>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* --------------------------------------------------------------- */}
+          {/* SECTION 5 : GESTION DES PROJETS & STATUTS DE VENTE              */}
+          {/* --------------------------------------------------------------- */}
+          {activeSection === 'projects' && (
+            <div className="space-y-6">
+              {/* Portefeuille HELIOS (PV) */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                    <h3 className="text-base font-black text-[#0b192c]">
+                      Portefeuille HÉLIOS — Solaire Toitures & Hangars (PV 9,12 MWc)
+                    </h3>
+                  </div>
+                  <span className="text-xs font-bold text-slate-500">
+                    Administration des projets unitaires
+                  </span>
+                </div>
+                <TeaserSitesTable
+                  sites={portfolios.find((p) => p.id === 'helios')?.sites || []}
+                  portfolio={portfolios.find((p) => p.id === 'helios')}
+                />
+              </div>
+
+              {/* Portefeuille VOLTA (BESS) */}
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="w-3 h-3 rounded-full bg-cyan-500"></span>
+                    <h3 className="text-base font-black text-[#0b192c]">
+                      Portefeuille VOLTA — Stockage Réseau Stand-Alone (BESS 15,50 MW)
+                    </h3>
+                  </div>
+                  <span className="text-xs font-bold text-slate-500">
+                    Administration des stations unitaires
+                  </span>
+                </div>
+                <TeaserSitesTable
+                  sites={portfolios.find((p) => p.id === 'volta')?.sites || []}
+                  portfolio={portfolios.find((p) => p.id === 'volta')}
+                />
               </div>
             </div>
           )}

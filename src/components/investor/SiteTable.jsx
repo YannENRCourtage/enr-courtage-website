@@ -285,13 +285,13 @@ export default function SiteTable({
                   )}
 
                   {/* ID */}
-                  <td className={`py-3 px-3 font-mono text-slate-500 font-bold text-center ${isSold ? 'blur-[4px] opacity-40 select-none' : ''}`}>
+                  <td className={`py-3 px-3 font-mono text-slate-500 font-bold text-center ${isSold && !isAdmin ? 'blur-[6px] opacity-40 select-none pointer-events-none' : ''}`}>
                     {site.id}
                   </td>
 
                   {/* Commune & Details */}
                   <td className="py-3 px-4 relative">
-                    <div className={`${isSold ? 'blur-[4px] opacity-40 select-none' : ''}`}>
+                    <div className={`${isSold && !isAdmin ? 'blur-[6px] opacity-40 select-none pointer-events-none' : ''}`}>
                       <div className="font-black text-slate-950 flex items-center gap-1.5 text-[13px]">
                         {site.name || site.ville}
                         {site.cp && <span className="text-[11px] text-slate-500 font-semibold">({site.cp})</span>}
@@ -305,33 +305,33 @@ export default function SiteTable({
                     {isSold && (
                       <div className="absolute inset-0 flex items-center justify-start pl-4 pointer-events-none">
                         <span className="px-3 py-1 rounded-full bg-red-600 text-white font-black text-xs uppercase tracking-widest shadow-md border border-white">
-                          Vendu !
+                          🔒 Vendu !
                         </span>
                       </div>
                     )}
                   </td>
 
                   {/* Dept */}
-                  <td className={`py-3 px-3 text-center ${isSold ? 'blur-[4px] opacity-40 select-none' : ''}`}>
+                  <td className={`py-3 px-3 text-center ${isSold && !isAdmin ? 'blur-[6px] opacity-40 select-none pointer-events-none' : ''}`}>
                     <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 font-mono font-bold text-[10px] border border-slate-300">
                       {site.dept || (site.cp ? site.cp.substring(0, 2) : '-')}
                     </span>
                   </td>
 
                   {/* Power */}
-                  <td className={`py-3 px-3 text-right font-black font-mono text-xs ${powerColor} ${isSold ? 'blur-[4px] opacity-40 select-none' : ''}`}>
+                  <td className={`py-3 px-3 text-right font-black font-mono text-xs ${powerColor} ${isSold && !isAdmin ? 'blur-[6px] opacity-40 select-none' : ''}`}>
                     {powerText}
                   </td>
 
                   {/* Typology */}
-                  <td className={`py-3 px-3 ${isSold ? 'blur-[4px] opacity-40 select-none' : ''}`}>
+                  <td className={`py-3 px-3 ${isSold && !isAdmin ? 'blur-[6px] opacity-40 select-none' : ''}`}>
                     <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
                       {site.type}
                     </span>
                   </td>
 
                   {/* Cost */}
-                  <td className={`py-3 px-3 font-mono text-slate-800 text-[11px] font-semibold ${isSold ? 'blur-[4px] opacity-40 select-none' : ''}`}>
+                  <td className={`py-3 px-3 font-mono text-slate-800 text-[11px] font-semibold ${isSold && !isAdmin ? 'blur-[6px] opacity-40 select-none' : ''}`}>
                     {costDisplay}
                   </td>
 

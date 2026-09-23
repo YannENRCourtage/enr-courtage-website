@@ -329,19 +329,6 @@ export default function InvestorSidebar({
                   {myOffers.length}
                 </span>
               </button>
-
-              {onOpenCreateOffer && (
-                <button
-                  onClick={() => {
-                    onCloseMobile();
-                    onOpenCreateOffer();
-                  }}
-                  className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition text-left cursor-pointer"
-                >
-                  <PlusCircle className="w-4 h-4 shrink-0 text-amber-400" />
-                  <span>Déposer une Offre</span>
-                </button>
-              )}
             </div>
           </div>
         </div>

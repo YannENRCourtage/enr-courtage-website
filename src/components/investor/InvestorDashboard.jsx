@@ -60,10 +60,19 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     userDownloads,
   } = useInvestorStore();
 
-  const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
+  // Active view: 'investor' or 'admin' (Admin defaults to 'admin' console)
+  const [activeView, setActiveView] = useState(() => {
+    if (defaultToAdmin || adminParam === 'true') return 'admin';
+    if (currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr') return 'admin';
+    return 'investor';
+  });
 
-  // Active view: 'investor' or 'admin'
-  const [activeView, setActiveView] = useState(defaultToAdmin || adminParam === 'true' ? 'admin' : 'investor');
+  // Keep activeView synced if admin state resolves
+  React.useEffect(() => {
+    if (isAdmin && !defaultToAdmin && !adminParam) {
+      setActiveView('admin');
+    }
+  }, [isAdmin]);
   // Investor sub-tab: 'portfolios' | 'offers' | 'dataroom' | 'messages'
   const [investorSubTab, setInvestorSubTab] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -296,39 +305,16 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             )}
 
             {/* BANDEAU D'ACCUEIL INVESTISSEUR */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-[#0b192c] tracking-tight">
-                  Bienvenue, {currentInvestor?.name || 'Investisseur'}{' '}
-                  <span className="text-slate-400 font-normal text-lg sm:text-xl ml-1">
-                    · {currentInvestor?.company || 'Partenaire M&A'}
-                  </span>
-                </h1>
-                <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
-                  Consultez les 2 portefeuilles disponibles en cession, examinez les justificatifs en Data Room et soumettez vos offres par jalons.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => {
-                    setOfferModalTargetPortfolio('both');
-                    setIsOfferModalOpen(true);
-                  }}
-                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition-all flex items-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <Coins className="w-4 h-4" />
-                  <span>+ Déposer une Offre d'Acquisition</span>
-                </button>
-
-                <button
-                  onClick={() => setInvestorSubTab('messages')}
-                  className="px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer border border-slate-200"
-                >
-                  <MessageSquare className="w-4 h-4 text-blue-600" />
-                  <span>Messagerie M&A</span>
-                </button>
-              </div>
+            <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm">
+              <h1 className="text-2xl sm:text-3xl font-black text-[#0b192c] tracking-tight">
+                Bienvenue, {currentInvestor?.name || 'Investisseur'}{' '}
+                <span className="text-slate-400 font-normal text-lg sm:text-xl ml-1">
+                  · {currentInvestor?.company || 'Partenaire M&A'}
+                </span>
+              </h1>
+              <p className="text-xs sm:text-sm font-medium text-slate-500 mt-1">
+                Consultez les 2 portefeuilles disponibles en cession, examinez les justificatifs en Data Room et soumettez vos offres par jalons.
+              </p>
             </div>
 
 
@@ -786,15 +772,15 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                 </div>
 
                 {/* Fil de discussion */}
-                <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-3 pr-1">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-3 pr-4 sm:pr-6">
                   {investorMessages.map((msg) => {
                     const isFromMe = msg.from === 'investor';
 
                     return (
                       <div
                         key={msg.id}
-                        className={`flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%] ${
-                          isFromMe ? 'ml-auto flex-row-reverse' : ''
+                        className={`flex items-start gap-2.5 max-w-[80%] sm:max-w-[65%] ${
+                          isFromMe ? 'ml-auto flex-row-reverse mr-2 sm:mr-3' : 'mr-auto'
                         }`}
                       >
                         <div

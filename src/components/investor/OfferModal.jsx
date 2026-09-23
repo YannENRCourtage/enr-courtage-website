@@ -172,18 +172,13 @@ export default function OfferModal({
     }
   }, [isOpen, portfolio, defaultPortfolioId, existingOffer, selectedSiteIds]);
 
-  // Compute available active sites for target portfolio
+  // Compute available active sites for target portfolio (Strictly single-portfolio: HELIOS or VOLTA)
   const availableSites = useMemo(() => {
     let list = [];
-    if (targetPortfolio === 'helios') {
-      list = heliosSites.map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
-    } else if (targetPortfolio === 'volta') {
+    if (targetPortfolio === 'volta') {
       list = voltaSites.map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' }));
     } else {
-      list = [
-        ...heliosSites.map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' })),
-        ...voltaSites.map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' })),
-      ];
+      list = heliosSites.map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
     }
 
     return list.filter((site) => {
@@ -609,51 +604,48 @@ export default function OfferModal({
               <div className="space-y-4 animate-fadeIn">
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                    Sélection du ou des Portefeuilles cibles
+                    Sélection du Portefeuille cible
                   </label>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="grid grid-cols-2 gap-3 text-xs">
                     <button
                       type="button"
+                      disabled={!!portfolio || !!defaultPortfolioId}
                       onClick={() => setTargetPortfolio('helios')}
-                      className={`p-3 rounded-2xl border text-center font-semibold transition cursor-pointer ${
+                      className={`p-3.5 rounded-2xl border text-center font-semibold transition ${
+                        portfolio || defaultPortfolioId ? 'cursor-default' : 'cursor-pointer'
+                      } ${
                         targetPortfolio === 'helios'
-                          ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm'
+                          ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm ring-2 ring-amber-400/30'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
-                      <div className="text-base mb-0.5">☀️</div>
-                      <div className="font-bold">HÉLIOS (PV)</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">9.12 MWc / 29 sites</div>
+                      <div className="text-xl mb-1">☀️</div>
+                      <div className="font-black text-sm">HÉLIOS (PV)</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 font-medium">9.12 MWc • {heliosSites.length} sites toitures</div>
                     </button>
 
                     <button
                       type="button"
+                      disabled={!!portfolio || !!defaultPortfolioId}
                       onClick={() => setTargetPortfolio('volta')}
-                      className={`p-3 rounded-2xl border text-center font-semibold transition cursor-pointer ${
+                      className={`p-3.5 rounded-2xl border text-center font-semibold transition ${
+                        portfolio || defaultPortfolioId ? 'cursor-default' : 'cursor-pointer'
+                      } ${
                         targetPortfolio === 'volta'
-                          ? 'bg-cyan-50 border-cyan-400 text-cyan-900 shadow-sm'
+                          ? 'bg-cyan-50 border-cyan-400 text-cyan-900 shadow-sm ring-2 ring-cyan-400/30'
                           : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                       }`}
                     >
-                      <div className="text-base mb-0.5">🔋</div>
-                      <div className="font-bold">VOLTA (BESS)</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">15.50 MW / {voltaSites.length} sites</div>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setTargetPortfolio('both')}
-                      className={`p-3 rounded-2xl border text-center font-semibold transition cursor-pointer ${
-                        targetPortfolio === 'both'
-                          ? 'bg-emerald-50 border-emerald-400 text-emerald-900 shadow-sm'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      <div className="text-base mb-0.5">⚡</div>
-                      <div className="font-bold">Les Deux</div>
-                      <div className="text-[10px] text-slate-500 mt-0.5">23.51 MW / {heliosSites.length + voltaSites.length} sites</div>
+                      <div className="text-xl mb-1">🔋</div>
+                      <div className="font-black text-sm">VOLTA (BESS)</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5 font-medium">15.50 MW • {voltaSites.length} stations BESS</div>
                     </button>
                   </div>
+                  {(portfolio || defaultPortfolioId) && (
+                    <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
+                      Cette offre concerne exclusivement le portefeuille sélectionné ({targetPortfolio === 'volta' ? 'VOLTA BESS' : 'HÉLIOS PV'}).
+                    </p>
+                  )}
                 </div>
 
                 <div>

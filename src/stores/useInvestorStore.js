@@ -98,6 +98,11 @@ export const useInvestorStore = create(
       // Deleted default/demo Data Room documents per portfolio
       deletedDefaultDocs: {},
 
+      // Sites state (sold, deleted, custom added by admin)
+      soldSites: { helios: [], volta: [] },
+      deletedSites: { helios: [], volta: [] },
+      customSites: { helios: [], volta: [] },
+
       // Tracking of document downloads by investor email
       userDownloads: {},
 
@@ -255,6 +260,44 @@ export const useInvestorStore = create(
             deletedSites: {
               ...state.deletedSites,
               [pId]: [...currentDeleted, siteId],
+            },
+          };
+        });
+      },
+
+      // Ajouter un nouveau projet personnalisé à un portefeuille
+      addCustomSite: (portfolioId, siteData) => {
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        const newId = siteData.id || Date.now();
+        const newSite = {
+          ...siteData,
+          id: newId,
+          isCustom: true,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => {
+          const currentCustom = state.customSites?.[pId] || [];
+          return {
+            customSites: {
+              ...state.customSites,
+              [pId]: [...currentCustom, newSite],
+            },
+          };
+        });
+        return newSite;
+      },
+
+      // Supprimer plusieurs projets d'un portefeuille
+      deleteBatchSites: (portfolioId, siteIds = []) => {
+        if (!Array.isArray(siteIds) || siteIds.length === 0) return;
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        set((state) => {
+          const currentDeleted = state.deletedSites?.[pId] || [];
+          const newDeleted = Array.from(new Set([...currentDeleted, ...siteIds]));
+          return {
+            deletedSites: {
+              ...state.deletedSites,
+              [pId]: newDeleted,
             },
           };
         });
@@ -1356,9 +1399,12 @@ y.barberis@enr-courtage.fr
           state.investors = INVESTORS;
         }
 
-        // Initialize Data Room state containers if needed
+        // Initialize Data Room & Sites state containers if needed
         state.deletedDefaultDocs = state.deletedDefaultDocs || {};
         state.customDataRoom = state.customDataRoom || {};
+        state.soldSites = state.soldSites || { helios: [], volta: [] };
+        state.deletedSites = state.deletedSites || { helios: [], volta: [] };
+        state.customSites = state.customSites || { helios: [], volta: [] };
 
         if (!state.userDownloads || Object.keys(state.userDownloads).length === 0) {
           state.userDownloads = {
