@@ -365,18 +365,6 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
               </button>
 
               <button
-                onClick={() => setInvestorSubTab('dataroom')}
-                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
-                  investorSubTab === 'dataroom'
-                    ? 'bg-blue-600 text-white shadow-xs font-black'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                }`}
-              >
-                <FolderLock className="w-4 h-4" />
-                <span>Data Room Virtuelle (12)</span>
-              </button>
-
-              <button
                 onClick={() => setInvestorSubTab('messages')}
                 className={`px-4 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
                   investorSubTab === 'messages'
@@ -460,7 +448,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       onClick={() => navigate('/investisseurs/portefeuille/helios')}
                       className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>Voir le Teaser & Cartographie</span>
+                      <span>Accès Portefeuille</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
 
@@ -547,7 +535,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       onClick={() => navigate('/investisseurs/portefeuille/volta')}
                       className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
-                      <span>Voir la fiche & les 31 sites</span>
+                      <span>Accès Portefeuille</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
 
@@ -784,149 +772,13 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             )}
 
             {/* ============================================================= */}
-            {/* SOUS-VUE C : DATA ROOM VIRTUELLE SÉCURISÉE                    */}
-            {/* ============================================================= */}
-            {investorSubTab === 'dataroom' && (
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
-                <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div>
-                    <span className="text-xs font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200">
-                      Chiffrement AES-256 • Traçabilité Horodatée
-                    </span>
-                    <h2 className="text-2xl font-black text-[#0b192c] tracking-tight mt-1">
-                      Documents du Portefeuille en Data Room
-                    </h2>
-                    <p className="text-xs text-slate-500 font-medium">
-                      Consultez et téléchargez les pièces officielles vérifiées sous votre accord de confidentialité bilatéral.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Grille des 4 catégories */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Catégorie 1 : Juridique & Foncier */}
-                  <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                      <h4 className="text-xs font-black text-[#0b192c] uppercase tracking-wider">
-                        Juridique & Foncier (4 fichiers)
-                      </h4>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-400 transition">
-                        <div className="flex items-center gap-2.5">
-                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900">Promesse de bail BESS — BATIOT (32220 Mongausy)</div>
-                            <div className="text-[10px] text-slate-400 font-medium">0.9 Mo • Acte notarié 24 pages • Signé 20 ans</div>
-                          </div>
-                        </div>
-                        <a
-                          href="/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf"
-                          download="Promesse_de_bail_BATIOT.pdf"
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-blue-700 font-bold text-xs transition flex items-center gap-1"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Télécharger</span>
-                        </a>
-                      </div>
-
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-400 transition">
-                        <div className="flex items-center gap-2.5">
-                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900">Promesse de bail BESS — CASTEBRUNET (82300 Caussade)</div>
-                            <div className="text-[10px] text-slate-400 font-medium">1.1 Mo • Acte notarié 25 pages • Signé 20 ans</div>
-                          </div>
-                        </div>
-                        <a
-                          href="/documents/dataroom/Promesse_de_bail_Castebrunet.pdf"
-                          download="Promesse_de_bail_CASTEBRUNET.pdf"
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-blue-700 font-bold text-xs transition flex items-center gap-1"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Télécharger</span>
-                        </a>
-                      </div>
-
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-400 transition">
-                        <div className="flex items-center gap-2.5">
-                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900">Promesse de bail PV — CONSOLI (24130 Prigonrieux)</div>
-                            <div className="text-[10px] text-slate-400 font-medium">1.3 Mo • Acte notarié 30 ans • Hélios</div>
-                          </div>
-                        </div>
-                        <a
-                          href="/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf"
-                          download="Promesse_de_bail_CONSOLI.pdf"
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-blue-700 font-bold text-xs transition flex items-center gap-1"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Télécharger</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Catégorie 2 : Technique & Réseau HTA */}
-                  <div className="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                      <h4 className="text-xs font-black text-[#0b192c] uppercase tracking-wider">
-                        Technique & Réseau HTA (3 fichiers)
-                      </h4>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-emerald-400 transition">
-                        <div className="flex items-center gap-2.5">
-                          <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">PDF</span>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900">Fiche Technique CESC Mercury 261 (LiFePO4)</div>
-                            <div className="text-[10px] text-slate-400 font-medium">1.8 Mo • Spécifications certifiées IEC 61850</div>
-                          </div>
-                        </div>
-                        <a
-                          href="/documents/dataroom/Fiche_Technique_CESC_Mercury_261.pdf"
-                          download="Fiche_Technique_CESC_Mercury_261.pdf"
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-emerald-700 font-bold text-xs transition flex items-center gap-1"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Télécharger</span>
-                        </a>
-                      </div>
-
-                      <div className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-emerald-400 transition">
-                        <div className="flex items-center gap-2.5">
-                          <span className="px-2 py-1 bg-emerald-50 text-emerald-700 font-bold text-[10px] rounded">XLSX</span>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900">Matrice Caparéseau ODRE — 31 Postes Sources</div>
-                            <div className="text-[10px] text-slate-400 font-medium">3.4 Mo • Quotes-parts S3REnR & capacités Enedis</div>
-                          </div>
-                        </div>
-                        <a
-                          href="/documents/dataroom/Matrice_Capareseau_ODRE_31_Postes.xlsx"
-                          download="Matrice_Capareseau_ODRE_31_Postes.xlsx"
-                          className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-emerald-50 text-emerald-700 font-bold text-xs transition flex items-center gap-1"
-                        >
-                          <Download className="w-3.5 h-3.5" />
-                          <span>Télécharger</span>
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* ============================================================= */}
-            {/* SOUS-VUE D : MESSAGERIE DIRECTE M&A                          */}
+            {/* SOUS-VUE C : MESSAGERIE DIRECTE M&A                          */}
             {/* ============================================================= */}
             {investorSubTab === 'messages' && (
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm max-w-3xl mx-auto flex flex-col h-[520px]">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm w-full max-w-7xl mx-auto flex flex-col h-[580px] overflow-hidden">
                 <div className="flex items-center justify-between pb-4 border-b border-slate-100">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white font-black text-sm flex items-center justify-center shadow-xs">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-500 text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0">
                       YB
                     </div>
                     <div>
@@ -934,20 +786,20 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       <span className="text-xs text-slate-500 font-medium">Associé M&A • ENR COURTAGE</span>
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> En ligne
                   </span>
                 </div>
 
                 {/* Fil de discussion */}
-                <div className="flex-1 overflow-y-auto py-4 space-y-3">
+                <div className="flex-1 overflow-y-auto overflow-x-hidden py-4 space-y-3 pr-1">
                   {investorMessages.map((msg) => {
                     const isFromMe = msg.from === 'investor';
 
                     return (
                       <div
                         key={msg.id}
-                        className={`flex items-start gap-2.5 max-w-[80%] ${
+                        className={`flex items-start gap-2.5 max-w-[85%] sm:max-w-[70%] ${
                           isFromMe ? 'ml-auto flex-row-reverse' : ''
                         }`}
                       >
@@ -960,15 +812,15 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                         </div>
 
                         <div
-                          className={`p-3 rounded-2xl text-xs font-medium ${
+                          className={`p-3.5 rounded-2xl text-xs font-medium break-words overflow-hidden ${
                             isFromMe
                               ? 'bg-blue-600 text-white rounded-tr-none shadow-xs'
                               : 'bg-slate-100 text-slate-800 rounded-tl-none'
                           }`}
                         >
-                          <div>{msg.text}</div>
+                          <div className="break-words whitespace-pre-wrap leading-relaxed">{msg.text}</div>
                           <span
-                            className={`text-[9px] block mt-1 ${
+                            className={`text-[9px] block mt-1.5 font-bold ${
                               isFromMe ? 'text-blue-200' : 'text-slate-400'
                             }`}
                           >
@@ -992,7 +844,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                   />
                   <button
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                   >
                     <span>Envoyer</span>
                     <Send className="w-3.5 h-3.5" />

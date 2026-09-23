@@ -94,11 +94,11 @@ export default function PortfolioDetailPage() {
 
   if (!portfolio) {
     return (
-      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 space-y-4">
-        <h2 className="text-2xl font-bold">Portefeuille introuvable</h2>
+      <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-6 space-y-4">
+        <h2 className="text-2xl font-black text-[#0b192c]">Portefeuille introuvable</h2>
         <button
           onClick={() => navigate('/investisseurs/dashboard')}
-          className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-900 rounded-xl text-xs font-semibold"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs cursor-pointer"
         >
           Retour au tableau de bord
         </button>
@@ -110,9 +110,6 @@ export default function PortfolioDetailPage() {
   const teaser = portfolio.teaserData || {};
   const displaySitesCount = portfolio.sites.length;
   const displayPower = portfolio.kpis.totalPower;
-
-  const accent = isPv ? 'amber' : 'cyan';
-  const accentColor = isPv ? '#f59e0b' : '#06b6d4';
 
   // Selection handlers
   const handleToggleSiteSelect = (siteId) => {
@@ -132,8 +129,26 @@ export default function PortfolioDetailPage() {
     pct: s.pct,
   }));
 
+  // Differentiated borders and backgrounds for KPI cards
+  const kpiCardStyles = [
+    { bg: 'bg-blue-50/80', border: 'border-2 border-blue-200 border-l-4 border-l-blue-600', textVal: 'text-blue-900' },
+    { bg: 'bg-emerald-50/80', border: 'border-2 border-emerald-200 border-l-4 border-l-emerald-600', textVal: 'text-emerald-900' },
+    { bg: 'bg-amber-50/80', border: 'border-2 border-amber-200 border-l-4 border-l-amber-600', textVal: 'text-amber-900' },
+    { bg: 'bg-indigo-50/80', border: 'border-2 border-indigo-200 border-l-4 border-l-indigo-600', textVal: 'text-indigo-900' },
+    { bg: 'bg-teal-50/80', border: 'border-2 border-teal-200 border-l-4 border-l-teal-600', textVal: 'text-teal-900' },
+    { bg: 'bg-purple-50/80', border: 'border-2 border-purple-200 border-l-4 border-l-purple-600', textVal: 'text-purple-900' },
+  ];
+
+  // Differentiated borders and icon styles for 4 Pillars
+  const pillarStyles = [
+    { border: 'border-2 border-blue-200 hover:border-blue-400', iconBg: 'bg-blue-100 text-blue-700', bullet: 'bg-blue-600', tag: 'text-blue-700 bg-blue-50 border-blue-200' },
+    { border: 'border-2 border-emerald-200 hover:border-emerald-400', iconBg: 'bg-emerald-100 text-emerald-700', bullet: 'bg-emerald-600', tag: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+    { border: 'border-2 border-amber-200 hover:border-amber-400', iconBg: 'bg-amber-100 text-amber-700', bullet: 'bg-amber-600', tag: 'text-amber-700 bg-amber-50 border-amber-200' },
+    { border: 'border-2 border-indigo-200 hover:border-indigo-400', iconBg: 'bg-indigo-100 text-indigo-700', bullet: 'bg-indigo-600', tag: 'text-indigo-700 bg-indigo-50 border-indigo-200' },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex selection:bg-amber-500 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex selection:bg-blue-600 selection:text-white">
       {/* Vertical Sidebar */}
       <InvestorSidebar
         activePage={id === 'volta' ? 'volta' : 'helios'}
@@ -146,41 +161,14 @@ export default function PortfolioDetailPage() {
 
       {/* Main Content Area */}
       <div className="flex-1 lg:pl-72 flex flex-col min-w-0">
-        {/* Header */}
+        {/* Sticky Header with branding on left & user profile / notifs on right */}
         <InvestorHeader
           onToggleMobileMenu={() => setIsMobileSidebarOpen(true)}
           showBackToDashboard={true}
-          pageTitle={portfolio.name}
-          pageTitleBadge={portfolio.typeBadge}
+          pageTitle={`ENR COURTAGE M&A • PORTEFEUILLE CONSOLIDÉ ${isPv ? 'PV' : 'BESS'} ${displayPower}`}
+          pageTitleBadge={isPv ? 'SOLAIRE 9,12 MWc' : 'STOCKAGE 15,50 MW'}
           onOpenNda={() => setIsNdaModalOpen(true)}
         />
-
-        {/* ============================================================= */}
-        {/* TOP BAR — Sticky Dark Banner                                   */}
-        {/* ============================================================= */}
-        <div className="bg-slate-900/80 border-b border-slate-800 px-4 sm:px-8 py-2 flex items-center justify-between text-[11px]">
-          <span className="font-bold text-slate-400 uppercase tracking-widest">
-            ENR COURTAGE M&A • PORTEFEUILLE CONSOLIDÉ {isPv ? 'PV' : 'BESS'} {displayPower}
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="text-slate-500">
-              Date du teaser CRE 2026 — {new Date().toLocaleDateString('fr-FR')}
-            </span>
-            <button
-              onClick={() => setIsNdaModalOpen(true)}
-              className={`px-2 py-0.5 rounded text-[10px] font-bold bg-${accent}-500/20 text-${accent}-300 border border-${accent}-500/30`}
-            >
-              ✓ NDA Bilatéral Actif
-            </button>
-            <button
-              onClick={() => window.print()}
-              className="text-slate-400 hover:text-white transition flex items-center gap-1"
-            >
-              <Printer className="w-3.5 h-3.5" />
-              <span>Imprimer / PDF</span>
-            </button>
-          </div>
-        </div>
 
         {/* MAIN SCROLLABLE CONTENT */}
         <main className="flex-grow overflow-y-auto">
@@ -188,41 +176,77 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 1 — HERO PORTEFEUILLE                                 */}
           {/* ============================================================= */}
-          <section className="relative bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 px-4 sm:px-12 py-12 sm:py-16">
+          <section className="relative bg-white border-b border-slate-200 px-4 sm:px-12 py-10 sm:py-14">
             <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-between gap-8">
               {/* Left: Title & Description */}
               <div className="space-y-4 max-w-2xl">
-                <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
+                <div className="flex items-center gap-2">
+                  <span className={`px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider ${
+                    isPv ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-blue-50 text-blue-700 border border-blue-200'
+                  }`}>
+                    {isPv ? 'Solaire Toitures & Hangars' : 'Stockage Électrique BESS'}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500">
+                    Vendeur : <strong className="text-slate-800">{isPv ? 'GREEN INVEST' : 'VOLTA SAS'}</strong>
+                  </span>
+                </div>
+
+                <h1 className="text-3xl sm:text-5xl font-black text-[#0b192c] tracking-tight">
                   PORTEFEUILLE{' '}
-                  <span className={`text-${accent}-400`}>{isPv ? 'HÉLIOS' : 'VOLTA'}</span>
+                  <span className={isPv ? 'text-amber-600' : 'text-blue-700'}>
+                    {isPv ? 'HÉLIOS' : 'VOLTA'}
+                  </span>
                 </h1>
-                <p className="text-slate-400 text-sm leading-relaxed">
+                <p className="text-slate-600 text-sm leading-relaxed font-medium">
                   {portfolio.description}
                   {portfolio.descriptionShort && (
-                    <span className="block mt-1 text-slate-500 text-xs">{portfolio.descriptionShort}</span>
+                    <span className="block mt-2 text-slate-500 text-xs font-normal leading-relaxed">{portfolio.descriptionShort}</span>
                   )}
                 </p>
               </div>
 
-              {/* Right: Volume Badge + CTAs */}
-              <div className="bg-slate-800/60 border border-slate-700 rounded-2xl p-6 min-w-[260px] space-y-4">
-                <div className="text-center">
-                  <div className="text-[11px] text-slate-500 uppercase tracking-wider font-medium">Volume Consolidé</div>
-                  <div className={`text-4xl font-black text-${accent}-400 mt-1`}>{displayPower}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{portfolio.kpis.totalPowerSub}</div>
+              {/* Right: Volume Consolidé Gradient Card + CTAs + Print Button */}
+              <div className="w-full lg:w-auto min-w-[280px]">
+                <div className={`rounded-3xl p-6 sm:p-7 shadow-lg space-y-4 text-white ${
+                  isPv
+                    ? 'bg-gradient-to-br from-amber-600 via-orange-600 to-amber-700 shadow-amber-500/20'
+                    : 'bg-gradient-to-br from-blue-700 via-indigo-700 to-cyan-700 shadow-blue-500/20'
+                }`}>
+                  <div className="text-center">
+                    <div className="text-[11px] text-white/85 uppercase tracking-wider font-extrabold">
+                      Volume Consolidé
+                    </div>
+                    <div className="text-4xl sm:text-5xl font-black text-white mt-1 tracking-tight">
+                      {displayPower}
+                    </div>
+                    <div className="text-xs text-white/90 font-medium mt-1">
+                      {portfolio.kpis.totalPowerSub}
+                    </div>
+                  </div>
+
+                  <a
+                    href="#sites"
+                    className="block w-full text-center py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-black text-xs uppercase tracking-wider transition shadow-xs"
+                  >
+                    Consulter les {displaySitesCount} Sites
+                  </a>
+                  <a
+                    href="#carte"
+                    className="block w-full text-center py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs transition backdrop-blur-xs"
+                  >
+                    Carte des Implantations
+                  </a>
                 </div>
-                <a
-                  href="#sites"
-                  className={`block w-full text-center py-2.5 rounded-xl bg-${accent}-500 hover:bg-${accent}-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition`}
+
+                {/* Print / PDF Button located immediately under Volume Consolidé */}
+                <button
+                  onClick={() => window.print()}
+                  className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
+                  title="Générer un PDF complet de la page"
                 >
-                  Consulter les {displaySitesCount} Sites
-                </a>
-                <a
-                  href="#carte"
-                  className="block w-full text-center py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs transition"
-                >
-                  Carte des Implantations
-                </a>
+                  <Printer className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Imprimer / Télécharger en PDF</span>
+                </button>
               </div>
             </div>
           </section>
@@ -231,38 +255,42 @@ export default function PortfolioDetailPage() {
           {/* SECTION 2 — KPIs FINANCIERS                                   */}
           {/* ============================================================= */}
           {teaser.financialKpis && (
-            <section className="bg-slate-950 px-4 sm:px-12 py-10">
+            <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium">Métriques Financières Clés</div>
-                    <h2 className="text-xl font-bold text-white mt-1">Rentabilité d'Actif Hors Norme & Bancabilité Immédiate</h2>
+                    <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black">
+                      MÉTRIQUES FINANCIÈRES CLÉS
+                    </div>
+                    <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
+                      Rentabilité d'Actif Hors Norme & Bancabilité Immédiate
+                    </h2>
                   </div>
-                  <div className="hidden sm:flex items-center gap-2 text-[10px] text-slate-500">
-                    <span>Données au : </span>
-                    <span className="text-slate-400 font-mono">{new Date().toLocaleDateString('fr-FR')}</span>
+                  <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-medium">
+                    <span>Données au :</span>
+                    <span className="text-slate-800 font-mono font-bold">{new Date().toLocaleDateString('fr-FR')}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                  {teaser.financialKpis.map((kpi, idx) => (
-                    <div
-                      key={idx}
-                      className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 space-y-1 hover:border-slate-600 transition"
-                    >
-                      <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">{kpi.label}</div>
-                      <div className={`text-2xl font-black ${
-                        kpi.color === 'cyan' ? 'text-cyan-400' :
-                        kpi.color === 'amber' ? 'text-amber-400' :
-                        kpi.color === 'emerald' ? 'text-emerald-400' :
-                        'text-white'
-                      }`}>
-                        {kpi.value}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+                  {teaser.financialKpis.map((kpi, idx) => {
+                    const style = kpiCardStyles[idx % kpiCardStyles.length];
+                    return (
+                      <div
+                        key={idx}
+                        className={`${style.bg} ${style.border} rounded-2xl p-4 space-y-1 shadow-2xs hover:shadow-sm transition`}
+                      >
+                        <div className="text-[10px] text-slate-600 uppercase tracking-wider font-extrabold">
+                          {kpi.label}
+                        </div>
+                        <div className={`text-2xl font-black ${style.textVal} tracking-tight`}>
+                          {kpi.value}
+                        </div>
+                        <div className="text-[11px] text-slate-700 font-bold">{kpi.sub}</div>
+                        <div className="text-[10px] text-slate-500 font-medium leading-tight">{kpi.detail}</div>
                       </div>
-                      <div className="text-[10px] text-slate-500">{kpi.sub}</div>
-                      <div className="text-[9px] text-slate-600">{kpi.detail}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </section>
@@ -272,11 +300,13 @@ export default function PortfolioDetailPage() {
           {/* SECTION 3 — 4 PILIERS FONDATEURS                              */}
           {/* ============================================================= */}
           {teaser.pillars && teaser.pillars.length > 0 && (
-            <section className="bg-slate-950 px-4 sm:px-12 py-10">
+            <section className="bg-white px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-6">
                 <div>
-                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium">Thèse d'Investissement</div>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black">
+                    THÈSE D'INVESTISSEMENT
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
                     Les 4 Piliers Fondateurs de la Supériorité de {isPv ? 'HÉLIOS' : 'VOLTA'}
                   </h2>
                 </div>
@@ -284,26 +314,29 @@ export default function PortfolioDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   {teaser.pillars.map((pillar, idx) => {
                     const PillarIcon = pillarIconMap[pillar.icon] || CheckCircle2;
+                    const style = pillarStyles[idx % pillarStyles.length];
                     return (
                       <div
                         key={idx}
-                        className={`bg-slate-900/60 border border-slate-800 rounded-xl p-5 space-y-3 hover:border-${accent}-500/40 transition`}
+                        className={`bg-white ${style.border} rounded-2xl p-5 space-y-3 shadow-2xs hover:shadow-md transition flex flex-col justify-between`}
                       >
-                        <div className={`w-10 h-10 rounded-xl bg-${accent}-500/10 flex items-center justify-center`}>
-                          <PillarIcon className={`w-5 h-5 text-${accent}-400`} />
+                        <div className="space-y-3">
+                          <div className={`w-10 h-10 rounded-xl ${style.iconBg} flex items-center justify-center font-bold`}>
+                            <PillarIcon className="w-5 h-5" />
+                          </div>
+                          <h3 className="font-black text-slate-900 text-sm leading-snug">{pillar.title}</h3>
+                          <ul className="space-y-1.5">
+                            {pillar.items.map((item, i) => (
+                              <li key={i} className="text-xs text-slate-700 leading-relaxed flex items-start gap-2 font-medium">
+                                <span className={`mt-1.5 w-1.5 h-1.5 rounded-full ${style.bullet} shrink-0`} />
+                                <span>{item}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <h3 className="font-bold text-white text-sm leading-snug">{pillar.title}</h3>
-                        <ul className="space-y-1.5">
-                          {pillar.items.map((item, i) => (
-                            <li key={i} className="text-[11px] text-slate-400 leading-relaxed flex items-start gap-1.5">
-                              <span className={`mt-1 w-1 h-1 rounded-full bg-${accent}-500 shrink-0`} />
-                              <span>{item}</span>
-                            </li>
-                          ))}
-                        </ul>
                         {pillar.bottomStat && (
-                          <div className={`text-[10px] text-${accent}-400 font-medium flex items-center gap-1 pt-1 border-t border-slate-800`}>
-                            <CheckCircle2 className="w-3 h-3" />
+                          <div className={`text-[10px] font-bold flex items-center gap-1.5 pt-2 border-t border-slate-100 ${style.tag}`}>
+                            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                             <span>{pillar.bottomStat.label}</span>
                           </div>
                         )}
@@ -319,25 +352,27 @@ export default function PortfolioDetailPage() {
           {/* SECTION 4 — ARCHITECTURE DES REVENUS + STATION SPECS          */}
           {/* ============================================================= */}
           {teaser.revenueArchitecture && (
-            <section className="bg-slate-900/50 px-4 sm:px-12 py-10">
+            <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left: Revenue Donut */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
                   <div>
-                    <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium">Architecture des Revenus</div>
-                    <h3 className="text-lg font-bold text-white mt-1">
+                    <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black">
+                      ARCHITECTURE DES REVENUS
+                    </div>
+                    <h3 className="text-lg font-black text-[#0b192c] mt-1">
                       Value Stacking à {!isPv ? '2 Cycles Quotidiens' : 'Tarif Garanti'} ({teaser.revenueArchitecture.total} / an)
                     </h3>
                     {teaser.revenueArchitecture.cycleLabel && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded bg-${accent}-500/10 text-${accent}-400 font-medium mt-1 inline-block`}>
+                      <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-bold mt-1.5 inline-block">
                         {teaser.revenueArchitecture.cycleLabel}
                       </span>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-6">
+                  <div className="flex flex-col sm:flex-row items-center gap-6 pt-2">
                     {/* Donut Chart */}
-                    <div className="w-48 h-48 relative">
+                    <div className="w-48 h-48 relative shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -356,57 +391,59 @@ export default function PortfolioDetailPage() {
                           </Pie>
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="text-[10px] text-slate-500 uppercase">CA Total / an</div>
-                        <div className={`text-xl font-black text-${accent}-400`}>{teaser.revenueArchitecture.total}</div>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <div className="text-[10px] text-slate-500 uppercase font-black">CA Total / an</div>
+                        <div className="text-xl font-black text-blue-700">{teaser.revenueArchitecture.total}</div>
                       </div>
                     </div>
 
                     {/* Revenue Sources */}
-                    <div className="flex-1 space-y-3">
+                    <div className="flex-1 space-y-3 w-full">
                       {teaser.revenueArchitecture.sources.map((src, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <span className="w-3 h-3 rounded-full shrink-0 mt-0.5" style={{ backgroundColor: src.color }} />
+                          <span className="w-3 h-3 rounded-full shrink-0 mt-0.5 shadow-2xs" style={{ backgroundColor: src.color }} />
                           <div className="flex-1 min-w-0">
-                            <div className="text-xs text-slate-300 font-medium truncate">{src.name}</div>
-                            <div className="text-[11px] text-slate-500">{src.pct} du CA</div>
+                            <div className="text-xs text-slate-800 font-bold truncate">{src.name}</div>
+                            <div className="text-[11px] text-slate-500 font-medium">{src.pct} du CA</div>
                           </div>
-                          <div className="text-xs font-bold text-white whitespace-nowrap">{src.value}</div>
+                          <div className="text-xs font-black text-slate-900 whitespace-nowrap">{src.value}</div>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="text-[10px] text-slate-600 italic">
+                  <div className="text-[11px] text-slate-500 italic pt-2 border-t border-slate-100 font-medium">
                     {teaser.revenueArchitecture.totalLabel}
                   </div>
                 </div>
 
                 {/* Right: Station Specs */}
                 {teaser.stationSpecs && (
-                  <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium">Ingénierie & Foncier</div>
-                        <h3 className="text-lg font-bold text-white mt-1">
+                        <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black">
+                          INGÉNIERIE & FONCIER
+                        </div>
+                        <h3 className="text-lg font-black text-[#0b192c] mt-1">
                           Spécifications de la {isPv ? 'Toiture' : 'Station'} Type
                         </h3>
                       </div>
-                      <div className="flex gap-1">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold bg-${accent}-500/20 text-${accent}-300`}>
+                      <div className="flex gap-1.5">
+                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-50 text-blue-700 border border-blue-200">
                           {isPv ? 'PV' : 'BESS'}
                         </span>
-                        <span className="px-2 py-0.5 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300">
+                        <span className="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase bg-emerald-50 text-emerald-800 border border-emerald-200">
                           {isPv ? '315 kWc' : '500 kW'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="space-y-0 divide-y divide-slate-800">
+                    <div className="space-y-0 divide-y divide-slate-100 pt-1">
                       {teaser.stationSpecs.map((spec, i) => (
                         <div key={i} className="flex items-start justify-between py-2.5 gap-4">
-                          <span className="text-xs text-slate-500 shrink-0">{spec.label}</span>
-                          <span className="text-xs text-white font-medium text-right">{spec.value}</span>
+                          <span className="text-xs text-slate-600 font-medium shrink-0">{spec.label}</span>
+                          <span className="text-xs text-slate-900 font-bold text-right">{spec.value}</span>
                         </div>
                       ))}
                     </div>
@@ -420,28 +457,28 @@ export default function PortfolioDetailPage() {
           {/* SECTION 4b — CHRONOMÉTRIE DU DOUBLE CYCLE (BESS only)         */}
           {/* ============================================================= */}
           {!isPv && teaser.cycleTimeline && teaser.cycleTimeline.length > 0 && (
-            <section className="bg-slate-950 px-4 sm:px-12 py-6">
+            <section className="bg-white px-4 sm:px-12 py-8 border-b border-slate-200">
               <div className="max-w-7xl mx-auto">
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5">
-                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium mb-4">
-                    Chronométrie du Double Cycle Quotidien
+                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-2xs">
+                  <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black mb-4">
+                    CHRONOMÉTRIE DU DOUBLE CYCLE QUOTIDIEN
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
                     {teaser.cycleTimeline.map((phase, i) => (
                       <div
                         key={i}
-                        className={`rounded-xl p-3 border ${
+                        className={`rounded-2xl p-4 border ${
                           phase.color === 'cyan'
-                            ? 'bg-cyan-950/30 border-cyan-800/50'
-                            : 'bg-amber-950/30 border-amber-800/50'
+                            ? 'bg-blue-50/80 border-blue-200 text-blue-950'
+                            : 'bg-amber-50/80 border-amber-200 text-amber-950'
                         }`}
                       >
-                        <div className={`text-xs font-bold ${
-                          phase.color === 'cyan' ? 'text-cyan-400' : 'text-amber-400'
+                        <div className={`text-xs font-black ${
+                          phase.color === 'cyan' ? 'text-blue-800' : 'text-amber-800'
                         }`}>
                           {phase.label}
                         </div>
-                        <div className="text-[11px] text-slate-400 font-mono mt-1">{phase.time}</div>
+                        <div className="text-[11px] text-slate-600 font-mono font-bold mt-1.5">{phase.time}</div>
                       </div>
                     ))}
                   </div>
@@ -453,39 +490,39 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 5 — CARTE INTERACTIVE                                 */}
           {/* ============================================================= */}
-          <section id="carte" className="bg-slate-900/50 px-4 sm:px-12 py-10">
+          <section id="carte" className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
             <div className="max-w-7xl mx-auto space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium flex items-center gap-2">
-                    <MapPin className={`w-3.5 h-3.5 text-${accent}-400`} />
-                    Cartographie & Interactive des Implantations
+                  <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5" />
+                    CARTOGRAPHIE & IMPLANTATIONS GÉORÉFÉRENCÉES
                   </div>
-                  <h2 className="text-xl font-bold text-white mt-1">
+                  <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
                     Maillage Territorial des {displaySitesCount} {isPv ? 'Toitures PV' : 'Stations BESS'} (Nouvelle-Aquitaine & Occitanie)
                   </h2>
                 </div>
-                <div className="hidden sm:flex items-center gap-2">
-                  <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold bg-${accent}-500/20 text-${accent}-300 border border-${accent}-500/30`}>
+                <div>
+                  <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs">
                     ⊕ {displaySitesCount} {isPv ? 'Toitures' : 'Stations'} ({displayPower})
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-2xl overflow-hidden border border-slate-800">
+              <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white p-2">
                 <InteractiveMap
                   pvSites={isPv ? portfolio.sites : []}
                   bessSites={!isPv ? portfolio.sites : []}
-                  darkTheme={true}
+                  darkTheme={false}
                 />
               </div>
             </div>
           </section>
 
           {/* ============================================================= */}
-          {/* SECTION 6 — TABLEAU DES SITES (Matching Image 3 Dark Theme)   */}
+          {/* SECTION 6 — TABLEAU DES SITES (Light Theme)                   */}
           {/* ============================================================= */}
-          <section id="sites" className="bg-slate-950 px-4 sm:px-12 py-10">
+          <section id="sites" className="bg-white px-4 sm:px-12 py-10 border-b border-slate-200">
             <div className="max-w-7xl mx-auto space-y-4">
               <TeaserSitesTable
                 sites={portfolio.sites}
@@ -503,55 +540,55 @@ export default function PortfolioDetailPage() {
           {/* SECTION 7 — COMPARATIF TURPE                                  */}
           {/* ============================================================= */}
           {teaser.turpeComparison && (
-            <section className="bg-slate-950 px-4 sm:px-12 py-10">
+            <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-4">
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-5">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
                   <div className="flex items-center justify-between flex-wrap gap-3">
                     <div>
-                      <div className="text-[11px] text-slate-500 uppercase tracking-widest font-medium">
-                        {isPv ? 'Cadre Réglementaire CRE' : 'Le Levier Réglementaire Clé du Développement'}
+                      <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black">
+                        {isPv ? 'CADRE RÉGLEMENTAIRE CRE' : 'LE LEVIER RÉGLEMENTAIRE CLÉ DU DÉVELOPPEMENT'}
                       </div>
-                      <h3 className="text-lg font-bold text-white mt-1">
+                      <h3 className="text-lg font-black text-[#0b192c] mt-1">
                         {isPv
                           ? 'Régime Tarifaire S21 CRE — Obligation d\'Achat 20 Ans'
                           : 'Comparatif Analytique : Ancien Régime vs Régime TURPE 7 Délibéré CRE 2025-227'
                         }
                       </h3>
                     </div>
-                    <div className="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-bold">
+                    <div className="px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-black shadow-2xs">
                       {teaser.turpeComparison.consolidatedGain}
                     </div>
                   </div>
 
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
                     <table className="w-full text-left text-xs">
-                      <thead className="text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-700">
+                      <thead className="text-[10px] uppercase tracking-wider text-slate-700 border-b border-slate-200 bg-slate-100/90 font-black">
                         <tr>
-                          <th className="py-2.5 px-3 font-medium">Composante Tarifaire/Réseau</th>
-                          <th className="py-2.5 px-3 font-medium">{isPv ? 'Ancien Guichet' : 'Ancien Régime (Double Réfactu.)'}</th>
-                          <th className="py-2.5 px-3 font-medium text-emerald-400">
+                          <th className="py-3 px-4">Composante Tarifaire/Réseau</th>
+                          <th className="py-3 px-4">{isPv ? 'Ancien Guichet' : 'Ancien Régime (Double Réfactu.)'}</th>
+                          <th className="py-3 px-4 text-emerald-800">
                             {isPv ? 'Régime S21 CRE Actuel' : 'Régime TURPE 7 (CRE 2025-227)'}
                           </th>
-                          <th className="py-2.5 px-3 font-medium text-right">Gain Annuel Consolidé</th>
+                          <th className="py-3 px-4 text-right">Gain Annuel Consolidé</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-slate-800/60">
+                      <tbody className="divide-y divide-slate-100">
                         {teaser.turpeComparison.rows.map((row, i) => (
-                          <tr key={i} className="hover:bg-slate-800/30 transition">
-                            <td className="py-3 px-3 text-white font-medium">{row.component}</td>
-                            <td className="py-3 px-3 text-slate-500">{row.oldRegime}</td>
-                            <td className="py-3 px-3 text-emerald-300 font-medium">{row.newRegime}</td>
-                            <td className="py-3 px-3 text-right text-emerald-400 font-bold whitespace-nowrap">{row.gain}</td>
+                          <tr key={i} className="hover:bg-slate-50 transition">
+                            <td className="py-3 px-4 text-slate-900 font-bold">{row.component}</td>
+                            <td className="py-3 px-4 text-slate-500 font-medium">{row.oldRegime}</td>
+                            <td className="py-3 px-4 text-emerald-700 font-bold">{row.newRegime}</td>
+                            <td className="py-3 px-4 text-right text-emerald-700 font-black whitespace-nowrap">{row.gain}</td>
                           </tr>
                         ))}
                       </tbody>
-                      <tfoot className="border-t-2 border-slate-600">
-                        <tr className={`bg-${accent}-500/5`}>
-                          <td className="py-3 px-3 text-white font-bold">{teaser.turpeComparison.total.label}</td>
-                          <td className="py-3 px-3 text-red-400 font-bold font-mono">{teaser.turpeComparison.total.oldTotal}</td>
-                          <td className="py-3 px-3 text-emerald-300 font-bold font-mono">{teaser.turpeComparison.total.newTotal}</td>
-                          <td className="py-3 px-3 text-right">
-                            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-bold text-xs">
+                      <tfoot className="border-t-2 border-slate-300 bg-slate-100 font-bold text-slate-900">
+                        <tr>
+                          <td className="py-3.5 px-4 font-black uppercase tracking-wider">{teaser.turpeComparison.total.label}</td>
+                          <td className="py-3.5 px-4 text-rose-700 font-mono font-bold">{teaser.turpeComparison.total.oldTotal}</td>
+                          <td className="py-3.5 px-4 text-emerald-800 font-mono font-bold">{teaser.turpeComparison.total.newTotal}</td>
+                          <td className="py-3.5 px-4 text-right">
+                            <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-black text-xs border border-emerald-200">
                               {teaser.turpeComparison.total.gain}
                             </span>
                           </td>
@@ -568,69 +605,70 @@ export default function PortfolioDetailPage() {
           {/* SECTION 8 — TRAJECTOIRE FINANCIÈRE 15 ANS                     */}
           {/* ============================================================= */}
           {teaser.financialProjection && teaser.financialProjection.length > 0 && (
-            <section className="bg-slate-900/50 px-4 sm:px-12 py-10">
+            <section className="bg-white px-4 sm:px-12 py-10 border-b border-slate-200">
               <div className="max-w-7xl mx-auto space-y-6">
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-5">
+                <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-5">
                   <div>
-                    <div className="text-[11px] text-emerald-400 uppercase tracking-widest font-medium flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Business Plan Audité
+                    <div className="text-[11px] text-emerald-700 uppercase tracking-widest font-black flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      BUSINESS PLAN AUDITÉ
                     </div>
-                    <h3 className="text-lg font-bold text-white mt-1">
+                    <h3 className="text-lg font-black text-[#0b192c] mt-1">
                       Trajectoire Financière Consolidée sur 15 Ans (2026 à 2040)
                     </h3>
                   </div>
 
-                  <div className="h-[350px] w-full">
+                  <div className="h-[350px] w-full pt-4">
                     <ResponsiveContainer width="100%" height="100%">
                       <ComposedChart data={teaser.financialProjection} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                         <XAxis
                           dataKey="year"
-                          tick={{ fill: '#94a3b8', fontSize: 11 }}
-                          axisLine={{ stroke: '#475569' }}
-                          tickLine={{ stroke: '#475569' }}
+                          tick={{ fill: '#475569', fontSize: 11, fontWeight: 'bold' }}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                          tickLine={{ stroke: '#cbd5e1' }}
                         />
                         <YAxis
-                          tick={{ fill: '#94a3b8', fontSize: 11 }}
-                          axisLine={{ stroke: '#475569' }}
-                          tickLine={{ stroke: '#475569' }}
+                          tick={{ fill: '#475569', fontSize: 11, fontWeight: 'bold' }}
+                          axisLine={{ stroke: '#cbd5e1' }}
+                          tickLine={{ stroke: '#cbd5e1' }}
                           tickFormatter={(v) => fmtEur(v)}
                         />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#1e293b',
-                            border: '1px solid #334155',
-                            borderRadius: '12px',
-                            color: '#e2e8f0',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '16px',
+                            color: '#0f172a',
                             fontSize: '12px',
+                            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
                           }}
                           formatter={(value) => [fmtEur(value)]}
                           labelFormatter={(label) => `Année ${label}`}
                         />
                         <Legend
-                          wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }}
+                          wrapperStyle={{ fontSize: '11px', color: '#475569', fontWeight: 'bold' }}
                         />
                         <Bar
                           dataKey="ebitda"
                           name="EBITDA Net"
-                          fill={isPv ? '#f59e0b' : '#2dd4bf'}
-                          radius={[3, 3, 0, 0]}
+                          fill={isPv ? '#f59e0b' : '#0d9488'}
+                          radius={[4, 4, 0, 0]}
                         />
                         <Bar
                           dataKey="cashflow"
                           name="Cash-Flow Libre"
-                          fill="#a78bfa"
-                          radius={[3, 3, 0, 0]}
+                          fill="#8b5cf6"
+                          radius={[4, 4, 0, 0]}
                         />
                         <Line
                           type="monotone"
                           dataKey="ca"
                           name="Chiffre d'Affaires"
-                          stroke={isPv ? '#f97316' : '#38bdf8'}
+                          stroke={isPv ? '#ea580c' : '#2563eb'}
                           strokeWidth={3}
-                          dot={{ fill: isPv ? '#f97316' : '#38bdf8', r: 3 }}
-                          activeDot={{ r: 5 }}
+                          dot={{ fill: isPv ? '#ea580c' : '#2563eb', r: 3 }}
+                          activeDot={{ r: 6 }}
                         />
                       </ComposedChart>
                     </ResponsiveContainer>
@@ -643,17 +681,17 @@ export default function PortfolioDetailPage() {
                     {teaser.cumulativeKpis.map((kpi, i) => (
                       <div
                         key={i}
-                        className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 text-center space-y-1.5"
+                        className="bg-slate-50 border border-slate-200 rounded-3xl p-5 text-center space-y-1 shadow-2xs"
                       >
-                        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">{kpi.label}</div>
+                        <div className="text-[10px] text-slate-500 uppercase tracking-wider font-extrabold">{kpi.label}</div>
                         <div className={`text-3xl font-black ${
-                          i === 0 ? (isPv ? 'text-amber-400' : 'text-cyan-400') :
-                          i === 1 ? (isPv ? 'text-amber-300' : 'text-cyan-300') :
-                          'text-emerald-400'
+                          i === 0 ? (isPv ? 'text-amber-700' : 'text-blue-700') :
+                          i === 1 ? (isPv ? 'text-amber-800' : 'text-cyan-700') :
+                          'text-emerald-700'
                         }`}>
                           {kpi.value}
                         </div>
-                        <div className="text-[10px] text-slate-500">{kpi.sub}</div>
+                        <div className="text-xs text-slate-600 font-medium">{kpi.sub}</div>
                       </div>
                     ))}
                   </div>
@@ -665,69 +703,69 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 9 — MODALITÉS DE TRANSACTION & DATA ROOM              */}
           {/* ============================================================= */}
-          <section className="bg-slate-900/50 px-4 sm:px-12 py-10">
+          <section className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Left: Transaction Details */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
                 <div>
-                  <div className="text-[11px] text-emerald-400 uppercase tracking-widest font-medium flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Data Room Ouverte • Non-Binding & Validé
+                  <div className="text-[11px] text-emerald-700 uppercase tracking-widest font-black flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    DATA ROOM OUVERTE • NON-BINDING & VALIDÉ
                   </div>
-                  <h3 className="text-xl font-bold text-white mt-2">
+                  <h3 className="text-xl font-black text-[#0b192c] mt-2 tracking-tight">
                     Modalités de Cession & Accès aux Livrables de Transaction
                   </h3>
                 </div>
 
-                <p className="text-xs text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed font-medium">
                   Votre accord de confidentialité étant vérifié et validé, l'intégralité du dossier d'acquisition du portefeuille{' '}
-                  <strong className="text-white">{isPv ? 'HÉLIOS' : 'VOLTA'}</strong> est accessible dès maintenant.
+                  <strong className="text-slate-900 font-black">{isPv ? 'HÉLIOS' : 'VOLTA'}</strong> est accessible dès maintenant.
                   Vous pouvez télécharger les documents d'audit technique, les promesses de bail signées et les matrices économiques en accès direct.
                 </p>
 
-                <div className="grid grid-cols-2 gap-3 text-[11px] text-slate-400">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                <div className="grid grid-cols-2 gap-3 text-xs text-slate-700 font-semibold pt-1">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Fiches synoptiques & Bilans PV</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    <span>Conditions de Prix de Batteries CESC</span>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Conditions de Prix Batteries CESC</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Dossiers de raccordement Enedis</span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Modèle financier dynamique 15 ans</span>
                   </div>
                 </div>
               </div>
 
               {/* Right: CTA Card */}
-              <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 space-y-4">
-                <div className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-wider border-b border-slate-800 pb-3">
+              <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 space-y-4 shadow-sm">
+                <div className="text-center text-xs text-slate-600 font-extrabold uppercase tracking-wider border-b border-slate-100 pb-3">
                   ENR COURTAGE Infrastructure
                   <br />
-                  <span className="text-white text-sm">Département Stockage & Flexibilité Réseau</span>
+                  <span className="text-[#0b192c] text-sm font-black">Département Stockage & Flexibilité Réseau</span>
                 </div>
 
-                <div className="space-y-3 text-xs">
-                  <div className="flex items-center justify-between py-2 border-b border-slate-800/60">
-                    <span className="text-slate-500">Statut du Processus :</span>
-                    <span className="text-emerald-400 font-medium flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Statut du Processus :</span>
+                    <span className="text-emerald-700 font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                       Ouvert aux offres
                     </span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-800/60">
-                    <span className="text-slate-500">Format de Cession :</span>
-                    <span className="text-white font-medium">100% Titres SPV ou Clé en Main</span>
+                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Format de Cession :</span>
+                    <span className="text-slate-900 font-bold">100% Titres SPV ou Clé en Main</span>
                   </div>
-                  <div className="flex items-center justify-between py-2 border-b border-slate-800/60">
-                    <span className="text-slate-500">Calendrier Prévisionnel :</span>
-                    <span className="text-white font-medium">Closing T4 2026 / T1 2027</span>
+                  <div className="flex items-center justify-between py-2 border-b border-slate-100">
+                    <span className="text-slate-500 font-medium">Calendrier Prévisionnel :</span>
+                    <span className="text-slate-900 font-bold">Closing T4 2026 / T1 2027</span>
                   </div>
                 </div>
 
@@ -736,7 +774,7 @@ export default function PortfolioDetailPage() {
                     const dataRoomEl = document.getElementById('dataroom');
                     if (dataRoomEl) dataRoomEl.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  className={`w-full py-3 rounded-xl bg-${accent}-500 hover:bg-${accent}-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-lg shadow-${accent}-500/20`}
+                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 shadow-xs cursor-pointer"
                 >
                   <FolderLock className="w-4 h-4" />
                   Accéder à la Data Room complète
@@ -744,7 +782,7 @@ export default function PortfolioDetailPage() {
 
                 <button
                   onClick={() => setIsOfferModalOpen(true)}
-                  className="w-full py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 border border-slate-700"
+                  className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-black text-xs uppercase tracking-wider transition flex items-center justify-center gap-2 border border-slate-200 cursor-pointer shadow-2xs"
                 >
                   <Coins className="w-4 h-4" />
                   Déposer une Offre Indicative
@@ -756,7 +794,7 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 10 — DATA ROOM COMPLÈTE                               */}
           {/* ============================================================= */}
-          <section id="dataroom" className="bg-[#0b1325] px-4 sm:px-12 py-10 border-t border-slate-800">
+          <section id="dataroom" className="bg-white px-4 sm:px-12 py-10 border-b border-slate-200">
             <div className="max-w-7xl mx-auto space-y-4">
               <DataRoomSection
                 portfolio={portfolio}
@@ -769,19 +807,19 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* FOOTER                                                         */}
           {/* ============================================================= */}
-          <footer className="bg-slate-950 border-t border-slate-800 px-6 py-8 text-center space-y-2">
-            <p className="text-[11px] text-slate-400">
-              Ce mémorandum d'information synthétique (Teaser) est établi par <strong className="text-white">ENR COURTAGE SAS</strong> à titre strictement confidentiel.
+          <footer className="bg-slate-100 border-t border-slate-200 px-6 py-8 text-center space-y-2">
+            <p className="text-xs text-slate-600 font-medium">
+              Ce mémorandum d'information synthétique (Teaser) est établi par <strong className="text-slate-900">ENR COURTAGE SAS</strong> à titre strictement confidentiel.
             </p>
-            <p className="text-[10px] text-slate-500">
+            <p className="text-[10px] text-slate-500 font-medium">
               {isPv
                 ? 'Sources : Étude PV HÉLIOS 29 Sites • Régime Tarifaire S21 Délibération CRE • Spécifications standard Hangars & Toitures Solaire'
                 : 'Sources : Étude BESS 31 Sites Septembre 2025 • Régime TURPE 7 Délibération CRE N° 2024-227 • Spécifications standard BESS LFP/NMC'}
             </p>
-            <p className="text-[10px] text-slate-600 pt-1">
-              Siège social : 1 Allée d'Étigny, 31200 Toulouse (Siret : 848 721 478 00029) • Capital : 10 000 € • <a href="mailto:contact@enr-courtage.fr" className="text-slate-400 hover:text-white transition">contact@enr-courtage.fr</a>
+            <p className="text-[10px] text-slate-500 pt-1 font-medium">
+              7 Rue Gutenberg, 33700 Mérignac • RCS Bordeaux 881 500 552 • Capital : 10 000 € • <a href="mailto:contact@enr-courtage.fr" className="text-blue-700 hover:underline">contact@enr-courtage.fr</a>
             </p>
-            <p className="text-[10px] text-slate-700">
+            <p className="text-[10px] text-slate-400">
               &copy; {new Date().getFullYear()} ENR COURTAGE — Plateforme Transactionnelle M&A Confidentielle.
             </p>
           </footer>

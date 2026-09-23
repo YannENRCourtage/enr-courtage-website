@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -6,24 +6,17 @@ import {
   Battery,
   Coins,
   PlusCircle,
-  ShieldCheck,
   Mail,
   LogOut,
-  Building,
-  User,
   Users,
-  Zap,
-  Lock,
-  ChevronRight,
   ShieldAlert,
   FolderLock,
   X,
-  FileSpreadsheet,
-  Clock,
-  Upload,
-  FileSignature,
+  Settings,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import EnrCourtageLogo from './EnrCourtageLogo';
+import InvestorSettingsModal from './InvestorSettingsModal';
 
 export default function InvestorSidebar({
   activePage = 'dashboard', // 'dashboard' | 'helios' | 'volta'
@@ -39,6 +32,7 @@ export default function InvestorSidebar({
   const navigate = useNavigate();
   const location = useLocation();
   const { currentInvestor, logout, offers, investors } = useInvestorStore();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const isAdmin = currentInvestor?.isAdmin || currentInvestor?.email === 'y.barberis@enr-courtage.fr';
   const pendingCount = investors.filter((i) => i.status === 'pending').length;
@@ -100,29 +94,20 @@ export default function InvestorSidebar({
           isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         } no-print`}
       >
-        {/* Top: Brand Header */}
-        <div className="p-5 border-b border-gray-800 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-cyan-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 shrink-0">
-              <Zap className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center space-x-1.5">
-                <span className="text-[9px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
-                  M&A TEASER
-                </span>
-                <span className="text-[9px] text-gray-400 font-mono">Confidentiel</span>
-              </div>
-              <h2 className="text-sm font-black text-white tracking-tight mt-0.5">
-                ENR COURTAGE
-              </h2>
-            </div>
-          </div>
+        {/* Top: Official Brand Logo Header (Clickable -> Dashboard) */}
+        <div className="p-4 sm:p-5 border-b border-gray-800 flex items-center justify-between">
+          <button
+            onClick={() => handleNavigate('/investisseurs/dashboard')}
+            className="flex items-center text-left hover:opacity-90 transition cursor-pointer"
+            title="ENR COURTAGE — Retour au tableau de bord"
+          >
+            <EnrCourtageLogo className="h-8 w-auto" />
+          </button>
 
           {/* Mobile close button */}
           <button
             onClick={onCloseMobile}
-            className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition"
+            className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -140,18 +125,18 @@ export default function InvestorSidebar({
                 if (onSelectAdminTab) onSelectAdminTab(null);
                 handleNavigate('/investisseurs/dashboard');
               }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition ${
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 activePage === 'dashboard' && !adminActiveTab
-                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30 shadow-sm'
+                  ? 'bg-blue-600/20 text-blue-300 border border-blue-500/40 shadow-sm'
                   : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
               }`}
             >
               <div className="flex items-center space-x-2.5">
-                <LayoutDashboard className="w-4 h-4 shrink-0" />
+                <LayoutDashboard className="w-4 h-4 shrink-0 text-blue-400" />
                 <span>Tableau de Bord</span>
               </div>
               {activePage === 'dashboard' && !adminActiveTab && (
-                <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
               )}
             </button>
           </div>
@@ -172,7 +157,7 @@ export default function InvestorSidebar({
                 {/* 1. Demandes d'Accès & NDA */}
                 <button
                   onClick={() => handleAdminSelect('requests')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left cursor-pointer ${
                     adminActiveTab === 'requests'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
                       : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
@@ -194,7 +179,7 @@ export default function InvestorSidebar({
                 {/* 2. Synthèse des Offres */}
                 <button
                   onClick={() => handleAdminSelect('offers')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left cursor-pointer ${
                     adminActiveTab === 'offers'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
                       : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
@@ -212,7 +197,7 @@ export default function InvestorSidebar({
                 {/* 3. Documents Data Room */}
                 <button
                   onClick={() => handleAdminSelect('dataroom')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left cursor-pointer ${
                     adminActiveTab === 'dataroom'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
                       : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
@@ -225,10 +210,10 @@ export default function InvestorSidebar({
                   <span className="text-[9px] text-cyan-400 font-mono">2 portef.</span>
                 </button>
 
-                {/* 4. Gestion Utilisateurs & Mots de passe */}
+                {/* 4. Gestion Utilisateurs */}
                 <button
                   onClick={() => handleAdminSelect('users')}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left cursor-pointer ${
                     adminActiveTab === 'users'
                       ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
                       : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
@@ -261,7 +246,7 @@ export default function InvestorSidebar({
               {/* Portefeuille HÉLIOS (PV) */}
               <button
                 onClick={() => handleNavigate('/investisseurs/portefeuille/helios')}
-                className={`w-full text-left p-2.5 rounded-xl transition border ${
+                className={`w-full text-left p-2.5 rounded-xl transition border cursor-pointer ${
                   activePage === 'helios'
                     ? 'bg-amber-500/15 border-amber-500/50 text-white shadow-sm ring-1 ring-amber-500/30'
                     : 'bg-gray-900/40 border-gray-800/80 text-gray-300 hover:bg-gray-800/60 hover:text-white hover:border-gray-700'
@@ -287,7 +272,7 @@ export default function InvestorSidebar({
               {/* Portefeuille VOLTA (BESS) */}
               <button
                 onClick={() => handleNavigate('/investisseurs/portefeuille/volta')}
-                className={`w-full text-left p-2.5 rounded-xl transition border ${
+                className={`w-full text-left p-2.5 rounded-xl transition border cursor-pointer ${
                   activePage === 'volta'
                     ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-sm ring-1 ring-cyan-500/30'
                     : 'bg-gray-900/40 border-gray-800/80 text-gray-300 hover:bg-gray-800/60 hover:text-white hover:border-gray-700'
@@ -312,7 +297,7 @@ export default function InvestorSidebar({
             </div>
           </div>
 
-          {/* Section: Propositions & Négociations */}
+          {/* Section: Propositions & Offres */}
           <div>
             <div className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 px-3 mb-2">
               Propositions & Offres
@@ -321,7 +306,7 @@ export default function InvestorSidebar({
             <div className="space-y-1">
               <button
                 onClick={() => handleNavigate('/investisseurs/dashboard', '#mes-offres')}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-800/60 hover:text-white transition text-left"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-800/60 hover:text-white transition text-left cursor-pointer"
               >
                 <div className="flex items-center space-x-2.5">
                   <Coins className="w-4 h-4 text-amber-400 shrink-0" />
@@ -344,7 +329,7 @@ export default function InvestorSidebar({
                     onCloseMobile();
                     onOpenCreateOffer();
                   }}
-                  className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition text-left"
+                  className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition text-left cursor-pointer"
                 >
                   <PlusCircle className="w-4 h-4 shrink-0 text-amber-400" />
                   <span>Déposer une Offre</span>
@@ -353,54 +338,39 @@ export default function InvestorSidebar({
             </div>
           </div>
 
-          {/* Section: Modalités & M&A */}
+          {/* Section: Contact Direct (Section simplifiée sans les liens supprimés) */}
           <div>
             <div className="text-[10px] font-extrabold uppercase tracking-widest text-gray-400 px-3 mb-2">
-              Processus Transactionnel
+              Assistance & Échanges
             </div>
-
-            <div className="space-y-1">
-              <button
-                onClick={() => handleNavigate('/investisseurs/dashboard', '#fonctionnement')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-gray-400 hover:bg-gray-800/60 hover:text-white transition text-left"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                <span>Modalités de la Plateforme</span>
-              </button>
-
-              <button
-                onClick={() => handleNavigate('/investisseurs/dashboard', '#process')}
-                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-gray-400 hover:bg-gray-800/60 hover:text-white transition text-left"
-              >
-                <ShieldCheck className="w-4 h-4 text-purple-400 shrink-0" />
-                <span>Processus M&A & Mandat</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  onCloseMobile();
-                  if (onOpenContact) {
-                    onOpenContact();
-                  } else {
-                    handleNavigate('/investisseurs/dashboard', '#contact-ma');
-                  }
-                }}
-                className="w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs text-gray-400 hover:bg-gray-800/60 hover:text-white transition text-left"
-              >
-                <Mail className="w-4 h-4 text-blue-400 shrink-0" />
-                <span>Contact Pôle M&A</span>
-              </button>
-            </div>
+            <button
+              onClick={() => {
+                onCloseMobile();
+                if (onOpenContact) {
+                  onOpenContact();
+                } else {
+                  handleNavigate('/investisseurs/dashboard', '#contact-ma');
+                }
+              }}
+              className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold text-gray-300 hover:bg-gray-800/60 hover:text-white transition text-left cursor-pointer"
+            >
+              <Mail className="w-4 h-4 text-blue-400 shrink-0" />
+              <span>Contact Pôle M&A</span>
+            </button>
           </div>
         </div>
 
-        {/* Bottom: Profile & Admin & Logout */}
+        {/* Bottom: Profile & Paramètres & Admin & Logout */}
         <div className="p-4 border-t border-gray-800 bg-[#090d16]/90 space-y-2.5">
           {/* User profile card */}
-          <div className="p-3 rounded-xl bg-gray-900/90 border border-gray-800 space-y-2">
+          <div className="p-3 rounded-xl bg-gray-900/90 border border-gray-800">
             <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-black text-xs shrink-0">
-                {currentInvestor?.name ? currentInvestor.name.charAt(0).toUpperCase() : 'U'}
+              <div className="w-9 h-9 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center font-black text-xs shrink-0 overflow-hidden">
+                {currentInvestor?.logoUrl ? (
+                  <img src={currentInvestor.logoUrl} alt="Logo" className="w-full h-full object-contain p-0.5" />
+                ) : (
+                  <span>{currentInvestor?.name ? currentInvestor.name.charAt(0).toUpperCase() : 'U'}</span>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-bold text-white truncate">
@@ -411,32 +381,13 @@ export default function InvestorSidebar({
                 </div>
               </div>
             </div>
-
-            <div className="pt-2 border-t border-gray-800/80 space-y-1.5">
-              <div className="flex items-center justify-between text-[11px]">
-                <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" /> NDA Bilatéral Validé
-                </span>
-              </div>
-              {onOpenNda && (
-                <button
-                  type="button"
-                  onClick={onOpenNda}
-                  className="w-full py-1.5 px-2.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-bold transition flex items-center justify-center gap-1.5 text-xs shadow-2xs cursor-pointer"
-                  title="Consulter et imprimer le NDA bilatéral signé"
-                >
-                  <FileSignature className="w-3.5 h-3.5" />
-                  <span>Consulter le NDA Signé</span>
-                </button>
-              )}
-            </div>
           </div>
 
           {/* Admin console button for Yann BARBERIS */}
           {isAdmin && (
             <button
               onClick={() => handleAdminSelect('requests')}
-              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold transition shadow-sm"
+              className="w-full flex items-center justify-between px-3 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold transition shadow-sm cursor-pointer"
             >
               <div className="flex items-center space-x-2">
                 <ShieldAlert className="w-4 h-4 text-amber-400" />
@@ -450,16 +401,33 @@ export default function InvestorSidebar({
             </button>
           )}
 
-          {/* Logout button */}
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-gray-900/60 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-gray-800 hover:border-red-500/30 text-xs font-semibold transition"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Se déconnecter</span>
-          </button>
+          {/* Action buttons: Paramètres + Se déconnecter */}
+          <div className="space-y-1.5">
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-gray-900/80 hover:bg-blue-600/20 text-gray-300 hover:text-white border border-gray-800 hover:border-blue-500/40 text-xs font-semibold transition cursor-pointer"
+            >
+              <Settings className="w-3.5 h-3.5 text-blue-400" />
+              <span>Paramètres</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl bg-gray-900/60 hover:bg-red-500/10 text-gray-400 hover:text-red-400 border border-gray-800 hover:border-red-500/30 text-xs font-semibold transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Se déconnecter</span>
+            </button>
+          </div>
         </div>
       </aside>
+
+      {/* Settings Modal */}
+      <InvestorSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onOpenNda={onOpenNda}
+      />
     </>
   );
 }

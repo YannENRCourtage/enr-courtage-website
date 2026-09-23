@@ -126,6 +126,17 @@ export default function InvestorHeader({
           )}
 
           <EnrCourtageLogo onClick={() => navigate('/investisseurs/dashboard')} />
+
+          {pageTitle && (
+            <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-slate-200">
+              <span className="text-xs font-black text-[#0b192c] tracking-tight">{pageTitle}</span>
+              {pageTitleBadge && (
+                <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200">
+                  {pageTitleBadge}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Center: Navigation Switcher (Admin Only) */}
@@ -159,8 +170,12 @@ export default function InvestorHeader({
         <div className="flex items-center gap-3">
           {currentInvestor && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
-              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0">
-                {userInitials}
+              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-black text-xs flex items-center justify-center shrink-0 overflow-hidden">
+                {currentInvestor?.avatar ? (
+                  <img src={currentInvestor.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  userInitials
+                )}
               </div>
               <div className="text-left leading-tight hidden sm:block">
                 <div className="text-xs font-bold text-slate-900 whitespace-nowrap">

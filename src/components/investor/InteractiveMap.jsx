@@ -186,10 +186,14 @@ export default function InteractiveMap({
         <div className="flex items-center space-x-2 text-xs">
           <button
             onClick={() => setActiveFilter('ALL')}
-            className={`px-3 py-1.5 rounded-xl font-medium transition cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
               activeFilter === 'ALL'
-                ? 'bg-slate-800 text-white font-bold border border-slate-700 shadow-xs'
-                : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+                ? darkTheme
+                  ? 'bg-slate-800 text-white border border-slate-700 shadow-xs'
+                  : 'bg-slate-900 text-white shadow-xs'
+                : darkTheme
+                  ? 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
             }`}
           >
             Tous les sites
@@ -197,63 +201,79 @@ export default function InteractiveMap({
           {pvSites.length > 0 && (
             <button
               onClick={() => setActiveFilter('PV')}
-              className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeFilter === 'PV'
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-xs'
-                  : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-amber-500 text-slate-950 shadow-xs'
+                  : darkTheme
+                    ? 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+                    : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
               }`}
             >
-              <Sun className="w-3.5 h-3.5 text-amber-400" />
+              <Sun className="w-3.5 h-3.5" />
               <span>PV ({pvSites.length})</span>
             </button>
           )}
           {bessSites.length > 0 && (
             <button
               onClick={() => setActiveFilter('BESS')}
-              className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer ${
                 activeFilter === 'BESS'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold shadow-xs'
-                  : 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : darkTheme
+                    ? 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
+                    : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
               }`}
             >
-              <Battery className="w-3.5 h-3.5 text-cyan-400" />
+              <Battery className="w-3.5 h-3.5" />
               <span>BESS ({bessSites.length})</span>
             </button>
           )}
           <button
             onClick={handleRecenter}
-            className="px-3 py-1.5 rounded-xl bg-slate-800/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition flex items-center gap-1.5 cursor-pointer text-xs font-semibold"
+            className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-bold ${
+              darkTheme
+                ? 'bg-slate-800/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
+                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
+            }`}
             title="Recentrer la carte"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-cyan-400" />
+            <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
             <span>Recentrer</span>
           </button>
         </div>
       </div>
 
       {/* Map Container */}
-      <div className="relative rounded-2xl overflow-hidden border border-slate-800 shadow-xl h-[460px]">
+      <div className={`relative rounded-2xl overflow-hidden border shadow-sm h-[460px] ${
+        darkTheme ? 'border-slate-800' : 'border-slate-200'
+      }`}>
         <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-        {/* Map Informational Overlay Card (Bottom Left - matching image 2) */}
-        <div className="absolute bottom-4 left-4 z-[400] max-w-sm bg-slate-950/90 backdrop-blur-md border border-slate-700/80 rounded-xl p-3.5 shadow-2xl text-white text-[11px] space-y-1.5 pointer-events-auto">
-          <div className="font-bold text-cyan-400 text-xs flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        {/* Map Informational Overlay Card (Bottom Left) */}
+        <div className={`absolute bottom-4 left-4 z-[400] max-w-sm backdrop-blur-md border rounded-2xl p-3.5 shadow-xl text-[11px] space-y-1.5 pointer-events-auto ${
+          darkTheme
+            ? 'bg-slate-950/90 border-slate-700/80 text-white'
+            : 'bg-white/95 border-slate-200 text-slate-900'
+        }`}>
+          <div className="font-black text-blue-700 text-xs flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
             Grappe {bessSites.length > 0 ? 'BESS' : 'PV'} Grand Sud-Ouest
           </div>
-          <p className="text-slate-300 text-[10px] leading-relaxed">
+          <p className={`${darkTheme ? 'text-slate-300' : 'text-slate-600'} text-[10px] leading-relaxed font-medium`}>
             Cliquez sur un marqueur pour afficher la fiche détaillée du site, ses coordonnées GPS et son dossier de raccordement.
           </p>
-          <div className="flex items-center gap-3 pt-1 border-t border-slate-800 text-[10px] text-slate-400">
+          <div className={`flex items-center gap-3 pt-1 border-t text-[10px] font-semibold ${
+            darkTheme ? 'border-slate-800 text-slate-400' : 'border-slate-100 text-slate-500'
+          }`}>
             {bessSites.length > 0 && (
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span>
                 <span>BESS 500 kW (31 sites)</span>
               </span>
             )}
             {pvSites.length > 0 && (
               <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
                 <span>PV Toitures (29 sites)</span>
               </span>
             )}

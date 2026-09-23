@@ -498,6 +498,24 @@ export const useInvestorStore = create(
         }));
       },
 
+      // Update logged in investor profile (Settings modal)
+      updateCurrentInvestorProfile: (profileData) => {
+        const current = get().currentInvestor;
+        if (!current) return;
+        const updated = {
+          ...current,
+          ...profileData,
+        };
+        set((state) => ({
+          currentInvestor: updated,
+          investors: (state.investors || []).map((inv) =>
+            inv.id === current.id || (inv.email && inv.email.toLowerCase() === current.email?.toLowerCase())
+              ? { ...inv, ...profileData }
+              : inv
+          ),
+        }));
+      },
+
       // Authentication action with EMAIL
       login: (email, password) => {
         const cleanEmail = (email || '').trim().toLowerCase();
