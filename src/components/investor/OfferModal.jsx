@@ -17,45 +17,58 @@ import {
   ArrowLeft,
   Sparkles,
   Search,
+  MessageSquare,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { PORTFOLIOS } from '@/data/investorData';
 import { investorService } from '@/services/investorService';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 
-// The 4 standard milestones from Image 2
-const STANDARD_MILESTONES = [
+// The standard base milestones template
+const INITIAL_STANDARD_MILESTONES = [
   {
+    id: 'promesse',
     key: 'promesse',
-    id: 1,
     title: 'Signature de la promesse de cession (Upfront)',
     targetCondition: 'Signature de la promesse unilatérale ou synallagmatique et mise sous séquestre',
     targetDate: 'T4 2026',
-    defaultPercent: 30,
+    percentage: 30,
+    selected: false,
+    comment: '',
+    isCustom: false,
   },
   {
+    id: 'urba',
     key: 'urba',
-    id: 2,
     title: 'Purge du recours des tiers / Urbanisme purgé',
     targetCondition: 'Certificat de non-recours et non-retrait délivré par l\'autorité compétente',
     targetDate: 'T1 2027',
-    defaultPercent: 30,
+    percentage: 30,
+    selected: false,
+    comment: '',
+    isCustom: false,
   },
   {
+    id: 'ptf',
     key: 'ptf',
-    id: 3,
     title: 'Obtention de la PTF / Accord Enedis',
     targetCondition: 'Proposition Technique et Financière acceptée par le gestionnaire de réseau',
     targetDate: 'T3 2027',
-    defaultPercent: 20,
+    percentage: 20,
+    selected: false,
+    comment: '',
+    isCustom: false,
   },
   {
+    id: 'rtb',
     key: 'rtb',
-    id: 4,
     title: 'Ready to Build (RTB) & Closing définitif',
     targetCondition: 'Dossier prêt à construire, droits transférés et ordre de service travaux',
     targetDate: 'T1 2028',
-    defaultPercent: 20,
+    percentage: 20,
+    selected: false,
+    comment: '',
+    isCustom: false,
   },
 ];
 
@@ -75,6 +88,7 @@ export default function OfferModal({
     investorCounterOffer,
     soldSites = { helios: [], volta: [] },
     deletedSites = { helios: [], volta: [] },
+    customSites = { helios: [], volta: [] },
   } = useInvestorStore();
 
   // Wizard Step: 1 = Périmètre & Projets, 2 = Tarif / Montant, 3 = Jalonnements
@@ -87,10 +101,8 @@ export default function OfferModal({
   const [siteSearchTerm, setSiteSearchTerm] = useState('');
   const [amountEur, setAmountEur] = useState('');
 
-  // Step 3: Selected Milestones (NONE selected by default per user instruction)
-  // Mapping: { [key]: { selected: boolean, percentage: number, label: string, targetCondition: string } }
-  const [selectedMilestonesMap, setSelectedMilestonesMap] = useState({});
-  const [customMilestones, setCustomMilestones] = useState([]);
+  // Step 3: Dynamic Milestones List
+  const [milestones, setMilestones] = useState(INITIAL_STANDARD_MILESTONES);
 
   const [comments, setComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,10 +111,50 @@ export default function OfferModal({
 
   const wasOpenRef = React.useRef(false);
 
-  // Retrieve all raw sites
+  // Retrieve base raw sites
   const allPortfolios = PORTFOLIOS;
-  const heliosSites = useMemo(() => allPortfolios.find((p) => p.id === 'helios')?.sites || [], [allPortfolios]);
-  const voltaSites = useMemo(() => allPortfolios.find((p) => p.id === 'volta')?.sites || [], [allPortfolios]);
+  const heliosBaseSites = useMemo(() => allPortfolios.find((p) => p.id === 'helios')?.sites || [], [allPortfolios]);
+  const voltaBaseSites = useMemo(() => allPortfolios.find((p) => p.id === 'volta')?.sites || [], [allPortfolios]);
+
+  // Is modal locked to a specific portfolio (when opened from a portfolio page or with preset default)
+  const isLockedPortfolio = Boolean(portfolio || defaultPortfolioId);
+
+  // Dynamic Portfolio stats calculations (accounting for deleted and sold sites)
+  const heliosStats = useMemo(() => {
+    const curSold = soldSites?.helios || [];
+    const curDel = deletedSites?.helios || [];
+    const curCust = customSites?.helios || [];
+    const all = [...heliosBaseSites, ...curCust].filter((s) => !curDel.includes(s.id));
+    const active = all.filter((s) => !curSold.includes(s.id));
+    const totalKwc = active.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+    const powerStr = `${(totalKwc / 1000).toFixed(2).replace('.', ',')} MWc`;
+    return {
+      name: 'Portefeuille HÉLIOS',
+      count: active.length,
+      powerStr,
+      label: `${powerStr} sur ${active.length} site${active.length > 1 ? 's' : ''}`,
+      icon: '☀️',
+    };
+  }, [heliosBaseSites, soldSites, deletedSites, customSites]);
+
+  const voltaStats = useMemo(() => {
+    const curSold = soldSites?.volta || [];
+    const curDel = deletedSites?.volta || [];
+    const curCust = customSites?.volta || [];
+    const all = [...voltaBaseSites, ...curCust].filter((s) => !curDel.includes(s.id));
+    const active = all.filter((s) => !curSold.includes(s.id));
+    const totalKw = active.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
+    const powerStr = `${(totalKw / 1000).toFixed(2).replace('.', ',')} MW`;
+    return {
+      name: 'Portefeuille VOLTA',
+      count: active.length,
+      powerStr,
+      label: `${powerStr} sur ${active.length} station${active.length > 1 ? 's' : ''}`,
+      icon: '🔋',
+    };
+  }, [voltaBaseSites, soldSites, deletedSites, customSites]);
+
+  const targetStats = targetPortfolio === 'volta' ? voltaStats : heliosStats;
 
   // Initialize or reset ONLY when modal opens
   useEffect(() => {
@@ -135,61 +187,57 @@ export default function OfferModal({
         setComments(existingOffer.comments || '');
 
         // Load existing milestones
-        const initialMap = {};
-        const customs = [];
-        (existingOffer.milestones || []).forEach((m) => {
-          const matchedStd = STANDARD_MILESTONES.find((std) => m.label?.includes(std.title));
-          if (matchedStd) {
-            initialMap[matchedStd.key] = {
-              selected: true,
-              percentage: m.percentage,
-              label: m.label,
-              targetCondition: m.targetCondition || matchedStd.targetCondition,
-              targetDate: m.targetDate || matchedStd.targetDate,
-            };
-          } else {
-            customs.push({
-              id: Date.now() + Math.random(),
-              label: m.label,
-              percentage: m.percentage,
-              targetCondition: m.targetCondition || '',
-              targetDate: m.targetDate || '',
-            });
-          }
-        });
-        setSelectedMilestonesMap(initialMap);
-        setCustomMilestones(customs);
+        if (existingOffer.milestones && existingOffer.milestones.length > 0) {
+          const loaded = existingOffer.milestones.map((m, idx) => ({
+            id: m.id || m.key || `loaded-${idx}`,
+            key: m.key || `milestone-${idx}`,
+            title: m.title || m.label?.replace(/^Jalon — /, '') || `Jalon ${idx + 1}`,
+            targetCondition: m.targetCondition || '',
+            targetDate: m.targetDate || '',
+            percentage: m.percentage || 0,
+            comment: m.comment || m.comments || '',
+            selected: true,
+            isCustom: !!m.isCustom,
+          }));
+          setMilestones(loaded);
+        } else {
+          setMilestones(INITIAL_STANDARD_MILESTONES.map((m) => ({ ...m, selected: false, comment: '' })));
+        }
       } else {
-        // NEW OFFER
-        setSelectedMilestonesMap({});
-        setCustomMilestones([]);
+        // NEW OFFER: None selected by default per user specification
         setTargetPortfolio(initialPortfolioId);
         const hasPreselected = selectedSiteIds && selectedSiteIds.length > 0;
         setOfferType(hasPreselected ? 'partial' : 'total');
         setLocalSelectedSiteIds(selectedSiteIds || []);
         setAmountEur('');
+        setComments('');
+        setMilestones(INITIAL_STANDARD_MILESTONES.map((m) => ({ ...m, selected: false, comment: '' })));
       }
     }
   }, [isOpen, portfolio, defaultPortfolioId, existingOffer, selectedSiteIds]);
 
   // Compute available active sites for target portfolio (Strictly single-portfolio: HELIOS or VOLTA)
+  // Excludes both deletedSites and soldSites
   const availableSites = useMemo(() => {
     let list = [];
+    const curSold = soldSites?.[targetPortfolio] || [];
+    const curDel = deletedSites?.[targetPortfolio] || [];
+    const curCust = customSites?.[targetPortfolio] || [];
+
     if (targetPortfolio === 'volta') {
-      list = voltaSites.map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' }));
+      list = [...voltaBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' }));
     } else {
-      list = heliosSites.map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
+      list = [...heliosBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
     }
 
     return list.filter((site) => {
-      const pKey = site.portfolioId === 'volta' ? 'volta' : 'helios';
-      const isDeleted = deletedSites?.[pKey]?.includes(site.id);
-      if (isDeleted) return false;
+      if (curDel.includes(site.id)) return false;
+      if (curSold.includes(site.id)) return false;
       return true;
     });
-  }, [targetPortfolio, heliosSites, voltaSites, deletedSites]);
+  }, [targetPortfolio, heliosBaseSites, voltaBaseSites, deletedSites, soldSites, customSites]);
 
-  // Filter sites for search inside modal
+  // Filter sites for search inside partial selection
   const filteredModalSites = useMemo(() => {
     if (!siteSearchTerm.trim()) return availableSites;
     const q = siteSearchTerm.toLowerCase();
@@ -205,22 +253,16 @@ export default function OfferModal({
 
   const numericAmount = parseThousands(amountEur);
 
-  // Toggle selection of a single site inside modal
+  // Toggle selection of a single site inside partial purchase
   const handleToggleLocalSite = (siteId) => {
     setLocalSelectedSiteIds((prev) =>
       prev.includes(siteId) ? prev.filter((id) => id !== siteId) : [...prev, siteId]
     );
   };
 
-  // Select all non-sold sites
+  // Select all available sites
   const handleSelectAllLocalSites = () => {
-    const selectableIds = availableSites
-      .filter((s) => {
-        const pKey = s.portfolioId === 'volta' ? 'volta' : 'helios';
-        return !soldSites?.[pKey]?.includes(s.id);
-      })
-      .map((s) => s.id);
-    setLocalSelectedSiteIds(selectableIds);
+    setLocalSelectedSiteIds(availableSites.map((s) => s.id));
   };
 
   // Clear all selected sites
@@ -228,113 +270,157 @@ export default function OfferModal({
     setLocalSelectedSiteIds([]);
   };
 
+  // ============================================================================
+  // GESTION DES JALONS DE PAIEMENT (ÉTAPE 3)
+  // ============================================================================
+
   // Toggle milestone selection
-  const handleToggleMilestone = (std) => {
-    setSelectedMilestonesMap((prev) => {
-      const isCurrentlySelected = !!prev[std.key]?.selected;
-      if (isCurrentlySelected) {
-        const next = { ...prev };
-        delete next[std.key];
-        // Rebalance remaining to sum to 100%
-        const remainingKeys = STANDARD_MILESTONES.map((s) => s.key).filter((k) => next[k]?.selected);
-        if (remainingKeys.length > 0) {
-          const equalShare = Math.floor(100 / remainingKeys.length);
-          const remainder = 100 - (equalShare * remainingKeys.length);
-          remainingKeys.forEach((k, idx) => {
-            next[k] = {
-              ...next[k],
-              percentage: equalShare + (idx === 0 ? remainder : 0),
-            };
-          });
-        }
-        return next;
+  const handleToggleMilestone = (mId) => {
+    setMilestones((prev) => {
+      const target = prev.find((m) => m.id === mId);
+      const willBeSelected = !target?.selected;
+
+      const updated = prev.map((m) =>
+        m.id === mId ? { ...m, selected: willBeSelected } : m
+      );
+
+      const activeList = updated.filter((m) => m.selected);
+      if (activeList.length > 0) {
+        const equalShare = Math.floor(100 / activeList.length);
+        const remainder = 100 - equalShare * activeList.length;
+        return updated.map((m) => {
+          if (!m.selected) return { ...m, percentage: 0 };
+          const activeIdx = activeList.findIndex((a) => a.id === m.id);
+          return {
+            ...m,
+            percentage: equalShare + (activeIdx === 0 ? remainder : 0),
+          };
+        });
       } else {
-        const next = {
-          ...prev,
-          [std.key]: {
-            selected: true,
-            percentage: 0,
-            label: `Jalon — ${std.title}`,
-            targetCondition: std.targetCondition,
-            targetDate: std.targetDate,
-          },
-        };
-        const selectedKeys = STANDARD_MILESTONES.map((s) => s.key).filter((k) => next[k]?.selected);
-        if (selectedKeys.length > 0) {
-          const equalShare = Math.floor(100 / selectedKeys.length);
-          const remainder = 100 - (equalShare * selectedKeys.length);
-          selectedKeys.forEach((k, idx) => {
-            next[k] = {
-              ...next[k],
-              percentage: equalShare + (idx === 0 ? remainder : 0),
-            };
-          });
-        }
-        return next;
+        return updated.map((m) => ({ ...m, percentage: 0 }));
       }
     });
   };
 
-  // Change percentage of selected milestone with auto-balance to 100%
-  const handlePercentageChange = (key, newPercent) => {
+  // Change percentage of milestone with auto-balance
+  const handlePercentageChange = (mId, newPercent) => {
     const requested = parseInt(newPercent, 10);
-    const safeVal = isNaN(requested) ? 0 : requested;
+    const safeVal = isNaN(requested) ? 0 : Math.max(0, Math.min(100, requested));
 
-    setSelectedMilestonesMap((prev) => {
-      const selectedKeys = STANDARD_MILESTONES
-        .map((s) => s.key)
-        .filter((k) => prev[k]?.selected);
+    setMilestones((prev) => {
+      const activeIndices = [];
+      prev.forEach((m, idx) => {
+        if (m.selected) activeIndices.push(idx);
+      });
 
-      if (selectedKeys.length <= 1) {
-        return {
-          ...prev,
-          [key]: {
-            ...prev[key],
-            percentage: safeVal,
-          },
-        };
+      if (activeIndices.length <= 1) {
+        return prev.map((m) => (m.id === mId ? { ...m, percentage: safeVal } : m));
       }
 
-      const changedIndex = selectedKeys.indexOf(key);
-      if (changedIndex === -1) return prev;
+      const activeList = activeIndices.map((idx) => prev[idx]);
+      const changedActiveIdx = activeList.findIndex((m) => m.id === mId);
+      if (changedActiveIdx === -1) return prev;
 
-      const currentMilestones = selectedKeys.map((k) => ({
-        key: k,
-        percentage: prev[k]?.percentage ?? 0,
-      }));
-
-      const balanced = autoBalanceMilestones(currentMilestones, changedIndex, safeVal);
-
-      const next = { ...prev };
-      balanced.forEach((item) => {
-        if (next[item.key]) {
-          next[item.key] = {
-            ...next[item.key],
-            percentage: item.percentage,
-          };
+      const balanced = autoBalanceMilestones(activeList, changedActiveIdx, safeVal);
+      const next = [...prev];
+      balanced.forEach((b) => {
+        const globalIdx = next.findIndex((m) => m.id === b.id);
+        if (globalIdx !== -1) {
+          next[globalIdx] = { ...next[globalIdx], percentage: b.percentage };
         }
       });
       return next;
     });
   };
 
-  // Build active milestones list
-  const activeMilestones = [
-    ...Object.entries(selectedMilestonesMap).map(([key, data], idx) => ({
-      id: idx + 1,
-      key,
-      label: data.label,
-      percentage: data.percentage || 0,
-      amount: Math.round((numericAmount * (data.percentage || 0)) / 100),
-      targetCondition: data.targetCondition,
-      targetDate: data.targetDate,
-    })),
-    ...customMilestones.map((cm, idx) => ({
-      ...cm,
-      id: 10 + idx,
-      amount: Math.round((numericAmount * (cm.percentage || 0)) / 100),
-    })),
-  ];
+  // Add custom milestone
+  const handleAddMilestone = () => {
+    const newId = `custom-${Date.now()}`;
+    const customCount = milestones.filter((m) => m.isCustom).length + 1;
+    const newMilestone = {
+      id: newId,
+      key: newId,
+      title: `Jalon personnalisé ${customCount}`,
+      targetCondition: 'Condition suspensive / Événement déclencheur...',
+      targetDate: 'T2 2027',
+      percentage: 0,
+      comment: '',
+      selected: true,
+      isCustom: true,
+    };
+
+    setMilestones((prev) => {
+      const updated = [...prev, newMilestone];
+      const activeList = updated.filter((m) => m.selected);
+      const equalShare = Math.floor(100 / activeList.length);
+      const remainder = 100 - equalShare * activeList.length;
+
+      return updated.map((m) => {
+        if (!m.selected) return m;
+        const activeIdx = activeList.findIndex((a) => a.id === m.id);
+        return {
+          ...m,
+          percentage: equalShare + (activeIdx === 0 ? remainder : 0),
+        };
+      });
+    });
+  };
+
+  // Delete milestone
+  const handleDeleteMilestone = (mId) => {
+    setMilestones((prev) => {
+      const target = prev.find((m) => m.id === mId);
+      let updated;
+      if (target?.isCustom) {
+        updated = prev.filter((m) => m.id !== mId);
+      } else {
+        updated = prev.map((m) =>
+          m.id === mId ? { ...m, selected: false, percentage: 0, comment: '' } : m
+        );
+      }
+
+      const activeList = updated.filter((m) => m.selected);
+      if (activeList.length > 0) {
+        const equalShare = Math.floor(100 / activeList.length);
+        const remainder = 100 - equalShare * activeList.length;
+        return updated.map((m) => {
+          if (!m.selected) return m;
+          const activeIdx = activeList.findIndex((a) => a.id === m.id);
+          return {
+            ...m,
+            percentage: equalShare + (activeIdx === 0 ? remainder : 0),
+          };
+        });
+      }
+      return updated;
+    });
+  };
+
+  // Milestone comment update
+  const handleMilestoneCommentChange = (mId, comment) => {
+    setMilestones((prev) =>
+      prev.map((m) => (m.id === mId ? { ...m, comment } : m))
+    );
+  };
+
+  // Update milestone field (title, condition, date)
+  const handleUpdateMilestoneField = (mId, field, value) => {
+    setMilestones((prev) =>
+      prev.map((m) => (m.id === mId ? { ...m, [field]: value } : m))
+    );
+  };
+
+  // Active selected milestones
+  const activeMilestones = useMemo(() => {
+    return milestones
+      .filter((m) => m.selected)
+      .map((m, idx) => ({
+        ...m,
+        number: idx + 1,
+        label: m.isCustom ? m.title : `Jalon — ${m.title}`,
+        amount: Math.round((numericAmount * (m.percentage || 0)) / 100),
+      }));
+  }, [milestones, numericAmount]);
 
   const totalPercent = activeMilestones.reduce((sum, m) => sum + (m.percentage || 0), 0);
 
@@ -389,9 +475,7 @@ export default function OfferModal({
 
     try {
       const pName =
-        targetPortfolio === 'both'
-          ? 'Portefeuilles Combinés (HÉLIOS + VOLTA)'
-          : targetPortfolio === 'volta'
+        targetPortfolio === 'volta'
           ? 'Portefeuille VOLTA (BESS)'
           : 'Portefeuille HÉLIOS (PV)';
 
@@ -402,7 +486,18 @@ export default function OfferModal({
         selectedSiteIds: offerType === 'total' ? [] : localSelectedSiteIds,
         selectedSitesCount: sitesToIncludeCount,
         amountEur: numericAmount,
-        milestones: activeMilestones,
+        milestones: activeMilestones.map((m) => ({
+          id: m.id,
+          key: m.key || m.id,
+          label: m.label,
+          title: m.title,
+          percentage: m.percentage,
+          amount: m.amount,
+          targetCondition: m.targetCondition || '',
+          targetDate: m.targetDate || '',
+          comment: m.comment || '',
+          isCustom: !!m.isCustom,
+        })),
         upfrontPercent: activeMilestones[0]?.percentage || 30,
         earnoutPercent: 100 - (activeMilestones[0]?.percentage || 30),
         comments,
@@ -414,10 +509,10 @@ export default function OfferModal({
       } else if (mode === 'counter_proposal' && existingOffer) {
         investorCounterOffer(existingOffer.id, {
           counterAmountEur: numericAmount,
-          counterMilestones: activeMilestones,
+          counterMilestones: offerData.milestones,
           counterComments: comments,
         });
-        setSubmittedOffer({ ...existingOffer, amountEur: numericAmount, milestones: activeMilestones, status: 'counter_by_investor' });
+        setSubmittedOffer({ ...existingOffer, amountEur: numericAmount, milestones: offerData.milestones, status: 'counter_by_investor' });
       } else {
         const result = submitOffer(offerData);
         await investorService.sendOfferNotification(result.offer);
@@ -501,11 +596,18 @@ export default function OfferModal({
                     Jalonnements de paiement arrêtés ({submittedOffer.milestones.length} jalons) :
                   </span>
                   {submittedOffer.milestones.map((m, idx) => (
-                    <div key={idx} className="flex justify-between text-[11px] text-slate-700">
-                      <span>• {m.label}</span>
-                      <span className="font-mono font-bold text-amber-600">
-                        {m.percentage}% ({new Intl.NumberFormat('fr-FR').format(m.amount)} €)
-                      </span>
+                    <div key={idx} className="space-y-0.5 border-b border-slate-100 pb-1.5 last:border-0 last:pb-0">
+                      <div className="flex justify-between text-[11px] text-slate-700">
+                        <span>• {m.label || m.title}</span>
+                        <span className="font-mono font-bold text-amber-600">
+                          {m.percentage}% ({new Intl.NumberFormat('fr-FR').format(m.amount)} €)
+                        </span>
+                      </div>
+                      {m.comment && (
+                        <div className="text-[10px] text-slate-500 pl-3 italic">
+                          "{m.comment}"
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -606,45 +708,72 @@ export default function OfferModal({
                   <label className="block text-xs font-bold text-slate-700 mb-1.5">
                     Sélection du Portefeuille cible
                   </label>
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <button
-                      type="button"
-                      disabled={!!portfolio || !!defaultPortfolioId}
-                      onClick={() => setTargetPortfolio('helios')}
-                      className={`p-3.5 rounded-2xl border text-center font-semibold transition ${
-                        portfolio || defaultPortfolioId ? 'cursor-default' : 'cursor-pointer'
-                      } ${
-                        targetPortfolio === 'helios'
-                          ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm ring-2 ring-amber-400/30'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      <div className="text-xl mb-1">☀️</div>
-                      <div className="font-black text-sm">HÉLIOS (PV)</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5 font-medium">9.12 MWc • {heliosSites.length} sites toitures</div>
-                    </button>
 
-                    <button
-                      type="button"
-                      disabled={!!portfolio || !!defaultPortfolioId}
-                      onClick={() => setTargetPortfolio('volta')}
-                      className={`p-3.5 rounded-2xl border text-center font-semibold transition ${
-                        portfolio || defaultPortfolioId ? 'cursor-default' : 'cursor-pointer'
-                      } ${
-                        targetPortfolio === 'volta'
-                          ? 'bg-cyan-50 border-cyan-400 text-cyan-900 shadow-sm ring-2 ring-cyan-400/30'
-                          : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                      }`}
-                    >
-                      <div className="text-xl mb-1">🔋</div>
-                      <div className="font-black text-sm">VOLTA (BESS)</div>
-                      <div className="text-[11px] text-slate-500 mt-0.5 font-medium">15.50 MW • {voltaSites.length} stations BESS</div>
-                    </button>
-                  </div>
-                  {(portfolio || defaultPortfolioId) && (
-                    <p className="text-[11px] text-slate-500 mt-1.5 font-medium">
-                      Cette offre concerne exclusivement le portefeuille sélectionné ({targetPortfolio === 'volta' ? 'VOLTA BESS' : 'HÉLIOS PV'}).
-                    </p>
+                  {/* If opened directly from a Portfolio page, show a single locked banner */}
+                  {isLockedPortfolio ? (
+                    <div className={`p-4 rounded-2xl border ${
+                      targetPortfolio === 'volta'
+                        ? 'bg-cyan-50/80 border-cyan-300 text-slate-900'
+                        : 'bg-amber-50/80 border-amber-300 text-slate-900'
+                    } shadow-xs`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-2xl">{targetStats.icon}</span>
+                          <div>
+                            <div className={`text-[10px] font-black uppercase tracking-wider ${
+                              targetPortfolio === 'volta' ? 'text-cyan-800' : 'text-amber-800'
+                            }`}>
+                              Portefeuille Sélectionné
+                            </div>
+                            <div className="text-sm font-black text-slate-900">
+                              {targetStats.name} — {targetStats.label}
+                            </div>
+                          </div>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold ${
+                          targetPortfolio === 'volta'
+                            ? 'bg-cyan-100 text-cyan-800 border border-cyan-200'
+                            : 'bg-amber-100 text-amber-800 border border-amber-200'
+                        }`}>
+                          Actif
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Otherwise allow selecting between Hélios and Volta with live dynamic stats */
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setTargetPortfolio('helios')}
+                        className={`p-3.5 rounded-2xl border text-center font-semibold transition cursor-pointer ${
+                          targetPortfolio === 'helios'
+                            ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm ring-2 ring-amber-400/30'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className="text-xl mb-1">☀️</div>
+                        <div className="font-black text-sm">HÉLIOS (PV)</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                          {heliosStats.powerStr} • {heliosStats.count} sites
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setTargetPortfolio('volta')}
+                        className={`p-3.5 rounded-2xl border text-center font-semibold transition cursor-pointer ${
+                          targetPortfolio === 'volta'
+                            ? 'bg-cyan-50 border-cyan-400 text-cyan-900 shadow-sm ring-2 ring-cyan-400/30'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                        }`}
+                      >
+                        <div className="text-xl mb-1">🔋</div>
+                        <div className="font-black text-sm">VOLTA (BESS)</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 font-medium">
+                          {voltaStats.powerStr} • {voltaStats.count} stations
+                        </div>
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -680,8 +809,8 @@ export default function OfferModal({
                       <div className="font-bold text-slate-900">Achat Partiel (Sélection)</div>
                       <div className="text-[11px] text-slate-500 mt-0.5">
                         {localSelectedSiteIds.length > 0
-                          ? `${localSelectedSiteIds.length} site(s) sélectionné(s)`
-                          : 'Sélection d\'un ou plusieurs sites unitaires'}
+                          ? `${localSelectedSiteIds.length} / ${availableSites.length} site(s) sélectionné(s)`
+                          : `Sélection parmi les ${availableSites.length} sites disponibles`}
                       </div>
                     </button>
                   </div>
@@ -696,7 +825,7 @@ export default function OfferModal({
                           Sélectionnez les projets visés par votre offre ({localSelectedSiteIds.length} / {availableSites.length} sélectionné(s))
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Cochez les projets souhaités. Les projets déjà vendus sont floutés et non sélectionnables.
+                          Cochez les projets souhaités pour composer votre offre sur-mesure.
                         </span>
                       </div>
 
@@ -743,53 +872,38 @@ export default function OfferModal({
                     {/* List of sites */}
                     <div className="max-h-56 overflow-y-auto divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white pr-1">
                       {filteredModalSites.map((site) => {
-                        const pKey = site.portfolioId === 'volta' ? 'volta' : 'helios';
-                        const isSold = soldSites?.[pKey]?.includes(site.id);
                         const isChecked = localSelectedSiteIds.includes(site.id);
                         const powerText = site.kwc ? `${site.kwc} kWc` : `${site.kw || 500} kW`;
 
                         return (
                           <div
                             key={`${site.portfolioId}-${site.id}`}
-                            onClick={() => !isSold && handleToggleLocalSite(site.id)}
-                            className={`p-2.5 flex items-center justify-between text-xs transition ${
-                              isSold
-                                ? 'opacity-40 cursor-not-allowed bg-slate-50'
-                                : isChecked
-                                ? 'bg-amber-50/80 text-slate-900 cursor-pointer'
-                                : 'hover:bg-slate-50 text-slate-700 cursor-pointer'
+                            onClick={() => handleToggleLocalSite(site.id)}
+                            className={`p-2.5 flex items-center justify-between text-xs transition cursor-pointer ${
+                              isChecked
+                                ? 'bg-amber-50/80 text-slate-900'
+                                : 'hover:bg-slate-50 text-slate-700'
                             }`}
                           >
                             <div className="flex items-center space-x-2.5 min-w-0">
                               <input
                                 type="checkbox"
-                                disabled={isSold}
-                                checked={isChecked && !isSold}
+                                checked={isChecked}
                                 onChange={() => {}}
                                 className="rounded border-slate-300 text-amber-500 focus:ring-0 shrink-0 cursor-pointer"
                               />
                               <div className="min-w-0 truncate">
                                 <div className="flex items-center space-x-2">
                                   <span className="font-mono text-slate-400 text-[10px] font-bold">#{site.id}</span>
-                                  <span className={`font-bold text-slate-900 truncate text-xs ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                  <span className="font-bold text-slate-900 truncate text-xs">
                                     {site.name || site.ville}
                                   </span>
-                                  <span className={`px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono text-[10px] border border-slate-200 ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                  <span className="px-1.5 py-0.2 rounded bg-slate-100 text-slate-600 font-mono text-[10px] border border-slate-200">
                                     Dép {site.dept || (site.cp ? site.cp.substring(0, 2) : '-')}
                                   </span>
-                                  {targetPortfolio === 'both' && (
-                                    <span className="text-[9px] px-1.5 py-0.2 rounded font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                      {site.portfolioName}
-                                    </span>
-                                  )}
-                                  {isSold && (
-                                    <span className="px-2 py-0.2 rounded-full bg-red-600 text-white font-black text-[9px] uppercase tracking-wider shadow-xs">
-                                      Vendu !
-                                    </span>
-                                  )}
                                 </div>
                                 {site.client && (
-                                  <div className={`text-[10px] text-slate-400 truncate mt-0.5 ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                                  <div className="text-[10px] text-slate-400 truncate mt-0.5">
                                     Client : {site.client} • Typologie : {site.type}
                                   </div>
                                 )}
@@ -797,7 +911,7 @@ export default function OfferModal({
                             </div>
 
                             <div className="shrink-0 text-right ml-2">
-                              <span className={`font-mono font-bold text-amber-700 text-xs ${isSold ? 'blur-[3px] select-none' : ''}`}>
+                              <span className="font-mono font-bold text-amber-700 text-xs">
                                 {powerText}
                               </span>
                             </div>
@@ -855,16 +969,16 @@ export default function OfferModal({
                   </p>
                 </div>
 
-                {/* Optional Comments */}
+                {/* Optional General Comments */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Remarques ou conditions particulières (optionnel)
+                    Remarques ou conditions suspensives globales (optionnel)
                   </label>
                   <textarea
                     rows={3}
                     value={comments}
                     onChange={(e) => setComments(e.target.value)}
-                    placeholder="Précisez ici vos conditions suspensives souhaitées, calendrier cible ou remarques..."
+                    placeholder="Précisez ici vos conditions suspensives souhaitées, calendrier cible ou remarques générales..."
                     className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                   />
                 </div>
@@ -892,90 +1006,149 @@ export default function OfferModal({
             )}
 
             {/* ============================================================= */}
-            {/* ÉTAPE 3 : SÉLECTION DES JALONS PARMI LES 4 JALONS STANDARDS    */}
+            {/* ÉTAPE 3 : GESTION DES JALONS AVEC AJOUT, SUPPRESSION ET COMMENTAIRES */}
             {/* ============================================================= */}
             {currentStep === 3 && (
               <div className="space-y-4 animate-fadeIn">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-800">
                       Sélectionnez vos jalons de paiement et affectez leurs pourcentages
                     </label>
                     <span className="text-[11px] text-slate-500">
-                      Cochez les jalons souhaités parmi les 4 jalons types. Aucun jalon n'est coché par défaut.
+                      Cochez les jalons, ajustez les % et ajoutez des commentaires ou jalons sur-mesure.
                     </span>
                   </div>
 
-                  <div className={`text-xs font-mono font-bold px-3 py-1 rounded-xl border ${
-                    totalPercent === 100
-                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                      : 'bg-amber-50 text-amber-800 border-amber-300'
-                  }`}>
-                    Total : {totalPercent}% / 100%
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleAddMilestone}
+                      className="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Ajouter un jalon</span>
+                    </button>
+
+                    <div className={`text-xs font-mono font-bold px-3 py-1 rounded-xl border ${
+                      totalPercent === 100
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : 'bg-amber-50 text-amber-800 border-amber-300'
+                    }`}>
+                      Total : {totalPercent}% / 100%
+                    </div>
                   </div>
                 </div>
 
-                {/* The 4 Selectable Milestones */}
-                <div className="space-y-2.5">
-                  {STANDARD_MILESTONES.map((std) => {
-                    const isSelected = !!selectedMilestonesMap[std.key]?.selected;
-                    const percentVal = selectedMilestonesMap[std.key]?.percentage || std.defaultPercent;
-                    const computedEur = Math.round((numericAmount * percentVal) / 100);
+                {/* The List of Milestones */}
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
+                  {milestones.map((m, idx) => {
+                    const isSelected = !!m.selected;
+                    const computedEur = Math.round((numericAmount * (m.percentage || 0)) / 100);
 
                     return (
                       <div
-                        key={std.key}
-                        className={`p-4 rounded-2xl border transition ${
+                        key={m.id}
+                        className={`p-3.5 rounded-2xl border transition ${
                           isSelected
                             ? 'bg-amber-50/40 border-amber-400 shadow-sm'
                             : 'bg-slate-50 border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        <div className="flex items-center justify-between gap-3">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleMilestone(std)}
-                            className="flex items-start space-x-3 text-left flex-grow cursor-pointer"
-                          >
-                            <div className="mt-0.5 text-amber-600">
+                        <div className="flex items-start justify-between gap-3">
+                          {/* Checkbox and Title/Description */}
+                          <div className="flex items-start space-x-2.5 flex-grow min-w-0">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleMilestone(m.id)}
+                              className="mt-0.5 text-amber-600 shrink-0 cursor-pointer"
+                            >
                               {isSelected ? (
                                 <CheckSquare className="w-4 h-4 text-amber-600" />
                               ) : (
                                 <Square className="w-4 h-4 text-slate-400" />
                               )}
-                            </div>
-                            <div>
-                              <div className={`text-xs font-bold ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>
-                                Jalon {std.id} — {std.title}
-                              </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
-                                {std.targetCondition}
-                              </div>
-                            </div>
-                          </button>
+                            </button>
 
-                          {/* Percent & Amount input when selected */}
-                          {isSelected && (
-                            <div className="flex items-center space-x-2 shrink-0">
-                              <div className="text-right">
-                                <div className="text-[10px] text-slate-500 font-mono">
-                                  {formatThousands(computedEur)} €
+                            <div className="min-w-0 flex-grow">
+                              {m.isCustom ? (
+                                <div className="space-y-1">
+                                  <input
+                                    type="text"
+                                    value={m.title}
+                                    onChange={(e) => handleUpdateMilestoneField(m.id, 'title', e.target.value)}
+                                    placeholder="Intitulé du jalon personnalisé..."
+                                    className="w-full text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
+                                  />
+                                  <input
+                                    type="text"
+                                    value={m.targetCondition}
+                                    onChange={(e) => handleUpdateMilestoneField(m.id, 'targetCondition', e.target.value)}
+                                    placeholder="Modalité / Condition suspensive de déclenchement..."
+                                    className="w-full text-[10px] text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-0.5 focus:outline-none focus:border-amber-500"
+                                  />
                                 </div>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <input
-                                  type="number"
-                                  min="1"
-                                  max="100"
-                                  value={percentVal}
-                                  onChange={(e) => handlePercentageChange(std.key, e.target.value)}
-                                  className="w-16 px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs text-amber-700 font-bold font-mono text-right focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
-                                />
-                                <span className="text-xs text-slate-500 font-mono">%</span>
-                              </div>
+                              ) : (
+                                <div onClick={() => handleToggleMilestone(m.id)} className="cursor-pointer">
+                                  <div className={`text-xs font-bold ${isSelected ? 'text-slate-900' : 'text-slate-600'}`}>
+                                    Jalon {idx + 1} — {m.title}
+                                  </div>
+                                  <div className="text-[10px] text-slate-500 mt-0.5">
+                                    {m.targetCondition}
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          </div>
+
+                          {/* Percent & Amount input + Trash button */}
+                          <div className="flex items-center space-x-2 shrink-0">
+                            {isSelected ? (
+                              <>
+                                <div className="text-right">
+                                  <div className="text-[10px] text-slate-500 font-mono">
+                                    {formatThousands(computedEur)} €
+                                  </div>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    max="100"
+                                    value={m.percentage || 0}
+                                    onChange={(e) => handlePercentageChange(m.id, e.target.value)}
+                                    className="w-14 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-amber-700 font-bold font-mono text-right focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                                  />
+                                  <span className="text-xs text-slate-500 font-mono">%</span>
+                                </div>
+                              </>
+                            ) : null}
+
+                            {/* Delete/Remove milestone button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMilestone(m.id)}
+                              title="Supprimer ce jalon"
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
+
+                        {/* Comment box for this specific milestone */}
+                        {isSelected && (
+                          <div className="mt-2.5 pt-2 border-t border-slate-200/70 flex items-center gap-2">
+                            <MessageSquare className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                            <input
+                              type="text"
+                              value={m.comment || ''}
+                              onChange={(e) => handleMilestoneCommentChange(m.id, e.target.value)}
+                              placeholder="Commentaire ou modalité particulière pour ce jalon (optionnel)..."
+                              className="w-full px-2.5 py-1 text-[11px] bg-white border border-slate-200 rounded-lg text-slate-800 placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                            />
+                          </div>
+                        )}
                       </div>
                     );
                   })}

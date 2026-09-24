@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -15,6 +15,7 @@ import {
   Settings,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import { PORTFOLIOS } from '@/data/investorData';
 import EnrCourtageLogo from './EnrCourtageLogo';
 import InvestorSettingsModal from './InvestorSettingsModal';
 
@@ -32,11 +33,43 @@ export default function InvestorSidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentInvestor, logout, offers, investors } = useInvestorStore();
+  const { currentInvestor, logout, offers, investors, soldSites, deletedSites, customSites } = useInvestorStore();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   const pendingCount = investors.filter((i) => i.status === 'pending').length;
+
+  const heliosStats = useMemo(() => {
+    const p = PORTFOLIOS.find((x) => x.id === 'helios');
+    const curSold = soldSites?.helios || [];
+    const curDel = deletedSites?.helios || [];
+    const curCust = customSites?.helios || [];
+    const all = [...(p?.sites || []), ...curCust].filter((s) => !curDel.includes(s.id));
+    const active = all.filter((s) => !curSold.includes(s.id));
+    const totalKwc = active.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
+    const powerStr = `${(totalKwc / 1000).toFixed(2).replace('.', ',')} MWc`;
+    return {
+      count: active.length,
+      powerStr,
+      label: `${active.length} site${active.length > 1 ? 's' : ''} toitures`,
+    };
+  }, [soldSites, deletedSites, customSites]);
+
+  const voltaStats = useMemo(() => {
+    const p = PORTFOLIOS.find((x) => x.id === 'volta');
+    const curSold = soldSites?.volta || [];
+    const curDel = deletedSites?.volta || [];
+    const curCust = customSites?.volta || [];
+    const all = [...(p?.sites || []), ...curCust].filter((s) => !curDel.includes(s.id));
+    const active = all.filter((s) => !curSold.includes(s.id));
+    const totalKw = active.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
+    const powerStr = `${(totalKw / 1000).toFixed(2).replace('.', ',')} MW`;
+    return {
+      count: active.length,
+      powerStr,
+      label: `${active.length} site${active.length > 1 ? 's' : ''} 500 kW`,
+    };
+  }, [soldSites, deletedSites, customSites]);
 
   const myOffers = offers.filter(
     (o) =>
@@ -261,11 +294,11 @@ export default function InvestorSidebar({
                     <span className="text-xs font-bold text-white">HÉLIOS (PV)</span>
                   </div>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">
-                    9,12 MWc
+                    {heliosStats.powerStr}
                   </span>
                 </div>
                 <div className="text-[10px] text-gray-400 pl-8 mt-1 flex items-center justify-between">
-                  <span>29 sites toitures</span>
+                  <span>{heliosStats.label}</span>
                   <span className="text-amber-400 font-mono text-[9px]">Consulter →</span>
                 </div>
               </button>
@@ -287,11 +320,11 @@ export default function InvestorSidebar({
                     <span className="text-xs font-bold text-white">VOLTA (BESS)</span>
                   </div>
                   <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">
-                    15,50 MW
+                    {voltaStats.powerStr}
                   </span>
                 </div>
                 <div className="text-[10px] text-gray-400 pl-8 mt-1 flex items-center justify-between">
-                  <span>31 sites 500 kW</span>
+                  <span>{voltaStats.label}</span>
                   <span className="text-cyan-400 font-mono text-[9px]">Consulter →</span>
                 </div>
               </button>
