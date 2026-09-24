@@ -1,7 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Filter, Layers, Sun, Battery, RotateCcw } from 'lucide-react';
+import { Layers } from 'lucide-react';
 
 export default function InteractiveMap({
   pvSites = [],
@@ -13,8 +13,6 @@ export default function InteractiveMap({
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersLayerRef = useRef(null);
-
-  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'PV' | 'BESS'
 
   // Initialize Map
   useEffect(() => {
@@ -44,7 +42,7 @@ export default function InteractiveMap({
     };
   }, []);
 
-  // Update Markers on filter or data change
+  // Update Markers on data change
   useEffect(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current) return;
 
@@ -88,89 +86,74 @@ export default function InteractiveMap({
     };
 
     // PV markers
-    if (activeFilter === 'ALL' || activeFilter === 'PV') {
-      pvSites.forEach((site) => {
-        if (!site.lat || !site.lng) return;
+    pvSites.forEach((site) => {
+      if (!site.lat || !site.lng) return;
 
-        const marker = L.marker([site.lat, site.lng], {
-          icon: createMarkerIcon(site, 'amber', site.orange),
-        });
-
-        marker.bindPopup(`
-          <div style="font-family: sans-serif; font-size: 12px; color: #0f172a; padding: 4px; min-width: 180px;">
-            <div style="font-weight: 800; color: #b45309; font-size: 13px;">#${site.id} ${site.name || site.ville} (${site.dept})</div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${site.address || ''}</div>
-            <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 11px;">
-              <span>Puissance : <strong style="color: #b45309;">${site.kwc} kWc</strong></span>
-              <span style="color: #047857; font-weight: 700;">${site.statut || 'URBA OK'}</span>
-            </div>
-            <div style="font-size: 10px; color: #475569; margin-top: 4px;">
-              Client : <strong>${site.client || '-'}</strong>
-            </div>
-          </div>
-        `);
-
-        if (onSelectSite) {
-          marker.on('click', () => onSelectSite(site));
-        }
-
-        marker.addTo(markersLayer);
-        bounds.push([site.lat, site.lng]);
+      const marker = L.marker([site.lat, site.lng], {
+        icon: createMarkerIcon(site, 'amber', site.orange),
       });
-    }
+
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; color: #0f172a; padding: 4px; min-width: 180px;">
+          <div style="font-weight: 800; color: #b45309; font-size: 13px;">#${site.id} ${site.name || site.ville} (${site.dept})</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 2px;">${site.address || ''}</div>
+          <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 11px;">
+            <span>Puissance : <strong style="color: #b45309;">${site.kwc} kWc</strong></span>
+            <span style="color: #047857; font-weight: 700;">${site.statut || 'URBA OK'}</span>
+          </div>
+          <div style="font-size: 10px; color: #475569; margin-top: 4px;">
+            Client : <strong>${site.client || '-'}</strong>
+          </div>
+        </div>
+      `);
+
+      if (onSelectSite) {
+        marker.on('click', () => onSelectSite(site));
+      }
+
+      marker.addTo(markersLayer);
+      bounds.push([site.lat, site.lng]);
+    });
 
     // BESS markers
-    if (activeFilter === 'ALL' || activeFilter === 'BESS') {
-      bessSites.forEach((site) => {
-        if (!site.lat || !site.lng) return;
+    bessSites.forEach((site) => {
+      if (!site.lat || !site.lng) return;
 
-        const marker = L.marker([site.lat, site.lng], {
-          icon: createMarkerIcon(site, 'cyan', false),
-        });
-
-        marker.bindPopup(`
-          <div style="font-family: sans-serif; font-size: 12px; color: #0f172a; padding: 4px; min-width: 180px;">
-            <div style="font-weight: 800; color: #0891b2; font-size: 13px;">#${site.id} ${site.name || site.ville} (${site.dept})</div>
-            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Bailleur : <strong>${site.client || '-'}</strong></div>
-            <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 11px;">
-              <span>Puissance : <strong style="color: #0891b2;">${site.kw || 500} kW</strong></span>
-              <span style="color: #047857; font-weight: 700;">URBA OK</span>
-            </div>
-            <div style="font-size: 10px; color: #475569; margin-top: 4px;">
-              Architecture : 4 × 125 kW • PdB 20 ans
-            </div>
-          </div>
-        `);
-
-        if (onSelectSite) {
-          marker.on('click', () => onSelectSite(site));
-        }
-
-        marker.addTo(markersLayer);
-        bounds.push([site.lat, site.lng]);
+      const marker = L.marker([site.lat, site.lng], {
+        icon: createMarkerIcon(site, 'cyan', false),
       });
-    }
+
+      marker.bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; color: #0f172a; padding: 4px; min-width: 180px;">
+          <div style="font-weight: 800; color: #0891b2; font-size: 13px;">#${site.id} ${site.name || site.ville} (${site.dept})</div>
+          <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Bailleur : <strong>${site.client || '-'}</strong></div>
+          <div style="margin-top: 6px; display: flex; justify-content: space-between; gap: 8px; font-size: 11px;">
+            <span>Puissance : <strong style="color: #0891b2;">${site.kw || 500} kW</strong></span>
+            <span style="color: #047857; font-weight: 700;">URBA OK</span>
+          </div>
+          <div style="font-size: 10px; color: #475569; margin-top: 4px;">
+            Architecture : 4 × 125 kW • PdB 20 ans
+          </div>
+        </div>
+      `);
+
+      if (onSelectSite) {
+        marker.on('click', () => onSelectSite(site));
+      }
+
+      marker.addTo(markersLayer);
+      bounds.push([site.lat, site.lng]);
+    });
 
     if (bounds.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(bounds, { padding: [30, 30] });
     }
-  }, [pvSites, bessSites, activeFilter, onSelectSite]);
-
-  const handleRecenter = () => {
-    if (!mapInstanceRef.current) return;
-    const all = [...pvSites, ...bessSites].filter((s) => s.lat && s.lng);
-    if (all.length > 0) {
-      const bounds = all.map((s) => [s.lat, s.lng]);
-      mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40] });
-    } else {
-      mapInstanceRef.current.setView([44.75, 0.85], 7);
-    }
-  };
+  }, [pvSites, bessSites, onSelectSite]);
 
   return (
     <div className={`space-y-3 ${className}`}>
-      {/* Map Header & Filter Bar */}
-      <div className={`flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border ${
+      {/* Map Header */}
+      <div className={`flex items-center justify-between gap-3 p-3.5 rounded-2xl border ${
         darkTheme ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 shadow-xs'
       }`}>
         <div className="flex items-center space-x-2 text-xs">
@@ -180,66 +163,6 @@ export default function InteractiveMap({
           </span>
           <span className="text-slate-500">•</span>
           <span className="text-slate-400">Grand Sud-Ouest (Nouvelle-Aquitaine & Occitanie)</span>
-        </div>
-
-        {/* Action & Filter buttons */}
-        <div className="flex items-center space-x-2 text-xs">
-          <button
-            onClick={() => setActiveFilter('ALL')}
-            className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
-              activeFilter === 'ALL'
-                ? darkTheme
-                  ? 'bg-slate-800 text-white border border-slate-700 shadow-xs'
-                  : 'bg-slate-900 text-white shadow-xs'
-                : darkTheme
-                  ? 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-            }`}
-          >
-            Tous les sites
-          </button>
-          {pvSites.length > 0 && (
-            <button
-              onClick={() => setActiveFilter('PV')}
-              className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                activeFilter === 'PV'
-                  ? 'bg-amber-500 text-slate-950 shadow-xs'
-                  : darkTheme
-                    ? 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
-                    : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200'
-              }`}
-            >
-              <Sun className="w-3.5 h-3.5" />
-              <span>PV ({pvSites.length})</span>
-            </button>
-          )}
-          {bessSites.length > 0 && (
-            <button
-              onClick={() => setActiveFilter('BESS')}
-              className={`px-3 py-1.5 rounded-xl font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                activeFilter === 'BESS'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : darkTheme
-                    ? 'bg-slate-800/40 text-slate-400 hover:bg-slate-800 hover:text-white'
-                    : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
-              }`}
-            >
-              <Battery className="w-3.5 h-3.5" />
-              <span>BESS ({bessSites.length})</span>
-            </button>
-          )}
-          <button
-            onClick={handleRecenter}
-            className={`px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 cursor-pointer text-xs font-bold ${
-              darkTheme
-                ? 'bg-slate-800/60 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700'
-                : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-            }`}
-            title="Recentrer la carte"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-blue-600" />
-            <span>Recentrer</span>
-          </button>
         </div>
       </div>
 
@@ -268,13 +191,13 @@ export default function InteractiveMap({
             {bessSites.length > 0 && (
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block"></span>
-                <span>BESS 500 kW (31 sites)</span>
+                <span>BESS 500 kW ({bessSites.length} site{bessSites.length > 1 ? 's' : ''})</span>
               </span>
             )}
             {pvSites.length > 0 && (
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
-                <span>PV Toitures (29 sites)</span>
+                <span>PV Toitures ({pvSites.length} site{pvSites.length > 1 ? 's' : ''})</span>
               </span>
             )}
           </div>

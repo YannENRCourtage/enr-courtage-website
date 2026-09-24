@@ -633,27 +633,20 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           <section id="carte" className="bg-slate-50 px-4 sm:px-12 py-10 border-b border-slate-200">
             <div className="max-w-7xl mx-auto space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div>
-                  <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5" />
-                    CARTOGRAPHIE & IMPLANTATIONS GÉORÉFÉRENCÉES
-                  </div>
-                  <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
-                    Maillage Territorial des {displaySitesCount} {isPv ? 'Toitures PV' : 'Stations BESS'} (Nouvelle-Aquitaine & Occitanie)
-                  </h2>
+              <div>
+                <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black flex items-center gap-2">
+                  <MapPin className="w-3.5 h-3.5" />
+                  CARTOGRAPHIE & IMPLANTATIONS GÉORÉFÉRENCÉES
                 </div>
-                <div>
-                  <span className="px-3 py-1.5 rounded-xl text-xs font-black bg-blue-50 text-blue-700 border border-blue-200 shadow-2xs">
-                    ⊕ {displaySitesCount} {isPv ? 'Toitures' : 'Stations'} ({displayPower})
-                  </span>
-                </div>
+                <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
+                  Maillage Territorial des {displaySitesCount} {isPv ? 'Toitures PV' : 'Stations BESS'} (Nouvelle-Aquitaine & Occitanie)
+                </h2>
               </div>
 
               <div className="rounded-3xl overflow-hidden border border-slate-200 shadow-sm bg-white p-2">
                 <InteractiveMap
-                  pvSites={isPv ? allSitesCombined : []}
-                  bessSites={!isPv ? allSitesCombined : []}
+                  pvSites={isPv ? activeAvailableSites : []}
+                  bessSites={!isPv ? activeAvailableSites : []}
                   darkTheme={false}
                 />
               </div>
