@@ -64,12 +64,19 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     userDownloads,
   } = useInvestorStore();
 
-  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
+  const isAdmin =
+    currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
+    currentInvestor?.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
+    Boolean(currentInvestor?.isAdmin);
 
   // Active view: 'investor' or 'admin' (Admin defaults to 'admin' console)
   const [activeView, setActiveView] = useState(() => {
     if (defaultToAdmin || adminParam === 'true') return 'admin';
-    if (currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr') return 'admin';
+    if (
+      currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
+      currentInvestor?.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
+      Boolean(currentInvestor?.isAdmin)
+    ) return 'admin';
     return 'investor';
   });
 

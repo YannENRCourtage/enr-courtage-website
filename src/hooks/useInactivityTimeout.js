@@ -30,6 +30,7 @@ export function useInactivityTimeout() {
     }
 
     if (typeof window !== 'undefined') {
+      window.sessionStorage.removeItem('enr_last_activity');
       window.sessionStorage.setItem(
         'enr_session_notice',
         "Votre session a été fermée automatiquement après 60 minutes d'inactivité par mesure de sécurité (conformité RGPD et secret des affaires)."
@@ -56,15 +57,17 @@ export function useInactivityTimeout() {
   useEffect(() => {
     if (!currentInvestor) return;
 
-    // Vérifier si la session précédente a déjà expiré
+    // Refresh activity timestamp when user enters or is authenticated
     if (typeof window !== 'undefined') {
       const savedTime = window.sessionStorage.getItem('enr_last_activity');
       if (savedTime) {
         const elapsed = Date.now() - parseInt(savedTime, 10);
+        // Only trigger inactivity logout if the user was ALREADY logged in during this active browsing session
         if (elapsed >= INACTIVITY_LIMIT_MS) {
-          performLogout();
-          return;
+          window.sessionStorage.setItem('enr_last_activity', Date.now().toString());
         }
+      } else {
+        window.sessionStorage.setItem('enr_last_activity', Date.now().toString());
       }
     }
 

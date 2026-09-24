@@ -27,14 +27,10 @@ export default function InvestorAuthPage() {
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
   const [forgotPasswordNotice, setForgotPasswordNotice] = useState(false);
 
-  // If already authenticated, redirect to appropriate space
+  // If already authenticated, redirect to dashboard
   useEffect(() => {
-    if (currentInvestor) {
-      if (currentInvestor.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr') {
-        navigate('/investisseurs/dashboard', { replace: true });
-      } else if (currentInvestor.status === 'active' && currentInvestor.ndaSignedByAdmin) {
-        navigate('/investisseurs/dashboard', { replace: true });
-      }
+    if (currentInvestor && currentInvestor.status === 'active') {
+      navigate('/investisseurs/dashboard', { replace: true });
     }
   }, [currentInvestor, navigate]);
 
@@ -43,7 +39,23 @@ export default function InvestorAuthPage() {
     setError('');
     setIsLoading(true);
 
-    const result = login(email.trim(), password);
+    const formData = new FormData(e.currentTarget);
+    const formEmail = (formData.get('email') || email || '').toString().trim();
+    const formPassword = (formData.get('password') || password || '').toString();
+
+    if (!formEmail) {
+      setError('Veuillez saisir votre adresse e-mail professionnelle.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formPassword) {
+      setError('Veuillez saisir votre mot de passe.');
+      setIsLoading(false);
+      return;
+    }
+
+    const result = login(formEmail, formPassword);
     setIsLoading(false);
 
     if (!result.success) {
@@ -113,12 +125,15 @@ export default function InvestorAuthPage() {
             {/* Formulaire interactif */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                <label htmlFor="investor-email" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                   Adresse e-mail professionnelle
                 </label>
                 <div className="relative">
                   <input
+                    id="investor-email"
+                    name="email"
                     type="email"
+                    autoComplete="username email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -131,7 +146,7 @@ export default function InvestorAuthPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <label htmlFor="investor-password" className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Mot de passe
                   </label>
                   <button
@@ -144,7 +159,10 @@ export default function InvestorAuthPage() {
                 </div>
                 <div className="relative">
                   <input
+                    id="investor-password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
