@@ -30,10 +30,7 @@ export default function InvestorHeader({
   const { currentInvestor, logout, investors, offers, notifications, markNotificationsAsRead, messages } = useInvestorStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
-  const isAdmin =
-    currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
-    currentInvestor?.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
-    Boolean(currentInvestor?.isAdmin);
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
 
   // Dynamic count of unanswered messages
   // For Admin: Count of unique investor conversations where the LAST message was sent by the investor

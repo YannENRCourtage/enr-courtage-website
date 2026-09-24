@@ -10,7 +10,7 @@
  */
 
 // ============================================================================
-// COMPTE ADMINISTRATEUR UNIQUE (AUCUN COMPTE DE TEST PRÉ-CONFIGURÉ)
+// COMPTES UTILISATEURS ET ADMINISTRATEUR OFFICIELS
 // ============================================================================
 export const INVESTORS = [
   {
@@ -27,17 +27,18 @@ export const INVESTORS = [
     createdAt: '2026-08-01T08:00:00Z',
   },
   {
-    id: 'ADMIN-002',
+    id: 'INV-ENEE',
     email: 'contact@enr-courtage.fr',
     password: 'invest@enr!01',
-    name: 'Direction ENR COURTAGE',
-    company: 'ENR COURTAGE',
-    role: 'Administrateur M&A',
-    isAdmin: true,
+    name: 'Jean DUS',
+    company: 'ENEE',
+    role: 'Investisseur',
+    isAdmin: false,
     status: 'active',
-    ndaSignedAt: '2026-08-01T08:00:00Z',
+    phone: '07 63 54 21 33',
+    ndaSignedAt: '2026-09-10T08:00:00Z',
     ndaSignedByAdmin: true,
-    createdAt: '2026-08-01T08:00:00Z',
+    createdAt: '2026-09-10T08:00:00Z',
   },
   {
     id: 'INV-YANN-MSN',
@@ -52,20 +53,6 @@ export const INVESTORS = [
     ndaSignedAt: '2026-09-16T08:00:00Z',
     ndaSignedByAdmin: true,
     createdAt: '2026-09-16T08:00:00Z',
-  },
-  {
-    id: 'INV-ENEE',
-    email: 'a.dupre@enee-energy.com',
-    password: 'Enr2026!Enee',
-    name: 'Alexandre DUPRE',
-    company: 'ENEE ENERGY PARTNERS',
-    role: 'Directeur des Investissements',
-    isAdmin: false,
-    status: 'active',
-    phone: '06 12 34 56 78',
-    ndaSignedAt: '2026-09-10T08:00:00Z',
-    ndaSignedByAdmin: true,
-    createdAt: '2026-09-10T08:00:00Z',
   },
 ];
 

@@ -36,10 +36,7 @@ export default function InvestorSidebar({
   const { currentInvestor, logout, offers, investors, soldSites, deletedSites, customSites } = useInvestorStore();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const isAdmin =
-    currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
-    currentInvestor?.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
-    Boolean(currentInvestor?.isAdmin);
+  const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   const pendingCount = investors.filter((i) => i.status === 'pending').length;
 
   const heliosStats = useMemo(() => {

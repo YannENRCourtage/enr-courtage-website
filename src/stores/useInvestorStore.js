@@ -110,10 +110,10 @@ export const useInvestorStore = create(
         {
           id: 'OFF-2026-001',
           investorId: 'INV-ENEE',
-          investorName: 'Alexandre DUPRE',
-          investorCompany: 'ENEE ENERGY PARTNERS',
-          investorEmail: 'a.dupre@enee-energy.com',
-          investorPhone: '06 12 34 56 78',
+          investorName: 'Jean DUS',
+          investorCompany: 'ENEE',
+          investorEmail: 'contact@enr-courtage.fr',
+          investorPhone: '07 63 54 21 33',
           portfolioId: 'both',
           portfolioName: 'Portefeuilles Combinés (HÉLIOS PV + VOLTA BESS)',
           offerType: 'total',
@@ -670,16 +670,16 @@ export const useInvestorStore = create(
           };
         }
 
-        const isRealAdmin = cleanEmail === 'y.barberis@enr-courtage.fr' || cleanEmail === 'contact@enr-courtage.fr';
+        const isRealAdmin = cleanEmail === 'y.barberis@enr-courtage.fr';
 
-        // Check if admin credentials match
+        // Check if admin credentials match directly for y.barberis@enr-courtage.fr
         if (isRealAdmin && (cleanPass === 'invest@enr!01' || cleanPass === 'Enr2026!admin' || cleanPass === 'admin2026')) {
           const adminUser = {
-            id: cleanEmail === 'contact@enr-courtage.fr' ? 'ADMIN-002' : 'ADMIN-001',
-            email: cleanEmail,
-            name: cleanEmail === 'contact@enr-courtage.fr' ? 'Direction ENR COURTAGE' : 'Yann BARBERIS',
+            id: 'ADMIN-001',
+            email: 'y.barberis@enr-courtage.fr',
+            name: 'Yann BARBERIS',
             company: 'ENR COURTAGE',
-            role: cleanEmail === 'contact@enr-courtage.fr' ? 'Administrateur M&A' : 'Président',
+            role: 'Président',
             isAdmin: true,
             status: 'active',
             ndaSignedAt: '2026-08-01T08:00:00Z',
@@ -755,14 +755,14 @@ export const useInvestorStore = create(
 
         const safeInvestor = {
           ...investor,
-          isAdmin: isRealAdmin || Boolean(investor.isAdmin),
+          isAdmin: isRealAdmin,
           ndaSignedByAdmin: true,
           ndaSignedAt: investor.ndaSignedAt || '2026-08-01T08:00:00Z',
           status: 'active',
         };
 
         set({ currentInvestor: safeInvestor });
-        setSecureSessionCookie(safeInvestor.email, safeInvestor.isAdmin ? 'ADMIN' : 'INVESTOR');
+        setSecureSessionCookie(safeInvestor.email, isRealAdmin ? 'ADMIN' : 'INVESTOR');
 
         if (typeof window !== 'undefined' && window.sessionStorage) {
           window.sessionStorage.setItem('enr_last_activity', Date.now().toString());
@@ -772,14 +772,14 @@ export const useInvestorStore = create(
         if (get().logSecurityEvent) {
           get().logSecurityEvent({
             eventType: 'LOGIN',
-            targetResource: safeInvestor.isAdmin ? 'ADMIN_CONSOLE' : 'ESPACE_INVESTISSEUR',
-            details: `Connexion utilisateur de ${safeInvestor.name} (${safeInvestor.email}) - Rôle: ${safeInvestor.isAdmin ? 'ADMIN' : 'INVESTOR'}`,
+            targetResource: isRealAdmin ? 'ADMIN_CONSOLE' : 'ESPACE_INVESTISSEUR',
+            details: `Connexion utilisateur de ${safeInvestor.name} (${safeInvestor.email}) - Rôle: ${isRealAdmin ? 'ADMIN' : 'INVESTOR'}`,
           });
         }
 
         return {
           success: true,
-          isAdmin: safeInvestor.isAdmin,
+          isAdmin: isRealAdmin,
           status: safeInvestor.status,
           ndaRequired: !safeInvestor.ndaSignedAt || !safeInvestor.ndaSignedByAdmin,
         };
@@ -1485,22 +1485,23 @@ y.barberis@enr-courtage.fr
       onRehydrateStorage: () => (state) => {
         if (!state) return;
         // Automatically disconnect any legacy test accounts
-        const testEmails = [
+        const staleTestEmails = [
           'investisseur.test@enr-courtage.fr',
+          'meridiam@demo.fr',
+          'omnes@demo.fr',
+          'test@investor.com',
           'jm.dupont@meridiam.com',
           's.laurent@omnescapital.com',
           'demo@enr-courtage.fr',
+          'a.dupre@enee-energy.com',
         ];
-        if (state.currentInvestor && testEmails.includes(state.currentInvestor.email?.toLowerCase())) {
+        if (state.currentInvestor && staleTestEmails.includes(state.currentInvestor.email?.toLowerCase())) {
           state.currentInvestor = null;
         }
 
-        // Strictly enforce that currentInvestor has isAdmin if email is y.barberis@enr-courtage.fr or contact@enr-courtage.fr
+        // Strictly enforce that currentInvestor has isAdmin ONLY if email is y.barberis@enr-courtage.fr
         if (state.currentInvestor) {
-          const isRealAdmin =
-            state.currentInvestor.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
-            state.currentInvestor.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
-            Boolean(state.currentInvestor.isAdmin);
+          const isRealAdmin = state.currentInvestor.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
           state.currentInvestor = {
             ...state.currentInvestor,
             isAdmin: isRealAdmin,
@@ -1510,21 +1511,18 @@ y.barberis@enr-courtage.fr
         if (state.investors) {
           state.investors = state.investors.filter(
             (inv) =>
-              !testEmails.includes(inv.email?.toLowerCase()) &&
+              !staleTestEmails.includes(inv.email?.toLowerCase()) &&
               inv.id !== 'INV-001' &&
               inv.id !== 'INV-002' &&
               inv.id !== 'INV-003'
           );
 
-          // Synchronize default accounts (like yannbarberis@msn.com & admin)
+          // Synchronize default accounts (y.barberis, contact@enr-courtage.fr, yannbarberis@msn.com)
           INVESTORS.forEach((defaultInv) => {
             const idx = state.investors.findIndex(
               (inv) => inv.email && inv.email.trim().toLowerCase() === defaultInv.email.toLowerCase()
             );
-            const isDefAdmin =
-              defaultInv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
-              defaultInv.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
-              Boolean(defaultInv.isAdmin);
+            const isDefAdmin = defaultInv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
             if (idx === -1) {
               state.investors.push({
                 ...defaultInv,
@@ -1534,6 +1532,9 @@ y.barberis@enr-courtage.fr
               state.investors[idx] = {
                 ...defaultInv,
                 ...state.investors[idx],
+                name: defaultInv.name,
+                company: defaultInv.company,
+                role: defaultInv.role,
                 password: state.investors[idx].password || defaultInv.password,
                 status: state.investors[idx].status || defaultInv.status,
                 isAdmin: isDefAdmin,
@@ -1557,18 +1558,12 @@ y.barberis@enr-courtage.fr
             password: typeof inv.password === 'string' ? inv.password : String(inv.password || ''),
             ndaText: typeof inv.ndaText === 'string' ? inv.ndaText : String(inv.ndaText || ''),
             status: typeof inv.status === 'string' ? inv.status : 'active',
-            isAdmin:
-              inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
-              inv.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
-              Boolean(inv.isAdmin),
+            isAdmin: inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
           }));
         } else {
           state.investors = INVESTORS.map((inv) => ({
             ...inv,
-            isAdmin:
-              inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr' ||
-              inv.email?.trim().toLowerCase() === 'contact@enr-courtage.fr' ||
-              Boolean(inv.isAdmin),
+            isAdmin: inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
           }));
         }
 
