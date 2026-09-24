@@ -942,12 +942,15 @@ export default function PortfolioDetailPage() {
         {/* ============================================================= */}
         {/* MODALES                                                         */}
         {/* ============================================================= */}
-        <OfferModal
-          portfolio={portfolio}
-          selectedSiteIds={selectedSiteIds}
-          isOpen={isOfferModalOpen}
-          onClose={() => setIsOfferModalOpen(false)}
-        />
+        <ErrorBoundary onReset={() => setIsOfferModalOpen(false)}>
+          <OfferModal
+            portfolio={portfolio}
+            defaultPortfolioId={id || portfolio?.id}
+            selectedSiteIds={selectedSiteIds}
+            isOpen={isOfferModalOpen}
+            onClose={() => setIsOfferModalOpen(false)}
+          />
+        </ErrorBoundary>
 
         <ErrorBoundary>
           <NdaDocumentModal

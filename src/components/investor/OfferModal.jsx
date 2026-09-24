@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Coins,
   X,
@@ -41,7 +41,7 @@ const INITIAL_STANDARD_MILESTONES = [
     id: 'urba',
     key: 'urba',
     title: 'Purge du recours des tiers / Urbanisme purgé',
-    targetCondition: 'Certificat de non-recours et non-retrait délivré par l\'autorité compétente',
+    targetCondition: "Certificat de non-recours et non-retrait délivré par l'autorité compétente",
     targetDate: 'T1 2027',
     percentage: 30,
     selected: false,
@@ -76,8 +76,8 @@ export default function OfferModal({
   portfolio = null,
   defaultPortfolioId = null,
   selectedSiteIds = [],
-  isOpen,
-  onClose,
+  isOpen = false,
+  onClose = () => {},
   existingOffer = null,
   mode = 'create', // 'create' | 'modify' | 'counter_proposal'
 }) {
@@ -94,8 +94,25 @@ export default function OfferModal({
   // Wizard Step: 1 = Périmètre & Projets, 2 = Tarif / Montant, 3 = Jalonnements
   const [currentStep, setCurrentStep] = useState(1);
 
+  // Target Portfolio ID resolution
+  const resolvedPortfolioId = useMemo(() => {
+    if (portfolio && typeof portfolio === 'object' && portfolio.id) {
+      return String(portfolio.id).toLowerCase().includes('volta') ? 'volta' : 'helios';
+    }
+    if (typeof portfolio === 'string') {
+      return portfolio.toLowerCase().includes('volta') ? 'volta' : 'helios';
+    }
+    if (defaultPortfolioId) {
+      return String(defaultPortfolioId).toLowerCase().includes('volta') ? 'volta' : 'helios';
+    }
+    if (existingOffer?.portfolioId) {
+      return String(existingOffer.portfolioId).toLowerCase().includes('volta') ? 'volta' : 'helios';
+    }
+    return 'helios';
+  }, [portfolio, defaultPortfolioId, existingOffer]);
+
   // Form State
-  const [targetPortfolio, setTargetPortfolio] = useState('helios');
+  const [targetPortfolio, setTargetPortfolio] = useState(resolvedPortfolioId);
   const [offerType, setOfferType] = useState('total');
   const [localSelectedSiteIds, setLocalSelectedSiteIds] = useState([]);
   const [siteSearchTerm, setSiteSearchTerm] = useState('');
@@ -109,21 +126,20 @@ export default function OfferModal({
   const [submittedOffer, setSubmittedOffer] = useState(null);
   const [error, setError] = useState('');
 
-  const wasOpenRef = React.useRef(false);
+  const wasOpenRef = useRef(false);
 
   // Retrieve base raw sites
-  const allPortfolios = PORTFOLIOS;
-  const heliosBaseSites = useMemo(() => allPortfolios.find((p) => p.id === 'helios')?.sites || [], [allPortfolios]);
-  const voltaBaseSites = useMemo(() => allPortfolios.find((p) => p.id === 'volta')?.sites || [], [allPortfolios]);
+  const heliosBaseSites = useMemo(() => PORTFOLIOS.find((p) => p.id === 'helios')?.sites || [], []);
+  const voltaBaseSites = useMemo(() => PORTFOLIOS.find((p) => p.id === 'volta')?.sites || [], []);
 
   // Is modal locked to a specific portfolio (when opened from a portfolio page or with preset default)
   const isLockedPortfolio = Boolean(portfolio || defaultPortfolioId);
 
   // Dynamic Portfolio stats calculations (accounting for deleted and sold sites)
   const heliosStats = useMemo(() => {
-    const curSold = soldSites?.helios || [];
-    const curDel = deletedSites?.helios || [];
-    const curCust = customSites?.helios || [];
+    const curSold = Array.isArray(soldSites?.helios) ? soldSites.helios : [];
+    const curDel = Array.isArray(deletedSites?.helios) ? deletedSites.helios : [];
+    const curCust = Array.isArray(customSites?.helios) ? customSites.helios : [];
     const all = [...heliosBaseSites, ...curCust].filter((s) => !curDel.includes(s.id));
     const active = all.filter((s) => !curSold.includes(s.id));
     const totalKwc = active.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
@@ -138,9 +154,9 @@ export default function OfferModal({
   }, [heliosBaseSites, soldSites, deletedSites, customSites]);
 
   const voltaStats = useMemo(() => {
-    const curSold = soldSites?.volta || [];
-    const curDel = deletedSites?.volta || [];
-    const curCust = customSites?.volta || [];
+    const curSold = Array.isArray(soldSites?.volta) ? soldSites.volta : [];
+    const curDel = Array.isArray(deletedSites?.volta) ? deletedSites.volta : [];
+    const curCust = Array.isArray(customSites?.volta) ? customSites.volta : [];
     const all = [...voltaBaseSites, ...curCust].filter((s) => !curDel.includes(s.id));
     const active = all.filter((s) => !curSold.includes(s.id));
     const totalKw = active.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
@@ -154,7 +170,9 @@ export default function OfferModal({
     };
   }, [voltaBaseSites, soldSites, deletedSites, customSites]);
 
-  const targetStats = targetPortfolio === 'volta' ? voltaStats : heliosStats;
+  const targetStats = useMemo(() => {
+    return targetPortfolio === 'volta' ? voltaStats : heliosStats;
+  }, [targetPortfolio, voltaStats, heliosStats]);
 
   // Initialize or reset ONLY when modal opens
   useEffect(() => {
@@ -172,14 +190,9 @@ export default function OfferModal({
       setError('');
       setSubmittedOffer(null);
 
-      const initialPortfolioId =
-        (portfolio && typeof portfolio === 'object' ? portfolio.id : portfolio) ||
-        defaultPortfolioId ||
-        existingOffer?.portfolioId ||
-        'helios';
+      setTargetPortfolio(resolvedPortfolioId);
 
       if (existingOffer) {
-        setTargetPortfolio(existingOffer.portfolioId || initialPortfolioId);
         setOfferType(existingOffer.offerType || 'total');
         setLocalSelectedSiteIds(existingOffer.selectedSiteIds || selectedSiteIds || []);
         const targetAmt = existingOffer.counterAmountEur || existingOffer.amountEur || '';
@@ -187,17 +200,17 @@ export default function OfferModal({
         setComments(existingOffer.comments || '');
 
         // Load existing milestones
-        if (existingOffer.milestones && existingOffer.milestones.length > 0) {
+        if (Array.isArray(existingOffer.milestones) && existingOffer.milestones.length > 0) {
           const loaded = existingOffer.milestones.map((m, idx) => ({
             id: m.id || m.key || `loaded-${idx}`,
             key: m.key || `milestone-${idx}`,
             title: m.title || m.label?.replace(/^Jalon — /, '') || `Jalon ${idx + 1}`,
             targetCondition: m.targetCondition || '',
             targetDate: m.targetDate || '',
-            percentage: m.percentage || 0,
+            percentage: Number(m.percentage) || 0,
             comment: m.comment || m.comments || '',
             selected: true,
-            isCustom: !!m.isCustom,
+            isCustom: Boolean(m.isCustom),
           }));
           setMilestones(loaded);
         } else {
@@ -205,8 +218,7 @@ export default function OfferModal({
         }
       } else {
         // NEW OFFER: None selected by default per user specification
-        setTargetPortfolio(initialPortfolioId);
-        const hasPreselected = selectedSiteIds && selectedSiteIds.length > 0;
+        const hasPreselected = Array.isArray(selectedSiteIds) && selectedSiteIds.length > 0;
         setOfferType(hasPreselected ? 'partial' : 'total');
         setLocalSelectedSiteIds(selectedSiteIds || []);
         setAmountEur('');
@@ -214,23 +226,25 @@ export default function OfferModal({
         setMilestones(INITIAL_STANDARD_MILESTONES.map((m) => ({ ...m, selected: false, comment: '' })));
       }
     }
-  }, [isOpen, portfolio, defaultPortfolioId, existingOffer, selectedSiteIds]);
+  }, [isOpen, resolvedPortfolioId, existingOffer, selectedSiteIds]);
 
   // Compute available active sites for target portfolio (Strictly single-portfolio: HELIOS or VOLTA)
   // Excludes both deletedSites and soldSites
   const availableSites = useMemo(() => {
     let list = [];
-    const curSold = soldSites?.[targetPortfolio] || [];
-    const curDel = deletedSites?.[targetPortfolio] || [];
-    const curCust = customSites?.[targetPortfolio] || [];
+    const pKey = targetPortfolio === 'volta' ? 'volta' : 'helios';
+    const curSold = Array.isArray(soldSites?.[pKey]) ? soldSites[pKey] : [];
+    const curDel = Array.isArray(deletedSites?.[pKey]) ? deletedSites[pKey] : [];
+    const curCust = Array.isArray(customSites?.[pKey]) ? customSites[pKey] : [];
 
-    if (targetPortfolio === 'volta') {
+    if (pKey === 'volta') {
       list = [...voltaBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' }));
     } else {
       list = [...heliosBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
     }
 
     return list.filter((site) => {
+      if (!site || !site.id) return false;
       if (curDel.includes(site.id)) return false;
       if (curSold.includes(site.id)) return false;
       return true;
@@ -239,11 +253,14 @@ export default function OfferModal({
 
   // Filter sites for search inside partial selection
   const filteredModalSites = useMemo(() => {
+    if (!Array.isArray(availableSites)) return [];
     if (!siteSearchTerm.trim()) return availableSites;
     const q = siteSearchTerm.toLowerCase();
-    return availableSites.filter((s) =>
-      `${s.name || s.ville || ''} ${s.cp || ''} ${s.dept || ''} ${s.client || ''} ${s.address || ''}`.toLowerCase().includes(q)
-    );
+    return availableSites.filter((s) => {
+      if (!s) return false;
+      const str = `${s.name || s.ville || ''} ${s.cp || ''} ${s.dept || ''} ${s.client || ''} ${s.address || ''}`.toLowerCase();
+      return str.includes(q);
+    });
   }, [availableSites, siteSearchTerm]);
 
   if (!isOpen) return null;
@@ -412,17 +429,18 @@ export default function OfferModal({
 
   // Active selected milestones
   const activeMilestones = useMemo(() => {
+    if (!Array.isArray(milestones)) return [];
     return milestones
-      .filter((m) => m.selected)
+      .filter((m) => Boolean(m && m.selected))
       .map((m, idx) => ({
         ...m,
         number: idx + 1,
-        label: m.isCustom ? m.title : `Jalon — ${m.title}`,
-        amount: Math.round((numericAmount * (m.percentage || 0)) / 100),
+        label: typeof m.title === 'string' ? (m.isCustom ? m.title : `Jalon — ${m.title}`) : `Jalon ${idx + 1}`,
+        amount: Math.round((numericAmount * (Number(m.percentage) || 0)) / 100),
       }));
   }, [milestones, numericAmount]);
 
-  const totalPercent = activeMilestones.reduce((sum, m) => sum + (m.percentage || 0), 0);
+  const totalPercent = activeMilestones.reduce((sum, m) => sum + (Number(m.percentage) || 0), 0);
 
   // Validate Step 1
   const handleNextFromStep1 = () => {
@@ -491,15 +509,15 @@ export default function OfferModal({
           key: m.key || m.id,
           label: m.label,
           title: m.title,
-          percentage: m.percentage,
+          percentage: Number(m.percentage) || 0,
           amount: m.amount,
           targetCondition: m.targetCondition || '',
           targetDate: m.targetDate || '',
           comment: m.comment || '',
-          isCustom: !!m.isCustom,
+          isCustom: Boolean(m.isCustom),
         })),
-        upfrontPercent: activeMilestones[0]?.percentage || 30,
-        earnoutPercent: 100 - (activeMilestones[0]?.percentage || 30),
+        upfrontPercent: Number(activeMilestones[0]?.percentage) || 30,
+        earnoutPercent: 100 - (Number(activeMilestones[0]?.percentage) || 30),
         comments,
       };
 
@@ -1043,12 +1061,13 @@ export default function OfferModal({
                 {/* The List of Milestones */}
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
                   {milestones.map((m, idx) => {
-                    const isSelected = !!m.selected;
-                    const computedEur = Math.round((numericAmount * (m.percentage || 0)) / 100);
+                    const isSelected = Boolean(m && m.selected);
+                    const percentVal = Number(m.percentage) || 0;
+                    const computedEur = Math.round((numericAmount * percentVal) / 100);
 
                     return (
                       <div
-                        key={m.id}
+                        key={m.id || `m-${idx}`}
                         className={`p-3.5 rounded-2xl border transition ${
                           isSelected
                             ? 'bg-amber-50/40 border-amber-400 shadow-sm'
@@ -1075,14 +1094,14 @@ export default function OfferModal({
                                 <div className="space-y-1">
                                   <input
                                     type="text"
-                                    value={m.title}
+                                    value={m.title || ''}
                                     onChange={(e) => handleUpdateMilestoneField(m.id, 'title', e.target.value)}
                                     placeholder="Intitulé du jalon personnalisé..."
                                     className="w-full text-xs font-bold text-slate-900 bg-white border border-slate-300 rounded-lg px-2 py-1 focus:outline-none focus:border-amber-500"
                                   />
                                   <input
                                     type="text"
-                                    value={m.targetCondition}
+                                    value={m.targetCondition || ''}
                                     onChange={(e) => handleUpdateMilestoneField(m.id, 'targetCondition', e.target.value)}
                                     placeholder="Modalité / Condition suspensive de déclenchement..."
                                     className="w-full text-[10px] text-slate-600 bg-white border border-slate-200 rounded-lg px-2 py-0.5 focus:outline-none focus:border-amber-500"
@@ -1115,7 +1134,7 @@ export default function OfferModal({
                                     type="number"
                                     min="1"
                                     max="100"
-                                    value={m.percentage || 0}
+                                    value={percentVal}
                                     onChange={(e) => handlePercentageChange(m.id, e.target.value)}
                                     className="w-14 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs text-amber-700 font-bold font-mono text-right focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
                                   />
