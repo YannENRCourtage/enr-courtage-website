@@ -857,11 +857,13 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
       {/* =================================================================== */}
 
       {/* Modale Dépôt d'Offre */}
-      <OfferModal
-        isOpen={isOfferModalOpen}
-        onClose={() => setIsOfferModalOpen(false)}
-        defaultPortfolioId={offerModalTargetPortfolio}
-      />
+      <ErrorBoundary onReset={() => setIsOfferModalOpen(false)}>
+        <OfferModal
+          isOpen={isOfferModalOpen}
+          onClose={() => setIsOfferModalOpen(false)}
+          defaultPortfolioId={offerModalTargetPortfolio}
+        />
+      </ErrorBoundary>
 
       {/* Modale Consultation NDA Bilatéral */}
       <ErrorBoundary onReset={() => setIsNdaModalOpen(false)}>

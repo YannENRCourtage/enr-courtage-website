@@ -263,8 +263,6 @@ export default function OfferModal({
     });
   }, [availableSites, siteSearchTerm]);
 
-  if (!isOpen) return null;
-
   const sitesToIncludeCount =
     offerType === 'total' ? availableSites.length : localSelectedSiteIds.length;
 
@@ -551,6 +549,8 @@ export default function OfferModal({
     setCurrentStep(1);
     onClose();
   };
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">

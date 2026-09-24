@@ -176,8 +176,6 @@ export default function AdminValidationModal({
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const currentPortfolioObj = portfolios.find((p) => p.id === selectedDataRoomPortfolio);
 
-  if (!isOpen && !isEmbedded) return null;
-
   const safeInvestors = Array.isArray(investors) ? investors : [];
   const safeOffers = Array.isArray(offers) ? offers : [];
 
@@ -208,6 +206,8 @@ export default function AdminValidationModal({
       );
     });
   }, [safeInvestors, userSearch, userStatusFilter]);
+
+  if (!isOpen && !isEmbedded) return null;
 
   // Create User Handler with optional uploaded signed NDA
   const handleCreateUser = async (e) => {
