@@ -48,6 +48,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const adminParam = searchParams.get('admin');
+  const adminTabParam = searchParams.get('adminTab');
   const tabParam = searchParams.get('tab');
 
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -68,17 +69,20 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
 
   // Active view: 'investor' or 'admin' (Admin defaults to 'admin' console)
   const [activeView, setActiveView] = useState(() => {
-    if (defaultToAdmin || adminParam === 'true') return 'admin';
+    if (defaultToAdmin || adminParam === 'true' || adminTabParam) return 'admin';
     if (currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr') return 'admin';
     return 'investor';
   });
 
   // Keep activeView synced if admin state resolves
   React.useEffect(() => {
-    if (isAdmin && !defaultToAdmin && !adminParam) {
+    if (adminTabParam) {
+      setActiveView('admin');
+    } else if (isAdmin && !defaultToAdmin && !adminParam) {
       setActiveView('admin');
     }
-  }, [isAdmin, defaultToAdmin, adminParam]);
+  }, [isAdmin, defaultToAdmin, adminParam, adminTabParam]);
+
   // Investor sub-tab: 'portfolios' | 'offers' | 'dataroom' | 'messages'
   const [investorSubTab, setInvestorSubTab] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -88,7 +92,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     return 'portfolios';
   });
 
-  // Listen for hash changes to switch sub-tabs smoothly
+  // Listen for hash / searchParam changes to switch sub-tabs smoothly
   React.useEffect(() => {
     const handleHash = () => {
       if (window.location.hash === '#mes-offres' || searchParams.get('tab') === 'offers') {
@@ -103,8 +107,19 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
     window.addEventListener('hashchange', handleHash);
     return () => window.removeEventListener('hashchange', handleHash);
   }, [searchParams]);
-  // Admin navigation state from notifications
-  const [adminInitialTab, setAdminInitialTab] = useState('users');
+
+  // Admin navigation state from notifications or sidebar
+  const [adminInitialTab, setAdminInitialTab] = useState(() => {
+    const at = searchParams.get('adminTab');
+    return at === 'requests' || at === 'users' ? 'users' : at || 'users';
+  });
+
+  React.useEffect(() => {
+    if (adminTabParam) {
+      setAdminInitialTab(adminTabParam === 'requests' || adminTabParam === 'users' ? 'users' : adminTabParam);
+    }
+  }, [adminTabParam]);
+
   const [adminSelectedChatEmail, setAdminSelectedChatEmail] = useState('');
 
   // Modals
@@ -281,7 +296,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
         />
 
         {/* Main Content Container */}
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
+        <main className="flex-1 w-full max-w-[1750px] mx-auto px-4 sm:px-6 xl:px-8 py-6 sm:py-8">
         {/* ================================================================= */}
         {/* VUE 1 : CONSOLE D'ADMINISTRATION (SI ACTIVE ET ADMIN)            */}
         {/* ================================================================= */}

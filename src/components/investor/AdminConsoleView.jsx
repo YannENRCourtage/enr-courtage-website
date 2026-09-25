@@ -99,9 +99,27 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [editingUserData, setEditingUserData] = useState({});
+  const [showEditPassword, setShowEditPassword] = useState(false);
   const [selectedUserDownloadsModal, setSelectedUserDownloadsModal] = useState(null);
   const [mandateModalOffer, setMandateModalOffer] = useState(null);
   const [userActionNotice, setUserActionNotice] = useState('');
+
+  const handleSaveEditUser = (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    if (!editingUserData.email || !editingUserData.name) {
+      alert("Veuillez renseigner le nom et l'adresse e-mail.");
+      return;
+    }
+    const res = adminUpdateUser(editingUser.id, editingUserData);
+    if (res && res.success) {
+      setEditingUser(null);
+      setUserActionNotice(`Utilisateur « ${editingUserData.name} » mis à jour avec succès.`);
+      setTimeout(() => setUserActionNotice(''), 4000);
+    } else {
+      alert(res?.error || "Erreur lors de la mise à jour de l'utilisateur.");
+    }
+  };
 
   // New user form state
   const [newUserData, setNewUserData] = useState({
@@ -380,12 +398,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       {/* =================================================================== */}
       <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-black uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">
-              Direction M&A • Espace d'Administration
-            </span>
-            <span className="text-xs text-slate-500 font-bold">Yann BARBERIS & Véro</span>
-          </div>
           <h1 className="text-2xl sm:text-3xl font-black text-[#0b192c] tracking-tight">
             Console de Supervision des Cessions & Utilisateurs
           </h1>
@@ -1260,9 +1272,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       Portefeuille HÉLIOS — Solaire Toitures & Hangars (PV 9,12 MWc)
                     </h3>
                   </div>
-                  <span className="text-xs font-bold text-slate-500">
-                    Administration des projets unitaires
-                  </span>
                 </div>
                 <TeaserSitesTable
                   sites={portfolios.find((p) => p.id === 'helios')?.sites || []}
@@ -1279,9 +1288,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       Portefeuille VOLTA — Stockage Réseau Stand-Alone (BESS 15,50 MW)
                     </h3>
                   </div>
-                  <span className="text-xs font-bold text-slate-500">
-                    Administration des stations unitaires
-                  </span>
                 </div>
                 <TeaserSitesTable
                   sites={portfolios.find((p) => p.id === 'volta')?.sites || []}
@@ -1498,6 +1504,155 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20"
                 >
                   Publier en Data Room
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODALE : MODIFIER UN INVESTISSEUR / ACCÈS                           */}
+      {/* =================================================================== */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-black text-[#0b192c]">
+                  Modifier l'utilisateur : {editingUser.name || editingUser.company}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditUser} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Nom complet *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUserData.name || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Société / Fonds *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingUserData.company || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, company: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Adresse e-mail (Identifiant) *</label>
+                  <input
+                    type="email"
+                    required
+                    value={editingUserData.email || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Téléphone</label>
+                  <input
+                    type="text"
+                    value={editingUserData.phone || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, phone: e.target.value })}
+                    placeholder="06 ..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              {/* Mot de passe avec générateur et show/hide */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-bold text-slate-700">Mot de passe de connexion</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const newPass = generateRandomPassword();
+                      setEditingUserData({ ...editingUserData, password: newPass });
+                      setShowEditPassword(true);
+                    }}
+                    className="text-[10px] font-bold text-purple-700 hover:text-purple-900 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>Générer un mot de passe sécurisé</span>
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showEditPassword ? 'text' : 'password'}
+                    value={editingUserData.password || ''}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, password: e.target.value })}
+                    placeholder="Laisser vide ou saisir un nouveau mot de passe"
+                    className="w-full pl-3 pr-10 py-2 rounded-xl bg-slate-50 border border-slate-300 font-mono text-slate-800 text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowEditPassword(!showEditPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                    title={showEditPassword ? 'Masquer' : 'Afficher'}
+                  >
+                    {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Statut d'Accès</label>
+                  <select
+                    value={editingUserData.status || 'active'}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, status: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-bold text-slate-800"
+                  >
+                    <option value="active">Actif (Accès accordé)</option>
+                    <option value="pending">En attente (Validation requise)</option>
+                    <option value="rejected">Inactif / Refusé (Accès suspendu)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Rôle / Titre</label>
+                  <input
+                    type="text"
+                    value={editingUserData.role || 'Investisseur'}
+                    onChange={(e) => setEditingUserData({ ...editingUserData, role: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-md shadow-purple-600/20 cursor-pointer"
+                >
+                  Enregistrer les modifications
                 </button>
               </div>
             </form>

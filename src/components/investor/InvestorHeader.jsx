@@ -140,32 +140,7 @@ export default function InvestorHeader({
           )}
         </div>
 
-        {/* Center: Navigation Switcher (Admin Only) */}
-        {isAdmin && (
-          <div className="hidden md:flex items-center">
-            <button
-              onClick={() => {
-                if (activeView === 'admin') {
-                  if (onSwitchView) onSwitchView('investor');
-                  else navigate('/investisseurs/dashboard');
-                } else {
-                  if (onSwitchView) onSwitchView('admin');
-                  else if (onOpenAdmin) onOpenAdmin();
-                  else navigate('/investisseurs/admin');
-                }
-              }}
-              className="px-3.5 py-1.5 rounded-xl border border-purple-200 bg-purple-50 hover:bg-purple-100 text-purple-950 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-              <span>{activeView === 'admin' ? 'Retour aux Portefeuilles' : 'Console Administrateur'}</span>
-              {unansweredMessagesCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-red-500 text-white text-[10px] font-black animate-pulse">
-                  {unansweredMessagesCount}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
+
 
         {/* Right Side: Profile Card, Notification Bell & Logout */}
         <div className="flex items-center gap-3">

@@ -82,7 +82,7 @@ const fmtEur = (v) => {
 export default function PortfolioDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentInvestor, soldSites, deletedSites, customSites } = useInvestorStore();
+  const { currentInvestor, soldSites, deletedSites, customSites, modifiedSites = { helios: {}, volta: {} } } = useInvestorStore();
 
   const portfolio = useMemo(() => investorService.getPortfolioById(id), [id]);
 
@@ -99,16 +99,28 @@ export default function PortfolioDetailPage() {
   const currentSold = soldSites?.[portfolioKey] || [];
   const currentDeleted = deletedSites?.[portfolioKey] || [];
   const currentCustom = customSites?.[portfolioKey] || [];
+  const currentModified = modifiedSites?.[portfolioKey] || {};
 
-  // All combined sites (excluding deleted ones)
+  // All combined sites (excluding deleted ones, applying admin modifications)
   const allSitesCombined = useMemo(() => {
     if (!portfolio) return [];
-    return [...(portfolio.sites || []), ...currentCustom].filter((s) => !currentDeleted.includes(s.id));
-  }, [portfolio, currentCustom, currentDeleted]);
+    const combined = [...(portfolio.sites || []), ...currentCustom];
+    return combined
+      .filter((s) => !currentDeleted.includes(Number(s.id)))
+      .map((s) => {
+        const numId = Number(s.id);
+        const override = currentModified[numId] || {};
+        return {
+          ...s,
+          ...override,
+          id: numId,
+        };
+      });
+  }, [portfolio, currentCustom, currentDeleted, currentModified]);
 
   // Active available sites (excluding sold ones)
   const activeAvailableSites = useMemo(() => {
-    return allSitesCombined.filter((s) => !currentSold.includes(s.id));
+    return allSitesCombined.filter((s) => !currentSold.includes(Number(s.id)) && !s.isSold);
   }, [allSitesCombined, currentSold]);
 
   const displaySitesCount = activeAvailableSites.length;

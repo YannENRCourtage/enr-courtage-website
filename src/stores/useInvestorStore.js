@@ -170,10 +170,11 @@ export const useInvestorStore = create(
       // Deleted default/demo Data Room documents per portfolio
       deletedDefaultDocs: {},
 
-      // Sites state (sold, deleted, custom added by admin)
+      // Sites state (sold, deleted, custom added by admin, modified by admin)
       soldSites: { helios: [], volta: [] },
       deletedSites: { helios: [], volta: [] },
       customSites: { helios: [], volta: [] },
+      modifiedSites: { helios: {}, volta: {} },
 
       // Tracking of document downloads by investor email
       userDownloads: {},
@@ -412,6 +413,113 @@ export const useInvestorStore = create(
             },
           };
         });
+      },
+
+      // Modifier un projet existant (nom, commune, cp, dept, client, bailleur, type, kwc/kw, cost/quotePart, statut, isSold, etc.)
+      updateSite: (portfolioId, siteId, updatedData) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return { success: false, error: 'Accès réservé à l\'administrateur.' };
+        }
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        const numId = Number(siteId);
+
+        set((state) => {
+          // 1. Gérer le statut Vendu
+          let currentSold = state.soldSites?.[pId] || [];
+          if (updatedData.isSold !== undefined) {
+            if (updatedData.isSold) {
+              if (!currentSold.includes(numId)) currentSold = [...currentSold, numId];
+            } else {
+              currentSold = currentSold.filter((id) => id !== numId);
+            }
+          }
+
+          // 2. Si c'est un custom site, mettre à jour dans customSites
+          const customList = state.customSites?.[pId] || [];
+          const customIdx = customList.findIndex((s) => Number(s.id) === numId);
+          let newCustomSites = state.customSites;
+          if (customIdx !== -1) {
+            const updatedCustom = [...customList];
+            updatedCustom[customIdx] = { ...updatedCustom[customIdx], ...updatedData, id: numId };
+            newCustomSites = { ...state.customSites, [pId]: updatedCustom };
+          }
+
+          // 3. Enregistrer les surcharges dans modifiedSites
+          const currentModified = state.modifiedSites?.[pId] || {};
+          const existingOverride = currentModified[numId] || {};
+          const newModified = {
+            ...currentModified,
+            [numId]: {
+              ...existingOverride,
+              ...updatedData,
+              id: numId,
+              updatedAt: new Date().toISOString(),
+            },
+          };
+
+          return {
+            soldSites: {
+              ...state.soldSites,
+              [pId]: currentSold,
+            },
+            customSites: newCustomSites,
+            modifiedSites: {
+              ...state.modifiedSites,
+              [pId]: newModified,
+            },
+          };
+        });
+
+        return { success: true };
+      },
+
+      // Mettre à jour le statut ou le statut de vente d'un lot de projets
+      batchUpdateSites: (portfolioId, siteIds = [], updateFields = {}) => {
+        const current = get().currentInvestor;
+        if (current?.email?.trim().toLowerCase() !== 'y.barberis@enr-courtage.fr') {
+          console.warn("Action réservée à l'administrateur y.barberis@enr-courtage.fr");
+          return { success: false, error: 'Accès réservé à l\'administrateur.' };
+        }
+        if (!Array.isArray(siteIds) || siteIds.length === 0) return { success: false };
+        const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        const numIds = siteIds.map(Number);
+
+        set((state) => {
+          let currentSold = state.soldSites?.[pId] || [];
+          if (updateFields.isSold !== undefined) {
+            if (updateFields.isSold) {
+              currentSold = Array.from(new Set([...currentSold, ...numIds]));
+            } else {
+              currentSold = currentSold.filter((id) => !numIds.includes(id));
+            }
+          }
+
+          const currentModified = state.modifiedSites?.[pId] || {};
+          const newModified = { ...currentModified };
+          numIds.forEach((id) => {
+            newModified[id] = {
+              ...(newModified[id] || {}),
+              ...updateFields,
+              id,
+              updatedAt: new Date().toISOString(),
+            };
+          });
+
+          return {
+            soldSites: {
+              ...state.soldSites,
+              [pId]: currentSold,
+            },
+            modifiedSites: {
+              ...state.modifiedSites,
+              [pId]: newModified,
+            },
+          };
+        });
+
+        return { success: true };
       },
 
       // Add document to Data Room
@@ -1573,6 +1681,7 @@ y.barberis@enr-courtage.fr
         state.soldSites = state.soldSites || { helios: [], volta: [] };
         state.deletedSites = state.deletedSites || { helios: [], volta: [] };
         state.customSites = state.customSites || { helios: [], volta: [] };
+        state.modifiedSites = state.modifiedSites || { helios: {}, volta: {} };
 
         if (!state.userDownloads || Object.keys(state.userDownloads).length === 0) {
           state.userDownloads = {
@@ -1596,7 +1705,7 @@ y.barberis@enr-courtage.fr
                 downloadedAt: '2026-09-17T11:42:00.000Z',
               },
             ],
-            'a.dupre@enee-energy.com': [
+            'contact@enr-courtage.fr': [
               {
                 id: 'DL-SEED-03',
                 portfolioId: 'helios',

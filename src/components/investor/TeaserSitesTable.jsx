@@ -23,6 +23,8 @@ import {
   RotateCcw,
   Building,
   PlusCircle,
+  Edit3,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { getDocumentsForSite, downloadOrViewDoc } from '@/services/dataRoomDocumentService';
@@ -40,16 +42,21 @@ export default function TeaserSitesTable({
   const [activeModalSite, setActiveModalSite] = useState(null);
   const [copiedField, setCopiedField] = useState(null);
   const [isAddSiteModalOpen, setIsAddSiteModalOpen] = useState(false);
+  const [editingSite, setEditingSite] = useState(null);
+  const [editingSiteData, setEditingSiteData] = useState({});
 
   const {
     currentInvestor,
     soldSites = { helios: [], volta: [] },
     deletedSites = { helios: [], volta: [] },
     customSites = { helios: [], volta: [] },
+    modifiedSites = { helios: {}, volta: {} },
     toggleSoldSite,
     deleteSite,
     deleteBatchSites,
     addCustomSite,
+    updateSite,
+    batchUpdateSites,
     customDataRoom,
     deletedDefaultDocs,
     documentSiteAssignments,
@@ -69,6 +76,7 @@ export default function TeaserSitesTable({
   const currentSold = soldSites?.[portfolioKey] || [];
   const currentDeleted = deletedSites?.[portfolioKey] || [];
   const currentCustom = customSites?.[portfolioKey] || [];
+  const currentModified = modifiedSites?.[portfolioKey] || {};
 
   // Form state for adding a new site (Admin)
   const [newSiteData, setNewSiteData] = useState({
@@ -93,11 +101,21 @@ export default function TeaserSitesTable({
     setTimeout(() => setCopiedField(null), 2500);
   };
 
-  // Combine default sites and admin custom sites, excluding deleted ones
+  // Combine default sites and admin custom sites, apply admin modifications, excluding deleted ones
   const allSitesCombined = useMemo(() => {
     const combined = [...sites, ...currentCustom];
-    return combined.filter((s) => !currentDeleted.includes(s.id));
-  }, [sites, currentCustom, currentDeleted]);
+    return combined
+      .filter((s) => !currentDeleted.includes(Number(s.id)))
+      .map((s) => {
+        const numId = Number(s.id);
+        const override = currentModified[numId] || {};
+        return {
+          ...s,
+          ...override,
+          id: numId,
+        };
+      });
+  }, [sites, currentCustom, currentDeleted, currentModified]);
 
   // Filter sites based on search term
   const filteredSites = useMemo(() => {
@@ -154,6 +172,61 @@ export default function TeaserSitesTable({
     });
   };
 
+  // Open site edit modal
+  const handleOpenEditSite = (site) => {
+    const numId = Number(site.id);
+    const isSold = currentSold.includes(numId);
+    setEditingSite(site);
+    setEditingSiteData({
+      name: site.name || site.ville || '',
+      cp: site.cp || '',
+      dept: site.dept || (site.cp ? String(site.cp).substring(0, 2) : '33'),
+      address: site.address || '',
+      client: site.client || site.bailleur || '',
+      bailleur: site.bailleur || site.client || '',
+      type: site.type || (isPv ? 'Construction' : 'Batterie SA 4×125kW'),
+      kwc: site.kwc !== undefined ? site.kwc : 315,
+      kw: site.kw !== undefined ? site.kw : 500,
+      cost: site.cost !== undefined ? site.cost : 0,
+      quotePart: site.quotePart || '42,71 k€',
+      statut: site.statut || 'URBA OK',
+      posteSource: site.posteSource || '',
+      ebitda: site.ebitda || '55 438 €',
+      payback: site.payback || '4.6 ans',
+      isSold: isSold,
+    });
+  };
+
+  // Save site edit
+  const handleSaveEditSite = (e) => {
+    e.preventDefault();
+    if (!editingSite) return;
+    if (!editingSiteData.name?.trim()) {
+      alert('Veuillez renseigner le nom du projet.');
+      return;
+    }
+
+    const payload = {
+      ...editingSiteData,
+      id: Number(editingSite.id),
+      kwc: Number(editingSiteData.kwc) || 0,
+      kw: Number(editingSiteData.kw) || 0,
+      cost: Number(editingSiteData.cost) || 0,
+      dept: editingSiteData.dept || (editingSiteData.cp ? String(editingSiteData.cp).substring(0, 2) : '33'),
+    };
+
+    updateSite(portfolioKey, editingSite.id, payload);
+
+    if (activeModalSite && Number(activeModalSite.id) === Number(editingSite.id)) {
+      setActiveModalSite((prev) => ({
+        ...prev,
+        ...payload,
+      }));
+    }
+
+    setEditingSite(null);
+  };
+
   // Handle Batch Delete (Admin)
   const handleBatchDelete = () => {
     if (selectedSiteIds.length === 0) return;
@@ -163,6 +236,13 @@ export default function TeaserSitesTable({
     }
   };
 
+  // Handle Batch Mark Sold (Admin)
+  const handleBatchMarkSold = (makeSold = true) => {
+    if (selectedSiteIds.length === 0) return;
+    batchUpdateSites(portfolioKey, selectedSiteIds, { isSold: makeSold });
+    onClearSelection && onClearSelection();
+  };
+
   return (
     <div className="space-y-4">
       {/* Table Section Header & Filter Bar */}
@@ -170,11 +250,6 @@ export default function TeaserSitesTable({
         <div>
           <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black flex items-center gap-1.5">
             <span>RÉPERTOIRE FONCIER & RACCORDEMENT</span>
-            {isAdmin && (
-              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 text-[10px] font-bold border border-purple-200">
-                Mode Administrateur Actif
-              </span>
-            )}
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
             Liste Complète des {allSitesCombined.length} Sites du Portefeuille {isPv ? 'HÉLIOS' : 'VOLTA'}
@@ -198,14 +273,36 @@ export default function TeaserSitesTable({
               </button>
 
               {selectedSiteIds.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleBatchDelete}
-                  className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Supprimer ({selectedSiteIds.length})</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={() => handleBatchMarkSold(false)}
+                    className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    title="Remettre les projets sélectionnés en vente"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Remettre en vente ({selectedSiteIds.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleBatchMarkSold(true)}
+                    className="px-3 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                    title="Marquer les projets sélectionnés comme vendus"
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>Marquer Vendu ({selectedSiteIds.length})</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBatchDelete}
+                    className="px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Supprimer ({selectedSiteIds.length})</span>
+                  </button>
+                </>
               )}
             </>
           )}
@@ -285,38 +382,38 @@ export default function TeaserSitesTable({
 
       {/* Table Container (Light Theme) */}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-xs border-collapse">
           {/* Header Row */}
           <thead className="bg-slate-100/90 text-[10px] uppercase tracking-wider text-slate-700 border-b border-slate-200 font-black select-none">
             <tr>
-              <th className="py-3 px-3 w-10 text-center">
+              <th className="py-3 px-3 w-10 text-center whitespace-nowrap">
                 <span className="sr-only">Sélection</span>
                 #
               </th>
-              <th className="py-3 px-3 w-10 text-center font-mono text-slate-500">N°</th>
-              <th className="py-3 px-4 text-slate-900">PROJET & COMMUNE</th>
-              <th className="py-3 px-3 text-center text-slate-700">DÉP.</th>
-              <th className="py-3 px-4 text-slate-900">
+              <th className="py-3 px-3 w-10 text-center font-mono text-slate-500 whitespace-nowrap">N°</th>
+              <th className="py-3 px-4 text-slate-900 whitespace-nowrap">PROJET & COMMUNE</th>
+              <th className="py-3 px-3 text-center text-slate-700 whitespace-nowrap">DÉP.</th>
+              <th className="py-3 px-4 text-slate-900 whitespace-nowrap">
                 {isPv ? 'PROPRIÉTAIRE / CLIENT' : 'BAILLEUR / PROPRIÉTAIRE'}
               </th>
-              <th className="py-3 px-3 text-slate-900">
+              <th className="py-3 px-3 text-slate-900 whitespace-nowrap">
                 {isPv ? 'TYPE DE BÂTIMENT' : 'POSTE SOURCE ENEDIS'}
               </th>
-              <th className="py-3 px-3 text-right text-slate-700">
+              <th className="py-3 px-3 text-right text-slate-700 whitespace-nowrap">
                 {isPv ? 'SURFACE EST.' : 'DIST. HTA'}
               </th>
-              <th className="py-3 px-3 text-right text-slate-700">
+              <th className="py-3 px-3 text-right text-slate-700 whitespace-nowrap">
                 {isPv ? 'COÛT TRAVAUX HT HORS PV' : 'QUOTE-PART S3RENR'}
               </th>
-              <th className="py-3 px-3 text-right text-emerald-700">
+              <th className="py-3 px-3 text-right text-emerald-700 whitespace-nowrap">
                 {isPv ? 'PUISSANCE' : 'EBITDA AN 1'}
               </th>
-              <th className="py-3 px-3 text-center text-slate-700">
+              <th className="py-3 px-3 text-center text-slate-700 whitespace-nowrap">
                 {isPv ? 'STATUT URBA' : 'PAYBACK'}
               </th>
-              <th className="py-3 px-3 text-center text-slate-700">FICHE</th>
+              <th className="py-3 px-3 text-center text-slate-700 whitespace-nowrap">FICHE</th>
               {isAdmin && (
-                <th className="py-3 px-3 text-center text-purple-900 bg-purple-50 font-black border-l border-purple-200">
+                <th className="py-3 px-3 text-center text-purple-900 bg-purple-50 font-black border-l border-purple-200 whitespace-nowrap">
                   GESTION ADMIN
                 </th>
               )}
@@ -326,16 +423,16 @@ export default function TeaserSitesTable({
           {/* Table Body */}
           <tbody className="divide-y divide-slate-100">
             {filteredSites.map((site) => {
-              const isSelected = selectedSiteIds.includes(site.id);
-              const isSold = currentSold.includes(site.id);
+              const numId = Number(site.id);
+              const isSelected = selectedSiteIds.includes(numId);
+              const isSold = currentSold.includes(numId);
               const numStr = String(site.id).padStart(2, '0');
-              const siteDocs = getDocumentsForSite(site, portfolioKey, storeState);
 
               // PV-specific values
-              const pvCost = site.cost > 0
+              const pvCost = Number(site.cost) > 0
                 ? `${new Intl.NumberFormat('fr-FR').format(site.cost)} €`
                 : 'Toiture exist.';
-              const pvSurface = `${Math.round((site.kwc || 315) * 5.8)} m²`;
+              const pvSurface = `${Math.round((Number(site.kwc) || 315) * 5.8)} m²`;
 
               // High Blur effect when sold for regular investors
               const blurClass = isSold && !isAdmin ? 'filter blur-[6px] opacity-40 select-none pointer-events-none' : '';
@@ -343,6 +440,7 @@ export default function TeaserSitesTable({
               return (
                 <tr
                   key={site.id}
+                  id={`site-row-${site.id}`}
                   onClick={() => {
                     if (isSold && !isAdmin) return;
                     setActiveModalSite(site);
@@ -357,10 +455,10 @@ export default function TeaserSitesTable({
                 >
                   {/* Checkbox column */}
                   <td
-                    className="py-3 px-3 text-center"
+                    className="py-3 px-3 text-center whitespace-nowrap"
                     onClick={(e) => {
                       e.stopPropagation();
-                      if (!isSold && onToggleSiteSelect) onToggleSiteSelect(site.id);
+                      if (!isSold && onToggleSiteSelect) onToggleSiteSelect(numId);
                     }}
                   >
                     {isSold ? (
@@ -383,14 +481,14 @@ export default function TeaserSitesTable({
                   </td>
 
                   {/* ID */}
-                  <td className={`py-3 px-3 font-mono text-slate-500 font-bold text-center text-[11px] ${blurClass}`}>
+                  <td className={`py-3 px-3 font-mono text-slate-500 font-bold text-center text-[11px] whitespace-nowrap ${blurClass}`}>
                     {numStr}
                   </td>
 
                   {/* Projet & Commune */}
-                  <td className="py-3 px-4 relative">
+                  <td className="py-3 px-4 relative whitespace-nowrap">
                     <div className={blurClass}>
-                      <div className="font-bold text-slate-900 text-[12px] flex items-center gap-1.5">
+                      <div className="font-bold text-slate-900 text-[12px] flex items-center gap-1.5 whitespace-nowrap">
                         <span>{site.name || site.ville}</span>
                         {site.cp && (
                           <span className="text-[10px] text-slate-500 font-medium">
@@ -404,7 +502,7 @@ export default function TeaserSitesTable({
                         )}
                       </div>
                       {site.address && (
-                        <div className="text-[10px] text-slate-500 truncate max-w-xs mt-0.5 font-medium">
+                        <div className="text-[10px] text-slate-500 truncate max-w-sm mt-0.5 font-medium whitespace-nowrap">
                           {site.address}
                         </div>
                       )}
@@ -412,47 +510,47 @@ export default function TeaserSitesTable({
                   </td>
 
                   {/* Dept */}
-                  <td className={`py-3 px-3 text-center ${blurClass}`}>
+                  <td className={`py-3 px-3 text-center whitespace-nowrap ${blurClass}`}>
                     <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-mono font-bold text-[10px] border border-slate-200">
                       {site.dept || (site.cp ? String(site.cp).substring(0, 2) : '-')}
                     </span>
                   </td>
 
                   {/* Bailleur / Propriétaire */}
-                  <td className={`py-3 px-4 text-slate-700 text-[11px] font-medium ${blurClass}`}>
+                  <td className={`py-3 px-4 text-slate-800 text-[11px] font-semibold whitespace-nowrap ${blurClass}`}>
                     {site.bailleur || site.client || '-'}
                   </td>
 
                   {/* Poste Source / Type */}
-                  <td className={`py-3 px-3 ${blurClass}`}>
+                  <td className={`py-3 px-3 whitespace-nowrap ${blurClass}`}>
                     <span className="text-slate-800 font-mono text-[11px] font-semibold">
                       {isPv ? site.type : (site.posteSource || 'Réseau HTA')}
                     </span>
                   </td>
 
                   {/* Dist HTA / Surface */}
-                  <td className={`py-3 px-3 text-right font-mono text-slate-600 text-[11px] ${blurClass}`}>
+                  <td className={`py-3 px-3 text-right font-mono text-slate-600 text-[11px] whitespace-nowrap ${blurClass}`}>
                     {isPv ? pvSurface : (site.distHta || '5.2 km')}
                   </td>
 
                   {/* Quote-part / Coût */}
-                  <td className={`py-3 px-3 text-right font-mono text-slate-800 font-medium text-[11px] ${blurClass}`}>
+                  <td className={`py-3 px-3 text-right font-mono text-slate-900 font-bold text-[11px] whitespace-nowrap ${blurClass}`}>
                     {isPv ? pvCost : (site.quotePart || '42,71 k€')}
                   </td>
 
                   {/* EBITDA / Puissance */}
-                  <td className={`py-3 px-3 text-right font-mono font-black text-[11px] text-emerald-700 ${blurClass}`}>
+                  <td className={`py-3 px-3 text-right font-mono font-black text-[11px] text-emerald-700 whitespace-nowrap ${blurClass}`}>
                     {isPv ? `${site.kwc || 315} kWc` : (site.ebitda || '55 438 €')}
                   </td>
 
                   {/* Payback / Statut */}
-                  <td className="py-3 px-3 text-center">
+                  <td className="py-3 px-3 text-center whitespace-nowrap">
                     {isSold ? (
                       <span className="px-2.5 py-1 rounded-lg bg-red-100 text-red-800 border border-red-300 font-black text-[10px] uppercase tracking-wider whitespace-nowrap shadow-xs">
                         🔒 VENDU
                       </span>
                     ) : isPv ? (
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black whitespace-nowrap ${
                         site.orange
                           ? 'bg-amber-50 text-amber-800 border border-amber-200'
                           : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
@@ -460,14 +558,14 @@ export default function TeaserSitesTable({
                         {site.statut || 'URBA OK'}
                       </span>
                     ) : (
-                      <span className="font-mono text-slate-800 font-bold text-[11px]">
+                      <span className="font-mono text-slate-800 font-bold text-[11px] whitespace-nowrap">
                         {site.payback || '4.6 ans'}
                       </span>
                     )}
                   </td>
 
                   {/* Fiche / Documents Icon */}
-                  <td className="py-3 px-3 text-center" onClick={(e) => {
+                  <td className="py-3 px-3 text-center whitespace-nowrap" onClick={(e) => {
                     e.stopPropagation();
                     if (isSold && !isAdmin) return;
                     setActiveModalSite(site);
@@ -489,10 +587,20 @@ export default function TeaserSitesTable({
                   {/* Admin Actions Column */}
                   {isAdmin && (
                     <td
-                      className="py-3 px-3 text-center bg-purple-50/50 border-l border-purple-100"
+                      className="py-3 px-3 text-center bg-purple-50/50 border-l border-purple-100 whitespace-nowrap"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditSite(site)}
+                          className="px-2 py-1 rounded-lg text-[10px] font-bold bg-white hover:bg-purple-100 text-purple-900 border border-purple-200 transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                          title="Modifier les données du projet (puissance, tarif, statut, etc.)"
+                        >
+                          <Edit3 className="w-3 h-3 text-purple-600" />
+                          <span>Modifier</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => toggleSoldSite(portfolioKey, site.id)}
@@ -943,7 +1051,22 @@ export default function TeaserSitesTable({
             </div>
 
             {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
+              {isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenEditSite(activeModalSite);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Modifier les données & le statut du projet</span>
+                </button>
+              ) : (
+                <div></div>
+              )}
+
               <button
                 type="button"
                 onClick={() => setActiveModalSite(null)}
@@ -952,6 +1075,246 @@ export default function TeaserSitesTable({
                 Fermer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ============================================================= */}
+      {/* MODAL ADMIN : MODIFIER UN PROJET ET SES INFORMATIONS         */}
+      {/* ============================================================= */}
+      {editingSite && (
+        <div className="fixed inset-0 z-[1150] bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-purple-600" />
+                <h3 className="text-lg font-black text-[#0b192c]">
+                  Modifier le projet #{editingSite.id} — {editingSite.name || editingSite.ville}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingSite(null)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditSite} className="space-y-3.5 text-xs">
+              {/* Statut de Commercialisation (Vendu / Disponible) */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                <span className="font-black text-slate-800 uppercase tracking-wider text-[11px] block">
+                  Statut de Commercialisation
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSiteData({ ...editingSiteData, isSold: false })}
+                    className={`py-2 px-3 rounded-xl font-bold text-xs border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      !editingSiteData.isSold
+                        ? 'bg-emerald-600 text-white border-emerald-700 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Disponible à la vente</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEditingSiteData({ ...editingSiteData, isSold: true })}
+                    className={`py-2 px-3 rounded-xl font-bold text-xs border transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      editingSiteData.isSold
+                        ? 'bg-red-600 text-white border-red-700 shadow-xs'
+                        : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                    }`}
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                    <span>Marqué comme Vendu</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Nom / Commune *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingSiteData.name || ''}
+                    onChange={(e) => setEditingSiteData({ ...editingSiteData, name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Code Postal</label>
+                  <input
+                    type="text"
+                    value={editingSiteData.cp || ''}
+                    onChange={(e) =>
+                      setEditingSiteData({
+                        ...editingSiteData,
+                        cp: e.target.value,
+                        dept: e.target.value ? e.target.value.substring(0, 2) : editingSiteData.dept,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Département</label>
+                  <input
+                    type="text"
+                    value={editingSiteData.dept || ''}
+                    onChange={(e) => setEditingSiteData({ ...editingSiteData, dept: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isPv ? 'Puissance (kWc) *' : 'Puissance (kW) *'}
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    value={isPv ? (editingSiteData.kwc || 0) : (editingSiteData.kw || 0)}
+                    onChange={(e) =>
+                      setEditingSiteData({
+                        ...editingSiteData,
+                        kwc: Number(e.target.value),
+                        kw: Number(e.target.value),
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-bold text-slate-800"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isPv ? 'Typologie de bâtiment' : 'Poste Source Enedis'}
+                  </label>
+                  <input
+                    type="text"
+                    value={isPv ? (editingSiteData.type || '') : (editingSiteData.posteSource || '')}
+                    onChange={(e) =>
+                      setEditingSiteData({
+                        ...editingSiteData,
+                        type: e.target.value,
+                        posteSource: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isPv ? 'Coût travaux HT (€)' : 'Quote-part Enedis'}
+                  </label>
+                  {isPv ? (
+                    <input
+                      type="number"
+                      value={editingSiteData.cost || 0}
+                      onChange={(e) => setEditingSiteData({ ...editingSiteData, cost: Number(e.target.value) })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      value={editingSiteData.quotePart || ''}
+                      onChange={(e) => setEditingSiteData({ ...editingSiteData, quotePart: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    {isPv ? 'Propriétaire / Client' : 'Bailleur Foncier'}
+                  </label>
+                  <input
+                    type="text"
+                    value={editingSiteData.client || editingSiteData.bailleur || ''}
+                    onChange={(e) =>
+                      setEditingSiteData({
+                        ...editingSiteData,
+                        client: e.target.value,
+                        bailleur: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Statut Foncier / Urba</label>
+                  <select
+                    value={editingSiteData.statut || 'URBA OK'}
+                    onChange={(e) => setEditingSiteData({ ...editingSiteData, statut: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  >
+                    <option value="URBA OK">URBA OK (Permis purgé)</option>
+                    <option value="EN COURS">EN COURS (Dépôt / Instruction)</option>
+                    <option value="EN ATTENTE">EN ATTENTE (Complétude dossier)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Adresse / Lieu-dit</label>
+                <input
+                  type="text"
+                  value={editingSiteData.address || ''}
+                  onChange={(e) => setEditingSiteData({ ...editingSiteData, address: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                />
+              </div>
+
+              {!isPv && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">EBITDA An 1</label>
+                    <input
+                      type="text"
+                      value={editingSiteData.ebitda || '55 438 €'}
+                      onChange={(e) => setEditingSiteData({ ...editingSiteData, ebitda: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Payback</label>
+                    <input
+                      type="text"
+                      value={editingSiteData.payback || '4.6 ans'}
+                      onChange={(e) => setEditingSiteData({ ...editingSiteData, payback: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditingSite(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black transition shadow-sm cursor-pointer"
+                >
+                  Enregistrer les modifications
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
