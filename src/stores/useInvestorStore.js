@@ -810,31 +810,46 @@ export const useInvestorStore = create(
           return { success: true, isAdmin: true, status: 'active' };
         }
 
+        const normalizeEmail = (em) => {
+          const s = (em || '').trim().toLowerCase();
+          if (s === 'lnicoli12@gmail.com') return 'inikoli12@gmail.com';
+          if (s === 'michel.dekervever@sunvolt.fr') return 'michel.dekerverer@sunvolt.fr';
+          return s;
+        };
+
+        const normCleanEmail = normalizeEmail(cleanEmail);
+
         let allInvestors = get().investors || [];
         let investor = allInvestors.find(
-          (inv) => inv.email && inv.email.trim().toLowerCase() === cleanEmail && (inv.password?.trim() === cleanPass)
+          (inv) => inv.email && (normalizeEmail(inv.email) === normCleanEmail || inv.email.trim().toLowerCase() === cleanEmail) && (inv.password?.trim() === cleanPass)
         );
 
         // Fallback to default INVESTORS array if not found in state or if password matches default
         if (!investor) {
           const defaultMatch = INVESTORS.find(
-            (inv) => inv.email && inv.email.trim().toLowerCase() === cleanEmail && (inv.password?.trim() === cleanPass)
+            (inv) => inv.email && (normalizeEmail(inv.email) === normCleanEmail || inv.email.trim().toLowerCase() === cleanEmail) && (inv.password?.trim() === cleanPass)
           );
           if (defaultMatch) {
             investor = defaultMatch;
             set((state) => ({
-              investors: [defaultMatch, ...(state.investors || []).filter((i) => i.email?.toLowerCase() !== cleanEmail)],
+              investors: [defaultMatch, ...(state.investors || []).filter((i) => normalizeEmail(i.email) !== normCleanEmail)],
             }));
           }
         }
 
-        // Second fallback: check if email exists in INVESTORS and cleanPass matches (in case state had different password)
+        // Second fallback: check if email exists in INVESTORS and cleanPass matches alternative passwords
         if (!investor) {
           const defaultByEmail = INVESTORS.find(
-            (inv) => inv.email && inv.email.trim().toLowerCase() === cleanEmail
+            (inv) => inv.email && (normalizeEmail(inv.email) === normCleanEmail || inv.email.trim().toLowerCase() === cleanEmail)
           );
-          if (defaultByEmail && (defaultByEmail.password?.trim() === cleanPass || cleanPass === 'invest@enr!01' || cleanPass === 'Enr2026!dP2#' || cleanPass === 'Enr2026!Enee')) {
-            investor = defaultByEmail;
+          if (defaultByEmail) {
+            const isMatch = defaultByEmail.password?.trim() === cleanPass ||
+              (normCleanEmail === 'contact@enr-courtage.fr' && (cleanPass === 'invest@enr!01' || cleanPass === 'Enr2026!ovxf' || cleanPass === 'Enr2026!Enee')) ||
+              (normCleanEmail === 'yannbarberis@msn.com' && (cleanPass === '2#b84rDPzo' || cleanPass === 'Enr2026!dP2#')) ||
+              (normCleanEmail === 'f.burguion@sunrock.com' && (cleanPass === 'ds%hs-N#h@00F!V' || cleanPass === 'ds%hs-N#h@oOF!V'));
+            if (isMatch) {
+              investor = defaultByEmail;
+            }
           }
         }
 
@@ -1136,7 +1151,32 @@ y.barberis@enr-courtage.fr
         return { success: true };
       },
 
-      // Admin action: Delete user
+      // Admin action: Upload/attach signed NDA document for an investor
+      adminUploadSignedNda: (userId, { fileName, fileSize, documentId, fileBase64, signedAt }) => {
+        set((state) => ({
+          investors: state.investors.map((inv) => {
+            if (inv.id !== userId) return inv;
+            const updated = {
+              ...inv,
+              hasUploadedSignedNda: true,
+              ndaFileName: fileName || inv.ndaFileName || 'NDA_Signe.pdf',
+              ndaFileSize: fileSize || inv.ndaFileSize || 0,
+              ndaDocumentId: documentId || ('nda_user_' + inv.id),
+              ndaFileBase64: fileBase64 || inv.ndaFileBase64 || '',
+              ndaSignedAt: signedAt || new Date().toISOString(),
+              ndaSignedByAdmin: true,
+              status: 'active',
+              updatedAt: new Date().toISOString(),
+            };
+            if (state.currentInvestor?.id === userId) {
+              state.currentInvestor = updated;
+            }
+            return updated;
+          }),
+        }));
+        return { success: true };
+      },
+
       adminDeleteUser: (userId) => {
         set((state) => ({
           investors: state.investors.filter((inv) => inv.id !== userId),
@@ -1625,7 +1665,7 @@ y.barberis@enr-courtage.fr
               inv.id !== 'INV-003'
           );
 
-          // Synchronize default accounts (y.barberis, contact@enr-courtage.fr, yannbarberis@msn.com)
+          // Synchronize default accounts (y.barberis, contact@enr-courtage.fr, yannbarberis@msn.com, and lines 4 to 24)
           INVESTORS.forEach((defaultInv) => {
             const idx = state.investors.findIndex(
               (inv) => inv.email && inv.email.trim().toLowerCase() === defaultInv.email.toLowerCase()
@@ -1640,11 +1680,20 @@ y.barberis@enr-courtage.fr
               state.investors[idx] = {
                 ...defaultInv,
                 ...state.investors[idx],
-                name: defaultInv.name,
-                company: defaultInv.company,
-                role: defaultInv.role,
-                password: state.investors[idx].password || defaultInv.password,
+                name: state.investors[idx].name || defaultInv.name,
+                company: state.investors[idx].company || defaultInv.company,
+                role: state.investors[idx].role || defaultInv.role,
+                divers: defaultInv.divers || state.investors[idx].divers || '',
+                password: (state.investors[idx].password && state.investors[idx].password !== 'invest@enr!01')
+                  ? state.investors[idx].password
+                  : defaultInv.password,
                 status: state.investors[idx].status || defaultInv.status,
+                hasUploadedSignedNda: state.investors[idx].hasUploadedSignedNda || defaultInv.hasUploadedSignedNda || false,
+                ndaFileName: state.investors[idx].ndaFileName || defaultInv.ndaFileName || '',
+                ndaFileSize: state.investors[idx].ndaFileSize || defaultInv.ndaFileSize || 0,
+                ndaDocumentId: state.investors[idx].ndaDocumentId || defaultInv.ndaDocumentId || '',
+                ndaFileBase64: state.investors[idx].ndaFileBase64 || defaultInv.ndaFileBase64 || '',
+                ndaSignedAt: state.investors[idx].ndaSignedAt !== undefined ? state.investors[idx].ndaSignedAt : defaultInv.ndaSignedAt,
                 isAdmin: isDefAdmin,
               };
             }
@@ -1664,7 +1713,11 @@ y.barberis@enr-courtage.fr
             rcsNumber: typeof inv.rcsNumber === 'string' ? inv.rcsNumber : String(inv.rcsNumber || ''),
             rcsCity: typeof inv.rcsCity === 'string' ? inv.rcsCity : String(inv.rcsCity || ''),
             password: typeof inv.password === 'string' ? inv.password : String(inv.password || ''),
+            divers: typeof inv.divers === 'string' ? inv.divers : String(inv.divers || ''),
             ndaText: typeof inv.ndaText === 'string' ? inv.ndaText : String(inv.ndaText || ''),
+            ndaFileName: typeof inv.ndaFileName === 'string' ? inv.ndaFileName : '',
+            ndaFileSize: Number(inv.ndaFileSize) || 0,
+            hasUploadedSignedNda: !!inv.hasUploadedSignedNda,
             status: typeof inv.status === 'string' ? inv.status : 'active',
             isAdmin: inv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr',
           }));
