@@ -1390,7 +1390,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-amber-500"></span>
                     <h3 className="text-base font-black text-[#0b192c]">
-                      Portefeuille HÉLIOS — Solaire Toitures & Hangars (PV 9,12 MWc)
+                      Portefeuille HÉLIOS — Solaire Toitures & Hangars (PV 6.24 MWc)
                     </h3>
                   </div>
                 </div>
@@ -1554,7 +1554,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       className="sr-only"
                     />
                     <span className="font-bold text-slate-900 block">Projet HÉLIOS</span>
-                    <span className="text-[10px] text-slate-400">Solaire PV 9,12 MWc</span>
+                    <span className="text-[10px] text-slate-400">Solaire PV 6.24 MWc</span>
                   </label>
                   <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-cyan-500 has-[:checked]:bg-cyan-50/50 cursor-pointer text-center">
                     <input

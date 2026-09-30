@@ -191,8 +191,8 @@ export default function TeaserSitesTable({
       quotePart: site.quotePart || '42,71 k€',
       statut: site.statut || 'URBA OK',
       posteSource: site.posteSource || '',
-      ebitda: site.ebitda || '55 438 €',
-      payback: site.payback || '4.6 ans',
+      ebitda: site.ebitda || '56 129 €',
+      payback: site.payback || '5.0 ans',
       isSold: isSold,
     });
   };
@@ -559,7 +559,7 @@ export default function TeaserSitesTable({
                       </span>
                     ) : (
                       <span className="font-mono text-slate-800 font-bold text-[11px] whitespace-nowrap">
-                        {site.payback || '4.6 ans'}
+                        {site.payback || '5.0 ans'}
                       </span>
                     )}
                   </td>
@@ -644,7 +644,7 @@ export default function TeaserSitesTable({
             const neufsCount = activeSites.filter((s) => s.type === 'Construction').length;
             const toitCount = activeSites.filter((s) => s.type === 'Toitures').length;
             const powerRatio = allSitesCombined.length > 0 ? (activeSites.length / allSitesCombined.length) : 1;
-            const activeBessEbitda = Math.round(1718578 * powerRatio);
+            const activeBessEbitda = Math.round(1740000 * powerRatio);
 
             return (
               <tfoot className="border-t-2 border-slate-300 bg-slate-100 font-bold text-xs text-slate-900">
@@ -671,7 +671,7 @@ export default function TeaserSitesTable({
                     {isPv ? `${(activeKwc / 1000).toFixed(2).replace('.', ',')} MWc` : `${new Intl.NumberFormat('fr-FR').format(activeBessEbitda)} €`}
                   </td>
                   <td className="py-3.5 px-3 text-center font-mono text-slate-800">
-                    {isPv ? `${activeSites.length} DISPONIBLES` : '4,6 ans'}
+                    {isPv ? `${activeSites.length} DISPONIBLES` : '5,0 ans'}
                   </td>
                   <td className="py-3.5 px-3 text-center text-emerald-600 font-bold">✓</td>
                   {isAdmin && <td className="py-3.5 px-3 text-center text-purple-700 font-bold bg-purple-50/50">Admin</td>}
@@ -1291,7 +1291,7 @@ export default function TeaserSitesTable({
                     <label className="block font-bold text-slate-700 mb-1">Payback</label>
                     <input
                       type="text"
-                      value={editingSiteData.payback || '4.6 ans'}
+                      value={editingSiteData.payback || '5.0 ans'}
                       onChange={(e) => setEditingSiteData({ ...editingSiteData, payback: e.target.value })}
                       className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
                     />

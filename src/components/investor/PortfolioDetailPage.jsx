@@ -128,11 +128,11 @@ export default function PortfolioDetailPage() {
   // Total power and ratio
   const { displayPower, displayPowerSub, powerRatio } = useMemo(() => {
     if (isPv) {
-      const basePowerKwc = 9120; // 9.12 MWc
+      const basePowerKwc = 6240; // 6.24 MWc certifié
       const activePowerKwc = activeAvailableSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
       const ratio = basePowerKwc > 0 ? (activePowerKwc / basePowerKwc) : 1;
       const formatted = `${(activePowerKwc / 1000).toFixed(2).replace('.', ',')} MWc`;
-      const sub = `(${activeAvailableSites.length} site${activeAvailableSites.length > 1 ? 's' : ''} au total)`;
+      const sub = `(${activeAvailableSites.length} centrale${activeAvailableSites.length > 1 ? 's' : ''} au total)`;
       return { displayPower: formatted, displayPowerSub: sub, powerRatio: ratio };
     } else {
       const basePowerKw = 15500; // 15.50 MW
@@ -148,22 +148,29 @@ export default function PortfolioDetailPage() {
   const dynamicFinancialKpis = useMemo(() => {
     if (!teaser.financialKpis) return [];
     if (isPv) {
+      const caVal = Math.round(569527 * powerRatio);
+      const ebitdaVal = Math.round(498650 * powerRatio);
+      const capexVal = Math.round(3698035 * powerRatio);
       return [
-        { label: 'TRI PROJET', value: '12,8%', sub: 'Levier bancaire 80/20', detail: "Appel d'Offres Simplifié (AOS)", color: 'amber' },
-        { label: 'PAYBACK', value: '7,2 ans', sub: 'Après service de dette', detail: 'Amortissement accéléré CAPEX', color: 'emerald' },
-        { label: 'PRODUCTIBLE', value: '1 280 kWh/kWc', sub: 'Irradiation Sud-Ouest', detail: 'Données Météo France P50', color: 'white' },
-        { label: 'CA ANNUEL', value: fmtEur(1142000 * powerRatio), sub: 'Tarif AOS ~0,082 €/kWh', detail: "Appel d'Offres Simplifié", color: 'white' },
-        { label: 'MARGE NETTE', value: '>58%', sub: 'OPEX < 15 €/MWc/an', detail: 'Maintenance incluse forfait', color: 'emerald' },
-        { label: 'VALEUR TOTALE', value: fmtEur(4820000 * powerRatio), sub: 'Valorisation du périmètre', detail: `Droits de développement ${displaySitesCount} sites`, color: 'amber' },
+        { label: 'TRI PROJET', value: '12,8%', sub: 'TRI Equity : 14,5%', detail: 'Levier bancaire 90/10 (Dette 4.30%)', color: 'amber' },
+        { label: 'PAYBACK NET', value: '7,4 ans', sub: 'Sur Fonds Propres : 2,5 ans', detail: 'Amortissement accéléré CAPEX', color: 'emerald' },
+        { label: 'PRODUCTIBLE P50', value: '1 125 kWh/kWc', sub: 'Production 7 036 MWh/an', detail: 'Irradiation certifiée Sud-Ouest', color: 'white' },
+        { label: 'CA BRUT AN 1', value: `${new Intl.NumberFormat('fr-FR').format(caVal)} €`, sub: 'Tarif S21 0,0820 €/kWh', detail: 'Indexation annuelle +0.6%/an', color: 'white' },
+        { label: 'EBITDA NET AN 1', value: `${new Intl.NumberFormat('fr-FR').format(ebitdaVal)} €`, sub: 'Marge opérationnelle ~88%', detail: 'OPEX An 1 : -70 977 € (DSCR 1.72x)', color: 'emerald' },
+        { label: 'CAPEX TOTAL', value: fmtEur(capexVal), sub: `${new Intl.NumberFormat('fr-FR').format(capexVal)} € clé en main`, detail: `~593 €/kWc raccordé (${displaySitesCount} sites)`, color: 'amber' },
       ];
     } else {
+      const caVal = Math.round(2888294 * powerRatio);
+      const ebitdaVal = Math.round(1740000 * powerRatio);
+      const capexVal = Math.round(8980000 * powerRatio);
+      const turpeVal = Math.round(439673 * powerRatio);
       return [
-        { label: 'TRI / EQUITY', value: '20,5%', sub: '>17% min de marché', detail: 'SRI Bancabilité élevée', color: 'cyan' },
-        { label: 'PAYBACK NET', value: '4,6 ans', sub: 'Seuil < 5 ans', detail: 'Retour sur investissement court-moyen', color: 'emerald' },
-        { label: 'EBITDA NET / AN', value: fmtEur(1720000 * powerRatio), sub: 'Marge net >61%', detail: 'Résultat après loyer & maintenance', color: 'white' },
-        { label: 'BANCABILITÉ DSCR', value: '2,34x', sub: 'Classement favorable', detail: 'Ratio couverture dette > 1.5x requis', color: 'white' },
-        { label: 'GAIN TURPE7', value: `+${fmtEur(439073 * powerRatio)}`, sub: 'Délibéré CRE 2025-227', detail: 'Facturation réseau réduit de ~50%', color: 'emerald' },
-        { label: 'CASH CYCLE CLAIR', value: fmtEur(7230000 * powerRatio), sub: 'Estimation CA brut / an', detail: `Consolidé ${displaySitesCount} stations BESS`, color: 'cyan' },
+        { label: 'TRI PROJET / EQUITY', value: '20,5% / 37,4%', sub: 'TRI Projet 20,5% • Equity 37,4%', detail: 'Bancabilité élevée (Dette 12 ans 4.30%)', color: 'cyan' },
+        { label: 'PAYBACK NET', value: '5,0 ans', sub: 'Sur Fonds Propres : 2,2 ans', detail: 'Retour sur investissement accéléré', color: 'emerald' },
+        { label: 'EBITDA NET AN 1', value: fmtEur(ebitdaVal), sub: 'Consolidé 31 stations (1,74 M€)', detail: 'Marge opérationnelle > 60%', color: 'white' },
+        { label: 'BANCABILITÉ DSCR', value: '1,91x', sub: 'Service dette : 973 920 €/an', detail: 'Ratio couverture dette senior > 1.5x requis', color: 'white' },
+        { label: 'GAIN TURPE 7', value: `+${new Intl.NumberFormat('fr-FR').format(turpeVal)} €`, sub: 'Délibéré CRE 2025-227', detail: 'Exonération >80% facturation réseau', color: 'emerald' },
+        { label: 'CA BRUT AN 1', value: fmtEur(caVal), sub: `${new Intl.NumberFormat('fr-FR').format(caVal)} € (2 cycles/j)`, detail: `Consolidé ${displaySitesCount} stations BESS (15.50 MW)`, color: 'cyan' },
       ];
     }
   }, [teaser.financialKpis, isPv, powerRatio, displaySitesCount]);
@@ -171,13 +178,13 @@ export default function PortfolioDetailPage() {
   // Dynamic Revenue Architecture
   const dynamicRevenueArchitecture = useMemo(() => {
     if (isPv) {
-      const caVal = Math.round(1142000 * powerRatio);
+      const caVal = Math.round(569527 * powerRatio);
       return {
         total: fmtEur(caVal),
-        totalLabel: "CA annuel prévisionnel (Hypothèse AOS ~0,082 €/kWh)",
+        totalLabel: "CA annuel brut garanti An 1 (Tarif S21 à 0.0820 €/kWh)",
         sources: [
           {
-            name: "Appels d'Offres Simplifiés (Hypothèse AOS ~0,082 €/kWh)",
+            name: "Tarif d'Achat Garanti CRE S21 (0.0820 €/kWh indexé +0.6%/an)",
             value: `${new Intl.NumberFormat('fr-FR').format(caVal)} €`,
             pct: '100%',
             color: '#f59e0b',
@@ -185,18 +192,18 @@ export default function PortfolioDetailPage() {
         ],
       };
     } else {
-      const totalCa = Math.round(2860000 * powerRatio);
-      const fcrVal = Math.round(2076882 * powerRatio);
-      const spotVal = Math.round(504780 * powerRatio);
-      const mdcVal = Math.round(271253 * powerRatio);
+      const totalCa = Math.round(2888294 * powerRatio);
+      const fcrVal = Math.round(1672015 * powerRatio);
+      const spotVal = Math.round(945029 * powerRatio);
+      const mdcVal = Math.round(271250 * powerRatio);
       return {
-        total: fmtEur(totalCa),
+        total: '2,89 M€',
         totalLabel: 'CA annuel brut consolidé / an',
-        cycleLabel: '2,85% de stockage net/cycle',
+        cycleLabel: '2 cycles/jour (32.36 MWh)',
         sources: [
-          { name: 'Réserve Primaire en Fréq (FCR) & PICASSO', value: `${new Intl.NumberFormat('fr-FR').format(fcrVal)} €`, pct: '72%', color: '#06b6d4' },
-          { name: 'Arbitrage SPOT (Day-Ahead & Intraday)', value: `${new Intl.NumberFormat('fr-FR').format(spotVal)} €`, pct: '18%', color: '#22d3ee' },
-          { name: 'Marché de Capacité 41% PP2 (14kw)', value: `${new Intl.NumberFormat('fr-FR').format(mdcVal)} €`, pct: '10%', color: '#67e8f9' },
+          { name: '1. Réserve Primaire 50 Hz (FCR) & PICASSO (aFRR)', value: `${new Intl.NumberFormat('fr-FR').format(fcrVal)} €`, pct: '58.7%', color: '#06b6d4' },
+          { name: '2. Arbitrage Spot EPEX (Day-Ahead & Intraday - 2 cycles/jour)', value: `${new Intl.NumberFormat('fr-FR').format(spotVal)} €`, pct: '31.8%', color: '#22d3ee' },
+          { name: '3. Marché de Capacité RTE (Pointes Hiver PP2, derating 0.5)', value: `${new Intl.NumberFormat('fr-FR').format(mdcVal)} €`, pct: '9.5%', color: '#67e8f9' },
         ],
       };
     }
@@ -225,15 +232,15 @@ export default function PortfolioDetailPage() {
   // Dynamic TURPE 7 Comparison (BESS)
   const dynamicTurpeComparison = useMemo(() => {
     if (isPv || !teaser.turpeComparison) return null;
-    const gainConsol = Math.round(439073 * powerRatio);
+    const gainConsol = Math.round(439673 * powerRatio);
     const oldTot = Math.round(697586 * powerRatio);
-    const newTot = Math.round(257627 * powerRatio);
+    const newTot = Math.round(257913 * powerRatio);
     return {
       rows: [
-        { component: 'Composante Soutirage brut (CS)', oldRegime: "Même si sur 10,7% de l'énergie chargée", newRegime: 'Exonération totale sur 80% et spécial', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(241986 * powerRatio))} € / an` },
-        { component: 'Composante Prix de Puissance (CS Pss)', oldRegime: 'Tarification longue durée analogie', newRegime: 'HTN+Courrier du batteur (15,20 €/MWh)', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(60219 * powerRatio))} € / an` },
-        { component: 'Pertes Réseau Non Récupérables', oldRegime: 'Double taxation si même maille régional', newRegime: 'Strictement limitée au 1,5% des pertes', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(89571 * powerRatio))} € / an` },
-        { component: 'Composante Gestion & Comptage (CG/CC)', oldRegime: 'Forfaits conventionnels', newRegime: 'Comptage + quadrants inté-relevé directe (0,14 €/an)', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(49297 * powerRatio))} € / an` },
+        { component: 'Composante Soutirage brut (CS)', oldRegime: "Même si sur 10,7% de l'énergie chargée", newRegime: 'Exonération totale sur 80% et spécial', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(242386 * powerRatio))} € / an` },
+        { component: 'Composante Prix de Puissance (CS Pss)', oldRegime: 'Tarification longue durée analogie', newRegime: 'HTN+Courrier du batteur (15,20 €/MWh)', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(60319 * powerRatio))} € / an` },
+        { component: 'Pertes Réseau Non Récupérables', oldRegime: 'Double taxation si même maille régional', newRegime: 'Strictement limitée au 1,5% des pertes', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(89671 * powerRatio))} € / an` },
+        { component: 'Composante Gestion & Comptage (CG/CC)', oldRegime: 'Forfaits conventionnels', newRegime: 'Comptage + quadrants inté-relevé directe (0,14 €/an)', gain: `+${new Intl.NumberFormat('fr-FR').format(Math.round(47297 * powerRatio))} € / an` },
       ],
       total: {
         label: 'TOTAL FACTURE ANNUELLE RÉSEAU',
@@ -259,15 +266,15 @@ export default function PortfolioDetailPage() {
   const dynamicCumulativeKpis = useMemo(() => {
     if (isPv) {
       return [
-        { label: 'CA CUMULÉ 20 ANS', value: fmtEur(25800000 * powerRatio), sub: 'Hypothèse AOS = 0.082 €/kWh' },
-        { label: 'EBITDA NET CUMULÉ 20 ANS', value: fmtEur(15430000 * powerRatio), sub: 'Marge opérationnelle > 58%' },
-        { label: 'CASH-FLOW NET POST-DETTES 20 ANS', value: fmtEur(10380000 * powerRatio), sub: 'Après service de dette bancaire 80/20' },
+        { label: 'CA BRUT CUMULÉ 20 ANS', value: fmtEur(11550000 * powerRatio), sub: 'Indexation tarif S21 +0.6%/an' },
+        { label: 'EBITDA NET CUMULÉ 20 ANS', value: fmtEur(9470000 * powerRatio), sub: 'Marge opérationnelle ~82% avec MRA' },
+        { label: 'TRÉSORERIE NETTE CUMULÉE 20 ANS', value: fmtEur(3350000 * powerRatio), sub: 'Post service dette senior (3,35 M€)' },
       ];
     } else {
       return [
-        { label: 'CA CUMULÉ 20 ANS', value: fmtEur(67040000 * powerRatio), sub: 'Croissance tendancielle à +3.0%' },
-        { label: 'EBITDA NET CUMULÉ 20 ANS', value: fmtEur(40970000 * powerRatio), sub: 'Marge opérationnelle > 60% bottom line' },
-        { label: 'CASH-FLOW NET POST-DETTES 20 ANS', value: fmtEur(27950000 * powerRatio), sub: 'En réinvestissement fict. D.Net sur horizon 2037+' },
+        { label: 'CA CUMULÉ 15 ANS', value: fmtEur(47540000 * powerRatio), sub: 'Chronique 15 ans (2 cycles/jour)' },
+        { label: 'EBITDA NET CUMULÉ 15 ANS', value: fmtEur(28410000 * powerRatio), sub: 'Marge opérationnelle ~60% consolidée' },
+        { label: 'CASH-FLOW NET POST-DETTE 15 ANS', value: fmtEur(16730000 * powerRatio), sub: 'Trésorerie nette disponible investisseur' },
       ];
     }
   }, [isPv, powerRatio]);
@@ -431,8 +438,9 @@ export default function PortfolioDetailPage() {
                     </h2>
                   </div>
                   <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-medium">
-                    <span>Données au :</span>
-                    <span className="text-slate-800 font-mono font-bold">{new Date().toLocaleDateString('fr-FR')}</span>
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">
+                      Audit certifié au 30 septembre 2026
+                    </span>
                   </div>
                 </div>
 
@@ -939,8 +947,8 @@ export default function PortfolioDetailPage() {
             </p>
             <p className="text-[10px] text-slate-500 font-medium">
               {isPv
-                ? 'Sources : Étude PV HÉLIOS 29 Sites • Cadre Appel d\'Offres Simplifié (AOS) • Spécifications standard Hangars & Toitures Solaire'
-                : 'Sources : Étude BESS 31 Sites Septembre 2025 • Régime TURPE 7 Délibération CRE N° 2024-227 • Spécifications standard BESS LFP/NMC'}
+                ? "Sources : Arrêté d'Audit PV HÉLIOS 15 Centrales (6.24 MWc) • Arrêté certifié du 30 Septembre 2026 • Tarif S21 indexé • Spécifications standard Hangars & Toitures Solaire"
+                : "Sources : Arrêté d'Audit BESS VOLTA 31 Sites (15.50 MW / 32.36 MWh) • Arrêté certifié du 29/30 Septembre 2026 • Régime TURPE 7 Délibération CRE 2025-227 • Spécifications standard BESS"}
             </p>
             <p className="text-[10px] text-slate-500 pt-1 font-medium">
               7 Rue Gutenberg, 33700 Mérignac • RCS Bordeaux 881 500 552 • <a href="mailto:contact@enr-courtage.fr" className="text-blue-700 hover:underline">contact@enr-courtage.fr</a>

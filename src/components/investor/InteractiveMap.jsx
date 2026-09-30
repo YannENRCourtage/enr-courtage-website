@@ -153,7 +153,7 @@ export default function InteractiveMap({
   return (
     <div className={`space-y-3 ${className}`}>
       {/* Map Header */}
-      <div className={`flex items-center justify-between gap-3 p-3.5 rounded-2xl border ${
+      <div className={`flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl border ${
         darkTheme ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 shadow-xs'
       }`}>
         <div className="flex items-center space-x-2 text-xs">
@@ -163,6 +163,15 @@ export default function InteractiveMap({
           </span>
           <span className="text-slate-500">•</span>
           <span className="text-slate-400">Grand Sud-Ouest (Nouvelle-Aquitaine & Occitanie)</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="px-2.5 py-1 rounded-full text-[11px] font-black tracking-wider uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+            {pvSites.length > 0 && bessSites.length === 0
+              ? `SITES GÉOLOCALISÉS : ${pvSites.filter(s => s.lat && s.lng).length}/${pvSites.length}`
+              : bessSites.length > 0 && pvSites.length === 0
+              ? `SITES GÉOLOCALISÉS : ${bessSites.filter(s => s.lat && s.lng).length}/${bessSites.length}`
+              : `SITES GÉOLOCALISÉS : ${pvSites.filter(s => s.lat && s.lng).length + bessSites.filter(s => s.lat && s.lng).length}/${pvSites.length + bessSites.length}`}
+          </span>
         </div>
       </div>
 

@@ -383,7 +383,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             {/* ============================================================= */}
             {investorSubTab === 'portfolios' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* CARTE PORTEFEUILLE 1 : PROJET HÉLIOS (SOLAIRE PV 9,12 MWc) */}
+                {/* CARTE PORTEFEUILLE 1 : PROJET HÉLIOS (SOLAIRE PV 6,24 MWc) */}
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-3">
@@ -396,10 +396,10 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     </div>
 
                     <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                      Projets HÉLIOS — 9,12 MWc
+                      Portefeuille HÉLIOS — 6.24 MWc
                     </h3>
                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
-                      Grappe de 29 projets solaires toitures et hangars neufs/rénovations situés dans le Sud-Ouest (Gers, Dordogne, Gironde, Landes).
+                      Grappe de 15 centrales solaires en toitures et hangars agricoles situées dans des bassins solaires stratégiques du Sud-Ouest.
                     </p>
 
                     {/* Métriques Hélios */}
@@ -408,22 +408,22 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
                           Sites Sécurisés
                         </span>
-                        <span className="text-lg font-black text-[#0b192c]">29 sites</span>
-                        <span className="text-[10px] font-bold text-slate-400 block">100% PdB signées</span>
+                        <span className="text-lg font-black text-[#0b192c]">15 sites</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">100% PdB</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          Bâtiments Neufs
+                          Production Annuelle
                         </span>
-                        <span className="text-lg font-black text-amber-700">7,65 MWc</span>
-                        <span className="text-[10px] font-bold text-slate-400 block">26 hangars</span>
+                        <span className="text-lg font-black text-amber-700">7 036 MWh/an</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">P50: 1 125 kWh/kWc</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          Toitures Exist.
+                          TRI & Payback
                         </span>
-                        <span className="text-lg font-black text-blue-700">1,47 MWc</span>
-                        <span className="text-[10px] font-bold text-slate-400 block">3 rénovations</span>
+                        <span className="text-lg font-black text-emerald-700">12.8 %</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">Payback : 7.4 ans</span>
                       </div>
                     </div>
 
@@ -431,15 +431,15 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     <ul className="text-xs space-y-2 text-slate-600 font-medium border-t border-slate-100 pt-4">
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Maîtrise foncière totale (Baux notariés 30 ans avec loyers fermes)</span>
+                        <span>15 sites sécurisés (100% PdB signées 20 ans avec exploitants)</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Devis travaux charpente & couverture déjà négociés</span>
+                        <span>Devis d'exécution charpente, couverture & raccordement finalisés (3,70 M€)</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Autorisations d'urbanisme (DP/PC) prêtes au dépôt</span>
+                        <span>Tarif d'achat CRE S21 sécurisé 20 ans (569 527 € CA An 1 • EBITDA 498 650 €)</span>
                       </li>
                     </ul>
                   </div>
@@ -483,34 +483,34 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     </div>
 
                     <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                      Projets VOLTA — 15,50 MW / 32,36 MWh
+                      Portefeuille VOLTA — 15.50 MW / 32.36 MWh
                     </h3>
                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
-                      Portefeuille homogène de 31 unités de 500 kW / 1 044 kWh (matériel CESC Mercury 261). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, Capacité RTE).
+                      31 sites (500 kW / 1 044 kWh). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, SPOT EPEX, Capacité RTE).
                     </p>
 
                     {/* Métriques Volta */}
                     <div className="grid grid-cols-3 gap-2.5 my-5">
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          Unités 500 kW
+                          Unités BESS
                         </span>
                         <span className="text-lg font-black text-[#0b192c]">31 sites</span>
-                        <span className="text-[10px] font-bold text-cyan-700 block">&lt; 20 m² en DP</span>
+                        <span className="text-[10px] font-bold text-cyan-700 block">500 kW / 1 044 kWh</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          EBITDA Net An 1
+                          EBITDA An 1
                         </span>
-                        <span className="text-lg font-black text-emerald-700">1,50 M€</span>
-                        <span className="text-[10px] font-bold text-slate-400 block">Marge ~39%</span>
+                        <span className="text-lg font-black text-emerald-700">1.74 M€</span>
+                        <span className="text-[10px] font-bold text-slate-400 block">Marge &gt; 60%</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          Payback Projet
+                          TRI & Payback
                         </span>
-                        <span className="text-lg font-black text-blue-700">4,8 ans</span>
-                        <span className="text-[10px] font-bold text-purple-700 block">Equity : 2,3 ans</span>
+                        <span className="text-lg font-black text-blue-700">37.4 %</span>
+                        <span className="text-[10px] font-bold text-purple-700 block">Payback : 5.0 ans (Equity 2.2 ans)</span>
                       </div>
                     </div>
 
@@ -518,7 +518,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     <ul className="text-xs space-y-2 text-slate-600 font-medium border-t border-slate-100 pt-4">
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>Exonération TURPE 7 sur l'électricité réinjectée (+440 k€/an économisés)</span>
+                        <span>Gain TURPE 7 délibéré CRE 2025-227 (+439 673 €/an d'économie réseau consolidée)</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-cyan-600 shrink-0" />
@@ -526,7 +526,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>Distance privée optimisée à 10 mètres (génie civil minimisé)</span>
+                        <span>CAPEX clé en main 8,98 M€ (~290 k€/site) • DSCR moyen portefeuille 1.91x</span>
                       </li>
                     </ul>
                   </div>
