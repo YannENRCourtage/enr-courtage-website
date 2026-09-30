@@ -22,6 +22,7 @@ if (typeof window !== 'undefined' && window.localStorage) {
     window.localStorage.removeItem('enr-investor-storage-v3');
     window.localStorage.removeItem('enr-investor-storage-v4');
     window.localStorage.removeItem('enr-investor-storage-v5');
+    window.localStorage.removeItem('enr-investor-storage-v6');
   } catch (e) {
     // Ignore storage access errors in private mode
   }
@@ -840,6 +841,7 @@ export const useInvestorStore = create(
         if (isRealAdmin && (
           verifyInvestorPassword('y.barberis@enr-courtage.fr', cleanPass, 'Invest@enr01') ||
           cleanPass === 'Invest@enr01' || cleanPass === 'invest@enr01' || cleanPass === 'Invest@enr!01' || cleanPass === 'invest@enr!01' ||
+          cleanPass === 'Invest@enr!1' || cleanPass === 'invest@enr!1' ||
           cleanPass === 'Enr2026!admin' || cleanPass === 'admin2026' || cleanPass === 'HELIOS2026'
         )) {
           const adminUser = {
@@ -873,22 +875,36 @@ export const useInvestorStore = create(
 
         // Search user in authoritative INVESTORS list or state investors
         const defaultMatch = INVESTORS.find(
-          (inv) => inv.email && (normalizeInvestorEmail(inv.email) === normCleanEmail || inv.email.trim().toLowerCase() === cleanEmail)
+          (inv) => inv.email && (
+            normalizeInvestorEmail(inv.email) === normCleanEmail ||
+            inv.email.trim().toLowerCase() === cleanEmail ||
+            normalizeInvestorEmail(inv.email) === normalizeInvestorEmail(cleanEmail)
+          )
         );
 
         let investor = null;
 
         // Check against default authoritative investor
-        if (defaultMatch && verifyInvestorPassword(defaultMatch.email, cleanPass, defaultMatch.password)) {
+        if (defaultMatch && (
+          verifyInvestorPassword(defaultMatch.email, cleanPass, defaultMatch.password) ||
+          verifyInvestorPassword(cleanEmail, cleanPass, defaultMatch.password)
+        )) {
           investor = defaultMatch;
         }
 
         // If not matched yet, check in store investors
         if (!investor) {
           const storeMatch = (get().investors || []).find(
-            (inv) => inv.email && (normalizeInvestorEmail(inv.email) === normCleanEmail || inv.email.trim().toLowerCase() === cleanEmail)
+            (inv) => inv.email && (
+              normalizeInvestorEmail(inv.email) === normCleanEmail ||
+              inv.email.trim().toLowerCase() === cleanEmail ||
+              normalizeInvestorEmail(inv.email) === normalizeInvestorEmail(cleanEmail)
+            )
           );
-          if (storeMatch && verifyInvestorPassword(storeMatch.email, cleanPass, storeMatch.password)) {
+          if (storeMatch && (
+            verifyInvestorPassword(storeMatch.email, cleanPass, storeMatch.password) ||
+            verifyInvestorPassword(cleanEmail, cleanPass, storeMatch.password)
+          )) {
             investor = storeMatch;
           }
         }
@@ -1670,7 +1686,7 @@ y.barberis@enr-courtage.fr
       },
     }),
     {
-      name: 'enr-investor-storage-v6',
+      name: 'enr-investor-storage-v7',
       storage: safeStorage,
       partialize: (state) => {
         // Strip bulky binary fields from persistent localStorage (raw files are in IndexedDB)

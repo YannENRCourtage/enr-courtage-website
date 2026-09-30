@@ -41,7 +41,7 @@ export default function InvestorAuthPage() {
 
     const formData = new FormData(e.currentTarget);
     const formEmail = (formData.get('email') || email || '').toString().trim();
-    const formPassword = (formData.get('password') || password || '').toString();
+    const formPassword = (formData.get('password') || password || '').toString().trim();
 
     if (!formEmail) {
       setError('Veuillez saisir votre adresse e-mail professionnelle.');
