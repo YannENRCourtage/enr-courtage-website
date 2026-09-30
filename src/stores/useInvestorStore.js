@@ -9,6 +9,7 @@ if (typeof window !== 'undefined' && window.localStorage) {
   try {
     window.localStorage.removeItem('enr-investor-storage');
     window.localStorage.removeItem('enr-investor-storage-v2');
+    window.localStorage.removeItem('enr-investor-storage-v3');
   } catch (e) {
     // Ignore storage access errors in private mode
   }
@@ -781,7 +782,7 @@ export const useInvestorStore = create(
         const isRealAdmin = cleanEmail === 'y.barberis@enr-courtage.fr';
 
         // Check if admin credentials match directly for y.barberis@enr-courtage.fr
-        if (isRealAdmin && (cleanPass === 'invest@enr!01' || cleanPass === 'Enr2026!admin' || cleanPass === 'admin2026')) {
+        if (isRealAdmin && (cleanPass === 'invest@enr!01' || cleanPass === 'Invest@enr!01' || cleanPass === 'Enr2026!admin' || cleanPass === 'admin2026')) {
           const adminUser = {
             id: 'ADMIN-001',
             email: 'y.barberis@enr-courtage.fr',
@@ -812,8 +813,19 @@ export const useInvestorStore = create(
 
         const normalizeEmail = (em) => {
           const s = (em || '').trim().toLowerCase();
-          if (s === 'lnicoli12@gmail.com') return 'inikoli12@gmail.com';
-          if (s === 'michel.dekervever@sunvolt.fr') return 'michel.dekerverer@sunvolt.fr';
+          if (s === 'l.kusmann@aliaxis.com' || s === 'lrusmann@altarea.com') return 'lrusmann@altarea.com';
+          if (s === 'f.mouser@enee-energie.fr' || s === 'farid.moucer@enoe-energie.fr') return 'farid.moucer@enoe-energie.fr';
+          if (s === 'inikoli12@gmail.com' || s === 'lnicoli12@gmail.com' || s === 'lnicoli02@gmail.com') return 'lnicoli02@gmail.com';
+          if (s === 'michel.dekerverer@sunvolt.fr' || s === 'michel.dekerever@sunvolt.fr') return 'michel.dekerever@sunvolt.fr';
+          if (s === 'd.fenetre@girasole-energies.com' || s === 'dfenetre@girasole-energies.com') return 'dfenetre@girasole-energies.com';
+          if (s === 'nicolas.letran@nass-et-wind.com' || s === 'nicolas.letiran@nass-et-wind.com') return 'nicolas.letiran@nass-et-wind.com';
+          if (s === 'laurent.guyon@baircominvest.com' || s === 'laurent.guyon@barconniere.com') return 'laurent.guyon@barconniere.com';
+          if (s === 'h.bouhamed@mcel.energy' || s === 'hbouhamed@mcel.energy') return 'hbouhamed@mcel.energy';
+          if (s === 'p.guyon@solstyle.fr' || s === 'pgu@solstyce.fr') return 'pgu@solstyce.fr';
+          if (s === 'b.jourdan@digitalisun-enr.com' || s === 'b.jourdan@digitalsun-enr.com') return 'b.jourdan@digitalsun-enr.com';
+          if (s === 'thibault.levesque@babelenergie.com' || s === 'thibaut.levesque@babelenergie.com') return 'thibaut.levesque@babelenergie.com';
+          if (s === 'mael.choutier@synapstor.fr' || s === 'mael.chouiter@synapstor.fr') return 'mael.chouiter@synapstor.fr';
+          if (s === 'marlane.tharaud@valorem-energie.com' || s === 'mariane.tharaud@valorem-energie.com') return 'mariane.tharaud@valorem-energie.com';
           return s;
         };
 
@@ -837,16 +849,19 @@ export const useInvestorStore = create(
           }
         }
 
-        // Second fallback: check if email exists in INVESTORS and cleanPass matches alternative passwords
+        // Second fallback: check if email exists in INVESTORS and cleanPass matches alternative passwords or common typos
         if (!investor) {
           const defaultByEmail = INVESTORS.find(
             (inv) => inv.email && (normalizeEmail(inv.email) === normCleanEmail || inv.email.trim().toLowerCase() === cleanEmail)
           );
           if (defaultByEmail) {
             const isMatch = defaultByEmail.password?.trim() === cleanPass ||
-              (normCleanEmail === 'contact@enr-courtage.fr' && (cleanPass === 'invest@enr!01' || cleanPass === 'Enr2026!ovxf' || cleanPass === 'Enr2026!Enee')) ||
+              (normCleanEmail === 'contact@enr-courtage.fr' && (cleanPass === 'invest@enr!01' || cleanPass === 'Invest@enr!01' || cleanPass === 'Enr2026!ovxf' || cleanPass === 'Enr2026!Enee')) ||
               (normCleanEmail === 'yannbarberis@msn.com' && (cleanPass === '2#b84rDPzo' || cleanPass === 'Enr2026!dP2#')) ||
-              (normCleanEmail === 'f.burguion@sunrock.com' && (cleanPass === 'ds%hs-N#h@00F!V' || cleanPass === 'ds%hs-N#h@oOF!V'));
+              (normCleanEmail === 'mael.chouiter@synapstor.fr' && (cleanPass === '1p7Tj1Szca!KcjsV' || cleanPass === '1p7Tj1Szzca!KcJsV' || cleanPass === '1p7Tj1Szca!KcJsV' || cleanPass === '1p7Tj1Szzca!KcjsV')) ||
+              (normCleanEmail === 'laurent.guyon@barconniere.com' && (cleanPass === '@gvw4tq4bcJqYFPb' || cleanPass === '0gvw4tq4bcJqYFPb')) ||
+              (normCleanEmail === 'mariane.tharaud@valorem-energie.com' && (cleanPass === 'Zh4vcAbb3RVkI5x5' || cleanPass === 'Zh4vCAbb3RVkI5x5')) ||
+              (normCleanEmail === 'f.burguion@sunrock.com' && (cleanPass === 'dr5Enfi09w9PDfiV' || cleanPass === 'ds%hs-N#h@00F!V' || cleanPass === 'ds%hs-N#h@oOF!V'));
             if (isMatch) {
               investor = defaultByEmail;
             }
@@ -1628,7 +1643,7 @@ y.barberis@enr-courtage.fr
       },
     }),
     {
-      name: 'enr-investor-storage-v3',
+      name: 'enr-investor-storage-v4',
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
@@ -1642,6 +1657,18 @@ y.barberis@enr-courtage.fr
           's.laurent@omnescapital.com',
           'demo@enr-courtage.fr',
           'a.dupre@enee-energy.com',
+          'l.kusmann@aliaxis.com',
+          'f.mouser@enee-energie.fr',
+          'inikoli12@gmail.com',
+          'b.jourdan@digitalisun-enr.com',
+          'p.guyon@solstyle.fr',
+          'laurent.guyon@baircominvest.com',
+          'd.fenetre@girasole-energies.com',
+          'nicolas.letran@nass-et-wind.com',
+          'h.bouhamed@mcel.energy',
+          'michel.dekerverer@sunvolt.fr',
+          'mael.choutier@synapstor.fr',
+          'marlane.tharaud@valorem-energie.com',
         ];
         if (state.currentInvestor && staleTestEmails.includes(state.currentInvestor.email?.toLowerCase())) {
           state.currentInvestor = null;
@@ -1680,13 +1707,11 @@ y.barberis@enr-courtage.fr
               state.investors[idx] = {
                 ...defaultInv,
                 ...state.investors[idx],
-                name: state.investors[idx].name || defaultInv.name,
-                company: state.investors[idx].company || defaultInv.company,
-                role: state.investors[idx].role || defaultInv.role,
-                divers: defaultInv.divers || state.investors[idx].divers || '',
-                password: (state.investors[idx].password && state.investors[idx].password !== 'invest@enr!01')
-                  ? state.investors[idx].password
-                  : defaultInv.password,
+                name: defaultInv.name,
+                company: defaultInv.company,
+                role: defaultInv.role,
+                divers: defaultInv.divers,
+                password: defaultInv.password,
                 status: state.investors[idx].status || defaultInv.status,
                 hasUploadedSignedNda: state.investors[idx].hasUploadedSignedNda || defaultInv.hasUploadedSignedNda || false,
                 ndaFileName: state.investors[idx].ndaFileName || defaultInv.ndaFileName || '',
