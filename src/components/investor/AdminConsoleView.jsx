@@ -38,6 +38,7 @@ import {
   FileUp,
   Sparkles,
   RotateCcw,
+  X,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -113,6 +114,43 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [isUploadingNda, setIsUploadingNda] = useState(false);
   const [editUserNdaFile, setEditUserNdaFile] = useState(null);
 
+  // Fermer les modales avec la touche Échap (Escape)
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (uploadNdaModalUser) {
+          setUploadNdaModalUser(null);
+          setUploadNdaFile(null);
+        } else if (editingUser) {
+          setEditingUser(null);
+          setEditUserNdaFile(null);
+        } else if (isAddUserModalOpen) {
+          setIsAddUserModalOpen(false);
+          setNewNdaFile(null);
+        } else if (isUploadModalOpen) {
+          setIsUploadModalOpen(false);
+          setUploadRawFile(null);
+        } else if (selectedInvestorForNda) {
+          setSelectedInvestorForNda(null);
+        } else if (selectedUserDownloadsModal) {
+          setSelectedUserDownloadsModal(null);
+        } else if (mandateModalOffer) {
+          setMandateModalOffer(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    uploadNdaModalUser,
+    editingUser,
+    isAddUserModalOpen,
+    isUploadModalOpen,
+    selectedInvestorForNda,
+    selectedUserDownloadsModal,
+    mandateModalOffer,
+  ]);
+
   const handleSaveUploadNda = async (e) => {
     e.preventDefault();
     if (!uploadNdaModalUser) return;
@@ -123,22 +161,15 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     setIsUploadingNda(true);
     try {
       const docId = 'nda_user_' + uploadNdaModalUser.id;
+      // Enregistrement direct dans IndexedDB (plusieurs Gigaoctets sans restriction 5Mo de localStorage)
       await storeDocumentBinary(docId, uploadNdaFile, uploadNdaFile.name);
-      let ndaDataUrl = '';
-      if (uploadNdaFile.size <= 3.5 * 1024 * 1024) {
-        ndaDataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(uploadNdaFile);
-        });
-      }
+      await storeDocumentBinary(uploadNdaFile.name, uploadNdaFile, uploadNdaFile.name);
 
       adminUploadSignedNda(uploadNdaModalUser.id, {
         fileName: uploadNdaFile.name,
         fileSize: uploadNdaFile.size,
         documentId: docId,
-        fileBase64: ndaDataUrl,
+        fileBase64: '', // Stocké dans IndexedDB pour ne jamais saturer localStorage
         signedAt: uploadNdaSignedDate ? new Date(uploadNdaSignedDate).toISOString() : new Date().toISOString(),
       });
 
@@ -148,7 +179,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       setUploadNdaFile(null);
     } catch (err) {
       console.error("Erreur lors du chargement du NDA:", err);
-      alert("Une erreur est survenue lors du chargement du fichier NDA.");
+      alert("Une erreur est survenue lors du chargement du fichier NDA : " + (err?.message || err));
     } finally {
       setIsUploadingNda(false);
     }
@@ -167,22 +198,14 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       try {
         const docId = 'nda_user_' + editingUser.id;
         await storeDocumentBinary(docId, editUserNdaFile, editUserNdaFile.name);
-        let ndaDataUrl = '';
-        if (editUserNdaFile.size <= 3.5 * 1024 * 1024) {
-          ndaDataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => resolve('');
-            reader.readAsDataURL(editUserNdaFile);
-          });
-        }
+        await storeDocumentBinary(editUserNdaFile.name, editUserNdaFile, editUserNdaFile.name);
         updatedPayload = {
           ...updatedPayload,
           hasUploadedSignedNda: true,
           ndaFileName: editUserNdaFile.name,
           ndaFileSize: editUserNdaFile.size,
           ndaDocumentId: docId,
-          ndaFileBase64: ndaDataUrl,
+          ndaFileBase64: '',
           ndaSignedAt: new Date().toISOString(),
           ndaSignedByAdmin: true,
           status: 'active',
@@ -291,20 +314,12 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       return;
     }
     const pass = newUserData.password.trim() || generateRandomPassword();
-    let ndaDataUrl = '';
     const docId = 'nda_user_' + Date.now();
 
     if (newNdaFile) {
       try {
         await storeDocumentBinary(docId, newNdaFile, newNdaFile.name);
-        if (newNdaFile.size <= 3.5 * 1024 * 1024) {
-          ndaDataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => resolve('');
-            reader.readAsDataURL(newNdaFile);
-          });
-        }
+        await storeDocumentBinary(newNdaFile.name, newNdaFile, newNdaFile.name);
       } catch (err) {
         console.warn('Erreur stockage NDA:', err);
       }
@@ -316,7 +331,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       ndaFileName: newNdaFile ? newNdaFile.name : '',
       ndaFileSize: newNdaFile ? newNdaFile.size : 0,
       ndaDocumentId: newNdaFile ? docId : '',
-      ndaFileBase64: ndaDataUrl,
+      ndaFileBase64: '',
       hasUploadedSignedNda: !!newNdaFile,
       status: 'active',
     });
@@ -1424,18 +1439,32 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       {/* MODALE : AJOUTER UN INVESTISSEUR (AVEC UPLOAD DE NDA SIGNÉ)         */}
       {/* =================================================================== */}
       {isAddUserModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsAddUserModalOpen(false);
+              setNewNdaFile(null);
+            }
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <UserPlus className="w-5 h-5 text-purple-600" />
                 <h3 className="text-lg font-black text-[#0b192c]">Ajouter un Investisseur Qualifié</h3>
               </div>
               <button
-                onClick={() => setIsAddUserModalOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+                type="button"
+                onClick={() => {
+                  setIsAddUserModalOpen(false);
+                  setNewNdaFile(null);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                title="Fermer (Échap)"
+                aria-label="Fermer la fenêtre"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1529,15 +1558,32 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       {/* MODALE : VERSER UN DOCUMENT EN DATA ROOM                            */}
       {/* =================================================================== */}
       {isUploadModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsUploadModalOpen(false);
+              setUploadRawFile(null);
+            }
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Upload className="w-5 h-5 text-blue-600" />
                 <h3 className="text-lg font-black text-[#0b192c]">Verser un document en Data Room</h3>
               </div>
-              <button onClick={() => setIsUploadModalOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
-                ✕
+              <button 
+                type="button"
+                onClick={() => {
+                  setIsUploadModalOpen(false);
+                  setUploadRawFile(null);
+                }} 
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                title="Fermer (Échap)"
+                aria-label="Fermer la fenêtre"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1636,8 +1682,16 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       {/* MODALE : MODIFIER UN INVESTISSEUR / ACCÈS                           */}
       {/* =================================================================== */}
       {editingUser && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setEditingUser(null);
+              setEditUserNdaFile(null);
+            }
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-xl w-full shadow-2xl space-y-5 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <Edit3 className="w-5 h-5 text-purple-600" />
@@ -1647,10 +1701,15 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               </div>
               <button
                 type="button"
-                onClick={() => setEditingUser(null)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                onClick={() => {
+                  setEditingUser(null);
+                  setEditUserNdaFile(null);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                title="Fermer (Échap)"
+                aria-label="Fermer la fenêtre"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
@@ -1819,8 +1878,16 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       {/* MODALE DÉDIÉE : CHARGER UN NDA SIGNÉ POUR UN UTILISATEUR           */}
       {/* =================================================================== */}
       {uploadNdaModalUser && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5">
+        <div 
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setUploadNdaModalUser(null);
+              setUploadNdaFile(null);
+            }
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-5 relative">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <FileUp className="w-5 h-5 text-purple-600" />
@@ -1834,9 +1901,11 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   setUploadNdaModalUser(null);
                   setUploadNdaFile(null);
                 }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                title="Fermer (Échap)"
+                aria-label="Fermer la fenêtre"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 

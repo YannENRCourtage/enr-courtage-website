@@ -7,7 +7,12 @@ import {
   verifyInvestorPassword,
 } from '@/data/investorData';
 import { formatThousands } from '@/utils/mnaUtils';
+import { ensurePersistentStorage } from '@/services/fileStorageService';
 
+// Automatically request persistent storage & maximize quota on startup
+if (typeof window !== 'undefined') {
+  ensurePersistentStorage().catch(() => {});
+}
 
 // Immediately purge any legacy test sessions from browser localStorage
 if (typeof window !== 'undefined' && window.localStorage) {
@@ -21,6 +26,47 @@ if (typeof window !== 'undefined' && window.localStorage) {
     // Ignore storage access errors in private mode
   }
 }
+
+// Safe storage engine protecting against DOMException QuotaExceededError
+const safeStorage = createJSONStorage(() => ({
+  getItem: (key) => {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('safeStorage.getItem error:', e);
+      return null;
+    }
+  },
+  setItem: (key, value) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('localStorage.setItem quota warning, applying deep clean:', e);
+      try {
+        const parsed = JSON.parse(value);
+        if (parsed?.state?.investors) {
+          parsed.state.investors = parsed.state.investors.map((inv) => {
+            const { ndaFileBase64, ...rest } = inv;
+            return rest;
+          });
+        }
+        if (parsed?.state?.currentInvestor) {
+          delete parsed.state.currentInvestor.ndaFileBase64;
+        }
+        localStorage.setItem(key, JSON.stringify(parsed));
+      } catch (fallbackErr) {
+        console.error('safeStorage sanitize fallback failed:', fallbackErr);
+      }
+    }
+  },
+  removeItem: (key) => {
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.warn('safeStorage.removeItem error:', e);
+    }
+  },
+}));
 
 // Helper to generate a random secure password
 export function generateRandomPassword() {
@@ -1105,7 +1151,7 @@ y.barberis@enr-courtage.fr
           ndaFileName: ndaFileName || '',
           ndaFileSize: ndaFileSize || 0,
           ndaDocumentId: ndaDocumentId || '',
-          ndaFileBase64: ndaFileBase64 || '',
+          ndaFileBase64: (ndaFileBase64 && ndaFileBase64.length < 20000) ? ndaFileBase64 : '',
           ndaText: ndaFileName
             ? `Document NDA original signé téléversé : ${ndaFileName}`
             : ndaText,
@@ -1121,14 +1167,18 @@ y.barberis@enr-courtage.fr
 
       // Admin action: Update existing user
       adminUpdateUser: (userId, updatedFields) => {
+        const sanitizedFields = { ...updatedFields };
+        if (sanitizedFields.ndaFileBase64 && sanitizedFields.ndaFileBase64.length >= 20000) {
+          sanitizedFields.ndaFileBase64 = '';
+        }
         set((state) => ({
           investors: state.investors.map((inv) => {
             if (inv.id !== userId) return inv;
             const updated = {
               ...inv,
-              ...updatedFields,
-              email: updatedFields.email ? updatedFields.email.trim().toLowerCase() : inv.email,
-              password: updatedFields.password !== undefined ? updatedFields.password.trim() : inv.password,
+              ...sanitizedFields,
+              email: sanitizedFields.email ? sanitizedFields.email.trim().toLowerCase() : inv.email,
+              password: sanitizedFields.password !== undefined ? sanitizedFields.password.trim() : inv.password,
               updatedAt: new Date().toISOString(),
             };
             // If current logged-in user is updated, keep currentInvestor in sync
@@ -1143,6 +1193,8 @@ y.barberis@enr-courtage.fr
 
       // Admin action: Upload/attach signed NDA document for an investor
       adminUploadSignedNda: (userId, { fileName, fileSize, documentId, fileBase64, signedAt }) => {
+        // Do not store heavy base64 strings in localStorage to avoid QuotaExceededError (file is in IndexedDB)
+        const safeBase64 = (typeof fileBase64 === 'string' && fileBase64.length < 20000) ? fileBase64 : '';
         set((state) => ({
           investors: state.investors.map((inv) => {
             if (inv.id !== userId) return inv;
@@ -1152,7 +1204,7 @@ y.barberis@enr-courtage.fr
               ndaFileName: fileName || inv.ndaFileName || 'NDA_Signe.pdf',
               ndaFileSize: fileSize || inv.ndaFileSize || 0,
               ndaDocumentId: documentId || ('nda_user_' + inv.id),
-              ndaFileBase64: fileBase64 || inv.ndaFileBase64 || '',
+              ndaFileBase64: safeBase64,
               ndaSignedAt: signedAt || new Date().toISOString(),
               ndaSignedByAdmin: true,
               status: 'active',
@@ -1619,9 +1671,36 @@ y.barberis@enr-courtage.fr
     }),
     {
       name: 'enr-investor-storage-v6',
-      storage: createJSONStorage(() => localStorage),
+      storage: safeStorage,
+      partialize: (state) => {
+        // Strip bulky binary fields from persistent localStorage (raw files are in IndexedDB)
+        const leanInvestors = (state.investors || []).map((inv) => {
+          const { ndaFileBase64, ...rest } = inv;
+          return rest;
+        });
+        const leanCurrentInvestor = state.currentInvestor
+          ? (({ ndaFileBase64, ...rest }) => rest)(state.currentInvestor)
+          : null;
+
+        return {
+          ...state,
+          investors: leanInvestors,
+          currentInvestor: leanCurrentInvestor,
+        };
+      },
       onRehydrateStorage: () => (state) => {
         if (!state) return;
+        // Clean up any stale ndaFileBase64 from past sessions to free localStorage
+        if (state.investors) {
+          state.investors.forEach((inv) => {
+            if (inv.ndaFileBase64) {
+              delete inv.ndaFileBase64;
+            }
+          });
+        }
+        if (state.currentInvestor && state.currentInvestor.ndaFileBase64) {
+          delete state.currentInvestor.ndaFileBase64;
+        }
         // Automatically disconnect any legacy test accounts
         const staleTestEmails = [
           'investisseur.test@enr-courtage.fr',

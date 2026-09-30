@@ -3,6 +3,34 @@
  * Permet de stocker de gros fichiers PDF dans le navigateur sans saturer localStorage (limité à 5 Mo).
  */
 
+/**
+ * Demander la persistance du stockage au navigateur et maximiser le quota
+ * (Passe le quota de 5 Mo localStorage à plusieurs Gigaoctets sur IndexedDB)
+ */
+export async function ensurePersistentStorage() {
+  if (typeof window === 'undefined' || !navigator?.storage) return null;
+  try {
+    if (navigator.storage.persist) {
+      const isPersisted = await navigator.storage.persisted();
+      if (!isPersisted) {
+        await navigator.storage.persist();
+      }
+    }
+    if (navigator.storage.estimate) {
+      const estimate = await navigator.storage.estimate();
+      return estimate;
+    }
+  } catch (err) {
+    console.warn('Quota persistence request:', err);
+  }
+  return null;
+}
+
+// Auto-activer la persistance et l'extension du quota en environnement navigateur
+if (typeof window !== 'undefined') {
+  ensurePersistentStorage().catch(() => {});
+}
+
 const DB_NAME = 'enr_courtage_dataroom_db';
 const STORE_NAME = 'documents';
 const DB_VERSION = 1;

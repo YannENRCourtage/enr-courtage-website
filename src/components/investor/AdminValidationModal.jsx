@@ -217,20 +217,11 @@ export default function AdminValidationModal({
       return;
     }
     const pass = newUserData.password.trim() || generateRandomPassword();
-
-    let ndaDataUrl = '';
     const docId = 'nda_user_' + Date.now();
     if (newNdaFile) {
       try {
         await storeDocumentBinary(docId, newNdaFile, newNdaFile.name);
-        if (newNdaFile.size <= 3.5 * 1024 * 1024) {
-          ndaDataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => resolve('');
-            reader.readAsDataURL(newNdaFile);
-          });
-        }
+        await storeDocumentBinary(newNdaFile.name, newNdaFile, newNdaFile.name);
       } catch (err) {
         console.warn('Erreur stockage NDA:', err);
       }
@@ -242,7 +233,7 @@ export default function AdminValidationModal({
       ndaFileName: newNdaFile ? newNdaFile.name : '',
       ndaFileSize: newNdaFile ? newNdaFile.size : 0,
       ndaDocumentId: newNdaFile ? docId : '',
-      ndaFileBase64: ndaDataUrl,
+      ndaFileBase64: '',
       hasUploadedSignedNda: !!newNdaFile,
       status: 'active',
     });
@@ -273,20 +264,13 @@ export default function AdminValidationModal({
     try {
       const docId = user.ndaDocumentId || ('nda_user_' + user.id + '_' + Date.now());
       await storeDocumentBinary(docId, file, file.name);
-      let dataUrl = '';
-      if (file.size <= 3.5 * 1024 * 1024) {
-        dataUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = () => resolve('');
-          reader.readAsDataURL(file);
-        });
-      }
+      await storeDocumentBinary(file.name, file, file.name);
+
       adminUpdateUser(user.id, {
         ndaFileName: file.name,
         ndaFileSize: file.size,
         ndaDocumentId: docId,
-        ndaFileBase64: dataUrl,
+        ndaFileBase64: '',
         hasUploadedSignedNda: true,
         ndaSignedAt: new Date().toISOString(),
         ndaSignedByAdmin: true,
@@ -310,20 +294,13 @@ export default function AdminValidationModal({
       try {
         const docId = editingUser.ndaDocumentId || ('nda_user_' + editingUser.id + '_' + Date.now());
         await storeDocumentBinary(docId, editingNdaFile, editingNdaFile.name);
-        let dataUrl = '';
-        if (editingNdaFile.size <= 3.5 * 1024 * 1024) {
-          dataUrl = await new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => resolve('');
-            reader.readAsDataURL(editingNdaFile);
-          });
-        }
+        await storeDocumentBinary(editingNdaFile.name, editingNdaFile, editingNdaFile.name);
+
         extraNdaFields = {
           ndaFileName: editingNdaFile.name,
           ndaFileSize: editingNdaFile.size,
           ndaDocumentId: docId,
-          ndaFileBase64: dataUrl,
+          ndaFileBase64: '',
           hasUploadedSignedNda: true,
           ndaSignedAt: new Date().toISOString(),
           ndaSignedByAdmin: true,
