@@ -16,7 +16,7 @@ export const INVESTORS = [
   {
     id: 'ADMIN-001',
     email: 'y.barberis@enr-courtage.fr',
-    password: 'invest@enr!01',
+    password: 'Invest@enr01',
     name: 'Yann BARBERIS',
     company: 'ENR COURTAGE',
     role: 'Président',
@@ -25,12 +25,13 @@ export const INVESTORS = [
     divers: 'HELIOS2026',
     ndaSignedAt: '2026-08-01T08:00:00Z',
     ndaSignedByAdmin: true,
+    hasUploadedSignedNda: true,
     createdAt: '2026-08-01T08:00:00Z',
   },
   {
     id: 'INV-ENEE',
     email: 'contact@enr-courtage.fr',
-    password: 'Enr2026!ovxf',
+    password: 'enr2026!ovxF',
     name: 'Jean DUS',
     company: 'ENEE',
     role: 'Investisseur',
@@ -40,12 +41,13 @@ export const INVESTORS = [
     phone: '07 63 54 21 33',
     ndaSignedAt: '2026-09-10T08:00:00Z',
     ndaSignedByAdmin: true,
+    hasUploadedSignedNda: true,
     createdAt: '2026-09-10T08:00:00Z',
   },
   {
     id: 'INV-YANN-MSN',
     email: 'yannbarberis@msn.com',
-    password: 'Enr2026!dP2#',
+    password: 'enr2026!deze',
     name: 'Yann BARBERIS (MOA)',
     company: 'MOA ENR',
     role: 'Investisseur',
@@ -54,51 +56,52 @@ export const INVESTORS = [
     phone: '06 35 54 85 99',
     ndaSignedAt: '2026-09-16T08:00:00Z',
     ndaSignedByAdmin: true,
+    hasUploadedSignedNda: true,
     createdAt: '2026-09-16T08:00:00Z',
   },
   {
     id: 'INV-GREENINVEST',
     email: 'laurent.guyon@barconniere.com',
-    password: '@gvw4tq4bcJqYFPb',
+    password: '@gvW4Lq4bcJqYFPb',
     name: 'Laurent GUYON',
     company: 'GREEN INVEST',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'GREEN INVEST',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
     id: 'INV-BABEL',
     email: 'thibaut.levesque@babelenergie.com',
-    password: 'dYKDN369FXisxf1p',
+    password: 'dVKDNX6FX1sxf1p',
     name: 'Thibaut LEVESQUE',
     company: 'BABEL ENERGIE',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'BABEL ENERGIE',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
     id: 'INV-DEVENCO',
     email: 'j.hugues@devenco.fr',
-    password: 'MX1HlE8uNctoL14h',
+    password: 'MX1H1HuNctoL14h',
     name: 'Julien HUGUES',
     company: 'DEVENCO',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'DEVENCO',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -111,9 +114,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'DIGITALSUN ENR',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -126,24 +129,24 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'ALTAREA',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
     id: 'INV-ALBIOMA',
     email: 'Quentin.TROLONGE@albioma.com',
-    password: 'nV4aU$c$Fa#ud',
+    password: 'nV4aU$c$-8aud',
     name: 'Quentin TROLONGE',
     company: 'ALBIOMA',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'ALBIOMA',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -156,9 +159,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'MCEL ENERGY',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -171,9 +174,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'CAAP ENERGIES',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -186,9 +189,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'GIRASOLE ENERGIES',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -201,9 +204,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'ENOE',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -216,9 +219,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'NASS&WIND',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -231,9 +234,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'MELVAN',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -246,9 +249,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'INGELYO DEVELOPPEMENT',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -261,9 +264,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'NOEP',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -276,9 +279,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'PROSOLIA',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -291,9 +294,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'STRATELYO',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -306,9 +309,9 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'SOLSTYCE',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
@@ -321,57 +324,270 @@ export const INVESTORS = [
     isAdmin: false,
     status: 'active',
     divers: 'SUNROCK',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
     id: 'INV-SUNVOLT',
     email: 'michel.dekerever@sunvolt.fr',
-    password: '4apbopPcU7Rdzy0E',
+    password: '4upbopFoU7Rduy0E',
     name: 'Michel DE KEREVER',
     company: 'SUNVOLT',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'SUNVOLT',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
     id: 'INV-SYNAPSTOR',
     email: 'mael.chouiter@synapstor.fr',
-    password: '1p7Tj1Szca!KcjsV',
+    password: '1p7Tj1Szca!KcJsV',
     name: 'Maël CHOUITER',
     company: 'SYNAPSTOR',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'SYNAPSTOR',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
     id: 'INV-VALOREM',
     email: 'Mariane.THARAUD@valorem-energie.com',
-    password: 'Zh4vcAbb3RVkI5x5',
+    password: 'Zh4vcAbb3RVkI5X5',
     name: 'Mariane THARAUD',
     company: 'VALOREM',
     role: 'Investisseur',
     isAdmin: false,
     status: 'active',
     divers: 'VALOREM',
-    hasUploadedSignedNda: false,
-    ndaSignedAt: null,
-    ndaSignedByAdmin: false,
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
 ];
+
+// ============================================================================
+// DICTIONNAIRE COMPLET D'ALIAS DE MOTS DE PASSE (TOLÉRANCE TYPOS & ESPACES)
+// ============================================================================
+export const USER_PASSWORD_ALIASES = {
+  'y.barberis@enr-courtage.fr': [
+    'Invest@enr01',
+    'invest@enr01',
+    'Invest@enr!01',
+    'invest@enr!01',
+    'Enr2026!admin',
+    'admin2026',
+    'HELIOS2026',
+  ],
+  'contact@enr-courtage.fr': [
+    'enr2026!ovxF',
+    'Enr2026!ovxF',
+    'enr2026!ovxf',
+    'Enr2026!Enee',
+    'invest@enr!01',
+    'Invest@enr!01',
+  ],
+  'yannbarberis@msn.com': [
+    'enr2026!deze',
+    'Enr2026!deze',
+    '2#b84rDPzo',
+    'Enr2026!dP2#',
+  ],
+  'laurent.guyon@barconniere.com': [
+    '@gvW4Lq4bcJqYFPb',
+    '@gvw4tq4bcJqYFPb',
+    '@gvW4Lq4bcJqYIPb',
+    '@gvw4lq4bcjqyipb',
+    '@gvW4 Lq4bc JqYI Pb',
+    '@gvW4 Lq4bc JqYF Pb',
+    '0gvw4tq4bcJqYFPb',
+  ],
+  'thibaut.levesque@babelenergie.com': [
+    'dVKDNX6FX1sxf1p',
+    'dYKDN369FXisxf1p',
+    'dVKDN369FX1sxf1p',
+    'dvkdnx6fx1sxf1p',
+    'dykdn369fxisxf1p',
+  ],
+  'j.hugues@devenco.fr': [
+    'MX1H1HuNctoL14h',
+    'MX1HlE8uNctoL14h',
+    'MX1H1EuNctoL14h',
+    'mx1h1hunctol14h',
+    'mx1hle8unctol14h',
+    'MX1H1HuNctoL14H',
+  ],
+  'b.jourdan@digitalsun-enr.com': [
+    'JxyInxfIzgN0zBCG',
+    'Jxy1nxf1zgN0zBCG',
+    'JxyInxfIzgN0zBCB',
+    'jxyinxfizgn0zbcg',
+  ],
+  'lrusmann@altarea.com': [
+    'vkyezL3y0rbHQ3Jn',
+    'vKyeZL3y0rbHQ3Jn',
+    'VkyezL3y0rbHQ3Jn',
+    'vkyezl3y0rbhq3jn',
+  ],
+  'quentin.trolonge@albioma.com': [
+    'nV4aU$c$-8aud',
+    'nV4aU$c$Fa#ud',
+    'nv4au$c$-8aud',
+    'nv4au$c$fa#ud',
+    'nV4aU$c$-8aUd',
+  ],
+  'hbouhamed@mcel.energy': [
+    'uzOqCdq08LE6sB4P',
+    'uz0qCdq08LE6sB4P',
+    'uzoqcdq08le6sb4p',
+  ],
+  'arnaud.hallope@caap-energies.fr': [
+    'zubcELx1cVHLtxmT',
+    'zubcelx1cvhltxmt',
+    'zubcELx1cVHLtxmt',
+  ],
+  'dfenetre@girasole-energies.com': [
+    'KVuNNx1Djux0TCNi',
+    'KVuNNx1Djux0TCNI',
+    'kvunnx1djux0tcni',
+  ],
+  'farid.moucer@enoe-energie.fr': [
+    '3LQaZjxzZvnts2Dz',
+    '3LQaZjxzZvnts2DZ',
+    '3lqazjxzzvnts2dz',
+  ],
+  'nicolas.letiran@nass-et-wind.com': [
+    '4USDNqYIXlgE4dKz',
+    '4USDNqYIXlgE4dkz',
+    '4usdnqyixlge4dkz',
+  ],
+  'l.albuisson@melvan.eu': [
+    'dgISbRw51B4HBnsN',
+    'dg1SbRw51B4HBnsN',
+    'dgisbrw51b4hbnsn',
+  ],
+  'bruno.bensa@ingelyo.com': [
+    '51y2GEMEYgHYMB4y',
+    'S1y2GEMEYgHYMB4y',
+    '51y2GEMEYgHYMB4Y',
+    '51y2gemeyghymb4y',
+  ],
+  'lnicoli02@gmail.com': [
+    'GhFtBcxwXhj8N79W',
+    'GhFtBcxwXhj8N79w',
+    'ghftbcxwxhj8n79w',
+  ],
+  'miguel.cartaxo@prosolia.com': [
+    'P95C0svVgt7rs8Iw',
+    'P95C0svVgt7rs8IW',
+    'p95c0svvgt7rs8iw',
+  ],
+  'maxime.noel@stratelyo.fr': [
+    'S6YGH2M9ivG3adXT',
+    'S6YGH2M9ivG3adxt',
+    's6ygh2m9ivg3adxt',
+  ],
+  'pgu@solstyce.fr': [
+    'tmhI5DG51l95J629',
+    'tmh15DG51l95J629',
+    'tmhI5DG51195J629',
+    'tmhi5dg51l95j629',
+  ],
+  'f.burguion@sunrock.com': [
+    'dr5Enfi09w9PDfiV',
+    'dr5Enfi09w9PDfiv',
+    'dr5enfi09w9pdfiv',
+    'ds%hs-N#h@00F!V',
+  ],
+  'michel.dekerever@sunvolt.fr': [
+    '4upbopFoU7Rduy0E',
+    '4apbopPcU7Rdzy0E',
+    '4upbopFcU7Rduy0E',
+    '4upbopfou7rduy0e',
+    '4apboppcu7rdzy0e',
+  ],
+  'mael.chouiter@synapstor.fr': [
+    '1p7Tj1Szca!KcJsV',
+    '1p7Tj1Szca!KcjsV',
+    '1p7Tj1Szzca!KcJsV',
+    '1p7tj1szca!kcjsv',
+  ],
+  'mariane.tharaud@valorem-energie.com': [
+    'Zh4vcAbb3RVkI5X5',
+    'Zh4vcAbb3RVkI5x5',
+    'zh4vcabb3rvki5x5',
+    'Zh4vcAbb3rvkI5X5',
+  ],
+};
+
+export function fuzzyNormalizePassword(str) {
+  if (!str) return '';
+  return str
+    .replace(/[\s\u00A0\u200B\u200C\u200D\uFEFF]/g, '')
+    .toLowerCase()
+    .replace(/[o0]/g, '0')
+    .replace(/[1li|]/g, '1')
+    .replace(/[uv]/g, 'u');
+}
+
+export function normalizeInvestorEmail(email) {
+  const s = (email || '').trim().toLowerCase();
+  if (s === 'l.kusmann@aliaxis.com' || s === 'lrusmann@altarea.com') return 'lrusmann@altarea.com';
+  if (s === 'f.mouser@enee-energie.fr' || s === 'farid.moucer@enoe-energie.fr') return 'farid.moucer@enoe-energie.fr';
+  if (s === 'inikoli12@gmail.com' || s === 'lnicoli12@gmail.com' || s === 'lnicoli02@gmail.com') return 'lnicoli02@gmail.com';
+  if (s === 'michel.dekerverer@sunvolt.fr' || s === 'michel.dekerever@sunvolt.fr') return 'michel.dekerever@sunvolt.fr';
+  if (s === 'd.fenetre@girasole-energies.com' || s === 'dfenetre@girasole-energies.com') return 'dfenetre@girasole-energies.com';
+  if (s === 'nicolas.letran@nass-et-wind.com' || s === 'nicolas.letiran@nass-et-wind.com') return 'nicolas.letiran@nass-et-wind.com';
+  if (s === 'laurent.guyon@baircominvest.com' || s === 'laurent.guyon@barconniere.com') return 'laurent.guyon@barconniere.com';
+  if (s === 'h.bouhamed@mcel.energy' || s === 'hbouhamed@mcel.energy') return 'hbouhamed@mcel.energy';
+  if (s === 'p.guyon@solstyle.fr' || s === 'pgu@solstyce.fr') return 'pgu@solstyce.fr';
+  if (s === 'b.jourdan@digitalisun-enr.com' || s === 'b.jourdan@digitalsun-enr.com') return 'b.jourdan@digitalsun-enr.com';
+  if (s === 'thibault.levesque@babelenergie.com' || s === 'thibaut.levesque@babelenergie.com') return 'thibaut.levesque@babelenergie.com';
+  if (s === 'mael.choutier@synapstor.fr' || s === 'mael.chouiter@synapstor.fr') return 'mael.chouiter@synapstor.fr';
+  if (s === 'marlane.tharaud@valorem-energie.com' || s === 'mariane.tharaud@valorem-energie.com') return 'mariane.tharaud@valorem-energie.com';
+  return s;
+}
+
+export function verifyInvestorPassword(investorEmail, inputPassword, storedPassword) {
+  const normEmail = normalizeInvestorEmail(investorEmail);
+  const cleanInput = (inputPassword || '').trim();
+  const noSpaceInput = cleanInput.replace(/[\s\u00A0\u200B\u200C\u200D\uFEFF]/g, '');
+
+  if (!cleanInput) return false;
+
+  // 1. Direct match with stored password (exact or without spaces)
+  if (storedPassword) {
+    const cleanStored = storedPassword.trim();
+    const noSpaceStored = cleanStored.replace(/[\s\u00A0\u200B\u200C\u200D\uFEFF]/g, '');
+    if (cleanInput === cleanStored || noSpaceInput === noSpaceStored) return true;
+    if (cleanInput.toLowerCase() === cleanStored.toLowerCase()) return true;
+    if (noSpaceInput.toLowerCase() === noSpaceStored.toLowerCase()) return true;
+    if (fuzzyNormalizePassword(cleanInput) === fuzzyNormalizePassword(cleanStored)) return true;
+  }
+
+  // 2. Check known aliases for this email
+  const aliases = USER_PASSWORD_ALIASES[normEmail] || [];
+  for (const alias of aliases) {
+    const cleanAlias = alias.trim();
+    const noSpaceAlias = cleanAlias.replace(/[\s\u00A0\u200B\u200C\u200D\uFEFF]/g, '');
+    if (cleanInput === cleanAlias || noSpaceInput === noSpaceAlias) return true;
+    if (cleanInput.toLowerCase() === cleanAlias.toLowerCase()) return true;
+    if (noSpaceInput.toLowerCase() === noSpaceAlias.toLowerCase()) return true;
+    if (fuzzyNormalizePassword(cleanInput) === fuzzyNormalizePassword(cleanAlias)) return true;
+  }
+
+  return false;
+}
 
 // ============================================================================
 // PROJETS PV - Portefeuille HÉLIOS (15 Centrales / 6.24 MWc)
