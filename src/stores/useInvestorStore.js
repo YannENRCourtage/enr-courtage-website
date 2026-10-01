@@ -591,12 +591,19 @@ export const useInvestorStore = create(
             id: fileObj.id || ('DOC-' + Date.now()),
             name: fileObj.name,
             type: fileObj.type || 'PDF',
+            mimeType: fileObj.mimeType || 'application/pdf',
             size: fileObj.size || '1.0 Mo',
-            uploadedAt: new Date().toISOString(),
-            uploadedBy: 'Yann BARBERIS',
+            uploadedAt: fileObj.uploadedAt || new Date().toISOString(),
+            uploadedBy: fileObj.uploadedBy || 'Yann BARBERIS',
             notes: fileObj.notes || '',
             fileUrl: fileObj.fileUrl || null,
+            storagePath: fileObj.storagePath || null,
+            fullPath: fileObj.fullPath || null,
+            category: categoryName,
+            portfolioId: fileObj.portfolioId || portfolioId,
+            siteIds: fileObj.siteIds || [],
             fileData: fileObj.fileData || null,
+            ...fileObj,
           };
 
           return {
@@ -624,12 +631,19 @@ export const useInvestorStore = create(
               id: fileObj.id || ('DOC-' + Date.now() + '-' + idx),
               name: fileObj.name,
               type: fileObj.type || 'PDF',
+              mimeType: fileObj.mimeType || 'application/pdf',
               size: fileObj.size || '1.0 Mo',
-              uploadedAt: new Date().toISOString(),
-              uploadedBy: 'Yann BARBERIS',
+              uploadedAt: fileObj.uploadedAt || new Date().toISOString(),
+              uploadedBy: fileObj.uploadedBy || 'Yann BARBERIS',
               notes: fileObj.notes || '',
               fileUrl: fileObj.fileUrl || null,
+              storagePath: fileObj.storagePath || null,
+              fullPath: fileObj.fullPath || null,
+              category: cat,
+              portfolioId: fileObj.portfolioId || portfolioId,
+              siteIds: fileObj.siteIds || [],
               fileData: fileObj.fileData || null,
+              ...fileObj,
             };
 
             currentPortfolioDocs[cat] = [

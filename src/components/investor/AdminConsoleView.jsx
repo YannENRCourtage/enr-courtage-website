@@ -39,12 +39,14 @@ import {
   Sparkles,
   RotateCcw,
   X,
+  Loader2,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import { storeDocumentBinary, getDocumentBinary, downloadDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
+import { uploadDataRoomFileToFirebase } from '@/lib/firebase';
 import NdaDocumentModal from './NdaDocumentModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import TeaserSitesTable from './TeaserSitesTable';
@@ -136,6 +138,9 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [uploadTargetSite, setUploadTargetSite] = useState('ALL');
   const [uploadRawFile, setUploadRawFile] = useState(null);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
+  const [isUploadingToFirebase, setIsUploadingToFirebase] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatusText, setUploadStatusText] = useState('');
 
   // Moving doc modal state
   const [movingDoc, setMovingDoc] = useState(null);
@@ -175,7 +180,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         } else if (isAddUserModalOpen) {
           setIsAddUserModalOpen(false);
           setNewNdaFile(null);
-        } else if (isUploadModalOpen) {
+        } else if (isUploadModalOpen && !isUploadingToFirebase) {
           setIsUploadModalOpen(false);
           setUploadRawFile(null);
         } else if (selectedInvestorForNda) {
@@ -453,33 +458,89 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     const docId = 'DOC-' + Date.now();
     const finalName = uploadDocName.trim();
     const ext = uploadRawFile ? uploadRawFile.name.split('.').pop()?.toUpperCase() || 'PDF' : 'PDF';
-    const sizeMb = uploadRawFile ? (uploadRawFile.size / (1024 * 1024)).toFixed(1) : '1.2';
+    const mimeType = uploadRawFile?.type || (ext === 'PDF' ? 'application/pdf' : 'application/octet-stream');
+    const sizeFormatted = uploadRawFile
+      ? uploadRawFile.size >= 1024 * 1024
+        ? `${(uploadRawFile.size / (1024 * 1024)).toFixed(1)} Mo`
+        : `${(uploadRawFile.size / 1024).toFixed(0)} Ko`
+      : '1.2 Mo';
+
+    let downloadUrl = null;
+    let storagePath = null;
+    let fullPath = null;
 
     if (uploadRawFile) {
-      await storeDocumentBinary(docId, uploadRawFile, uploadRawFile.name);
-      await storeDocumentBinary(finalName, uploadRawFile, uploadRawFile.name);
+      setIsUploadingToFirebase(true);
+      setUploadProgress(0);
+      setUploadStatusText('Connexion à Firebase Storage...');
+
+      try {
+        const uploadResult = await uploadDataRoomFileToFirebase(uploadRawFile, {
+          category: uploadCategory,
+          portfolioId: selectedDataRoomPortfolio,
+          customFileName: finalName,
+          onProgress: (pct) => {
+            setUploadProgress(pct);
+            setUploadStatusText(`Téléversement vers Firebase Storage : ${pct}%`);
+          },
+        });
+
+        downloadUrl = uploadResult.downloadUrl;
+        storagePath = uploadResult.storagePath;
+        fullPath = uploadResult.fullPath;
+        setUploadStatusText('Document envoyé vers Firebase Storage avec succès !');
+      } catch (fbErr) {
+        console.warn('Erreur Firebase Storage (continuation en local):', fbErr);
+      }
+
+      // Enregistrement miroir local IndexedDB
+      try {
+        await storeDocumentBinary(docId, uploadRawFile, uploadRawFile.name);
+        await storeDocumentBinary(finalName, uploadRawFile, uploadRawFile.name);
+      } catch (idbErr) {
+        console.warn('Erreur stockage binaire local:', idbErr);
+      }
     }
 
     const assignedSites = uploadTargetSite === 'ALL' ? [] : [Number(uploadTargetSite)];
 
-    addDocumentToDataRoom(selectedDataRoomPortfolio, uploadCategory, {
+    const docPayload = {
       id: docId,
       name: finalName,
       type: ext,
-      size: `${Number(sizeMb) > 0 ? sizeMb : '0.1'} Mo`,
+      mimeType,
+      size: sizeFormatted,
+      fileSize: uploadRawFile?.size || 0,
+      fileUrl: downloadUrl,
+      storagePath,
+      fullPath,
+      category: uploadCategory,
+      portfolioId: selectedDataRoomPortfolio,
       siteIds: assignedSites,
       rawFile: uploadRawFile,
-    });
+      uploadedAt: new Date().toISOString(),
+    };
+
+    // Association au portefeuille : HÉLIOS, VOLTA ou Global (les deux portefeuilles)
+    if (selectedDataRoomPortfolio === 'both' || selectedDataRoomPortfolio === 'global') {
+      addDocumentToDataRoom('helios', uploadCategory, { ...docPayload, portfolioId: 'helios' });
+      addDocumentToDataRoom('volta', uploadCategory, { ...docPayload, portfolioId: 'volta' });
+    } else {
+      addDocumentToDataRoom(selectedDataRoomPortfolio, uploadCategory, docPayload);
+    }
 
     if (assignedSites.length > 0) {
       assignDocumentToSites(docId, assignedSites);
       assignDocumentToSites(finalName, assignedSites);
     }
 
+    setIsUploadingToFirebase(false);
+    setUploadProgress(0);
+    setUploadStatusText('');
     setIsUploadModalOpen(false);
     setUploadDocName('');
     setUploadRawFile(null);
-    setUploadSuccessMsg(`Document « ${finalName} » ajouté avec succès à la Data Room.`);
+    setUploadSuccessMsg(`Document « ${finalName} » (${sizeFormatted}) versé avec succès dans la Data Room.`);
     setTimeout(() => setUploadSuccessMsg(''), 4000);
   };
 
@@ -1776,7 +1837,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         <div 
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
           onClick={(e) => {
-            if (e.target === e.currentTarget) {
+            if (e.target === e.currentTarget && !isUploadingToFirebase) {
               setIsUploadModalOpen(false);
               setUploadRawFile(null);
             }
@@ -1790,11 +1851,13 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               </div>
               <button 
                 type="button"
+                disabled={isUploadingToFirebase}
                 onClick={() => {
+                  if (isUploadingToFirebase) return;
                   setIsUploadModalOpen(false);
                   setUploadRawFile(null);
                 }} 
-                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer disabled:opacity-40"
                 title="Fermer (Échap)"
                 aria-label="Fermer la fenêtre"
               >
@@ -1805,28 +1868,42 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
             <form onSubmit={handleUploadDoc} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Portefeuille de destination *</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50/50 cursor-pointer text-center">
                     <input
                       type="radio"
                       name="destPort"
+                      disabled={isUploadingToFirebase}
                       checked={selectedDataRoomPortfolio === 'helios'}
                       onChange={() => setSelectedDataRoomPortfolio('helios')}
                       className="sr-only"
                     />
-                    <span className="font-bold text-slate-900 block">Projet HÉLIOS</span>
-                    <span className="text-[10px] text-slate-400">Solaire PV 6.24 MWc</span>
+                    <span className="font-bold text-slate-900 block text-xs">Projet HÉLIOS</span>
+                    <span className="text-[10px] text-slate-400">PV 6.24 MWc</span>
                   </label>
                   <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-cyan-500 has-[:checked]:bg-cyan-50/50 cursor-pointer text-center">
                     <input
                       type="radio"
                       name="destPort"
+                      disabled={isUploadingToFirebase}
                       checked={selectedDataRoomPortfolio === 'volta'}
                       onChange={() => setSelectedDataRoomPortfolio('volta')}
                       className="sr-only"
                     />
-                    <span className="font-bold text-slate-900 block">Projet VOLTA</span>
-                    <span className="text-[10px] text-slate-400">Batteries 15,50 MW</span>
+                    <span className="font-bold text-slate-900 block text-xs">Projet VOLTA</span>
+                    <span className="text-[10px] text-slate-400">BESS 15,5 MW</span>
+                  </label>
+                  <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50 cursor-pointer text-center">
+                    <input
+                      type="radio"
+                      name="destPort"
+                      disabled={isUploadingToFirebase}
+                      checked={selectedDataRoomPortfolio === 'both' || selectedDataRoomPortfolio === 'global'}
+                      onChange={() => setSelectedDataRoomPortfolio('both')}
+                      className="sr-only"
+                    />
+                    <span className="font-bold text-slate-900 block text-xs">Global</span>
+                    <span className="text-[10px] text-slate-400">HÉLIOS & VOLTA</span>
                   </label>
                 </div>
               </div>
@@ -1834,9 +1911,10 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Catégorie du document *</label>
                 <select
+                  disabled={isUploadingToFirebase}
                   value={uploadCategory}
                   onChange={(e) => setUploadCategory(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800 disabled:opacity-60"
                 >
                   <option value="Juridique">Juridique (Baux notariés & statuts)</option>
                   <option value="Technique">Technique (Spécifications & études)</option>
@@ -1851,17 +1929,21 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 <input
                   type="text"
                   required
+                  disabled={isUploadingToFirebase}
                   value={uploadDocName}
                   onChange={(e) => setUploadDocName(e.target.value)}
                   placeholder="ex: Promesse de bail notariée — Lot BESS 12"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 font-semibold text-slate-800 disabled:opacity-60"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Fichier (PDF, XLSX, DOCX)</label>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Fichier confidentiel (PDF, XLSX, DOCX — Direct Cloud Storage)
+                </label>
                 <input
                   type="file"
+                  disabled={isUploadingToFirebase}
                   onChange={(e) => {
                     const f = e.target.files?.[0] || null;
                     setUploadRawFile(f);
@@ -1869,23 +1951,67 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       setUploadDocName(f.name.replace(/\.[^/.]+$/, ''));
                     }
                   }}
-                  className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+                  className="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer disabled:opacity-60"
                 />
+                {uploadRawFile && (
+                  <div className="mt-2 p-2 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-[11px]">
+                    <span className="font-semibold text-slate-700 truncate">{uploadRawFile.name}</span>
+                    <span className="text-slate-500 font-mono shrink-0 ml-2">
+                      {uploadRawFile.size >= 1024 * 1024
+                        ? `${(uploadRawFile.size / (1024 * 1024)).toFixed(1)} Mo`
+                        : `${(uploadRawFile.size / 1024).toFixed(0)} Ko`}
+                    </span>
+                  </div>
+                )}
               </div>
+
+              {/* Barre de progression d'upload en temps réel vers Firebase Storage */}
+              {isUploadingToFirebase && (
+                <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-blue-900 flex items-center gap-1.5">
+                      <Loader2 className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                      {uploadStatusText || 'Transfert sécurisé vers Firebase Storage...'}
+                    </span>
+                    <span className="font-mono font-bold text-blue-700">{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200/60 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-blue-600 italic">
+                    Flux direct client → enr-courtage.firebasestorage.app (sans restriction de taille Vercel)
+                  </p>
+                </div>
+              )}
 
               <div className="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  onClick={() => setIsUploadModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold"
+                  disabled={isUploadingToFirebase}
+                  onClick={() => {
+                    setIsUploadModalOpen(false);
+                    setUploadRawFile(null);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold disabled:opacity-50 cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20"
+                  disabled={isUploadingToFirebase}
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-500/20 disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
                 >
-                  Publier en Data Room
+                  {isUploadingToFirebase ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Téléversement ({uploadProgress}%)...</span>
+                    </>
+                  ) : (
+                    <span>Publier en Data Room</span>
+                  )}
                 </button>
               </div>
             </form>

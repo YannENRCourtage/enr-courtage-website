@@ -3,6 +3,7 @@ import { getDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import { applyWatermarkToPdf } from '@/services/pdfWatermarkService';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import { getFileDownloadUrl } from '@/lib/firebase';
 
 /**
  * Résout le véritable document PDF physique complet (24-25 pages).
@@ -10,10 +11,16 @@ import { useInvestorStore } from '@/stores/useInvestorStore';
 export function resolveRealDocument(file, portfolio) {
   if (!file) return null;
 
-  // 1. URL directe explicite
+  // 1. URL directe explicite (ex: URL publique ou signée Firebase Storage)
   if (file.fileUrl) {
     const fileName = file.fileName || (file.name.toLowerCase().endsWith('.pdf') ? file.name : `${file.name}.pdf`);
-    return { url: file.fileUrl, fileName };
+    return { url: file.fileUrl, fileName, storagePath: file.storagePath };
+  }
+
+  // 1b. Chemin Firebase Storage sans fileUrl précalculée
+  if (file.storagePath) {
+    const fileName = file.fileName || file.name || 'document.pdf';
+    return { url: null, storagePath: file.storagePath, fileName };
   }
 
   // 2. Recherche intelligente dans les documents originaux du serveur
@@ -80,12 +87,28 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
   const realDoc = resolveRealDocument(file, portfolio);
   const targetFileName = formatPdfFileName(realDoc?.fileName || file.name);
 
+  // Résolution asynchrone si chemin Firebase Storage
+  let resolvedUrl = realDoc?.url || null;
+  if (!resolvedUrl && (realDoc?.storagePath || file?.storagePath)) {
+    try {
+      resolvedUrl = await getFileDownloadUrl(realDoc?.storagePath || file?.storagePath);
+    } catch (fbErr) {
+      console.warn('Erreur résolution URL Firebase Storage:', fbErr);
+    }
+  }
+
+  // Si consultation demandée et URL distante disponible (Firebase Storage) : ouverture directe dans un nouvel onglet
+  if (action === 'view' && resolvedUrl && (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://'))) {
+    window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+    return;
+  }
+
   // Helper pour récupérer les octets du fichier (URL, IndexedDB ou Fallback)
   let rawBuffer = null;
 
-  if (realDoc && realDoc.url) {
+  if (resolvedUrl) {
     try {
-      const resp = await fetch(realDoc.url);
+      const resp = await fetch(resolvedUrl);
       if (resp.ok) {
         rawBuffer = await resp.arrayBuffer();
       }
@@ -103,6 +126,18 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
     } catch (e) {
       console.warn('Erreur lecture IndexedDB:', e);
     }
+  }
+
+  if (!rawBuffer && resolvedUrl && (resolvedUrl.startsWith('http://') || resolvedUrl.startsWith('https://'))) {
+    const a = document.createElement('a');
+    a.href = resolvedUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.download = targetFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    return;
   }
 
   if (!rawBuffer) {

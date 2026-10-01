@@ -18,6 +18,7 @@ import {
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { getDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
+import { getFileDownloadUrl } from '@/lib/firebase';
 
 const categoryIconMap = {
   Scale,
@@ -39,10 +40,16 @@ const categoryIconMap = {
 function resolveRealDocument(file, portfolio) {
   if (!file) return null;
 
-  // 1. URL directe explicite
+  // 1. URL directe explicite (ex: Firebase Storage)
   if (file.fileUrl) {
     const fileName = file.fileName || (file.name.toLowerCase().endsWith('.pdf') ? file.name : `${file.name}.pdf`);
-    return { url: file.fileUrl, fileName };
+    return { url: file.fileUrl, fileName, storagePath: file.storagePath };
+  }
+
+  // 1b. Chemin Firebase Storage sans URL résolue
+  if (file.storagePath) {
+    const fileName = file.fileName || file.name || 'document.pdf';
+    return { url: null, storagePath: file.storagePath, fileName };
   }
 
   // 2. Recherche intelligente dans les documents originaux du serveur
@@ -197,10 +204,20 @@ export default function DataRoomSection({
   const handleView = async (file) => {
     trackAction(file, 'view');
 
-    // 1. Fichier réel résolu sur le serveur
+    // 1. Fichier réel résolu sur le serveur ou distant (Firebase Storage)
     const realDoc = resolveRealDocument(file, portfolio);
-    if (realDoc && realDoc.url) {
-      window.open(realDoc.url, '_blank', 'noopener,noreferrer');
+    let targetUrl = realDoc?.url || null;
+
+    if (!targetUrl && (realDoc?.storagePath || file?.storagePath)) {
+      try {
+        targetUrl = await getFileDownloadUrl(realDoc?.storagePath || file?.storagePath);
+      } catch (err) {
+        console.warn('Erreur getFileDownloadUrl:', err);
+      }
+    }
+
+    if (targetUrl) {
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
       return;
     }
 
@@ -241,12 +258,45 @@ export default function DataRoomSection({
   const handleDownload = async (file) => {
     trackAction(file, 'download');
 
-    // 1. Fichier réel résolu sur le serveur
+    // 1. Fichier réel résolu sur le serveur ou distant (Firebase Storage)
     const realDoc = resolveRealDocument(file, portfolio);
-    if (realDoc && realDoc.url) {
+    let targetUrl = realDoc?.url || null;
+
+    if (!targetUrl && (realDoc?.storagePath || file?.storagePath)) {
+      try {
+        targetUrl = await getFileDownloadUrl(realDoc?.storagePath || file?.storagePath);
+      } catch (err) {
+        console.warn('Erreur getFileDownloadUrl:', err);
+      }
+    }
+
+    if (targetUrl) {
+      if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+        try {
+          const resp = await fetch(targetUrl);
+          if (resp.ok) {
+            const blob = await resp.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = realDoc?.fileName || formatPdfFileName(file.name);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+            return;
+          }
+        } catch (fetchErr) {
+          console.warn('Téléchargement direct via URL distante:', fetchErr);
+        }
+
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
       const a = document.createElement('a');
-      a.href = realDoc.url;
-      a.download = realDoc.fileName || formatPdfFileName(file.name);
+      a.href = targetUrl;
+      a.download = realDoc?.fileName || formatPdfFileName(file.name);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
