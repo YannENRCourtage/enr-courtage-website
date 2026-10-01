@@ -16,7 +16,7 @@ export const INVESTORS = [
   {
     id: 'ADMIN-001',
     email: 'y.barberis@enr-courtage.fr',
-    password: 'Invest@enr01',
+    password: 'Invest@enr!01',
     name: 'Yann BARBERIS',
     company: 'ENR COURTAGE',
     role: 'Président',
@@ -31,7 +31,7 @@ export const INVESTORS = [
   {
     id: 'INV-ENEE',
     email: 'contact@enr-courtage.fr',
-    password: 'enr2026!ovxF',
+    password: 'Enr2026!ovxF',
     name: 'Jean DUS',
     company: 'ENEE',
     role: 'Investisseur',
@@ -47,7 +47,7 @@ export const INVESTORS = [
   {
     id: 'INV-YANN-MSN',
     email: 'yannbarberis@msn.com',
-    password: 'enr2026!deze',
+    password: 'Enr2026!dP2#',
     name: 'Yann BARBERIS (MOA)',
     company: 'MOA ENR',
     role: 'Investisseur',
@@ -62,7 +62,7 @@ export const INVESTORS = [
   {
     id: 'INV-GREENINVEST',
     email: 'laurent.guyon@barconniere.com',
-    password: '@gvW4Lq4bcJqYFPb',
+    password: 'fdpmZnPcxpH3X18R',
     name: 'Laurent GUYON',
     company: 'GREEN INVEST',
     role: 'Investisseur',
@@ -77,7 +77,7 @@ export const INVESTORS = [
   {
     id: 'INV-BABEL',
     email: 'thibaut.levesque@babelenergie.com',
-    password: 'dVKDNX6FX1sxf1p',
+    password: 'dYPb2vkGr-JGpx702',
     name: 'Thibaut LEVESQUE',
     company: 'BABEL ENERGIE',
     role: 'Investisseur',
@@ -92,7 +92,7 @@ export const INVESTORS = [
   {
     id: 'INV-DEVENCO',
     email: 'j.hugues@devenco.fr',
-    password: 'MX1H1HuNctoL14h',
+    password: '7Uvn1kWEJ01t3rX',
     name: 'Julien HUGUES',
     company: 'DEVENCO',
     role: 'Investisseur',
@@ -332,7 +332,7 @@ export const INVESTORS = [
   {
     id: 'INV-SUNVOLT',
     email: 'michel.dekerever@sunvolt.fr',
-    password: '4upbopFoU7Rduy0E',
+    password: '4apbopPcU7Rdzy0E',
     name: 'Michel DE KEREVER',
     company: 'SUNVOLT',
     role: 'Investisseur',
@@ -404,93 +404,65 @@ export const USER_PASSWORD_ALIASES = {
     'Enr2026!dP2#',
   ],
   'laurent.guyon@barconniere.com': [
+    'fdpmZnPcxpH3X18R',
+    'fdpmZnPcXpHSX18R',
+    'fdpmZnPcxpHSX18R',
+    'fdpmZnPcXpH3X18R',
+    'fdpmznpcxph3x18r',
+    'fdpmznpcxphsx18r',
     '@gvW4Lq4bcJqYFPb',
     '@gvW4 Lq4bc JqYF Pb',
     '@gvW4Lq4bcJqYIPb',
-    '@gvW4 Lq4bc JqYI Pb',
-    '@gvW4Lq4bcJqY1Pb',
-    '@gvW4 Lq4bc JqY1 Pb',
-    '@gvW4Lq4bcJqYlPb',
-    '@gvW4 Lq4bc JqYl Pb',
-    '@gvw4lq4bcjqyfpb',
-    '@gvw4 lq4bc jqyf pb',
-    '@gvw4lq4bcjqyipb',
-    '@gvw4 lq4bc jqyi pb',
-    '@gvw4tq4bcJqYFPb',
-    '0gvw4tq4bcJqYFPb',
-    'gvW4Lq4bcJqYFPb',
-    'gvW4 Lq4bc JqYF Pb',
-    'gvW4Lq4bcJqYIPb',
-    'gvW4 Lq4bc JqYI Pb',
   ],
   'laurentguyon@barconniere.com': [
+    'fdpmZnPcxpH3X18R',
+    'fdpmZnPcXpHSX18R',
+    'fdpmZnPcxpHSX18R',
+    'fdpmZnPcXpH3X18R',
     '@gvW4Lq4bcJqYFPb',
-    '@gvW4 Lq4bc JqYF Pb',
-    '@gvW4Lq4bcJqYIPb',
-    '@gvW4 Lq4bc JqYI Pb',
-    '@gvw4lq4bcjqyfpb',
-    '@gvw4lq4bcjqyipb',
   ],
   'thibaut.levesque@babelenergie.com': [
+    'dYPb2vkGr-JGpx702',
+    'dYPb2vkGr-JGgx702',
+    'dYPb2vkGr-J2gx702',
+    'dYP62vkGr-J2gx702',
+    'dYP62vkGr-5Jgx702',
+    'dYPb2vkGr-5Jgx702',
+    'dYPb2vkGr-3Gpx702',
+    'dYPb2vkGr-3Ggx702',
+    'dypb2vkgr-jgpx702',
+    'dypb2vkgr-j2gx702',
+    'dyp62vkgr-j2gx702',
     'dVKDNX6FX1sxf1p',
-    'dVKDNX6F X1sxf1p',
-    'dVKDNX6F X1sxf1P',
-    'dVKDNX6IX1sxf1p',
-    'dVKDNX6I X1sxf1p',
-    'dVKDNX6I X1sxf1P',
-    'dVKDNX6lX1sxf1p',
-    'dVKDNX6l X1sxf1p',
-    'dVKDNX61X1sxf1p',
-    'dVKDNX61 X1sxf1p',
-    'dVKDNX6iX1sxf1p',
-    'dVKDNX6i X1sxf1p',
-    'dvkdnx6fx1sxf1p',
-    'dvkdnx6f x1sxf1p',
-    'dvkdnx6ix1sxf1p',
-    'dvkdnx6i x1sxf1p',
-    'dvkdnx6lx1sxf1p',
-    'dvkdnx6l x1sxf1p',
-    'dvkdnx61x1sxf1p',
-    'dvkdnx61 x1sxf1p',
-    'dYKDN369FXisxf1p',
-    'dVKDN369FX1sxf1p',
   ],
   'thibautlevesque@babelenergie.com': [
+    'dYPb2vkGr-JGpx702',
+    'dYPb2vkGr-JGgx702',
+    'dYPb2vkGr-J2gx702',
+    'dYP62vkGr-J2gx702',
+    'dYP62vkGr-5Jgx702',
     'dVKDNX6FX1sxf1p',
-    'dVKDNX6F X1sxf1p',
-    'dVKDNX6IX1sxf1p',
-    'dVKDNX6I X1sxf1p',
-    'dVKDNX6lX1sxf1p',
-    'dVKDNX6l X1sxf1p',
-    'dvkdnx6fx1sxf1p',
-    'dvkdnx6ix1sxf1p',
   ],
   'j.hugues@devenco.fr': [
+    '7Uvn1kWEJ01t3rX',
+    '7Uvn1kW3v0JlTrX',
+    '7Uvm1kWEJ01t3rX',
+    '7Uvm1kW3v0JlTrX',
+    '7Uvn1kWEJ01t3rx',
+    '7uvn1kwej01t3rx',
+    '7uvn1kw3v0jltrx',
     'MX1H1HuNctoL14h',
-    'MX1H1HuNctoL 14h',
-    'MX1H1HuNctoL 14H',
-    'MX1H1HuNctol14h',
-    'MX1H1HuNctol 14h',
     'MX1HlE8uNctoL14h',
-    'MX1HlE8uNctoL 14h',
-    'MX1H1EuNctoL14h',
-    'mx1h1hunctol14h',
-    'mx1h1hunctol 14h',
-    'mx1hle8unctol14h',
-    'MX1H1HuNctoL14H',
   ],
   'jhugues@devenco.fr': [
+    '7Uvn1kWEJ01t3rX',
+    '7Uvn1kW3v0JlTrX',
+    '7Uvm1kWEJ01t3rX',
+    '7Uvm1kW3v0JlTrX',
+    '7Uvn1kWEJ01t3rx',
+    '7uvn1kwej01t3rx',
+    '7uvn1kw3v0jltrx',
     'MX1H1HuNctoL14h',
-    'MX1H1HuNctoL 14h',
-    'MX1H1HuNctoL 14H',
-    'MX1H1HuNctol14h',
-    'MX1H1HuNctol 14h',
-    'MX1HlE8uNctoL14h',
-    'MX1HlE8uNctoL 14h',
-    'MX1H1EuNctoL14h',
-    'mx1h1hunctol14h',
-    'mx1h1hunctol 14h',
-    'mx1hle8unctol14h',
   ],
   'b.jourdan@digitalsun-enr.com': [
     'JxyInxfIzgN0zBCG',
@@ -609,27 +581,30 @@ export function normalizeInvestorEmail(email) {
   if (!email) return '';
   const s = String(email).trim().toLowerCase();
 
-  if (s === 'l.kusmann@aliaxis.com' || s.includes('rusmann') || s.includes('kusmann')) return 'lrusmann@altarea.com';
+  if (s.includes('rusmann') || s.includes('kusmann') || s === 'l.kusmann@aliaxis.com') return 'lrusmann@altarea.com';
   if (s.includes('moucer') || s.includes('mouser')) return 'farid.moucer@enoe-energie.fr';
-  if (s.includes('inikoli') || s.includes('lnicoli') || s.includes('nicoli')) return 'lnicoli02@gmail.com';
-  if (s.includes('dekerver') || s.includes('dekerever') || s.includes('kerever')) return 'michel.dekerever@sunvolt.fr';
+  if (s.includes('nicoli')) return 'lnicoli02@gmail.com';
+  if (s.includes('dekerever') || s.includes('dekerver') || s.includes('kerever')) return 'michel.dekerever@sunvolt.fr';
   if (s.includes('fenetre')) return 'dfenetre@girasole-energies.com';
   if (s.includes('letiran') || s.includes('letran')) return 'nicolas.letiran@nass-et-wind.com';
-  if (s.includes('guyon@barconniere') || s.includes('guyon@baircom')) return 'laurent.guyon@barconniere.com';
+  if (s.includes('guyon@barconniere') || s.includes('guyon@baircom') || s.includes('barconniere')) return 'laurent.guyon@barconniere.com';
   if (s.includes('bouhamed')) return 'hbouhamed@mcel.energy';
-  if (s.includes('hugues')) return 'j.hugues@devenco.fr';
-  if (s.includes('jourdan')) return 'b.jourdan@digitalsun-enr.com';
-  if (s.includes('levesque')) return 'thibaut.levesque@babelenergie.com';
-  if (s.includes('chouiter') || s.includes('choutier')) return 'mchouiter@synapstor.fr';
-  if (s.includes('tharaud')) return 'mariane.tharaud@valorem-energie.com';
-  if (s.includes('albuisson')) return 'lalbuisson@melvan.eu';
-  if (s.includes('bensa')) return 'bruno.bensa@ingevi.com';
-  if (s.includes('cartaxo')) return 'miguel.cartaxo@prosolia.com';
-  if (s.includes('stratelyo') || (s.includes('noel') && s.includes('stratelyo'))) return 'maxime.noel@stratelyo.fr';
+  if (s.includes('hugues') || s.includes('devenco')) return 'j.hugues@devenco.fr';
+  if (s.includes('jourdan') || s.includes('digitalsun')) return 'b.jourdan@digitalsun-enr.com';
+  if (s.includes('levesque') || s.includes('babelenergie')) return 'thibaut.levesque@babelenergie.com';
+  if (s.includes('chouiter') || s.includes('choutier') || s.includes('synapstor')) return 'mael.chouiter@synapstor.fr';
+  if (s.includes('tharaud') || s.includes('valorem')) return 'mariane.tharaud@valorem-energie.com';
+  if (s.includes('albuisson') || s.includes('melvan')) return 'l.albuisson@melvan.eu';
+  if (s.includes('bensa') || s.includes('ingelyo')) return 'bruno.bensa@ingelyo.com';
+  if (s.includes('cartaxo') || s.includes('prosolia')) return 'miguel.cartaxo@prosolia.com';
+  if (s.includes('noel') || s.includes('stratelyo')) return 'maxime.noel@stratelyo.fr';
   if (s.includes('solstyce') || s.includes('pgu@')) return 'pgu@solstyce.fr';
   if (s.includes('burguion') || s.includes('sunrock')) return 'f.burguion@sunrock.com';
   if (s.includes('hallope') || s.includes('caap')) return 'arnaud.hallope@caap-energies.fr';
   if (s.includes('trolonge') || s.includes('albioma')) return 'quentin.trolonge@albioma.com';
+  if (s.includes('barberis') && s.includes('msn')) return 'yannbarberis@msn.com';
+  if (s.includes('barberis') && s.includes('enr-courtage')) return 'y.barberis@enr-courtage.fr';
+  if (s.includes('contact@enr-courtage') || s.includes('dus') || s.includes('enee')) return 'contact@enr-courtage.fr';
 
   return s;
 }

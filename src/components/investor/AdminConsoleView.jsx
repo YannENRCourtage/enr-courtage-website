@@ -91,13 +91,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [userSearch, setUserSearch] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'pending' | 'rejected'
 
-  useEffect(() => {
-    if (initialTab) {
-      setActiveSection(initialTab);
-    }
-  }, [initialTab]);
-
-  // Modals
+  // Modals & User State
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
@@ -113,6 +107,60 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [uploadNdaSignedDate, setUploadNdaSignedDate] = useState(new Date().toISOString().slice(0, 10));
   const [isUploadingNda, setIsUploadingNda] = useState(false);
   const [editUserNdaFile, setEditUserNdaFile] = useState(null);
+
+  // New user form state
+  const [newUserData, setNewUserData] = useState({
+    name: '',
+    company: '',
+    email: '',
+    password: '',
+    role: 'Investisseur',
+    phone: '',
+    isAdmin: false,
+    status: 'active',
+  });
+  const [newNdaFile, setNewNdaFile] = useState(null);
+
+  // Offers Negotiation State
+  const [counteringOfferId, setCounteringOfferId] = useState(null);
+  const [counterAmount, setCounterAmount] = useState('');
+  const [counterComments, setCounterComments] = useState('');
+  const [counterMilestones, setCounterMilestones] = useState([]);
+  const [offerPortfolioFilter, setOfferPortfolioFilter] = useState('all');
+
+  // Data Room State
+  const [selectedDataRoomPortfolio, setSelectedDataRoomPortfolio] = useState('helios');
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [uploadDocName, setUploadDocName] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('Juridique');
+  const [uploadTargetSite, setUploadTargetSite] = useState('ALL');
+  const [uploadRawFile, setUploadRawFile] = useState(null);
+  const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
+
+  // Moving doc modal state
+  const [movingDoc, setMovingDoc] = useState(null);
+  const [targetMovePortfolio, setTargetMovePortfolio] = useState('volta');
+  const [targetMoveCategory, setTargetMoveCategory] = useState('Juridique');
+
+  // Assign doc modal state
+  const [assigningDoc, setAssigningDoc] = useState(null);
+  const [assigningSiteIds, setAssigningSiteIds] = useState([]);
+
+  // Central Messaging State
+  const [selectedChatEmail, setSelectedChatEmail] = useState(initialChatEmail || '');
+  const [adminChatText, setAdminChatText] = useState('');
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveSection(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialChatEmail) {
+      setSelectedChatEmail(initialChatEmail);
+    }
+  }, [initialChatEmail]);
 
   // Fermer les modales avec la touche Échap (Escape)
   useEffect(() => {
@@ -225,54 +273,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       alert(res?.error || "Erreur lors de la mise à jour de l'utilisateur.");
     }
   };
-
-  // New user form state
-  const [newUserData, setNewUserData] = useState({
-    name: '',
-    company: '',
-    email: '',
-    password: '',
-    role: 'Investisseur',
-    phone: '',
-    isAdmin: false,
-    status: 'active',
-  });
-  const [newNdaFile, setNewNdaFile] = useState(null);
-
-  // Offers Negotiation State
-  const [counteringOfferId, setCounteringOfferId] = useState(null);
-  const [counterAmount, setCounterAmount] = useState('');
-  const [counterComments, setCounterComments] = useState('');
-  const [counterMilestones, setCounterMilestones] = useState([]);
-  const [offerPortfolioFilter, setOfferPortfolioFilter] = useState('all');
-
-  // Data Room State
-  const [selectedDataRoomPortfolio, setSelectedDataRoomPortfolio] = useState('helios');
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [uploadDocName, setUploadDocName] = useState('');
-  const [uploadCategory, setUploadCategory] = useState('Juridique');
-  const [uploadTargetSite, setUploadTargetSite] = useState('ALL');
-  const [uploadRawFile, setUploadRawFile] = useState(null);
-  const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
-
-  // Moving doc modal state
-  const [movingDoc, setMovingDoc] = useState(null);
-  const [targetMovePortfolio, setTargetMovePortfolio] = useState('volta');
-  const [targetMoveCategory, setTargetMoveCategory] = useState('Juridique');
-
-  // Assign doc modal state
-  const [assigningDoc, setAssigningDoc] = useState(null);
-  const [assigningSiteIds, setAssigningSiteIds] = useState([]);
-
-  // Central Messaging State
-  const [selectedChatEmail, setSelectedChatEmail] = useState(initialChatEmail || '');
-  const [adminChatText, setAdminChatText] = useState('');
-
-  useEffect(() => {
-    if (initialChatEmail) {
-      setSelectedChatEmail(initialChatEmail);
-    }
-  }, [initialChatEmail]);
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const currentPortfolioObj = portfolios.find((p) => p.id === selectedDataRoomPortfolio);

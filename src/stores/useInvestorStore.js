@@ -23,6 +23,7 @@ if (typeof window !== 'undefined' && window.localStorage) {
     window.localStorage.removeItem('enr-investor-storage-v4');
     window.localStorage.removeItem('enr-investor-storage-v5');
     window.localStorage.removeItem('enr-investor-storage-v6');
+    window.localStorage.removeItem('enr-investor-storage-v7');
   } catch (e) {
     // Ignore storage access errors in private mode
   }
@@ -839,8 +840,9 @@ export const useInvestorStore = create(
 
         // Check Admin
         if (isRealAdmin && (
-          verifyInvestorPassword('y.barberis@enr-courtage.fr', cleanPass, 'Invest@enr01') ||
-          cleanPass === 'Invest@enr01' || cleanPass === 'invest@enr01' || cleanPass === 'Invest@enr!01' || cleanPass === 'invest@enr!01' ||
+          verifyInvestorPassword('y.barberis@enr-courtage.fr', cleanPass, 'Invest@enr!01') ||
+          cleanPass === 'Invest@enr!01' || cleanPass === 'invest@enr!01' ||
+          cleanPass === 'Invest@enr01' || cleanPass === 'invest@enr01' ||
           cleanPass === 'Invest@enr!1' || cleanPass === 'invest@enr!1' ||
           cleanPass === 'Enr2026!admin' || cleanPass === 'admin2026' || cleanPass === 'HELIOS2026'
         )) {
@@ -877,7 +879,9 @@ export const useInvestorStore = create(
         const defaultMatch = INVESTORS.find(
           (inv) => inv.email && (
             normalizeInvestorEmail(inv.email) === normCleanEmail ||
+            normalizeInvestorEmail(inv.email) === cleanEmail ||
             inv.email.trim().toLowerCase() === cleanEmail ||
+            inv.email.trim().toLowerCase() === normCleanEmail ||
             normalizeInvestorEmail(inv.email) === normalizeInvestorEmail(cleanEmail)
           )
         );
@@ -887,7 +891,8 @@ export const useInvestorStore = create(
         // Check against default authoritative investor
         if (defaultMatch && (
           verifyInvestorPassword(defaultMatch.email, cleanPass, defaultMatch.password) ||
-          verifyInvestorPassword(cleanEmail, cleanPass, defaultMatch.password)
+          verifyInvestorPassword(cleanEmail, cleanPass, defaultMatch.password) ||
+          verifyInvestorPassword(normCleanEmail, cleanPass, defaultMatch.password)
         )) {
           investor = defaultMatch;
         }
@@ -897,13 +902,16 @@ export const useInvestorStore = create(
           const storeMatch = (get().investors || []).find(
             (inv) => inv.email && (
               normalizeInvestorEmail(inv.email) === normCleanEmail ||
+              normalizeInvestorEmail(inv.email) === cleanEmail ||
               inv.email.trim().toLowerCase() === cleanEmail ||
+              inv.email.trim().toLowerCase() === normCleanEmail ||
               normalizeInvestorEmail(inv.email) === normalizeInvestorEmail(cleanEmail)
             )
           );
           if (storeMatch && (
             verifyInvestorPassword(storeMatch.email, cleanPass, storeMatch.password) ||
-            verifyInvestorPassword(cleanEmail, cleanPass, storeMatch.password)
+            verifyInvestorPassword(cleanEmail, cleanPass, storeMatch.password) ||
+            verifyInvestorPassword(normCleanEmail, cleanPass, storeMatch.password)
           )) {
             investor = storeMatch;
           }
@@ -1686,7 +1694,7 @@ y.barberis@enr-courtage.fr
       },
     }),
     {
-      name: 'enr-investor-storage-v7',
+      name: 'enr-investor-storage-v8',
       storage: safeStorage,
       partialize: (state) => {
         // Strip bulky binary fields from persistent localStorage (raw files are in IndexedDB)
@@ -1765,7 +1773,10 @@ y.barberis@enr-courtage.fr
           // Synchronize default accounts (y.barberis, contact@enr-courtage.fr, yannbarberis@msn.com, and lines 4 to 24)
           INVESTORS.forEach((defaultInv) => {
             const idx = state.investors.findIndex(
-              (inv) => inv.email && inv.email.trim().toLowerCase() === defaultInv.email.toLowerCase()
+              (inv) => inv.email && (
+                normalizeInvestorEmail(inv.email) === normalizeInvestorEmail(defaultInv.email) ||
+                inv.email.trim().toLowerCase() === defaultInv.email.toLowerCase()
+              )
             );
             const isDefAdmin = defaultInv.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
             if (idx === -1) {
