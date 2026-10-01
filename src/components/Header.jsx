@@ -102,13 +102,13 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
           <div className="flex justify-between items-center h-20">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <button onClick={() => handleTabClick('home')} aria-label="Aller à l'accueil">
+              <button onClick={() => handleTabClick('home')} aria-label="Aller à l'accueil" className="flex items-center">
                 <img
-                  src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/7bd0f511a5866b092d723a1035903e1a.png"
+                  src="/logo-enr-courtage.png"
                   alt="ENR COURTAGE"
                   width="180" 
                   height="48"
-                  className="h-12 w-auto"
+                  className="h-12 w-auto object-contain"
                 />
               </button>
             </div>

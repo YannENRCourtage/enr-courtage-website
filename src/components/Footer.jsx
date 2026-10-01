@@ -12,10 +12,10 @@ const Footer = ({ setActiveTab }) => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="md:col-span-2 lg:col-span-1">
             <img
-              src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/44f5c742023f9f03ac2d52340eb3ddfb.png"
+              src="/logo-enr-courtage.png"
               alt="Logo ENR COURTAGE"
               width="160" height="48"
-              className="h-12 w-auto mb-5"
+              className="h-12 w-auto mb-5 object-contain rounded-lg bg-white p-1.5 shadow-sm"
               loading="lazy" decoding="async"
             />
             <p className="text-gray-400 mb-5 text-sm leading-relaxed">Votre courtier de confiance pour tous vos projets d'énergies renouvelables.</p>
@@ -55,7 +55,7 @@ const Footer = ({ setActiveTab }) => {
               <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Adhérent ENERPLAN</span>
               <a href="https://www.enerplan.asso.fr/" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Visiter ENERPLAN">
                 <img
-                  src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/bf96a9a79f75957ad5e9282e568c3f14.jpg"
+                  src="/logo-enerplan.jpg"
                   alt="Logo ENERPLAN - Syndicat des professionnels de l'énergie solaire"
                   className="h-9 w-auto object-contain rounded-lg bg-white p-1"
                   loading="lazy" decoding="async"
@@ -69,7 +69,7 @@ const Footer = ({ setActiveTab }) => {
                 {/* Nelson logo & Accès CRM */}
                 <a href="https://nelsonpv.fr" target="_blank" rel="noopener noreferrer" className="inline-block hover:opacity-80 transition-all duration-300" aria-label="Accès CRM Nelson PV">
                   <img
-                    src="https://horizons-cdn.hostinger.com/7934566c-db1f-49b8-9261-1dc6e7b3a05b/bb9cff716bde1c901c58ea3f8b324b3a.png"
+                    src="/logo-nelson.png"
                     alt="Logo Nelson - Accès CRM"
                     className="h-10 w-auto object-contain rounded-lg bg-white p-1 shadow-sm"
                     loading="lazy" decoding="async"
