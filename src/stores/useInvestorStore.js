@@ -161,6 +161,9 @@ export const useInvestorStore = create(
       // List of all investors (starts with default admin and demo accounts, then persisted)
       investors: INVESTORS,
 
+      // Registre persistant des documents NDA signés déposés (audit et affichage Data Room)
+      uploadedSignedNdaFiles: [],
+
       // List of offers submitted
       offers: [
         {
@@ -1216,12 +1219,25 @@ y.barberis@enr-courtage.fr
       },
 
       // Admin action: Upload/attach signed NDA document for an investor
-      adminUploadSignedNda: (userId, { fileName, fileSize, documentId, fileBase64, signedAt }) => {
-        // Do not store heavy base64 strings in localStorage to avoid QuotaExceededError (file is in IndexedDB)
+      adminUploadSignedNda: (userId, { fileName, fileSize, documentId, fileBase64, signedAt, userEmail }) => {
         const safeBase64 = (typeof fileBase64 === 'string' && fileBase64.length < 20000) ? fileBase64 : '';
-        set((state) => ({
-          investors: state.investors.map((inv) => {
-            if (inv.id !== userId) return inv;
+        const targetUserId = String(userId || '').trim().toLowerCase();
+        const targetEmail = (userEmail || '').trim().toLowerCase();
+        const targetNormEmail = targetEmail ? normalizeInvestorEmail(targetEmail) : '';
+
+        set((state) => {
+          let targetInvFound = null;
+          const updatedInvestors = (state.investors || []).map((inv) => {
+            const invId = String(inv.id || '').trim().toLowerCase();
+            const invEmail = (inv.email || '').trim().toLowerCase();
+            const isMatch = (
+              invId === targetUserId ||
+              (targetEmail && invEmail === targetEmail) ||
+              (targetNormEmail && normalizeInvestorEmail(invEmail) === targetNormEmail) ||
+              (targetUserId && invEmail === targetUserId)
+            );
+            if (!isMatch) return inv;
+            targetInvFound = inv;
             const updated = {
               ...inv,
               hasUploadedSignedNda: true,
@@ -1234,11 +1250,65 @@ y.barberis@enr-courtage.fr
               status: 'active',
               updatedAt: new Date().toISOString(),
             };
-            if (state.currentInvestor?.id === userId) {
+            if (state.currentInvestor?.id === inv.id || state.currentInvestor?.email?.toLowerCase() === invEmail) {
               state.currentInvestor = updated;
             }
             return updated;
+          });
+
+          // Enregistrer dans le registre persistant des fichiers déposés
+          const docRecord = {
+            id: documentId || ('nda_' + Date.now()),
+            userId: targetInvFound?.id || userId,
+            userEmail: targetEmail || targetInvFound?.email || '',
+            userName: targetInvFound?.name || '',
+            userCompany: targetInvFound?.company || '',
+            fileName: fileName || 'NDA_Signe.pdf',
+            fileSize: fileSize || 0,
+            signedAt: signedAt || new Date().toISOString(),
+            uploadedAt: new Date().toISOString(),
+          };
+          const existingFiles = state.uploadedSignedNdaFiles || [];
+          const updatedFiles = [
+            ...existingFiles.filter(
+              (f) => String(f.userId).toLowerCase() !== targetUserId && (targetEmail ? String(f.userEmail).toLowerCase() !== targetEmail : true)
+            ),
+            docRecord,
+          ];
+
+          return {
+            investors: updatedInvestors,
+            uploadedSignedNdaFiles: updatedFiles,
+          };
+        });
+        return { success: true };
+      },
+
+      // Admin action: Retirer un document NDA signé
+      adminDeleteSignedNda: (userIdOrEmail) => {
+        const target = String(userIdOrEmail || '').trim().toLowerCase();
+        const targetNorm = normalizeInvestorEmail(target);
+        set((state) => ({
+          investors: (state.investors || []).map((inv) => {
+            const invId = String(inv.id || '').trim().toLowerCase();
+            const invEmail = (inv.email || '').trim().toLowerCase();
+            if (invId === target || invEmail === target || (targetNorm && normalizeInvestorEmail(invEmail) === targetNorm)) {
+              return {
+                ...inv,
+                ndaFileName: '',
+                ndaFileSize: 0,
+                ndaDocumentId: '',
+                ndaFileBase64: '',
+                hasUploadedSignedNda: false,
+                ndaSignedByAdmin: false,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return inv;
           }),
+          uploadedSignedNdaFiles: (state.uploadedSignedNdaFiles || []).filter(
+            (f) => String(f.userId).toLowerCase() !== target && String(f.userEmail).toLowerCase() !== target
+          ),
         }));
         return { success: true };
       },
@@ -1788,6 +1858,7 @@ y.barberis@enr-courtage.fr
               state.investors[idx] = {
                 ...defaultInv,
                 ...state.investors[idx],
+                id: defaultInv.id,
                 name: defaultInv.name,
                 company: defaultInv.company,
                 role: defaultInv.role,

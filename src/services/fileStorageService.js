@@ -59,6 +59,9 @@ function openDB() {
   });
 }
 
+// Cache mémoire en session pour accès instantané sans attendre les I/O IndexedDB
+const memoryCache = typeof window !== 'undefined' ? (window.__ENR_BINARY_CACHE = window.__ENR_BINARY_CACHE || new Map()) : new Map();
+
 /**
  * Enregistrer un fichier binaire (File ou Blob) avec son identifiant
  */
@@ -66,27 +69,46 @@ export async function storeDocumentBinary(id, fileOrBlob, fileName = '', mimeTyp
   if (!id || !fileOrBlob) return false;
 
   try {
+    // 1. Détacher le Blob du pointeur input pour éviter la perte de référence à la fermeture du modal
+    let safeBlob = fileOrBlob;
+    if (fileOrBlob && typeof fileOrBlob.arrayBuffer === 'function') {
+      try {
+        const buffer = await fileOrBlob.arrayBuffer();
+        safeBlob = new Blob([buffer], { type: mimeType || fileOrBlob.type || 'application/pdf' });
+      } catch (errBuffer) {
+        safeBlob = fileOrBlob;
+      }
+    }
+
+    const resolvedName = fileName || fileOrBlob.name || 'document.pdf';
+    const resolvedMime = mimeType || fileOrBlob.type || 'application/pdf';
+    const resolvedSize = safeBlob.size || fileOrBlob.size || 0;
+
+    const record = {
+      id: String(id),
+      blob: safeBlob,
+      fileName: resolvedName,
+      mimeType: resolvedMime,
+      size: resolvedSize,
+      savedAt: new Date().toISOString(),
+    };
+
+    // 2. Mémorisation instantanée en cache mémoire
+    memoryCache.set(String(id), record);
+    if (resolvedName) memoryCache.set(String(resolvedName), record);
+
+    // 3. Persistance dans IndexedDB
     const db = await openDB();
-    if (!db) return false;
+    if (!db) return true; // Accessible en mémoire même si IndexedDB est restreint
 
     return new Promise((resolve) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
-
-      const record = {
-        id: String(id),
-        blob: fileOrBlob,
-        fileName: fileName || fileOrBlob.name || 'document.pdf',
-        mimeType: mimeType || fileOrBlob.type || 'application/pdf',
-        size: fileOrBlob.size || 0,
-        savedAt: new Date().toISOString(),
-      };
-
       const req = store.put(record);
       req.onsuccess = () => resolve(true);
       req.onerror = () => {
         console.warn('Erreur écriture IndexedDB:', req.error);
-        resolve(false);
+        resolve(true); // Toujours résolu car le cache mémoire est disponible
       };
     });
   } catch (err) {
@@ -96,10 +118,16 @@ export async function storeDocumentBinary(id, fileOrBlob, fileName = '', mimeTyp
 }
 
 /**
- * Récupérer un fichier binaire depuis IndexedDB par son identifiant ou son nom
+ * Récupérer un fichier binaire depuis IndexedDB ou le cache mémoire
  */
 export async function getDocumentBinary(idOrName) {
   if (!idOrName) return null;
+  const key = String(idOrName);
+
+  // 1. Vérification prioritaire du cache mémoire (instantané)
+  if (memoryCache.has(key)) {
+    return memoryCache.get(key);
+  }
 
   try {
     const db = await openDB();
@@ -110,10 +138,12 @@ export async function getDocumentBinary(idOrName) {
       const store = tx.objectStore(STORE_NAME);
 
       // Essayer d'abord par clé ID
-      const req = store.get(String(idOrName));
+      const req = store.get(key);
 
       req.onsuccess = () => {
         if (req.result) {
+          memoryCache.set(key, req.result);
+          if (req.result.fileName) memoryCache.set(req.result.fileName, req.result);
           resolve(req.result);
           return;
         }
@@ -133,6 +163,7 @@ export async function getDocumentBinary(idOrName) {
               rowFile.includes(idOrName) ||
               (targetNorm && (rowNorm === targetNorm || rowNorm.includes(targetNorm) || targetNorm.includes(rowNorm)))
             ) {
+              memoryCache.set(key, cursor.value);
               resolve(cursor.value);
               return;
             }
@@ -153,19 +184,50 @@ export async function getDocumentBinary(idOrName) {
 }
 
 /**
- * Supprimer un fichier binaire d'IndexedDB
+ * Télécharger directement un document binaire dans le navigateur
+ */
+export async function downloadDocumentBinary(idOrName, preferredFileName = '') {
+  try {
+    const record = await getDocumentBinary(idOrName);
+    if (!record || !record.blob) {
+      return false;
+    }
+
+    const url = URL.createObjectURL(record.blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = preferredFileName || record.fileName || 'document.pdf';
+    document.body.appendChild(link);
+    link.click();
+
+    setTimeout(() => {
+      if (link.parentNode) link.parentNode.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 1500);
+
+    return true;
+  } catch (err) {
+    console.error('Erreur téléchargement document:', err);
+    return false;
+  }
+}
+
+/**
+ * Supprimer un fichier binaire d'IndexedDB et du cache mémoire
  */
 export async function deleteDocumentBinary(id) {
   if (!id) return false;
+  const key = String(id);
+  memoryCache.delete(key);
 
   try {
     const db = await openDB();
-    if (!db) return false;
+    if (!db) return true;
 
     return new Promise((resolve) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
-      const req = store.delete(String(id));
+      const req = store.delete(key);
       req.onsuccess = () => resolve(true);
       req.onerror = () => resolve(false);
     });

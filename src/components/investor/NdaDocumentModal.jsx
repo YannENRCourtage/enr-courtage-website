@@ -28,8 +28,11 @@ function getInitials(name = '') {
 }
 
 export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
-  const { currentInvestor: storeInvestor } = useInvestorStore();
-  const activeInvestor = investor || storeInvestor;
+  const { currentInvestor: storeInvestor, investors } = useInvestorStore();
+  const freshInvestor = (investors || []).find(
+    (i) => (investor?.id && i.id === investor.id) || (investor?.email && i.email?.toLowerCase() === investor.email.toLowerCase())
+  );
+  const activeInvestor = freshInvestor || investor || storeInvestor;
   const currentInvestor = activeInvestor;
 
   const [uploadedPdfUrl, setUploadedPdfUrl] = useState(null);
@@ -38,6 +41,8 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
 
   useEffect(() => {
     let objectUrl = null;
+    let isMounted = true;
+
     if (!isOpen || !activeInvestor) {
       setUploadedPdfUrl(null);
       return;
@@ -49,9 +54,29 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
       return;
     }
 
-    const docId = activeInvestor.ndaDocumentId || ('nda_user_' + activeInvestor.id);
     setIsLoadingPdf(true);
-    getDocumentBinary(docId).then((record) => {
+
+    const loadPdf = async () => {
+      const candidates = [
+        activeInvestor.ndaDocumentId,
+        'nda_user_' + activeInvestor.id,
+        activeInvestor.email ? 'nda_email_' + activeInvestor.email.toLowerCase() : null,
+        activeInvestor.ndaFileName,
+      ].filter(Boolean);
+
+      for (const candidate of candidates) {
+        try {
+          const rec = await getDocumentBinary(candidate);
+          if (rec && rec.blob) return rec;
+        } catch (e) {
+          // Continue to next candidate
+        }
+      }
+      return null;
+    };
+
+    loadPdf().then((record) => {
+      if (!isMounted) return;
       if (record && record.blob) {
         objectUrl = URL.createObjectURL(record.blob);
         setUploadedPdfUrl(objectUrl);
@@ -61,11 +86,13 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
       }
       setIsLoadingPdf(false);
     }).catch(() => {
+      if (!isMounted) return;
       setIsLoadingPdf(false);
       setViewMode('generated');
     });
 
     return () => {
+      isMounted = false;
       if (objectUrl) {
         URL.revokeObjectURL(objectUrl);
       }
