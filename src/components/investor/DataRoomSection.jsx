@@ -16,9 +16,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
-import { getDocumentBinary } from '@/services/fileStorageService';
-import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
-import { getFileDownloadUrl } from '@/lib/firebase';
+import { downloadOrViewDoc } from '@/services/dataRoomDocumentService';
 
 const categoryIconMap = {
   Scale,
@@ -32,49 +30,6 @@ const categoryIconMap = {
   Urbanisme: Map,
   Réseau: Network,
 };
-
-/**
- * Résout le véritable document PDF physique complet (24-25 pages)
- * pour éviter toute substitution ou certificat partiel.
- */
-function resolveRealDocument(file, portfolio) {
-  if (!file) return null;
-
-  // 1. URL directe explicite (ex: Firebase Storage)
-  if (file.fileUrl) {
-    const fileName = file.fileName || (file.name.toLowerCase().endsWith('.pdf') ? file.name : `${file.name}.pdf`);
-    return { url: file.fileUrl, fileName, storagePath: file.storagePath };
-  }
-
-  // 1b. Chemin Firebase Storage sans URL résolue
-  if (file.storagePath) {
-    const fileName = file.fileName || file.name || 'document.pdf';
-    return { url: null, storagePath: file.storagePath, fileName };
-  }
-
-  // 2. Recherche intelligente dans les documents originaux du serveur
-  const serverMatch = findMatchingServerDocument(file);
-  if (serverMatch && serverMatch.url) {
-    return { url: serverMatch.url, fileName: serverMatch.fileName };
-  }
-
-  // 3. Règle de repli spécifique aux Promesses de Bail
-  const rawName = file.name || file.fileName || '';
-  if (/promesse.*bail|pdb/i.test(rawName)) {
-    if (portfolio?.type === 'PV' || portfolio?.id === 'helios') {
-      return {
-        url: '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf',
-        fileName: 'Promesse_de_bail_CONSOLI_signe.pdf',
-      };
-    }
-    return {
-      url: '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf',
-      fileName: 'Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf',
-    };
-  }
-
-  return null;
-}
 
 export default function DataRoomSection({
   portfolio,
@@ -198,157 +153,18 @@ export default function DataRoomSection({
 
   /**
    * Action CONSULTER :
-   * Ouvre directement le véritable document PDF complet (24-25 pages)
-   * dans un nouvel onglet avec le visualiseur PDF natif du navigateur.
+   * Ouvre directement le document PDF complet dans un nouvel onglet avec filigrane confidentiel anti-fuite.
    */
   const handleView = async (file) => {
-    trackAction(file, 'view');
-
-    // 1. Fichier réel résolu sur le serveur ou distant (Firebase Storage)
-    const realDoc = resolveRealDocument(file, portfolio);
-    let targetUrl = realDoc?.url || null;
-
-    if (!targetUrl && (realDoc?.storagePath || file?.storagePath)) {
-      try {
-        targetUrl = await getFileDownloadUrl(realDoc?.storagePath || file?.storagePath);
-      } catch (err) {
-        console.warn('Erreur getFileDownloadUrl:', err);
-      }
-    }
-
-    if (targetUrl) {
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
-      return;
-    }
-
-    // 2. Fichier binaire stocké dans IndexedDB (custom upload admin)
-    try {
-      const stored = await getDocumentBinary(file.id || file.name);
-      if (stored && stored.blob) {
-        const blob = stored.blob instanceof Blob
-          ? stored.blob
-          : new Blob([stored.blob], { type: stored.mimeType || 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        window.open(url, '_blank');
-        setTimeout(() => URL.revokeObjectURL(url), 10000);
-        return;
-      }
-    } catch (e) {
-      console.warn('Erreur lecture IndexedDB:', e);
-    }
-
-    // 3. Fichier encodé en base64
-    if (file.fileData) {
-      window.open(file.fileData, '_blank');
-      return;
-    }
-
-    // 4. Repli garanti : ouverture du vrai PDF complet selon le portefeuille
-    const fallbackUrl = (portfolio.type === 'PV' || portfolio.id === 'helios')
-      ? '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf'
-      : '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
-    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+    await downloadOrViewDoc(file, portfolio, 'view', trackAction);
   };
 
   /**
    * Action TÉLÉCHARGER :
-   * Télécharge directement le véritable fichier PDF complet physique
-   * sur le poste de l'utilisateur.
+   * Télécharge directement le véritable fichier PDF complet avec filigrane confidentiel anti-fuite.
    */
   const handleDownload = async (file) => {
-    trackAction(file, 'download');
-
-    // 1. Fichier réel résolu sur le serveur ou distant (Firebase Storage)
-    const realDoc = resolveRealDocument(file, portfolio);
-    let targetUrl = realDoc?.url || null;
-
-    if (!targetUrl && (realDoc?.storagePath || file?.storagePath)) {
-      try {
-        targetUrl = await getFileDownloadUrl(realDoc?.storagePath || file?.storagePath);
-      } catch (err) {
-        console.warn('Erreur getFileDownloadUrl:', err);
-      }
-    }
-
-    if (targetUrl) {
-      if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
-        try {
-          const resp = await fetch(targetUrl);
-          if (resp.ok) {
-            const blob = await resp.blob();
-            const blobUrl = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = realDoc?.fileName || formatPdfFileName(file.name);
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
-            return;
-          }
-        } catch (fetchErr) {
-          console.warn('Téléchargement direct via URL distante:', fetchErr);
-        }
-
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
-        return;
-      }
-
-      const a = document.createElement('a');
-      a.href = targetUrl;
-      a.download = realDoc?.fileName || formatPdfFileName(file.name);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      return;
-    }
-
-    // 2. Fichier IndexedDB
-    try {
-      const stored = await getDocumentBinary(file.id || file.name);
-      if (stored && stored.blob) {
-        const blob = stored.blob instanceof Blob
-          ? stored.blob
-          : new Blob([stored.blob], { type: stored.mimeType || 'application/pdf' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = stored.fileName || formatPdfFileName(file.name);
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        return;
-      }
-    } catch (e) {
-      console.warn('Erreur lecture IndexedDB:', e);
-    }
-
-    // 3. Fichier base64
-    if (file.fileData) {
-      const a = document.createElement('a');
-      a.href = file.fileData;
-      a.download = formatPdfFileName(file.name);
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      return;
-    }
-
-    // 4. Repli garanti : téléchargement du vrai PDF complet
-    const fallbackUrl = (portfolio.type === 'PV' || portfolio.id === 'helios')
-      ? '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf'
-      : '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
-    const fallbackName = (portfolio.type === 'PV' || portfolio.id === 'helios')
-      ? 'Promesse_de_bail_CONSOLI_signe.pdf'
-      : 'Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
-
-    const a = document.createElement('a');
-    a.href = fallbackUrl;
-    a.download = fallbackName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    await downloadOrViewDoc(file, portfolio, 'download', trackAction);
   };
 
   return (

@@ -1,8 +1,16 @@
 /**
  * Service de résolution intelligente des documents de la Data Room
  * Fait correspondre n'importe quel document demandé (par son nom, mot-clé ou id)
- * au véritable fichier PDF original de 24-25 pages disponible sur le serveur.
+ * au véritable fichier PDF original disponible sur le serveur.
+ * 
+ * SÉPARATION STRICTE :
+ * - Une demande de Fiche Projet résout TOUJOURS vers la véritable fiche projet unitaire.
+ * - Une demande de Promesse de Bail résout TOUJOURS vers la véritable promesse de bail notariée (20-25 pages).
  */
+
+import { BUNDLED_FICHES_PROJETS } from './bundledFiches';
+
+export { BUNDLED_FICHES_PROJETS };
 
 export const BUNDLED_DATAROOM_FILES = [
   // --- BESS (VOLTA) ---
@@ -12,6 +20,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['batiot', 'mongausy', '32220'],
     pages: 24,
     size: '623 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batterie_CASTEBRUNET_82300_CAUSSADE.pdf',
@@ -19,6 +28,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['castebrunet', 'caussade', '82300'],
     pages: 25,
     size: '906 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_2_82300_CAUSSADE.pdf',
@@ -26,6 +36,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['castebrunet_2', 'castebrunet 2'],
     pages: 25,
     size: '906 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_3_82300_MONTEILS.pdf',
@@ -33,6 +44,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['castebrunet_3', 'monteils', 'castebrunet 3'],
     pages: 25,
     size: '906 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_4_82300_SAINT-CIRQ.pdf',
@@ -40,6 +52,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['castebrunet_4', 'saint-cirq', 'castebrunet 4'],
     pages: 25,
     size: '906 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_Promesse_de_bail_batteries_COMBY_19210_SAINT_ELOY_LES_TUILLERIES.pdf',
@@ -47,6 +60,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['comby', 'saint eloy', 'tuilleries', '19210'],
     pages: 24,
     size: '840 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_ARBOIN_47120_DURAS.pdf',
@@ -54,6 +68,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['arboin', 'duras', '47120'],
     pages: 25,
     size: '890 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_CUBERTAFON_19210_SAINT_JULIEN_LE_VENDOMOIS.pdf',
@@ -61,6 +76,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['cubertafon', 'vendomois', '19210'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_Promesse_de_bail_batteries_DOMERGUES_87380_MEUZAC.pdf',
@@ -68,6 +84,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['domergues', 'meuzac', '87380'],
     pages: 24,
     size: '860 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_Promesse_de_bail_batteries_DOMERGUE_12420_ARGENCES_EN_AUBRAC.pdf',
@@ -75,6 +92,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['domergue', 'argences', 'aubrac', '12420'],
     pages: 24,
     size: '860 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_DOUMENS_33_BEYCHAC_ET_CAILLAU.pdf',
@@ -82,6 +100,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['doumens', 'beychac', 'caillau', '33750'],
     pages: 24,
     size: '840 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_FRECHEVILLE_47210_SAINT_EUTROPE_DE_BORN.pdf',
@@ -89,6 +108,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['frecheville', 'saint eutrope', '47210'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_GIOT_23600_LEYRAT.pdf',
@@ -96,6 +116,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['giot', 'leyrat', '23600'],
     pages: 24,
     size: '840 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_Promesse_de_bail_batteries_HOUSSAIT_YOUNG_33930_VENDAYS_MONTALIVET.pdf',
@@ -103,6 +124,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['houssait', 'young', 'vendays', 'montalivet', '33930'],
     pages: 24,
     size: '860 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_MISSAULT_24470_SAINT_SAUD_LACOUSSIERE.pdf',
@@ -110,6 +132,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['missault', 'saint saud', 'lacoussiere', '24470'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_MISSAULT_24800_SAINT_MARTIN_DE_FRESSENGEAS.pdf',
@@ -117,6 +140,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['missault', 'saint martin', 'fressengeas', '24800'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batteries_SOULIGNAC_33_VAL_DE_LIVENNE.pdf',
@@ -124,6 +148,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['soulignac', 'val de livenne', '33860'],
     pages: 24,
     size: '840 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batterie_MEILLAT_2_23210_MOURIOUX_VIEILLEVILLE.pdf',
@@ -131,6 +156,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['meillat_2', 'meillat 2', '23210'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_MEILLAT_1_23210_MOURIOUX_VIEILLEVILLE.pdf',
@@ -138,6 +164,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['meillat_1', 'meillat 1', 'mourioux'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batterie_PRAVIE_82170_GRISOLLES.pdf',
@@ -145,6 +172,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['pravie', 'grisolles', '82170'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_BERTRANDIE_24240_MONESTIER.pdf',
@@ -152,6 +180,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['bertrandie', 'monestier', '24240'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_DAVID_19350_CONCEZE.pdf',
@@ -159,6 +188,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['david', 'conceze', '19350'],
     pages: 24,
     size: '850 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_LATOURNERIE_24310_BRANTOME_EN_PERIGORD-fromagerie-desterresvieilles_orange.fr.pdf',
@@ -166,6 +196,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['latournerie', 'brantome', '24310'],
     pages: 24,
     size: '860 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Nouvelle_promesse_de_bail_batterie-brunogranger19_gmail.com.pdf',
@@ -173,6 +204,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['granger', 'brunogranger'],
     pages: 24,
     size: '840 Ko',
+    type: 'bail',
   },
 
   // --- PV (HÉLIOS) ---
@@ -182,6 +214,7 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['consoli', 'prigonrieux', '24130'],
     pages: 20,
     size: '865 Ko',
+    type: 'bail',
   },
   {
     fileName: 'Promesse_de_bail_LABEGUERIE_signe.pdf',
@@ -189,11 +222,12 @@ export const BUNDLED_DATAROOM_FILES = [
     keys: ['labeguerie', 'oregue', '64120'],
     pages: 18,
     size: '4.8 Mo',
+    type: 'bail',
   },
 ];
 
 // Helper de normalisation de chaîne pour les comparaisons insensibles
-function normalizeString(str = '') {
+export function normalizeString(str = '') {
   return String(str || '')
     .toLowerCase()
     .normalize('NFD')
@@ -203,65 +237,217 @@ function normalizeString(str = '') {
 }
 
 /**
- * Recherche si un document de la Data Room correspond à un fichier réel hébergé sur le serveur.
- * Gère les noms sans extension, avec tirets/underscores, ou avec mot-clé (ex: "BATIOT", "CASTEBRUNET", "CONSOLI").
+ * Détermine si la requête porte sur une fiche projet.
  */
-export function findMatchingServerDocument(docOrName) {
-  if (!docOrName) return null;
-
+export function isFicheProjetRequest(docOrName) {
+  if (!docOrName) return false;
+  if (typeof docOrName === 'object') {
+    if (docOrName.isFiche === true || docOrName.type === 'fiche') return true;
+    if (docOrName.category?.toLowerCase() === 'technique' && /fiche/i.test(docOrName.name || '')) return true;
+  }
   const rawName = typeof docOrName === 'string' ? docOrName : (docOrName.name || docOrName.fileName || '');
-  if (!rawName) return null;
+  return /fiche/i.test(rawName);
+}
 
+/**
+ * Détermine si la requête porte sur une promesse de bail.
+ */
+export function isPromesseBailRequest(docOrName) {
+  if (!docOrName) return false;
+  if (typeof docOrName === 'object') {
+    if (docOrName.isBail === true || docOrName.type === 'bail') return true;
+  }
+  const rawName = typeof docOrName === 'string' ? docOrName : (docOrName.name || docOrName.fileName || '');
+  return /promesse.*bail|pdb|bail.*notari/i.test(rawName);
+}
+
+/**
+ * Recherche spécifique d'une fiche projet dans la liste BUNDLED_FICHES_PROJETS.
+ */
+export function findMatchingFicheProjet(docOrName, site = null) {
+  if (!docOrName && !site) return null;
+  const rawName = typeof docOrName === 'string' ? docOrName : (docOrName?.name || docOrName?.fileName || '');
   const targetNorm = normalizeString(rawName);
 
-  // 1. Correspondance exacte ou forte sur le nom de fichier
-  for (const item of BUNDLED_DATAROOM_FILES) {
-    const itemNorm = normalizeString(item.fileName);
-    if (itemNorm === targetNorm) {
-      return item;
+  // Recherche prioritaire par informations du site
+  if (site) {
+    const siteCommune = normalizeString(site.name || site.ville || '');
+    const siteClient = normalizeString(site.client || site.bailleur || '');
+    const siteCp = normalizeString(site.cp || '');
+
+    // 1. Match client + commune
+    if (siteClient && siteClient.length >= 3 && siteCommune && siteCommune.length >= 3) {
+      for (const item of BUNDLED_FICHES_PROJETS) {
+        const itemNorm = normalizeString(item.fileName);
+        if (itemNorm.includes(siteClient) && itemNorm.includes(siteCommune)) {
+          return item;
+        }
+      }
+    }
+
+    // 2. Match client
+    if (siteClient && siteClient.length >= 4) {
+      for (const item of BUNDLED_FICHES_PROJETS) {
+        const itemNorm = normalizeString(item.fileName);
+        if (itemNorm.includes(siteClient)) {
+          return item;
+        }
+      }
+    }
+
+    // 3. Match commune + cp
+    if (siteCommune && siteCommune.length >= 4) {
+      for (const item of BUNDLED_FICHES_PROJETS) {
+        const itemNorm = normalizeString(item.fileName);
+        if (itemNorm.includes(siteCommune) && (!siteCp || itemNorm.includes(siteCp))) {
+          return item;
+        }
+      }
+      for (const item of BUNDLED_FICHES_PROJETS) {
+        const itemNorm = normalizeString(item.fileName);
+        if (itemNorm.includes(siteCommune)) {
+          return item;
+        }
+      }
     }
   }
 
-  // 2. Correspondance d'inclusion (l'un contient l'autre)
-  for (const item of BUNDLED_DATAROOM_FILES) {
-    const itemNorm = normalizeString(item.fileName);
-    if (targetNorm.length >= 5 && itemNorm.includes(targetNorm)) {
-      return item;
+  // Recherche par texte/nom de document
+  if (targetNorm) {
+    for (const item of BUNDLED_FICHES_PROJETS) {
+      const itemNorm = normalizeString(item.fileName);
+      if (itemNorm === targetNorm || itemNorm.includes(targetNorm) || (targetNorm.length >= 6 && targetNorm.includes(itemNorm))) {
+        return item;
+      }
     }
-    if (itemNorm.length >= 5 && targetNorm.includes(itemNorm)) {
-      return item;
-    }
-  }
 
-  // 3. Correspondance par mots-clés distinctifs (ex: Batiot, Castebrunet, Consoli, Labeguerie)
-  for (const item of BUNDLED_DATAROOM_FILES) {
-    const hasKeyMatch = item.keys.some((k) => {
-      const kNorm = normalizeString(k);
-      return kNorm.length >= 3 && targetNorm.includes(kNorm);
-    });
-    if (hasKeyMatch) {
-      return item;
+    for (const item of BUNDLED_FICHES_PROJETS) {
+      const hasKeyMatch = item.keys.some((k) => {
+        const kNorm = normalizeString(k);
+        return kNorm.length >= 4 && targetNorm.includes(kNorm);
+      });
+      if (hasKeyMatch) {
+        return item;
+      }
     }
-  }
-
-  // 4. Mappage pour les fiches génériques de promesses de bail si demandées
-  if (
-    targetNorm.includes('promessedebail') ||
-    targetNorm.includes('promessesdebail') ||
-    targetNorm.includes('pdb') ||
-    targetNorm.includes('bail')
-  ) {
-    if (targetNorm.includes('bess') || targetNorm.includes('batterie') || targetNorm.includes('volta')) {
-      // Représentatif BESS : BATIOT (24 pages complètes)
-      return BUNDLED_DATAROOM_FILES.find((f) => f.fileName.includes('BATIOT')) || BUNDLED_DATAROOM_FILES[0];
-    }
-    if (targetNorm.includes('ferme') || targetNorm.includes('pv') || targetNorm.includes('helios')) {
-      // Représentatif PV : CONSOLI (20 pages signées) ou LABEGUERIE
-      return BUNDLED_DATAROOM_FILES.find((f) => f.fileName.includes('CONSOLI')) || BUNDLED_DATAROOM_FILES[0];
-    }
-    // Par défaut BATIOT (24 pages)
-    return BUNDLED_DATAROOM_FILES.find((f) => f.fileName.includes('BATIOT')) || BUNDLED_DATAROOM_FILES[0];
   }
 
   return null;
+}
+
+/**
+ * Recherche spécifique d'une promesse de bail dans la liste BUNDLED_DATAROOM_FILES.
+ */
+export function findMatchingPromesseBail(docOrName, site = null) {
+  if (!docOrName && !site) return null;
+  const rawName = typeof docOrName === 'string' ? docOrName : (docOrName?.name || docOrName?.fileName || '');
+  const targetNorm = normalizeString(rawName);
+
+  if (site) {
+    const siteCommune = normalizeString(site.name || site.ville || '');
+    const siteClient = normalizeString(site.client || site.bailleur || '');
+
+    // 1. Match client
+    if (siteClient && siteClient.length >= 3) {
+      for (const item of BUNDLED_DATAROOM_FILES) {
+        const itemNorm = normalizeString(item.fileName);
+        if (itemNorm.includes(siteClient)) {
+          return item;
+        }
+      }
+    }
+
+    // 2. Match commune
+    if (siteCommune && siteCommune.length >= 4) {
+      for (const item of BUNDLED_DATAROOM_FILES) {
+        const itemNorm = normalizeString(item.fileName);
+        if (itemNorm.includes(siteCommune)) {
+          return item;
+        }
+      }
+    }
+  }
+
+  if (targetNorm) {
+    for (const item of BUNDLED_DATAROOM_FILES) {
+      const itemNorm = normalizeString(item.fileName);
+      if (itemNorm === targetNorm || itemNorm.includes(targetNorm) || (targetNorm.length >= 6 && targetNorm.includes(itemNorm))) {
+        return item;
+      }
+    }
+
+    for (const item of BUNDLED_DATAROOM_FILES) {
+      const hasKeyMatch = item.keys.some((k) => {
+        const kNorm = normalizeString(k);
+        return kNorm.length >= 4 && targetNorm.includes(kNorm);
+      });
+      if (hasKeyMatch) {
+        return item;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Recherche principale : dirige vers les fiches ou vers les baux sans jamais les confondre.
+ */
+export function findMatchingServerDocument(docOrName, site = null) {
+  if (!docOrName && !site) return null;
+
+  // 1. Si c'est une fiche projet
+  if (isFicheProjetRequest(docOrName)) {
+    return findMatchingFicheProjet(docOrName, site);
+  }
+
+  // 2. Si c'est une promesse de bail
+  if (isPromesseBailRequest(docOrName)) {
+    return findMatchingPromesseBail(docOrName, site);
+  }
+
+  // 3. Recherche exacte globale sans présomption
+  const rawName = typeof docOrName === 'string' ? docOrName : (docOrName?.name || docOrName?.fileName || '');
+  const targetNorm = normalizeString(rawName);
+
+  if (targetNorm) {
+    for (const item of BUNDLED_DATAROOM_FILES) {
+      if (normalizeString(item.fileName) === targetNorm) return item;
+    }
+    for (const item of BUNDLED_FICHES_PROJETS) {
+      if (normalizeString(item.fileName) === targetNorm) return item;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Trouve ou assigne la fiche projet d'un site.
+ */
+export function findFicheProjetForSite(site, portfolioId) {
+  if (!site) return null;
+  const match = findMatchingFicheProjet(null, site);
+  if (match) return match;
+
+  const isPv = String(portfolioId || '').toLowerCase().includes('helios');
+  if (isPv) {
+    return BUNDLED_FICHES_PROJETS.find((f) => f.fileName.includes('CONSOLI')) || BUNDLED_FICHES_PROJETS[0];
+  }
+  return BUNDLED_FICHES_PROJETS.find((f) => f.fileName.includes('BATIOT')) || BUNDLED_FICHES_PROJETS[0];
+}
+
+/**
+ * Trouve ou assigne la promesse de bail d'un site.
+ */
+export function findPromesseBailForSite(site, portfolioId) {
+  if (!site) return null;
+  const match = findMatchingPromesseBail(null, site);
+  if (match) return match;
+
+  const isPv = String(portfolioId || '').toLowerCase().includes('helios');
+  if (isPv) {
+    return BUNDLED_DATAROOM_FILES.find((f) => f.fileName.includes('CONSOLI')) || BUNDLED_DATAROOM_FILES[0];
+  }
+  return BUNDLED_DATAROOM_FILES.find((f) => f.fileName.includes('BATIOT')) || BUNDLED_DATAROOM_FILES[0];
 }
