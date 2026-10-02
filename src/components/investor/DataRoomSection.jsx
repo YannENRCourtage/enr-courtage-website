@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import {
   FolderLock,
   FileText,
-  Download,
   ShieldCheck,
   Scale,
   Wrench,
@@ -37,7 +36,6 @@ export default function DataRoomSection({
   investorCompany = '',
 }) {
   const { customDataRoom, deletedDefaultDocs, documentSiteAssignments = {}, recordDownload, currentInvestor } = useInvestorStore();
-  const [downloadedFiles, setDownloadedFiles] = useState({});
   const [selectedSiteFilter, setSelectedSiteFilter] = useState('ALL');
 
   // Helper pour savoir à quels sites un document est affecté
@@ -121,11 +119,6 @@ export default function DataRoomSection({
   }
 
   const trackAction = (file, action = 'view') => {
-    setDownloadedFiles((prev) => ({
-      ...prev,
-      [file.name]: true,
-    }));
-
     const activeEmail = currentInvestor?.email || 'investisseur@partenaire.fr';
     const activeName = investorName || currentInvestor?.name || 'Investisseur';
     const activeCompany = investorCompany || currentInvestor?.company || 'Investisseur Qualifié';
@@ -145,26 +138,12 @@ export default function DataRoomSection({
     }
   };
 
-  // Helper pour normaliser le nom de téléchargement
-  const formatPdfFileName = (name) => {
-    if (!name) return 'Document.pdf';
-    return name.toLowerCase().endsWith('.pdf') ? name : `${name}.pdf`;
-  };
-
   /**
    * Action CONSULTER :
    * Ouvre directement le document PDF complet dans un nouvel onglet avec filigrane confidentiel anti-fuite.
    */
   const handleView = async (file) => {
     await downloadOrViewDoc(file, portfolio, 'view', trackAction);
-  };
-
-  /**
-   * Action TÉLÉCHARGER :
-   * Télécharge directement le véritable fichier PDF complet avec filigrane confidentiel anti-fuite.
-   */
-  const handleDownload = async (file) => {
-    await downloadOrViewDoc(file, portfolio, 'download', trackAction);
   };
 
   return (
@@ -263,7 +242,6 @@ export default function DataRoomSection({
 
               <div className="space-y-2">
                 {category.files.map((file, fIdx) => {
-                  const isDownloaded = downloadedFiles[file.name];
                   const assignedSites = getAssignedSitesForDoc(file);
 
                   return (
@@ -302,37 +280,14 @@ export default function DataRoomSection({
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                        {/* Bouton CONSULTER : Visualiseur PDF natif 24-25 pages */}
+                        {/* Bouton CONSULTER : Visualiseur PDF avec filigrane confidentiel */}
                         <button
                           onClick={() => handleView(file)}
-                          title="Consulter le contrat PDF complet dans un nouvel onglet"
-                          className="text-xs px-2.5 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-emerald-800 border border-slate-200 hover:border-emerald-300 transition flex items-center gap-1.5 cursor-pointer"
+                          title="Consulter le document avec filigrane confidentiel"
+                          className="text-xs px-3 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-emerald-600 text-slate-800 hover:text-white border border-slate-200 hover:border-emerald-600 transition flex items-center gap-1.5 cursor-pointer shadow-2xs group"
                         >
-                          <Eye className="w-3.5 h-3.5 text-emerald-600" />
+                          <Eye className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white transition" />
                           <span>Consulter</span>
-                        </button>
-
-                        {/* Bouton TÉLÉCHARGER : Téléchargement physique du PDF réel */}
-                        <button
-                          onClick={() => handleDownload(file)}
-                          title="Télécharger le fichier physique sur votre appareil"
-                          className={`text-xs px-2.5 py-1.5 rounded-lg font-bold transition flex items-center gap-1 cursor-pointer ${
-                            isDownloaded
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
-                          }`}
-                        >
-                          {isDownloaded ? (
-                            <>
-                              <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                              <span className="hidden sm:inline">Téléchargé</span>
-                            </>
-                          ) : (
-                            <>
-                              <Download className="w-3 h-3" />
-                              <span className="hidden sm:inline">Télécharger</span>
-                            </>
-                          )}
                         </button>
                       </div>
                     </div>
