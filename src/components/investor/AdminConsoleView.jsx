@@ -40,6 +40,10 @@ import {
   RotateCcw,
   X,
   Loader2,
+  Scale,
+  Wrench,
+  Calculator,
+  Network,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -132,6 +136,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
   // Data Room State
   const [selectedDataRoomPortfolio, setSelectedDataRoomPortfolio] = useState('helios');
+  const [dataRoomSubTab, setDataRoomSubTab] = useState('juridique');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [uploadDocName, setUploadDocName] = useState('');
   const [uploadCategory, setUploadCategory] = useState('Juridique');
@@ -312,6 +317,81 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const safeOffers = Array.isArray(offers) ? offers : [];
   const pendingInvestorsCount = safeInvestors.filter((i) => i && i.status === 'pending').length;
   const rejectedInvestorsCount = safeInvestors.filter((i) => i && i.status === 'rejected').length;
+
+  // Catégories Data Room consolidées avec fichiers filtrés pour le portefeuille actif
+  const dataRoomCategoriesWithFiles = useMemo(() => {
+    const deletedForPortfolio = deletedDefaultDocs?.[selectedDataRoomPortfolio] || [];
+    const baseCats = currentPortfolioObj?.dataRoom?.categories || [];
+
+    const result = baseCats.map((cat) => {
+      const defaultFiles = (cat.files || []).filter((f) => !deletedForPortfolio.includes(f.name));
+      const customFiles = customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || [];
+      return {
+        name: cat.name,
+        icon: cat.icon,
+        files: [...defaultFiles, ...customFiles],
+      };
+    });
+
+    const customCats = customDataRoom?.[selectedDataRoomPortfolio] || {};
+    Object.entries(customCats).forEach(([catName, files]) => {
+      if (!result.some((c) => c.name.toLowerCase() === catName.toLowerCase()) && Array.isArray(files) && files.length > 0) {
+        result.push({
+          name: catName,
+          icon: 'Folder',
+          files,
+        });
+      }
+    });
+
+    return result;
+  }, [currentPortfolioObj, deletedDefaultDocs, customDataRoom, selectedDataRoomPortfolio]);
+
+  // Catégories filtrées selon le sous-onglet sélectionné
+  const displayedCategories = useMemo(() => {
+    if (dataRoomSubTab === 'nda') return [];
+    if (dataRoomSubTab === 'juridique') {
+      return dataRoomCategoriesWithFiles.filter((c) => c.name.toLowerCase().includes('juridique'));
+    }
+    if (dataRoomSubTab === 'technique') {
+      return dataRoomCategoriesWithFiles.filter((c) => c.name.toLowerCase().includes('technique'));
+    }
+    if (dataRoomSubTab === 'financier') {
+      return dataRoomCategoriesWithFiles.filter((c) => c.name.toLowerCase().includes('financier'));
+    }
+    if (dataRoomSubTab === 'reseau') {
+      return dataRoomCategoriesWithFiles.filter((c) => {
+        const lower = c.name.toLowerCase();
+        return lower.includes('reseau') || lower.includes('réseau') || lower.includes('urbanisme');
+      });
+    }
+    return dataRoomCategoriesWithFiles;
+  }, [dataRoomCategoriesWithFiles, dataRoomSubTab]);
+
+  // Compteurs de fichiers par sous-onglet
+  const subTabCounts = useMemo(() => {
+    const getCount = (filterFn) =>
+      dataRoomCategoriesWithFiles
+        .filter(filterFn)
+        .reduce((sum, c) => sum + (c.files?.length || 0), 0);
+
+    const juridCount = getCount((c) => c.name.toLowerCase().includes('juridique'));
+    const techCount = getCount((c) => c.name.toLowerCase().includes('technique'));
+    const finCount = getCount((c) => c.name.toLowerCase().includes('financier'));
+    const resCount = getCount((c) => {
+      const lower = c.name.toLowerCase();
+      return lower.includes('reseau') || lower.includes('réseau') || lower.includes('urbanisme');
+    });
+    const ndaFilesCount = safeInvestors.filter((u) => u && u.ndaFileName).length;
+
+    return {
+      juridique: juridCount,
+      technique: techCount,
+      financier: finCount,
+      reseau: resCount,
+      nda: ndaFilesCount,
+    };
+  }, [dataRoomCategoriesWithFiles, safeInvestors]);
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
@@ -1269,7 +1349,13 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   </div>
 
                   <button
-                    onClick={() => setIsUploadModalOpen(true)}
+                    onClick={() => {
+                      if (dataRoomSubTab === 'technique') setUploadCategory('Technique');
+                      else if (dataRoomSubTab === 'financier') setUploadCategory('Financier');
+                      else if (dataRoomSubTab === 'reseau') setUploadCategory('Réseau');
+                      else setUploadCategory('Juridique');
+                      setIsUploadModalOpen(true);
+                    }}
                     className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
@@ -1278,12 +1364,133 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 </div>
               </div>
 
-              {/* Accords de Confidentialité (NDA) Bilatéraux Déposés */}
-              {(() => {
+              {/* SOUS-ONGLETS DE NAVIGATION DATA ROOM : JURIDIQUE, TECHNIQUE, FINANCIER, RESEAU, NDA */}
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
+                <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-2xl text-xs font-bold">
+                  {/* 1. JURIDIQUE */}
+                  <button
+                    type="button"
+                    onClick={() => setDataRoomSubTab('juridique')}
+                    className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                      dataRoomSubTab === 'juridique'
+                        ? 'bg-white text-slate-900 shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Scale className="w-3.5 h-3.5 text-blue-600" />
+                    <span>JURIDIQUE</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                      dataRoomSubTab === 'juridique' ? 'bg-blue-100 text-blue-800 font-bold' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {subTabCounts.juridique}
+                    </span>
+                  </button>
+
+                  {/* 2. TECHNIQUE */}
+                  <button
+                    type="button"
+                    onClick={() => setDataRoomSubTab('technique')}
+                    className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                      dataRoomSubTab === 'technique'
+                        ? 'bg-white text-slate-900 shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Wrench className="w-3.5 h-3.5 text-amber-600" />
+                    <span>TECHNIQUE</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                      dataRoomSubTab === 'technique' ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {subTabCounts.technique}
+                    </span>
+                  </button>
+
+                  {/* 3. FINANCIER */}
+                  <button
+                    type="button"
+                    onClick={() => setDataRoomSubTab('financier')}
+                    className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                      dataRoomSubTab === 'financier'
+                        ? 'bg-white text-slate-900 shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Calculator className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>FINANCIER</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                      dataRoomSubTab === 'financier' ? 'bg-emerald-100 text-emerald-800 font-bold' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {subTabCounts.financier}
+                    </span>
+                  </button>
+
+                  {/* 4. RESEAU */}
+                  <button
+                    type="button"
+                    onClick={() => setDataRoomSubTab('reseau')}
+                    className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                      dataRoomSubTab === 'reseau'
+                        ? 'bg-white text-slate-900 shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                    }`}
+                  >
+                    <Network className="w-3.5 h-3.5 text-cyan-600" />
+                    <span>RESEAU</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                      dataRoomSubTab === 'reseau' ? 'bg-cyan-100 text-cyan-800 font-bold' : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {subTabCounts.reseau}
+                    </span>
+                  </button>
+
+                  {/* 5. NDA (en dernier à droite) */}
+                  <button
+                    type="button"
+                    onClick={() => setDataRoomSubTab('nda')}
+                    className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                      dataRoomSubTab === 'nda'
+                        ? 'bg-purple-600 text-white shadow-xs font-black'
+                        : 'text-purple-700 hover:text-purple-900 hover:bg-purple-100/70'
+                    }`}
+                  >
+                    <FileSignature className="w-3.5 h-3.5" />
+                    <span>NDA</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                      dataRoomSubTab === 'nda' ? 'bg-white/20 text-white' : 'bg-purple-100 text-purple-800 border border-purple-200'
+                    }`}>
+                      {subTabCounts.nda}
+                    </span>
+                  </button>
+                </div>
+
+                <div className="text-[11px] text-slate-500 font-medium hidden sm:block">
+                  {dataRoomSubTab === 'nda' ? (
+                    <span className="text-purple-700 font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                      Accords de Confidentialité signés par les investisseurs
+                    </span>
+                  ) : (
+                    <span>
+                      Dossier actif : <strong className="text-slate-800 uppercase">{dataRoomSubTab}</strong> • {selectedDataRoomPortfolio === 'volta' ? 'VOLTA (BESS)' : 'HÉLIOS (PV)'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* CONTENU DU SOUS-ONGLET NDA */}
+              {dataRoomSubTab === 'nda' && (() => {
                 const usersWithFiles = safeInvestors.filter((u) => u && u.ndaFileName);
-                if (usersWithFiles.length === 0) return null;
+                if (usersWithFiles.length === 0) {
+                  return (
+                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2 animate-fadeIn">
+                      <FolderLock className="w-8 h-8 text-slate-300 mx-auto" />
+                      <div className="text-xs font-bold text-slate-700">Aucun Accord de Confidentialité déposé</div>
+                      <div className="text-[11px] text-slate-500">Les NDA signés et téléversés par les investisseurs accrédités apparaîtront ici.</div>
+                    </div>
+                  );
+                }
                 return (
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-purple-50 border border-purple-200 space-y-3">
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-purple-50 border border-purple-200 space-y-3 animate-fadeIn">
                     <div className="flex items-center justify-between">
                       <span className="font-black text-xs uppercase tracking-wider text-purple-950 flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
@@ -1341,61 +1548,85 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 );
               })()}
 
-              {/* Inventaire des catégories Data Room */}
-              <div className="space-y-4">
-                {(currentPortfolioObj?.dataRoom?.categories || []).map((cat) => {
-                  const deletedForPortfolio = deletedDefaultDocs?.[selectedDataRoomPortfolio] || [];
-                  const defaultFiles = (cat.files || []).filter((f) => !deletedForPortfolio.includes(f.name));
-                  const customFiles = customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || [];
-                  const allFiles = [...defaultFiles, ...customFiles];
-
-                  return (
+              {/* CONTENU DES SOUS-ONGLETS JURIDIQUE, TECHNIQUE, FINANCIER, RESEAU */}
+              {dataRoomSubTab !== 'nda' && (
+                <div className="space-y-4 animate-fadeIn">
+                  {displayedCategories.map((cat) => (
                     <div key={cat.name} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="font-black text-xs uppercase tracking-wider text-slate-900 flex items-center gap-2">
                           <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                          {cat.name} ({allFiles.length} fichiers)
+                          {cat.name} ({cat.files.length} fichiers)
                         </span>
                       </div>
 
-                      <div className="space-y-2">
-                        {allFiles.map((file, fIdx) => (
-                          <div
-                            key={fIdx}
-                            className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-300 transition"
-                          >
-                            <div className="flex items-center gap-2.5">
-                              <span className="px-2 py-1 bg-rose-50 text-rose-700 font-bold text-[10px] rounded">
-                                {file.type || 'PDF'}
-                              </span>
-                              <div>
-                                <div className="text-xs font-bold text-slate-900">{file.name}</div>
-                                <div className="text-[10px] text-slate-400">
-                                  {file.size || '1.2 Mo'} • {file.notes || 'Document probant vérifié'}
+                      {cat.files.length === 0 ? (
+                        <div className="p-6 text-center text-slate-400 bg-white border border-dashed border-slate-200 rounded-xl text-xs">
+                          Aucun document disponible dans ce dossier pour {selectedDataRoomPortfolio === 'volta' ? 'VOLTA' : 'HÉLIOS'}.
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {cat.files.map((file, fIdx) => (
+                            <div
+                              key={fIdx}
+                              className="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between gap-3 hover:border-blue-300 transition"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className={`px-2 py-1 font-bold text-[10px] rounded shrink-0 ${
+                                  (file.type || '').toUpperCase() === 'XLSX' || (file.type || '').toUpperCase() === 'XLS'
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : 'bg-rose-50 text-rose-700'
+                                }`}>
+                                  {file.type || 'PDF'}
+                                </span>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-bold text-slate-900 truncate">{file.name}</div>
+                                  <div className="text-[10px] text-slate-400">
+                                    {file.size || '1.2 Mo'} • {file.notes || 'Document probant vérifié'}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  deleteDefaultDoc(selectedDataRoomPortfolio, file.name);
-                                  deleteDocumentFromDataRoom(selectedDataRoomPortfolio, cat.name, file.id);
-                                  setUserActionNotice(`Document « ${file.name} » retiré de la Data Room.`);
-                                }}
-                                className="p-1.5 text-slate-400 hover:text-red-600 transition"
-                                title="Supprimer de la Data Room"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center gap-2">
+                                {file.fileUrl && (
+                                  <a
+                                    href={file.fileUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="p-1.5 text-slate-400 hover:text-blue-600 transition"
+                                    title="Ouvrir le document"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                  </a>
+                                )}
+                                <button
+                                  onClick={() => {
+                                    deleteDefaultDoc(selectedDataRoomPortfolio, file.name);
+                                    deleteDocumentFromDataRoom(selectedDataRoomPortfolio, cat.name, file.id);
+                                    setUserActionNotice(`Document « ${file.name} » retiré de la Data Room.`);
+                                  }}
+                                  className="p-1.5 text-slate-400 hover:text-red-600 transition cursor-pointer"
+                                  title="Supprimer de la Data Room"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
+                  ))}
+
+                  {displayedCategories.length === 0 && (
+                    <div className="p-8 text-center text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2">
+                      <FolderLock className="w-8 h-8 text-slate-300 mx-auto" />
+                      <div className="text-xs font-bold text-slate-700">Aucun dossier disponible dans cette section</div>
+                      <div className="text-[11px] text-slate-500">Cliquez sur « + Ajouter un document » pour verser un fichier dans cette catégorie.</div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
