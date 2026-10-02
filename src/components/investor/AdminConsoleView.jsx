@@ -635,93 +635,94 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       )}
 
       {/* =================================================================== */}
+      {/* =================================================================== */}
       {/* ONGLETS DE NAVIGATION LATÉRALE & CONTENU DE SUPERVISION             */}
       {/* =================================================================== */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Navigation Panneau Latéral Admin */}
-        <div className="lg:col-span-3 space-y-1.5 bg-white border border-slate-200 rounded-3xl p-3 shadow-sm h-fit text-xs font-bold">
+      <div className="flex flex-col lg:flex-row gap-4 xl:gap-5 items-start">
+        {/* Navigation Panneau Latéral Admin (Largeur compactée pour libérer l'espace tableau) */}
+        <div className="w-full lg:w-56 shrink-0 space-y-1 bg-white border border-slate-200 rounded-3xl p-2.5 shadow-sm h-fit text-xs font-bold">
           <button
             onClick={() => setActiveSection('users')}
-            className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+            className={`w-full px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
               activeSection === 'users'
                 ? 'bg-purple-50 text-purple-900 font-black border border-purple-200'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <Users className="w-4 h-4 text-purple-700" />
-              <span>Investisseurs & Accès</span>
+            <span className="flex items-center gap-2 truncate">
+              <Users className="w-4 h-4 text-purple-700 shrink-0" />
+              <span className="truncate">Investisseurs & Accès</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-900 text-[10px] font-mono shrink-0 ml-1">
               {safeInvestors.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveSection('offers')}
-            className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+            className={`w-full px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
               activeSection === 'offers'
                 ? 'bg-purple-50 text-purple-900 font-black border border-purple-200'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <Coins className="w-4 h-4 text-amber-600" />
-              <span>Offres & Négociations</span>
+            <span className="flex items-center gap-2 truncate">
+              <Coins className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="truncate">Offres & Négociations</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-mono shrink-0 ml-1">
               {safeOffers.length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveSection('dataroom')}
-            className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+            className={`w-full px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
               activeSection === 'dataroom'
                 ? 'bg-purple-50 text-purple-900 font-black border border-purple-200'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <FolderLock className="w-4 h-4 text-blue-600" />
-              <span>Gestion Data Room</span>
+            <span className="flex items-center gap-2 truncate">
+              <FolderLock className="w-4 h-4 text-blue-600 shrink-0" />
+              <span className="truncate">Gestion Data Room</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-mono shrink-0 ml-1">
               12 docs
             </span>
           </button>
 
           <button
             onClick={() => setActiveSection('messages')}
-            className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+            className={`w-full px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
               activeSection === 'messages'
                 ? 'bg-purple-50 text-purple-900 font-black border border-purple-200'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4 text-emerald-600" />
-              <span>Messagerie Centrale</span>
+            <span className="flex items-center gap-2 truncate">
+              <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="truncate">Messagerie Centrale</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-mono">
+            <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-mono shrink-0 ml-1">
               {(messages || []).length}
             </span>
           </button>
 
           <button
             onClick={() => setActiveSection('projects')}
-            className={`w-full px-3.5 py-2.5 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+            className={`w-full px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
               activeSection === 'projects'
                 ? 'bg-purple-50 text-purple-900 font-black border border-purple-200'
                 : 'text-slate-600 hover:bg-slate-50'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-amber-600" />
-              <span>Gestion des Projets</span>
+            <span className="flex items-center gap-2 truncate">
+              <Layers className="w-4 h-4 text-amber-600 shrink-0" />
+              <span className="truncate">Gestion des Projets</span>
             </span>
-            <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-mono">
-              2 Portefeuilles
+            <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-mono shrink-0 ml-1">
+              2 Portef.
             </span>
           </button>
         </div>
@@ -729,7 +730,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         {/* ================================================================= */}
         {/* CONTENU PRINCIPAL DE LA CONSOLE                                   */}
         {/* ================================================================= */}
-        <div className="lg:col-span-9">
+        <div className="flex-1 min-w-0 w-full">
           {/* --------------------------------------------------------------- */}
           {/* SECTION 1 : GESTION DES UTILISATEURS & ACCÈS                    */}
           {/* --------------------------------------------------------------- */}
@@ -770,72 +771,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 </div>
               </div>
 
-              {/* Panneau récapitulatif des NDA signés scannés et enregistrés sur la page */}
-              {(() => {
-                const usersWithFiles = safeInvestors.filter((u) => u && u.ndaFileName);
-                if (usersWithFiles.length === 0) return null;
-                return (
-                  <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-purple-50 border border-purple-200 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <FileCheck className="w-4 h-4 text-purple-600" />
-                        <span className="font-black text-xs uppercase tracking-wider text-purple-950">
-                          Fichiers NDA Signés Déposés sur la Plateforme ({usersWithFiles.length})
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-purple-700 font-bold bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
-                        Documents stockés & téléchargeables
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
-                      {usersWithFiles.map((u) => (
-                        <div
-                          key={u.id || u.email}
-                          className="p-3 bg-white border border-purple-100 hover:border-purple-300 rounded-xl shadow-2xs flex items-center justify-between gap-2 transition"
-                        >
-                          <div className="min-w-0 flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center shrink-0 font-black text-xs">
-                              PDF
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-[11px] font-black text-slate-900 truncate">
-                                {u.name}
-                              </div>
-                              <div className="text-[10px] text-slate-500 truncate">
-                                {u.company}
-                              </div>
-                              <div className="text-[10px] text-purple-700 font-mono font-bold truncate mt-0.5" title={u.ndaFileName}>
-                                {u.ndaFileName} {u.ndaFileSize ? `(${(u.ndaFileSize / 1024).toFixed(0)} Ko)` : ''}
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadNdaFile(u)}
-                              className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 transition cursor-pointer"
-                              title={`Télécharger : ${u.ndaFileName}`}
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedInvestorForNda(u)}
-                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
-                              title="Consulter le document"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
               {/* Table des utilisateurs (élargie & compacte) */}
               <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-xs">
                 <table className="w-full text-left text-xs border-collapse">
@@ -845,7 +780,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       <th className="py-2.5 px-3.5 whitespace-nowrap">Société & Contact</th>
                       <th className="py-2.5 px-3.5 whitespace-nowrap">E-mail</th>
                       <th className="py-2.5 px-3.5 text-center whitespace-nowrap">Statut Accès</th>
-                      <th className="py-2.5 px-3.5 text-center whitespace-nowrap">NDA Bilatéral</th>
                       <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Actions</th>
                     </tr>
                   </thead>
@@ -901,92 +835,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                             )}
                           </td>
 
-                          {/* Statut NDA */}
-                          <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
-                            {inv.ndaFileName ? (
-                              <div className="flex flex-col items-center gap-1">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                    <Check className="w-3 h-3 text-emerald-600" /> Signé
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setUploadNdaModalUser(inv);
-                                      setUploadNdaFile(null);
-                                    }}
-                                    className="p-1 rounded-md text-slate-400 hover:text-purple-700 hover:bg-purple-50 transition cursor-pointer"
-                                    title={`Fichier déposé : ${inv.ndaFileName} — Cliquer pour remplacer`}
-                                  >
-                                    <FileUp className="w-3.5 h-3.5 text-purple-600" />
-                                  </button>
-                                </div>
-
-                                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg text-purple-950 text-[10px] font-bold shadow-2xs transition max-w-[210px]">
-                                  <FileText className="w-3 h-3 text-purple-600 shrink-0" />
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDownloadNdaFile(inv)}
-                                    className="truncate text-left hover:underline cursor-pointer"
-                                    title={`Télécharger : ${inv.ndaFileName}`}
-                                  >
-                                    {inv.ndaFileName}
-                                  </button>
-                                  {inv.ndaFileSize ? (
-                                    <span className="text-[9px] text-purple-600 font-mono shrink-0">
-                                      ({(inv.ndaFileSize / 1024).toFixed(0)} Ko)
-                                    </span>
-                                  ) : null}
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDownloadNdaFile(inv)}
-                                    className="p-0.5 text-purple-600 hover:text-purple-900 shrink-0 cursor-pointer"
-                                    title="Télécharger ce document PDF"
-                                  >
-                                    <Download className="w-2.5 h-2.5" />
-                                  </button>
-                                </div>
-                              </div>
-                            ) : (inv.ndaSignedAt || inv.hasUploadedSignedNda || inv.ndaSignedByAdmin) ? (
-                              <div className="flex flex-col items-center gap-0.5">
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                    <Check className="w-3 h-3 text-emerald-600" /> Signé
-                                  </span>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setUploadNdaModalUser(inv);
-                                      setUploadNdaFile(null);
-                                    }}
-                                    className="px-2 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[10px] border border-purple-200 transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                                    title="Déposer et stocker le PDF signé scanné pour cet investisseur"
-                                  >
-                                    <FileUp className="w-3 h-3" />
-                                    <span>Déposer PDF</span>
-                                  </button>
-                                </div>
-                                <span className="text-[9px] text-slate-400 italic">Contrat type bilatéral</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center justify-center gap-1.5">
-                                <span className="text-[10px] text-slate-400 italic">Non signé</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setUploadNdaModalUser(inv);
-                                    setUploadNdaFile(null);
-                                  }}
-                                  className="px-2 py-0.5 rounded-md bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-[10px] border border-purple-200 transition flex items-center gap-1 cursor-pointer shadow-2xs"
-                                  title="Charger le document NDA signé par cet investisseur"
-                                >
-                                  <FileUp className="w-3 h-3" />
-                                  <span>Charger NDA</span>
-                                </button>
-                              </div>
-                            )}
-                          </td>
-
                           {/* Actions */}
                           <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                             <div className="flex items-center justify-end gap-1.5">
@@ -996,8 +844,8 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                                   setUploadNdaModalUser(inv);
                                   setUploadNdaFile(null);
                                 }}
-                                className="p-1 rounded-lg hover:bg-purple-50 text-slate-400 hover:text-purple-700 transition cursor-pointer"
-                                title="Charger ou mettre à jour le NDA signé pour cet investisseur"
+                                className="p-1.5 rounded-lg hover:bg-purple-100 bg-purple-50 text-purple-700 transition cursor-pointer border border-purple-200"
+                                title="Charger ou mettre à jour le PDF du NDA signé"
                               >
                                 <FileUp className="w-3.5 h-3.5" />
                               </button>
