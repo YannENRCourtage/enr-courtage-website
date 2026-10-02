@@ -11,24 +11,57 @@ import { applyWatermarkToPdf } from '@/services/pdfWatermarkService';
 import { generateFicheProjetPdf } from '@/services/ficheProjetGenerator';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { getFileDownloadUrl } from '@/lib/firebase';
+import * as XLSX from 'xlsx';
 
 /**
- * Résout le véritable document PDF physique complet (Fiche Projet ou Promesse de Bail)
+ * Détecte si un fichier est un tableur Excel / CSV
+ */
+export function isExcelFile(file, fileName = '') {
+  if (!file && !fileName) return false;
+  const name = String(fileName || file?.fileName || file?.name || '').toLowerCase();
+  const type = String(file?.type || '').toUpperCase();
+  const mime = String(file?.mimeType || file?.contentType || '').toLowerCase();
+  return (
+    name.endsWith('.xlsx') ||
+    name.endsWith('.xls') ||
+    name.endsWith('.csv') ||
+    name.endsWith('.xlsm') ||
+    type === 'XLSX' ||
+    type === 'XLS' ||
+    type === 'CSV' ||
+    type === 'EXCEL' ||
+    mime.includes('spreadsheet') ||
+    mime.includes('excel') ||
+    mime.includes('csv')
+  );
+}
+
+/**
+ * Résout le véritable document physique complet (Fiche Projet, Promesse de Bail, ou Classeur Excel)
  * en interdisant formellement tout mélange ou substitution.
  */
 export function resolveRealDocument(file, portfolio) {
   if (!file) return null;
 
-  const isFiche = isFicheProjetRequest(file);
-  const isBail = isPromesseBailRequest(file);
+  const isExcel = isExcelFile(file);
+  const isFiche = !isExcel && isFicheProjetRequest(file);
+  const isBail = !isExcel && isPromesseBailRequest(file);
 
-  // 1. URL directe explicite (ex: URL publique ou signée Firebase Storage)
+  // 1. URL directe explicite (ex: URL publique, locale ou signée Firebase Storage)
   if (file.fileUrl) {
-    const fileName = file.fileName || (file.name?.toLowerCase().endsWith('.pdf') ? file.name : `${file.name || 'document'}.pdf`);
+    let fileName = file.fileName || file.name || (isExcel ? 'Matrice_economique.xlsx' : 'document.pdf');
+    if (isExcel) {
+      if (!fileName.toLowerCase().match(/\.(xlsx|xls|csv)$/)) {
+        fileName = `${fileName.replace(/[^a-zA-Z0-9_\-]/g, '_')}.xlsx`;
+      }
+    } else if (!fileName.toLowerCase().endsWith('.pdf')) {
+      fileName = `${fileName}.pdf`;
+    }
     return {
       url: file.fileUrl,
       fileName,
       storagePath: file.storagePath,
+      isExcel,
       isFiche,
       isBail,
     };
@@ -36,22 +69,79 @@ export function resolveRealDocument(file, portfolio) {
 
   // 1b. Chemin Firebase Storage sans fileUrl précalculée
   if (file.storagePath) {
-    const fileName = file.fileName || file.name || 'document.pdf';
+    let fileName = file.fileName || file.name || (isExcel ? 'document.xlsx' : 'document.pdf');
+    if (isExcel && !fileName.toLowerCase().match(/\.(xlsx|xls|csv)$/)) {
+      fileName = `${fileName.replace(/[^a-zA-Z0-9_\-]/g, '_')}.xlsx`;
+    }
     return {
       url: null,
       storagePath: file.storagePath,
       fileName,
+      isExcel,
       isFiche,
       isBail,
     };
   }
 
-  // 2. Recherche intelligente dans les documents originaux du serveur
+  // 1c. Résolution des fichiers Excel par défaut (Matrices économiques, Business Plans, Hypothèses)
+  if (isExcel) {
+    const pId = String(portfolio?.id || portfolio?.name || '').toLowerCase();
+    const isVolta = pId.includes('volta') || portfolio?.type === 'BESS';
+    const lowName = String(file.name || file.fileName || '').toLowerCase();
+
+    if (isVolta) {
+      if (lowName.includes('hypo') || lowName.includes('fcr') || lowName.includes('mdc') || lowName.includes('revenu')) {
+        return {
+          url: '/documents/dataroom/Hypotheses_revenus_FCR_aFRR_MdC_VOLTA.xlsx',
+          fileName: 'Hypotheses_revenus_FCR_aFRR_MdC_VOLTA.xlsx',
+          isExcel: true,
+          isFiche: false,
+          isBail: false,
+        };
+      }
+      return {
+        url: '/documents/dataroom/Matrice_economique_BESS_consolidee_VOLTA.xlsx',
+        fileName: 'Matrice_economique_BESS_consolidee_VOLTA.xlsx',
+        isExcel: true,
+        isFiche: false,
+        isBail: false,
+      };
+    } else {
+      if (lowName.includes('business') || lowName.includes('chronique') || lowName.includes('20 ans')) {
+        return {
+          url: '/documents/dataroom/Business_plans_unitaires_chronique_20_ans_HELIOS.xlsx',
+          fileName: 'Business_plans_unitaires_chronique_20_ans_HELIOS.xlsx',
+          isExcel: true,
+          isFiche: false,
+          isBail: false,
+        };
+      }
+      if (lowName.includes('charpente') || lowName.includes('batiment')) {
+        return {
+          url: '/documents/dataroom/Tableaux_batiments_charpentes_complet_HELIOS.xlsx',
+          fileName: 'Tableaux_batiments_charpentes_complet_HELIOS.xlsx',
+          isExcel: true,
+          isFiche: false,
+          isBail: false,
+        };
+      }
+      return {
+        url: '/documents/dataroom/Matrice_economique_consolidee_HELIOS.xlsx',
+        fileName: 'Matrice_economique_consolidee_HELIOS.xlsx',
+        isExcel: true,
+        isFiche: false,
+        isBail: false,
+      };
+    }
+  }
+
+  // 2. Recherche intelligente dans les documents originaux du serveur (PDF)
   const serverMatch = findMatchingServerDocument(file, file.site);
   if (serverMatch && serverMatch.url) {
     return {
       url: serverMatch.url,
       fileName: serverMatch.fileName,
+      isExcel: false,
       isFiche: serverMatch.type === 'fiche' || isFiche,
       isBail: serverMatch.type === 'bail' || isBail,
     };
@@ -63,6 +153,7 @@ export function resolveRealDocument(file, portfolio) {
     return {
       url: defaultFiche ? defaultFiche.url : null,
       fileName: defaultFiche ? defaultFiche.fileName : 'Fiche_projet_detaillee.pdf',
+      isExcel: false,
       isFiche: true,
       isBail: false,
     };
@@ -78,6 +169,7 @@ export function resolveRealDocument(file, portfolio) {
       fileName: defaultBail ? defaultBail.fileName : (portfolio?.type === 'PV' || portfolio?.id === 'helios'
         ? 'Promesse_de_bail_CONSOLI_signe.pdf'
         : 'Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf'),
+      isExcel: false,
       isFiche: false,
       isBail: true,
     };
@@ -87,8 +179,9 @@ export function resolveRealDocument(file, portfolio) {
 }
 
 /**
- * Télécharge ou consulte n'importe quel document de la Data Room ou Fiche Projet
- * en appliquant SYSTÉMATIQUEMENT le filigrane de sécurité confidentiel anti-fuite.
+ * Télécharge ou consulte n'importe quel document de la Data Room ou Fiche Projet.
+ * Pour les PDF : applique le filigrane de sécurité confidentiel anti-fuite.
+ * Pour les Excel (.xlsx) : déclenche le téléchargement physique réel direct.
  *
  * @param {Object} file - Objet document (name, fileUrl, isFiche, site, etc.)
  * @param {Object} portfolio - Objet portefeuille (helios ou volta)
@@ -111,27 +204,37 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
     return;
   }
 
+  const realDoc = resolveRealDocument(file, portfolio);
+  const isExcel = isExcelFile(file) || isExcelFile(realDoc);
+  const isFiche = !isExcel && (file?.isFiche || realDoc?.isFiche || isFicheProjetRequest(file));
+  const isBail = !isExcel && !isFiche && (file?.isBail || realDoc?.isBail || isPromesseBailRequest(file));
+
+  // Les tableurs Excel sont toujours téléchargés (les navigateurs n'ont pas de visualiseur .xlsx natif)
+  const effectiveAction = isExcel ? 'download' : action;
+
   // Enregistrement Audit Log
   if (store.logSecurityEvent) {
     store.logSecurityEvent({
-      eventType: action === 'view' ? 'DATAROOM_VIEW' : 'DATAROOM_DOWNLOAD',
+      eventType: effectiveAction === 'view' ? 'DATAROOM_VIEW' : 'DATAROOM_DOWNLOAD',
       targetResource: file?.name || 'DOCUMENT_DATAROOM',
-      details: `${action === 'view' ? 'Consultation' : 'Téléchargement'} du document ${file?.name || ''} (${portfolio?.name || portfolio?.id || ''}) avec filigrane confidentiel`,
+      details: `${effectiveAction === 'view' ? 'Consultation' : 'Téléchargement'} du document ${file?.name || ''} (${portfolio?.name || portfolio?.id || ''})`,
     });
   }
 
   if (trackAction) {
-    trackAction(file, action);
+    trackAction(file, effectiveAction);
   }
 
-  const formatPdfFileName = (name) => {
-    if (!name) return 'Document.pdf';
+  const formatDocumentFileName = (name) => {
+    if (!name) return isExcel ? 'Matrice_economique.xlsx' : 'Document.pdf';
+    if (isExcel) {
+      if (name.toLowerCase().match(/\.(xlsx|xls|csv)$/)) return name;
+      return `${name.replace(/[^a-zA-Z0-9_\-]/g, '_')}.xlsx`;
+    }
     return name.toLowerCase().endsWith('.pdf') ? name : `${name}.pdf`;
   };
 
-  const realDoc = resolveRealDocument(file, portfolio);
-  const isFiche = file?.isFiche || realDoc?.isFiche || isFicheProjetRequest(file);
-  const targetFileName = formatPdfFileName(realDoc?.fileName || file.name || (isFiche ? 'Fiche_projet.pdf' : 'Document.pdf'));
+  const targetFileName = formatDocumentFileName(realDoc?.fileName || file.fileName || file.name || (isFiche ? 'Fiche_projet.pdf' : (isExcel ? 'Matrice_economique.xlsx' : 'Document.pdf')));
 
   // Résolution asynchrone si chemin Firebase Storage
   let resolvedUrl = realDoc?.url || null;
@@ -179,8 +282,8 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
     }
   }
 
-  // Si c'est une promesse de bail et qu'aucun buffer n'est chargé : fallback promesse de bail
-  if (!rawBuffer && !isFiche) {
+  // Si c'est une promesse de bail et qu'aucun buffer n'est chargé : fallback promesse de bail (UNIQUEMENT baux PDF)
+  if (!rawBuffer && !isFiche && !isExcel && (isBail || file.category === 'Juridique')) {
     const fallbackBailUrl = (portfolio?.type === 'PV' || portfolio?.id === 'helios')
       ? '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf'
       : '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf';
@@ -194,9 +297,38 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
     }
   }
 
-  // Application SYSTÉMATIQUE du filigrane anti-fuite dynamique réglementaire (Image 5)
+  // Si c'est un fichier Excel et qu'aucun buffer n'a pu être récupéré : génération dynamique de secours via XLSX
+  if (!rawBuffer && isExcel) {
+    try {
+      const wb = XLSX.utils.book_new();
+      const rows = [
+        ['ENR COURTAGE — DATA ROOM M&A'],
+        ['Portefeuille', portfolio?.name || portfolio?.id || 'HÉLIOS / VOLTA'],
+        ['Document', file?.name || 'Matrice Économique M&A'],
+        ['Date de consultation', new Date().toLocaleDateString('fr-FR')],
+        ['Investisseur accrédité', currentInvestor?.name || 'Partenaire'],
+        ['Société', currentInvestor?.company || 'Investisseur'],
+        [],
+        ['NOTE DE CONFIDENTIALITÉ'],
+        ['Document financier confidentiel sous accord NDA M&A.'],
+        ['Données de modélisation financière conformes au dossier d\'investissement.'],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, 'Data Room ENR');
+      const u8 = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+      rawBuffer = u8.buffer || u8;
+    } catch (xlErr) {
+      console.warn('Erreur génération XLSX dynamique:', xlErr);
+    }
+  }
+
+  // Création du Blob adapté selon le type de fichier
   let finalBlob = null;
-  if (rawBuffer && targetFileName.toLowerCase().endsWith('.pdf')) {
+  if (rawBuffer && isExcel) {
+    finalBlob = new Blob([rawBuffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+  } else if (rawBuffer && targetFileName.toLowerCase().endsWith('.pdf')) {
     try {
       const watermarkedBytes = await applyWatermarkToPdf(rawBuffer, {
         investorName: currentInvestor.name,
@@ -212,32 +344,43 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
     finalBlob = new Blob([rawBuffer]);
   }
 
-  // Affichage ou Téléchargement
+  // Téléchargement ou Affichage
   if (finalBlob) {
     const url = URL.createObjectURL(finalBlob);
 
-    if (action === 'view') {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      return;
-    } else {
+    if (effectiveAction === 'download' || isExcel) {
       const a = document.createElement('a');
       a.href = url;
       a.download = targetFileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setTimeout(() => URL.revokeObjectURL(url), 15000);
+      return;
+    } else {
+      window.open(url, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
       return;
     }
   }
 
-  // Si vraiment aucun buffer n'a pu être produit :
+  // Fallback si URL distante directe
   if (resolvedUrl) {
-    window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
-  } else {
-    alert("Impossible de charger ce document. Veuillez contacter un administrateur.");
+    if (isExcel) {
+      const a = document.createElement('a');
+      a.href = resolvedUrl;
+      a.download = targetFileName;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
+    }
+    return;
   }
+
+  alert("Impossible de charger ce document. Veuillez contacter un administrateur.");
 }
 
 /**

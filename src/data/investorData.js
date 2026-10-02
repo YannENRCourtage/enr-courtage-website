@@ -783,8 +783,8 @@ export const PORTFOLIOS = [
           { name: 'Plans d\'implantation par site', type: 'PDF', size: '12.3 Mo' },
         ]},
         { name: 'Financier', icon: 'Calculator', files: [
-          { name: 'Matrice économique consolidée (15 sites)', type: 'XLSX', size: '1.8 Mo' },
-          { name: 'Business plans unitaires & chronique 20 ans', type: 'XLSX', size: '4.4 Mo' },
+          { name: 'Matrice économique consolidée (15 sites)', type: 'XLSX', size: '37 Ko', fileUrl: '/documents/dataroom/Matrice_economique_consolidee_HELIOS.xlsx' },
+          { name: 'Business plans unitaires & chronique 20 ans', type: 'XLSX', size: '37 Ko', fileUrl: '/documents/dataroom/Business_plans_unitaires_chronique_20_ans_HELIOS.xlsx' },
         ]},
         { name: 'Urbanisme', icon: 'Map', files: [
           { name: 'Autorisations d\'urbanisme — Sites URBA OK', type: 'PDF', size: '22.1 Mo' },
@@ -959,8 +959,8 @@ export const PORTFOLIOS = [
           { name: 'Plans dalle & implantation type', type: 'PDF', size: '6.1 Mo' },
         ]},
         { name: 'Financier', icon: 'Calculator', files: [
-          { name: 'Matrice économique BESS consolidée', type: 'XLSX', size: '2.3 Mo' },
-          { name: 'Hypothèses revenus FCR/aFRR/MdC', type: 'XLSX', size: '1.1 Mo' },
+          { name: 'Matrice économique BESS consolidée', type: 'XLSX', size: '38 Ko', fileUrl: '/documents/dataroom/Matrice_economique_BESS_consolidee_VOLTA.xlsx' },
+          { name: 'Hypothèses revenus FCR/aFRR/MdC', type: 'XLSX', size: '38 Ko', fileUrl: '/documents/dataroom/Hypotheses_revenus_FCR_aFRR_MdC_VOLTA.xlsx' },
         ]},
         { name: 'Réseau', icon: 'Network', files: [
           { name: 'Cartographie transformateurs sol identifiés', type: 'PDF', size: '14.5 Mo' },

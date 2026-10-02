@@ -4,5 +4,6 @@
 dist
 node_modules
 *.xlsx
+!public/documents/dataroom/*.xlsx
 *.mp4
 NELSON/

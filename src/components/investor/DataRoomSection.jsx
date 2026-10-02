@@ -11,11 +11,12 @@ import {
   CheckCircle2,
   Paperclip,
   Eye,
+  Download,
   Filter,
   MapPin,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
-import { downloadOrViewDoc } from '@/services/dataRoomDocumentService';
+import { downloadOrViewDoc, isExcelFile } from '@/services/dataRoomDocumentService';
 
 const categoryIconMap = {
   Scale,
@@ -139,11 +140,19 @@ export default function DataRoomSection({
   };
 
   /**
-   * Action CONSULTER :
+   * Action CONSULTER (PDF) :
    * Ouvre directement le document PDF complet dans un nouvel onglet avec filigrane confidentiel anti-fuite.
    */
   const handleView = async (file) => {
     await downloadOrViewDoc(file, portfolio, 'view', trackAction);
+  };
+
+  /**
+   * Action TÉLÉCHARGER (Excel / Tableurs) :
+   * Télécharge directement le classeur .xlsx réel sur le poste de l'utilisateur.
+   */
+  const handleDownload = async (file) => {
+    await downloadOrViewDoc(file, portfolio, 'download', trackAction);
   };
 
   return (
@@ -243,6 +252,7 @@ export default function DataRoomSection({
               <div className="space-y-2">
                 {category.files.map((file, fIdx) => {
                   const assignedSites = getAssignedSitesForDoc(file);
+                  const isExcel = isExcelFile(file);
 
                   return (
                     <div
@@ -250,8 +260,12 @@ export default function DataRoomSection({
                       className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-white border border-slate-200 hover:border-emerald-400 transition group gap-2 shadow-2xs"
                     >
                       <div className="flex items-start space-x-2.5 min-w-0 flex-1">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0 mt-0.5">
-                          {file.type}
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold border shrink-0 mt-0.5 ${
+                          isExcel
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                            : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}>
+                          {file.type || (isExcel ? 'XLSX' : 'PDF')}
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-bold text-slate-900 truncate group-hover:text-emerald-700 transition">
@@ -280,15 +294,27 @@ export default function DataRoomSection({
                       </div>
 
                       <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-                        {/* Bouton CONSULTER : Visualiseur PDF avec filigrane confidentiel */}
-                        <button
-                          onClick={() => handleView(file)}
-                          title="Consulter le document avec filigrane confidentiel"
-                          className="text-xs px-3 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-emerald-600 text-slate-800 hover:text-white border border-slate-200 hover:border-emerald-600 transition flex items-center gap-1.5 cursor-pointer shadow-2xs group"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white transition" />
-                          <span>Consulter</span>
-                        </button>
+                        {isExcel ? (
+                          /* Bouton TÉLÉCHARGER pour les classeurs Excel (.xlsx) */
+                          <button
+                            onClick={() => handleDownload(file)}
+                            title="Télécharger le fichier Excel (.xlsx)"
+                            className="text-xs px-3 py-1.5 rounded-lg font-bold bg-emerald-50 hover:bg-emerald-600 text-emerald-800 hover:text-white border border-emerald-300 hover:border-emerald-600 transition flex items-center gap-1.5 cursor-pointer shadow-2xs group"
+                          >
+                            <Download className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white transition" />
+                            <span>Télécharger</span>
+                          </button>
+                        ) : (
+                          /* Bouton CONSULTER pour les contrats et pièces PDF (filigrane confidentiel) */
+                          <button
+                            onClick={() => handleView(file)}
+                            title="Consulter le document avec filigrane confidentiel"
+                            className="text-xs px-3 py-1.5 rounded-lg font-bold bg-slate-100 hover:bg-emerald-600 text-slate-800 hover:text-white border border-slate-200 hover:border-emerald-600 transition flex items-center gap-1.5 cursor-pointer shadow-2xs group"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-emerald-600 group-hover:text-white transition" />
+                            <span>Consulter</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
