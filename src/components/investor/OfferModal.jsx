@@ -117,6 +117,7 @@ export default function OfferModal({
   const [localSelectedSiteIds, setLocalSelectedSiteIds] = useState([]);
   const [siteSearchTerm, setSiteSearchTerm] = useState('');
   const [amountEur, setAmountEur] = useState('');
+  const [ratePerMw, setRatePerMw] = useState('');
 
   // Step 3: Dynamic Milestones List
   const [milestones, setMilestones] = useState(INITIAL_STANDARD_MILESTONES);
@@ -181,6 +182,7 @@ export default function OfferModal({
       setCurrentStep(1);
       setError('');
       setSubmittedOffer(null);
+      setRatePerMw('');
       return;
     }
 
@@ -197,6 +199,24 @@ export default function OfferModal({
         setLocalSelectedSiteIds(existingOffer.selectedSiteIds || selectedSiteIds || []);
         const targetAmt = existingOffer.counterAmountEur || existingOffer.amountEur || '';
         setAmountEur(targetAmt ? formatThousands(targetAmt) : '');
+
+        // Initialisation du tarif au MW pour l'offre existante
+        const pKey = resolvedPortfolioId;
+        const pSites = pKey === 'volta' ? voltaBaseSites : heliosBaseSites;
+        const offSites = (existingOffer.offerType === 'partial' && Array.isArray(existingOffer.selectedSiteIds))
+          ? pSites.filter((s) => existingOffer.selectedSiteIds.includes(s.id))
+          : pSites;
+        const capKw = offSites.reduce((sum, s) => sum + (Number(s.kw) || Number(s.kwc) || (pKey === 'volta' ? 500 : 315)), 0);
+        const capMw = capKw / 1000;
+
+        if (targetAmt && capMw > 0) {
+          setRatePerMw(formatThousands(Math.round(Number(targetAmt) / capMw)));
+        } else if (existingOffer.ratePerMw) {
+          setRatePerMw(formatThousands(existingOffer.ratePerMw));
+        } else {
+          setRatePerMw('');
+        }
+
         setComments(existingOffer.comments || '');
 
         // Load existing milestones
@@ -222,11 +242,12 @@ export default function OfferModal({
         setOfferType(hasPreselected ? 'partial' : 'total');
         setLocalSelectedSiteIds(selectedSiteIds || []);
         setAmountEur('');
+        setRatePerMw('');
         setComments('');
         setMilestones(INITIAL_STANDARD_MILESTONES.map((m) => ({ ...m, selected: false, comment: '' })));
       }
     }
-  }, [isOpen, resolvedPortfolioId, existingOffer, selectedSiteIds]);
+  }, [isOpen, resolvedPortfolioId, existingOffer, selectedSiteIds, voltaBaseSites, heliosBaseSites]);
 
   // Compute available active sites for target portfolio (Strictly single-portfolio: HELIOS or VOLTA)
   // Excludes both deletedSites and soldSites
@@ -266,7 +287,49 @@ export default function OfferModal({
   const sitesToIncludeCount =
     offerType === 'total' ? availableSites.length : localSelectedSiteIds.length;
 
+  // Périmètre et puissance globale retenue
+  const selectedSitesList = useMemo(() => {
+    if (offerType === 'total') return availableSites;
+    return availableSites.filter((s) => localSelectedSiteIds.includes(s.id));
+  }, [availableSites, offerType, localSelectedSiteIds]);
+
+  const unitLabel = targetPortfolio === 'volta' ? 'MW' : 'MWc';
+
+  const totalSelectedMw = useMemo(() => {
+    if (!selectedSitesList || selectedSitesList.length === 0) return 0;
+    const totalKwOrKwc = selectedSitesList.reduce((sum, s) => {
+      const p = Number(s.kw) || Number(s.kwc) || (targetPortfolio === 'volta' ? 500 : 315);
+      return sum + p;
+    }, 0);
+    return totalKwOrKwc / 1000;
+  }, [selectedSitesList, targetPortfolio]);
+
   const numericAmount = parseThousands(amountEur);
+
+  // Synchronisation bidirectionnelle du tarif global et du tarif au MW / MWc
+  const handleAmountChange = (val) => {
+    const formatted = formatThousands(val);
+    setAmountEur(formatted);
+    const numAmt = parseThousands(formatted);
+    if (!numAmt || numAmt <= 0 || totalSelectedMw <= 0) {
+      setRatePerMw('');
+    } else {
+      const calcRate = Math.round(numAmt / totalSelectedMw);
+      setRatePerMw(formatThousands(calcRate));
+    }
+  };
+
+  const handleRatePerMwChange = (val) => {
+    const formatted = formatThousands(val);
+    setRatePerMw(formatted);
+    const numRate = parseThousands(formatted);
+    if (!numRate || numRate <= 0 || totalSelectedMw <= 0) {
+      setAmountEur('');
+    } else {
+      const calcAmt = Math.round(numRate * totalSelectedMw);
+      setAmountEur(formatThousands(calcAmt));
+    }
+  };
 
   // Toggle selection of a single site inside partial purchase
   const handleToggleLocalSite = (siteId) => {
@@ -447,6 +510,12 @@ export default function OfferModal({
       setError('Veuillez sélectionner au moins un projet pour votre offre d\'achat partielle.');
       return;
     }
+    // Synchronisation automatique si un montant ou un tarif au MW a déjà été saisi
+    if (numericAmount > 0 && totalSelectedMw > 0) {
+      setRatePerMw(formatThousands(Math.round(numericAmount / totalSelectedMw)));
+    } else if (parseThousands(ratePerMw) > 0 && totalSelectedMw > 0) {
+      setAmountEur(formatThousands(Math.round(parseThousands(ratePerMw) * totalSelectedMw)));
+    }
     setCurrentStep(2);
   };
 
@@ -495,6 +564,9 @@ export default function OfferModal({
           ? 'Portefeuille VOLTA (BESS)'
           : 'Portefeuille HÉLIOS (PV)';
 
+      const numericRatePerMw = parseThousands(ratePerMw) || (totalSelectedMw > 0 ? Math.round(numericAmount / totalSelectedMw) : 0);
+      const valStr = numericRatePerMw > 0 ? `${formatThousands(numericRatePerMw)} € / ${unitLabel}` : '';
+
       const offerData = {
         portfolioId: targetPortfolio,
         portfolioName: pName,
@@ -502,6 +574,10 @@ export default function OfferModal({
         selectedSiteIds: offerType === 'total' ? [] : localSelectedSiteIds,
         selectedSitesCount: sitesToIncludeCount,
         amountEur: numericAmount,
+        ratePerMw: numericRatePerMw,
+        capacityMw: totalSelectedMw,
+        capacityUnit: unitLabel,
+        valuationPerMw: valStr,
         milestones: activeMilestones.map((m) => ({
           id: m.id,
           key: m.key || m.id,
@@ -544,6 +620,7 @@ export default function OfferModal({
   const handleResetAndClose = () => {
     setSubmittedOffer(null);
     setAmountEur('');
+    setRatePerMw('');
     setComments('');
     setError('');
     setCurrentStep(1);
@@ -554,7 +631,7 @@ export default function OfferModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
-      <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-5 sm:p-8 shadow-2xl relative my-6 text-slate-900">
+      <div className="bg-white border border-slate-200 rounded-3xl max-w-3xl w-full p-5 sm:p-8 shadow-2xl relative my-6 text-slate-900">
         {/* Close button */}
         <button
           onClick={handleResetAndClose}
@@ -603,9 +680,16 @@ export default function OfferModal({
               </div>
               <div className="flex justify-between border-t border-slate-200 pt-2">
                 <span className="text-slate-600 font-bold">Montant proposé :</span>
-                <span className="text-emerald-600 font-black font-mono text-base">
-                  {new Intl.NumberFormat('fr-FR').format(submittedOffer.amountEur)} € HT
-                </span>
+                <div className="text-right">
+                  <span className="text-emerald-600 font-black font-mono text-base block">
+                    {new Intl.NumberFormat('fr-FR').format(submittedOffer.amountEur)} € HT
+                  </span>
+                  {submittedOffer.valuationPerMw && (
+                    <span className="text-[11px] text-slate-500 font-mono block">
+                      Soit {submittedOffer.valuationPerMw}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {submittedOffer.milestones && submittedOffer.milestones.length > 0 && (
@@ -964,27 +1048,76 @@ export default function OfferModal({
             {/* ============================================================= */}
             {currentStep === 2 && (
               <div className="space-y-4 animate-fadeIn">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Tarif global proposé pour le périmètre retenu (€ HT) *
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      autoFocus
-                      required
-                      value={amountEur}
-                      onChange={(e) => setAmountEur(formatThousands(e.target.value))}
-                      placeholder="Ex : 5 000 000"
-                      className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-base placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 font-mono">
-                      EUR HT
+                {/* Récapitulatif du périmètre retenu et de la puissance */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-xl">{targetPortfolio === 'volta' ? '🔋' : '☀️'}</span>
+                    <div>
+                      <div className="text-xs font-bold text-slate-900">
+                        {targetPortfolio === 'volta' ? 'Portefeuille VOLTA (BESS)' : 'Portefeuille HÉLIOS (PV)'} — {sitesToIncludeCount} {targetPortfolio === 'volta' ? 'station(s)' : 'projet(s)'}
+                      </div>
+                      <div className="text-[11px] text-slate-500">
+                        {offerType === 'total' ? 'Intégralité du portefeuille' : 'Sélection sur-mesure de sites'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                      Puissance cumulée
+                    </span>
+                    <span className="text-sm font-black text-amber-600 font-mono">
+                      {totalSelectedMw.toLocaleString('fr-FR', { maximumFractionDigits: 3 })} {unitLabel}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    Montant net vendeur hors frais d'actes et honoraires de conseils juridiques.
-                  </p>
+                </div>
+
+                {/* Saisie tarifaire sur la même ligne avec calcul automatique bidirectionnel */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Champ 1 : Tarif global proposé */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Tarif global proposé pour le périmètre retenu (€ HT) *
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        autoFocus
+                        required
+                        value={amountEur}
+                        onChange={(e) => handleAmountChange(e.target.value)}
+                        placeholder="Ex : 62 000"
+                        className="w-full pl-3.5 pr-20 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-base font-semibold placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
+                      />
+                      <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 font-mono">
+                        EUR HT
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Montant global net vendeur pour l'ensemble du périmètre.
+                    </p>
+                  </div>
+
+                  {/* Champ 2 : Tarif unitaire au MW / MWc */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      Tarif unitaire proposé (€ HT / {unitLabel})
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={ratePerMw}
+                        onChange={(e) => handleRatePerMwChange(e.target.value)}
+                        placeholder="Ex : 4 000"
+                        className="w-full pl-3.5 pr-24 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-base font-semibold placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-amber-700 font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        € / {unitLabel}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 mt-1">
+                      Calcul automatique sur la base de {totalSelectedMw.toLocaleString('fr-FR', { maximumFractionDigits: 3 })} {unitLabel}.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Optional General Comments */}

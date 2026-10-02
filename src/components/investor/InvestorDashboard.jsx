@@ -586,9 +586,14 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       </div>
                       <div className="text-right">
                         <span className="text-xs font-bold text-slate-400 block">Votre offre initiale déposée</span>
-                        <span className="text-2xl font-black text-slate-900">
+                        <span className="text-2xl font-black text-slate-900 block">
                           {formatThousands(activeOffer.amountEur)} € HT
                         </span>
+                        {activeOffer.valuationPerMw && (
+                          <span className="block text-[11px] font-mono font-bold text-amber-800 mt-0.5">
+                            Soit {activeOffer.valuationPerMw}
+                          </span>
+                        )}
                       </div>
                     </div>
 

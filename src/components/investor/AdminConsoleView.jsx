@@ -1053,9 +1053,14 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                             <span className="text-[10px] font-bold text-slate-400 uppercase block">
                               Montant Global Proposé
                             </span>
-                            <span className="text-2xl font-black text-slate-900">
+                            <span className="text-2xl font-black text-slate-900 block">
                               {formatThousands(offer.amountEur)} € HT
                             </span>
+                            {offer.valuationPerMw && (
+                              <span className="inline-block mt-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                {offer.valuationPerMw}
+                              </span>
+                            )}
                           </div>
                         </div>
 
