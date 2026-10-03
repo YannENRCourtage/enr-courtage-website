@@ -132,14 +132,15 @@ export default function PortfolioDetailPage() {
       const activePowerKwc = activeAvailableSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
       const ratio = basePowerKwc > 0 ? (activePowerKwc / basePowerKwc) : 1;
       const formatted = `${(activePowerKwc / 1000).toFixed(2).replace('.', ',')} MWc`;
-      const sub = `(${activeAvailableSites.length} centrale${activeAvailableSites.length > 1 ? 's' : ''} au total)`;
+      const sub = `(${activeAvailableSites.length} projets / 15 centrales)`;
       return { displayPower: formatted, displayPowerSub: sub, powerRatio: ratio };
     } else {
       const basePowerKw = 15500; // 15.50 MW
       const activePowerKw = activeAvailableSites.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
       const ratio = basePowerKw > 0 ? (activePowerKw / basePowerKw) : 1;
       const formatted = `${(activePowerKw / 1000).toFixed(2).replace('.', ',')} MW`;
-      const sub = `${activeAvailableSites.length} site${activeAvailableSites.length > 1 ? 's' : ''} de 500 kW`;
+      const totalStations = activeAvailableSites.reduce((sum, s) => sum + (Number(s.stationsCount) || 1), 0);
+      const sub = `${totalStations} stations BESS (${activeAvailableSites.length} projets)`;
       return { displayPower: formatted, displayPowerSub: sub, powerRatio: ratio };
     }
   }, [isPv, activeAvailableSites]);

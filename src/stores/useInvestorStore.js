@@ -330,9 +330,10 @@ export const useInvestorStore = create(
         'Promesse de bail signée — Parcelle CONSOLI (PRIGONRIEUX)': [4],
         'Promesse_de_bail_CONSOLI_signe.pdf': [4],
         'Promesse de bail signée — Batterie BATIOT (MONGAUSY)': [2],
-        'Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf': [2],
-        'Promesse de bail signée — Batterie CASTEBRUNET (CAUSSADE)': [10, 20, 22, 31],
-        'Promesse_de_bail_Castebrunet.pdf': [10, 20, 22, 31],
+        'Promesse de bail signée — Batterie CASTEBRUNET (CAUSSADE)': [10],
+        'Promesse_de_bail_Castebrunet.pdf': [10],
+        'Promesse de Bail BESS — CASTEBRUNET (82300 CAUSSADE) [25 pages]': [10],
+        'Nouvelle_promesse_de_bail_batterie_CASTEBRUNET_82300_CAUSSADE.pdf': [10],
       },
 
       // Affecter un document à un ou plusieurs projets

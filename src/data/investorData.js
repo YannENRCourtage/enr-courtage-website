@@ -655,7 +655,31 @@ const PV_SITES = [
   { id: 6, name: 'PUYLAUSIC', dept: '32', cp: '32220', address: 'Lieu Dit En Barthe', client: 'CASSAGNE Christian', kwc: 157, cost: 115199, caAn1: 14318, ebitdaAn1: 12590, tri: '10.4%', payback: '9.2 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 43.4682, lng: 0.9996, orange: false },
   { id: 7, name: 'SAINT-LAURENT-DU-PLAN', dept: '33', cp: '33190', address: '6 Bis Rte de Saint Laurent', client: 'LECONTE Frédéric', kwc: 485, cost: 277527, caAn1: 44232, ebitdaAn1: 38896, tri: '13.3%', payback: '7.2 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 44.6239, lng: -0.1167, orange: false },
   { id: 8, name: 'LECTOURE', dept: '32', cp: '32700', address: 'Lieu Dit Piche', client: 'RECKINGER Nicolas', kwc: 789, cost: 427976, caAn1: 71957, ebitdaAn1: 63277, tri: '14.0%', payback: '6.8 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 43.9347, lng: 0.6225, orange: false },
-  { id: 9, name: 'GORNAC', dept: '33', cp: '33540', address: 'Lieu Dit Le Bourg', client: 'JARRY Frédéric', kwc: 628, cost: 348297, caAn1: 57274, ebitdaAn1: 50366, tri: '13.7%', payback: '6.9 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 44.6623, lng: -0.1805, orange: false },
+  {
+    id: 9,
+    name: 'GORNAC (JARRY 1 & JARRY 2)',
+    dept: '33',
+    cp: '33540',
+    address: 'Lieu Dit Le Bourg',
+    client: 'JARRY Frédéric (JARRY 1 & 2)',
+    bailleur: 'JARRY Frédéric (2 Hangars neufs)',
+    kwc: 628,
+    cost: 348297,
+    caAn1: 57274,
+    ebitdaAn1: 50366,
+    tri: '13.7%',
+    payback: '6.9 ans',
+    type: '2 Hangars agricoles neufs',
+    statut: 'URBA OK',
+    lat: 44.6623,
+    lng: -0.1805,
+    orange: false,
+    stationsCount: 2,
+    subSites: [
+      { id: '9-1', name: 'JARRY 1', ville: 'GORNAC', cp: '33540', dept: '33', kwc: 217, cost: 147551, caAn1: 19790, ebitdaAn1: 17400, type: 'Hangar agricole neuf', statut: 'URBA OK' },
+      { id: '9-2', name: 'JARRY 2', ville: 'GORNAC', cp: '33540', dept: '33', kwc: 411, cost: 200746, caAn1: 37484, ebitdaAn1: 32966, type: 'Hangar agricole neuf', statut: 'URBA OK' },
+    ],
+  },
   { id: 10, name: 'CHALAIS', dept: '16', cp: '16210', address: 'Lieu Dit Chez Choloux', client: 'CHOLOUX Jean-Marc', kwc: 707.2, cost: 387493, caAn1: 64497, ebitdaAn1: 56718, tri: '13.9%', payback: '6.9 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 45.2736, lng: 0.0408, orange: false },
   { id: 11, name: 'MIRAMBEAU', dept: '17', cp: '17150', address: '1 Chemin des Plantes', client: 'CHAUCHET Eric', kwc: 145, cost: 109261, caAn1: 13224, ebitdaAn1: 11628, tri: '10.1%', payback: '9.4 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 45.3744, lng: -0.5708, orange: false },
   { id: 12, name: 'SAINT-SAUD-LACOUSSIÈRE', dept: '24', cp: '24470', address: 'Lieu Dit Le Mas', client: 'MISSAULT Patrick', kwc: 434, cost: 279787, caAn1: 39407, ebitdaAn1: 34633, tri: '11.8%', payback: '8.1 ans', type: 'Hangars agricoles', statut: 'URBA OK', lat: 45.5413, lng: 0.8173, orange: false },
@@ -665,7 +689,7 @@ const PV_SITES = [
 ];
 
 // ============================================================================
-// PROJETS BESS - Portefeuille VOLTA (31 Sites / 15.50 MW / 32.36 MWh)
+// PROJETS BESS - Portefeuille VOLTA (31 Stations dans 28 Projets / 15.50 MW / 32.36 MWh)
 // ============================================================================
 const BESS_SITES = [
   { id: 1, name: 'BRANTÔME EN PÉRIGORD', dept: '24', cp: '24310', client: 'LATOURNERIE', bailleur: 'LATOURNERIE Franck', posteSource: 'BRANTOME', distHta: '3.5 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '4.9 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.328888, lng: 0.651648 },
@@ -677,7 +701,34 @@ const BESS_SITES = [
   { id: 7, name: 'GRISOLLES', dept: '82', cp: '82170', client: 'PRAVIE', bailleur: 'PRAVIE Clémence', posteSource: 'LESQUIVE 2', distHta: '2.3 km', quotePart: '64,11 k€', ebitda: '56 215 €', payback: '4.5 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 43.896232, lng: 1.295833 },
   { id: 8, name: 'CONCÈZE', dept: '19', cp: '19350', client: 'DAVID', bailleur: 'DAVID Louis', posteSource: 'LUBERSAC', distHta: '8.6 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.351329, lng: 1.314195 },
   { id: 9, name: 'SAINT-ÉLOY-LES-TUILERIES', dept: '19', cp: '19210', client: 'GRANGER', bailleur: 'GRANGER Bruno', posteSource: 'LUBERSAC', distHta: '10.5 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.442533, lng: 1.267710 },
-  { id: 10, name: 'CAUSSADE', dept: '82', cp: '82300', client: 'CASTEBRUNET', bailleur: 'CASTEBRUNET 2', posteSource: 'LERE', distHta: '5.7 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.123740, lng: 1.564486 },
+  {
+    id: 10,
+    name: 'CASTEBRUNET (Cluster 4 stations BESS)',
+    dept: '82',
+    cp: '82300',
+    ville: 'CAUSSADE • MONTEILS • SAINT-CIRQ',
+    address: 'Caussade 1 & 2 • Monteils • Saint-Cirq (82300)',
+    client: 'CASTEBRUNET',
+    bailleur: 'CASTEBRUNET (1, 2, 3 & 4)',
+    posteSource: 'LERE (HTA 20 kV)',
+    distHta: '5.3 km moy.',
+    quotePart: '64,11 k€',
+    ebitda: '220 212 €',
+    payback: '5.1 ans',
+    kw: 2000,
+    kwh: 4176,
+    type: 'Batterie SA 16×125kW (4 stations)',
+    statut: 'URBA OK',
+    lat: 44.1325,
+    lng: 1.5695,
+    stationsCount: 4,
+    subSites: [
+      { id: '10-1', name: 'CASTEBRUNET 1', ville: 'CAUSSADE', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '5.7 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 1', statut: 'URBA OK' },
+      { id: '10-2', name: 'CASTEBRUNET 2', ville: 'CAUSSADE', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '5.7 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 2', statut: 'URBA OK' },
+      { id: '10-3', name: 'CASTEBRUNET 3', ville: 'MONTEILS', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '3.6 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 3', statut: 'URBA OK' },
+      { id: '10-4', name: 'CASTEBRUNET 4', ville: 'SAINT-CIRQ', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '6.2 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 4', statut: 'URBA OK' },
+    ],
+  },
   { id: 11, name: 'MONESTIER', dept: '24', cp: '24240', client: 'BERTRANDIE', bailleur: 'BERTRANDIE Sébastien', posteSource: 'STE-FOY-LA-GRANDE', distHta: '9 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.773569, lng: 0.300107 },
   { id: 12, name: 'LEYRAT', dept: '23', cp: '23600', client: 'GIOT', bailleur: 'GIOT Aurélien', posteSource: 'BOUSSAC', distHta: '5.9 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.360561, lng: 2.308566 },
   { id: 13, name: 'DURAS', dept: '47', cp: '47120', client: 'ARBOIN', bailleur: 'ARBOIN Régis', posteSource: 'LA SAUVETAT', distHta: '11.8 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.659495, lng: 0.222735 },
@@ -687,18 +738,15 @@ const BESS_SITES = [
   { id: 17, name: 'PAYZAC', dept: '24', cp: '24270', client: 'CHAUFFAILLE', bailleur: 'CHAUFFAILLE Alain', posteSource: 'LUBERSAC', distHta: '6.9 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.436230, lng: 1.288720 },
   { id: 18, name: 'JUILLAC', dept: '33', cp: '33890', client: 'CIROLI', bailleur: 'CIROLI Vincent', posteSource: 'AURIOLLES', distHta: '7.9 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.809547, lng: -0.037304 },
   { id: 19, name: 'MANSAN', dept: '65', cp: '65140', client: 'BOURDETTES', bailleur: 'BOURDETTES Pierre', posteSource: 'VIC-EN-BIGORRE', distHta: '10.8 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 43.345738, lng: 0.194628 },
-  { id: 20, name: 'CAUSSADE', dept: '82', cp: '82300', client: 'CASTEBRUNET', bailleur: 'CASTEBRUNET 1', posteSource: 'LERE', distHta: '5.7 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.117157, lng: 1.566758 },
-  { id: 21, name: 'MAISONNISSES', dept: '23', cp: '23150', client: 'LARDY', bailleur: 'LARDY Christian', posteSource: 'LAVAUD', distHta: '10.6 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.067915, lng: 1.907318 },
-  { id: 22, name: 'SAINT EUTROPE DE BORN', dept: '47', cp: '47210', client: 'FRECHEVILLE', bailleur: 'FRECHEVILLE Mathieu', posteSource: 'CANCON', distHta: '7.2 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.588327, lng: 0.665431 },
-  { id: 23, name: 'MONTEILS', dept: '82', cp: '82300', client: 'CASTEBRUNET', bailleur: 'CASTEBRUNET 3', posteSource: 'LERE', distHta: '3.6 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '4.9 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.165754, lng: 1.564963 },
-  { id: 24, name: 'BEYCHAC-ET-CAILLAU', dept: '33', cp: '33750', client: 'DOUMENS', bailleur: 'DOUMENS Jacques', posteSource: 'POMPIGNAC', distHta: '4.0 km', quotePart: '64,11 k€', ebitda: '56 215 €', payback: '4.9 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.870054, lng: -0.397698 },
-  { id: 25, name: 'VENDAYS-MONTALIVET', dept: '33', cp: '33930', client: 'HOUSSAIT-YOUNG', bailleur: 'HOUSSAIT-YOUNG Paul', posteSource: 'ST-VIVIEN', distHta: '9.9 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.338321, lng: -1.071016 },
-  { id: 26, name: 'SAINT-MARTIN-DE-FRESSENGEAS', dept: '24', cp: '24800', client: 'MISSAULT', bailleur: 'MISSAULT Cécile', posteSource: 'THIVIERS', distHta: '6.7 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.438589, lng: 0.815692 },
-  { id: 27, name: 'BEYSSENAC', dept: '19', cp: '19230', client: 'CELERIE', bailleur: 'CELERIE Guy', posteSource: 'LUBERSAC', distHta: '7.1 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.400772, lng: 1.284338 },
-  { id: 28, name: 'MOURIOUX-VIEILLEVILLE', dept: '23', cp: '23210', client: 'MEILLAT 2', bailleur: 'MEILLAT Patrick', posteSource: 'CHATELUS 2', distHta: '5.4 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.081523, lng: 1.633909 },
-  { id: 29, name: 'ARGENCES EN AUBRAC', dept: '12', cp: '12420', client: 'DOMERGUE', bailleur: 'DOMERGUE Daniel', posteSource: 'RUEYRES', distHta: '5.9 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.807528, lng: 2.790446 },
-  { id: 30, name: 'SAINT-ÉLOY-LES-TUILERIES', dept: '19', cp: '19210', client: 'COMBY', bailleur: 'COMBY Fabrice', posteSource: 'LUBERSAC', distHta: '8.3 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.452887, lng: 1.284563 },
-  { id: 31, name: 'SAINT-CIRQ', dept: '82', cp: '82300', client: 'CASTEBRUNET', bailleur: 'CASTEBRUNET 4', posteSource: 'LERE', distHta: '6.2 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.124392, lng: 1.583302 },
+  { id: 20, name: 'MAISONNISSES', dept: '23', cp: '23150', client: 'LARDY', bailleur: 'LARDY Christian', posteSource: 'LAVAUD', distHta: '10.6 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.067915, lng: 1.907318 },
+  { id: 21, name: 'SAINT EUTROPE DE BORN', dept: '47', cp: '47210', client: 'FRECHEVILLE', bailleur: 'FRECHEVILLE Mathieu', posteSource: 'CANCON', distHta: '7.2 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.588327, lng: 0.665431 },
+  { id: 22, name: 'BEYCHAC-ET-CAILLAU', dept: '33', cp: '33750', client: 'DOUMENS', bailleur: 'DOUMENS Jacques', posteSource: 'POMPIGNAC', distHta: '4.0 km', quotePart: '64,11 k€', ebitda: '56 215 €', payback: '4.9 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.870054, lng: -0.397698 },
+  { id: 23, name: 'VENDAYS-MONTALIVET', dept: '33', cp: '33930', client: 'HOUSSAIT-YOUNG', bailleur: 'HOUSSAIT-YOUNG Paul', posteSource: 'ST-VIVIEN', distHta: '9.9 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.338321, lng: -1.071016 },
+  { id: 24, name: 'SAINT-MARTIN-DE-FRESSENGEAS', dept: '24', cp: '24800', client: 'MISSAULT', bailleur: 'MISSAULT Cécile', posteSource: 'THIVIERS', distHta: '6.7 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.438589, lng: 0.815692 },
+  { id: 25, name: 'BEYSSENAC', dept: '19', cp: '19230', client: 'CELERIE', bailleur: 'CELERIE Guy', posteSource: 'LUBERSAC', distHta: '7.1 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.400772, lng: 1.284338 },
+  { id: 26, name: 'MOURIOUX-VIEILLEVILLE', dept: '23', cp: '23210', client: 'MEILLAT 2', bailleur: 'MEILLAT Patrick', posteSource: 'CHATELUS 2', distHta: '5.4 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.081523, lng: 1.633909 },
+  { id: 27, name: 'ARGENCES EN AUBRAC', dept: '12', cp: '12420', client: 'DOMERGUE', bailleur: 'DOMERGUE Daniel', posteSource: 'RUEYRES', distHta: '5.9 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.807528, lng: 2.790446 },
+  { id: 28, name: 'SAINT-ÉLOY-LES-TUILERIES', dept: '19', cp: '19210', client: 'COMBY', bailleur: 'COMBY Fabrice', posteSource: 'LUBERSAC', distHta: '8.3 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.452887, lng: 1.284563 },
 ];
 
 // ============================================================================
@@ -1335,12 +1383,13 @@ export function computeGlobalKpis(portfolios) {
 
   portfolios.forEach((p) => {
     if (p.type === 'PV') {
-      const activeSites = p.sites;
+      const activeSites = p.sites || [];
       totalPvKwc = activeSites.reduce((sum, s) => sum + (s.kwc || 0), 0);
       pvSitesCount = activeSites.length;
     } else if (p.type === 'BESS') {
-      bessMW = p.sites.reduce((sum, s) => sum + (s.kw || 0), 0) / 1000;
-      bessSitesCount = p.sites.length;
+      const activeSites = p.sites || [];
+      bessMW = activeSites.reduce((sum, s) => sum + (s.kw || 0), 0) / 1000;
+      bessSitesCount = activeSites.reduce((sum, s) => sum + (s.stationsCount || 1), 0);
     }
   });
 

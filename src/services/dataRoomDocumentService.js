@@ -401,6 +401,117 @@ export function getDocumentsForSite(site, portfolioId, state) {
 
   const siteDocs = [];
 
+  // ==========================================================================
+  // CAS SPÉCIAL CLUSTER CASTEBRUNET (4 stations BESS unitaires regroupées)
+  // ==========================================================================
+  const isCastebrunet = !isPv && (site.id === 10 || /castebrunet/i.test(siteName) || /castebrunet/i.test(siteClient));
+  if (isCastebrunet) {
+    const castebrunetStations = [
+      {
+        subId: '1',
+        label: 'CASTEBRUNET 1 (82300 CAUSSADE)',
+        ficheName: 'Fiche projet - CASTEBRUNET 82300 CAUSSADE.pdf',
+        ficheUrl: '/documents/dataroom/fiches/Fiche%20projet%20-%20CASTEBRUNET%2082300%20CAUSSADE.pdf',
+        bailName: 'Nouvelle_promesse_de_bail_batterie_CASTEBRUNET_82300_CAUSSADE.pdf',
+        bailUrl: '/documents/dataroom/Nouvelle_promesse_de_bail_batterie_CASTEBRUNET_82300_CAUSSADE.pdf',
+      },
+      {
+        subId: '2',
+        label: 'CASTEBRUNET 2 (82300 CAUSSADE)',
+        ficheName: 'Fiche projet - CASTEBRUNET 2 82300 CAUSSADE.pdf',
+        ficheUrl: '/documents/dataroom/fiches/Fiche%20projet%20-%20CASTEBRUNET%202%2082300%20CAUSSADE.pdf',
+        bailName: 'Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_2_82300_CAUSSADE.pdf',
+        bailUrl: '/documents/dataroom/Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_2_82300_CAUSSADE.pdf',
+      },
+      {
+        subId: '3',
+        label: 'CASTEBRUNET 3 (82300 MONTEILS)',
+        ficheName: 'Fiche projet - CASTEBRUNET 3 82300 MONTEILS.pdf',
+        ficheUrl: '/documents/dataroom/fiches/Fiche%20projet%20-%20CASTEBRUNET%203%2082300%20MONTEILS.pdf',
+        bailName: 'Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_3_82300_MONTEILS.pdf',
+        bailUrl: '/documents/dataroom/Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_3_82300_MONTEILS.pdf',
+      },
+      {
+        subId: '4',
+        label: 'CASTEBRUNET 4 (82300 SAINT-CIRQ)',
+        ficheName: 'Fiche projet - CASTEBRUNET 4 82300 SAINT-CIRQ.pdf',
+        ficheUrl: '/documents/dataroom/fiches/Fiche%20projet%20-%20CASTEBRUNET%204%2082300%20SAINT-CIRQ.pdf',
+        bailName: 'Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_4_82300_SAINT-CIRQ.pdf',
+        bailUrl: '/documents/dataroom/Nouvelle_promesse_de_bail_batteries_CASTEBRUNET_4_82300_SAINT-CIRQ.pdf',
+      },
+    ];
+
+    castebrunetStations.forEach((st) => {
+      // Fiche projet de la tranche
+      siteDocs.push({
+        id: `fiche-castebrunet-${st.subId}`,
+        name: `Fiche projet — ${st.label}`,
+        fileName: st.ficheName,
+        fileUrl: st.ficheUrl,
+        category: 'Technique',
+        type: 'PDF',
+        size: '350 Ko',
+        isFiche: true,
+        isBail: false,
+        site,
+        portfolioId: 'volta',
+      });
+
+      // Promesse de bail de la tranche
+      siteDocs.push({
+        id: `bail-castebrunet-${st.subId}`,
+        name: `Promesse de bail notariée — ${st.label}`,
+        fileName: st.bailName,
+        fileUrl: st.bailUrl,
+        category: 'Juridique',
+        type: 'PDF',
+        size: '906 Ko',
+        isFiche: false,
+        isBail: true,
+        site,
+        portfolioId: 'volta',
+      });
+    });
+
+    return siteDocs;
+  }
+
+  // ==========================================================================
+  // CAS SPÉCIAL CLUSTER JARRY (GORNAC 33540 - 2 Hangars regroupés JARRY 1 & 2)
+  // ==========================================================================
+  const isJarry = isPv && (site.id === 9 || /jarry/i.test(siteName) || /jarry/i.test(siteClient));
+  if (isJarry) {
+    siteDocs.push({
+      id: `fiche-jarry-cluster`,
+      name: `Fiche projet détaillée — GORNAC (JARRY 1 & JARRY 2 - 628 kWc)`,
+      fileName: 'Fiche projet - JARRY 33540 GORNAC.pdf',
+      fileUrl: '/documents/dataroom/fiches/Fiche%20projet%20-%20JARRY%2033540%20GORNAC.pdf',
+      category: 'Technique',
+      type: 'PDF',
+      size: '420 Ko',
+      isFiche: true,
+      isBail: false,
+      site,
+      portfolioId: 'helios',
+    });
+
+    siteDocs.push({
+      id: `bail-jarry-cluster`,
+      name: `Promesse de bail notariée — GORNAC (JARRY Frédéric - 33540)`,
+      fileName: 'Promesse_de_bail_CONSOLI_signe.pdf',
+      fileUrl: '/documents/dataroom/Promesse_de_bail_CONSOLI_signe.pdf',
+      category: 'Juridique',
+      type: 'PDF',
+      size: '865 Ko',
+      isFiche: false,
+      isBail: true,
+      site,
+      portfolioId: 'helios',
+    });
+
+    return siteDocs;
+  }
+
   // 1. FICHE PROJET DÉDIÉE DU SITE (Technique)
   const matchedFiche = findFicheProjetForSite(site, pId);
   siteDocs.push({

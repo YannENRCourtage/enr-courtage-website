@@ -44,23 +44,23 @@ function createHeliosConsolidatedMatrix() {
 
   // Onglet 2 : Détail des 15 Sites PV
   const sitesData = [
-    ['N° Site', 'Nom du Projet', 'Commune / CP', 'Dpt', 'Puissance (kWc)', 'Surface Toiture (m²)', 'Productible P50 (kWh/kWc)', 'Production An 1 (kWh)', 'Tarif S21 (€/MWh)', 'CA Brut An 1 (€ HT)', 'Loyer Foncier (€/an)', 'Statut Foncier', 'Statut Urba'],
-    [1, 'CONSOLI', '24130 PRIGONRIEUX', '24', 498.4, 2800, 1130, 563192, 82.0, 46182, 3500, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [2, 'LABEGUERIE', '64120 ORÈGUE', '64', 500.0, 2750, 1120, 560000, 82.0, 45920, 3500, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [3, 'CHOLOUX', '16210 CHALAIS', '16', 360.0, 2100, 1115, 401400, 82.0, 32915, 2800, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [4, 'MISSAULT 1', '24470 SAINT-SAUD', '24', 450.0, 2500, 1125, 506250, 82.0, 41513, 3200, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [5, 'MISSAULT 2', '24800 ST-MARTIN', '24', 500.0, 2800, 1125, 562500, 82.0, 46125, 3500, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [6, 'ARBOIN', '47120 DURAS', '47', 480.0, 2700, 1140, 547200, 82.0, 44870, 3400, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [7, 'BERTRANDIE', '24240 MONESTIER', '24', 420.0, 2400, 1135, 476700, 82.0, 39089, 3000, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [8, 'CASTEBRUNET 1', '82300 CAUSSADE', '82', 500.0, 2800, 1145, 572500, 82.0, 46945, 3500, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [9, 'CASTEBRUNET 2', '82300 CAUSSADE', '82', 360.0, 2050, 1145, 412200, 82.0, 33800, 2600, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [10, 'DAVID', '19350 CONCÈZE', '19', 300.0, 1750, 1110, 333000, 82.0, 27306, 2200, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [11, 'DOMERGUE', '87380 MEUZAC', '87', 450.0, 2550, 1105, 497250, 82.0, 40775, 3200, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [12, 'DOUMENS', '33750 BEYCHAC', '33', 420.0, 2350, 1130, 474600, 82.0, 38917, 3000, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [13, 'GIOT', '23600 LEYRAT', '23', 380.0, 2150, 1100, 418000, 82.0, 34276, 2700, 'PdB signée 20 ans', 'URBA OK (DP purgée)'],
-    [14, 'HOUSSAIT', '33930 VENDAYS', '33', 500.0, 2800, 1135, 567500, 82.0, 46535, 3500, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    [15, 'SOULIGNAC', '33860 VAL-DE-LIVENNE', '33', 521.6, 2900, 1130, 589408, 82.0, 48331, 3700, 'PdB signée 20 ans', 'URBA OK (PC obtenu)'],
-    ['TOTAL', '15 CENTRALES SOLAIRES', 'AQUITAINE / OCCITANIE', '7 Dpts', 6240.0, 35800, 1125, 7036000, 82.0, 569527, 44300, '100% Sécurisé', '100% Purgé'],
+    ['N° Site', 'Nom du Projet', 'Commune / CP', 'Dpt', 'Exploitant / Client', 'Puissance (kWc)', 'Surface Toiture (m²)', 'Coût Travaux HT (€)', 'CA Brut An 1 (€ HT)', 'Statut Foncier', 'Statut Urba'],
+    [1, 'CONDOM', '32100 CONDOM', '32', 'SAINT ARAILLES Henri', 256.0, 1485, 164194, 23347, 'PdB signée 20 ans', 'URBA OK'],
+    [2, 'BRANTÔME EN PÉRIGORD', '24310 BRANTÔME', '24', 'LATOURNERIE Nicolas', 1006.0, 5835, 528619, 92680, 'PdB signée 20 ans', 'URBA OK'],
+    [3, 'GARONS', '30128 GARONS', '30', 'RODIER-VARGAS Cécile', 460.0, 2668, 265154, 41952, 'PdB signée 20 ans', 'URBA OK'],
+    [4, 'VAL-DE-LIVENNE', '33860 VAL-DE-LIVENNE', '33', 'HERIT Dominique', 120.0, 696, 96888, 10944, 'PdB signée 20 ans', 'URBA OK'],
+    [5, 'LACQUY', '40120 LACQUY', '40', 'LECONTE Frédéric', 145.0, 841, 109261, 13224, 'PdB signée 20 ans', 'URBA OK'],
+    [6, 'PUYLAUSIC', '32220 PUYLAUSIC', '32', 'CASSAGNE Christian', 157.0, 911, 115199, 14318, 'PdB signée 20 ans', 'URBA OK'],
+    [7, 'SAINT-LAURENT-DU-PLAN', '33190 ST-LAURENT', '33', 'LECONTE Frédéric', 485.0, 2813, 277527, 44232, 'PdB signée 20 ans', 'URBA OK'],
+    [8, 'LECTOURE', '32700 LECTOURE', '32', 'RECKINGER Nicolas', 789.0, 4576, 427976, 71957, 'PdB signée 20 ans', 'URBA OK'],
+    [9, 'GORNAC (JARRY 1 & JARRY 2)', '33540 GORNAC', '33', 'JARRY Frédéric (Cluster 2 hangars)', 628.0, 3642, 348297, 57274, 'PdB signée 20 ans', 'URBA OK'],
+    [10, 'CHALAIS', '16210 CHALAIS', '16', 'CHOLOUX Jean-Marc', 707.2, 4102, 387493, 64497, 'PdB signée 20 ans', 'URBA OK'],
+    [11, 'MIRAMBEAU', '17150 MIRAMBEAU', '17', 'CHAUCHET Eric', 145.0, 841, 109261, 13224, 'PdB signée 20 ans', 'URBA OK'],
+    [12, 'SAINT-SAUD-LACOUSSIÈRE', '24470 ST-SAUD', '24', 'MISSAULT Patrick', 434.0, 2517, 279787, 39407, 'PdB signée 20 ans', 'URBA OK'],
+    [13, 'JUSSAS', '17130 JUSSAS', '17', 'DUHARD Christian', 181.0, 1050, 127077, 16507, 'PdB signée 20 ans', 'URBA OK'],
+    [14, 'SAINT-MARTIN-DE-FRESSENGEAS', '24800 ST-MARTIN', '24', 'MISSAULT Patrick', 388.0, 2250, 257021, 35230, 'PdB signée 20 ans', 'URBA OK'],
+    [15, 'SAINT-AVIT-SAINT-NAZAIRE', '33220 ST-AVIT', '33', 'MARTIN Eric', 337.0, 1955, 204281, 30734, 'PdB signée 20 ans', 'URBA OK'],
+    ['TOTAL', '15 CENTRALES SOLAIRES (15 PROJETS)', 'AQUITAINE / OCCITANIE', '7 Dpts', '15 Exploitants sécurisés', 6240.2, 36190, 3698035, 569527, '100% Sécurisé', '100% Purgé'],
   ];
 
   const wsSites = XLSX.utils.aoa_to_sheet(sitesData);
@@ -154,59 +154,40 @@ function createVoltaConsolidatedMatrix() {
 
   // Onglet 2 : Détail des 31 Stations BESS
   const sitesData = [
-    ['N° Station', 'Nom du Site', 'Commune / CP', 'Dpt', 'Puissance (kW)', 'Capacité (kWh)', 'Surface Dalle (m²)', 'Poste Source HTA', 'Loyer Foncier (€/an)', 'Statut Foncier', 'Statut DP Urba'],
-    [1, 'BATIOT', '32220 MONGAUSY', '32', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [2, 'CASTEBRUNET', '82300 CAUSSADE', '82', 500, 1000, 32, 'HTA 20 kV (< 80m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [3, 'COMBY', '19210 SAINT-ÉLOY', '19', 500, 1000, 32, 'HTA 20 kV (< 60m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [4, 'ARBOIN', '47120 DURAS', '47', 500, 1000, 32, 'HTA 20 kV (< 40m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [5, 'BERTRANDIE', '24240 MONESTIER', '24', 500, 1000, 32, 'HTA 20 kV (< 70m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [6, 'CUBERTAFON', '19210 ST-JULIEN', '19', 500, 1000, 32, 'HTA 20 kV (< 90m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [7, 'DAVID', '19350 CONCÈZE', '19', 500, 1000, 32, 'HTA 20 kV (< 30m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [8, 'DOMERGUE 1', '87380 MEUZAC', '87', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [9, 'DOMERGUE 2', '12420 ARGENCES', '12', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [10, 'DOUMENS', '33750 BEYCHAC', '33', 500, 1000, 32, 'HTA 20 kV (< 60m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [11, 'FRECHEVILLE', '47210 ST-EUTROPE', '47', 500, 1000, 32, 'HTA 20 kV (< 45m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [12, 'GIOT', '23600 LEYRAT', '23', 500, 1000, 32, 'HTA 20 kV (< 75m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [13, 'HOUSSAIT', '33930 VENDAYS', '33', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [14, 'LATOURNERIE', '24310 BRANTÔME', '24', 500, 1000, 32, 'HTA 20 kV (< 40m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [15, 'MEILLAT 1', '23210 MOURIOUX', '23', 500, 1000, 32, 'HTA 20 kV (< 65m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [16, 'MEILLAT 2', '23210 MOURIOUX', '23', 500, 1000, 32, 'HTA 20 kV (< 65m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [17, 'MISSAULT 1', '24470 SAINT-SAUD', '24', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [18, 'MISSAULT 2', '24800 ST-MARTIN', '24', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [19, 'PRAVIE', '82170 GRISOLLES', '82', 500, 1000, 32, 'HTA 20 kV (< 35m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
-    [20, 'SOULIGNAC', '33860 VAL-DE-LIV', '33', 500, 1000, 32, 'HTA 20 kV (< 50m)', 2500, 'PdB signée 20 ans', 'DP obtenue'],
+    ['N° Station', 'Nom du Site', 'Commune / CP', 'Dpt', 'Bailleur / Propriétaire', 'Puissance (kW)', 'Capacité (kWh)', 'Surface Dalle (m²)', 'Poste Source HTA', 'Loyer Foncier (€/an)', 'Statut Foncier', 'Statut DP Urba'],
+    [1, 'BRANTÔME', '24310 BRANTÔME', '24', 'LATOURNERIE Franck', 500, 1044, 32, 'BRANTOME (3.5 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [2, 'ROCHECHOUART', '87600 ROCHECHOUART', '87', 'PAILLOT Noël', 500, 1044, 32, 'PLAUD (6.6 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [3, 'MONGAUSY', '32220 MONGAUSY', '32', 'BATIOT Olivier', 500, 1044, 32, 'SEMEZIES (5.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [4, 'MEUZAC', '87380 MEUZAC', '87', 'DOMERGUE Daniel', 500, 1044, 32, 'LE REPAIRE (8.6 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [5, 'SAINT-JULIEN-LE-VENDÔMOIS', '19210 ST-JULIEN', '19', 'CUBERTAFON René', 500, 1044, 32, 'LUBERSAC (8.3 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [6, 'PORT-DE-LANNE', '40300 PORT-DE-LANNE', '40', 'PLANTE Jean-Pierre', 500, 1044, 32, 'GUICHE (4.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [7, 'GRISOLLES', '82170 GRISOLLES', '82', 'PRAVIE Clémence', 500, 1044, 32, 'LESQUIVE 2 (2.3 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [8, 'CONCÈZE', '19350 CONCÈZE', '19', 'DAVID Louis', 500, 1044, 32, 'LUBERSAC (8.6 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [9, 'SAINT-ÉLOY-LES-TUILERIES', '19210 ST-ELOY', '19', 'GRANGER Bruno', 500, 1044, 32, 'LUBERSAC (10.5 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [10, 'CASTEBRUNET 1 (Cluster)', '82300 CAUSSADE', '82', 'CASTEBRUNET 1', 500, 1044, 32, 'LERE (5.7 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [11, 'CASTEBRUNET 2 (Cluster)', '82300 CAUSSADE', '82', 'CASTEBRUNET 2', 500, 1044, 32, 'LERE (5.7 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [12, 'CASTEBRUNET 3 (Cluster)', '82300 MONTEILS', '82', 'CASTEBRUNET 3', 500, 1044, 32, 'LERE (3.6 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [13, 'CASTEBRUNET 4 (Cluster)', '82300 SAINT-CIRQ', '82', 'CASTEBRUNET 4', 500, 1044, 32, 'LERE (6.2 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [14, 'MONESTIER', '24240 MONESTIER', '24', 'BERTRANDIE Sébastien', 500, 1044, 32, 'STE-FOY (9.0 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [15, 'LEYRAT', '23600 LEYRAT', '23', 'GIOT Aurélien', 500, 1044, 32, 'BOUSSAC (5.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [16, 'DURAS', '47120 DURAS', '47', 'ARBOIN Régis', 500, 1044, 32, 'LA SAUVETAT (11.8 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [17, 'SAINT-SAUD-LACOUSSIÈRE', '24470 ST-SAUD', '24', 'MISSAULT Cécile', 500, 1044, 32, 'NONTRON (13.7 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [18, 'MOURIOUX-VIEILLEVILLE 1', '23210 MOURIOUX', '23', 'MEILLAT Patrick', 500, 1044, 32, 'CHATELUS 2 (5.4 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [19, 'VAL-DE-LIVENNE', '33860 VAL-DE-LIV', '33', 'SOULIGNAC Gérard', 500, 1044, 32, 'ETAULIERS (7.7 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [20, 'PAYZAC', '24270 PAYZAC', '24', 'CHAUFFAILLE Alain', 500, 1044, 32, 'LUBERSAC (6.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [21, 'JUILLAC', '33890 JUILLAC', '33', 'CIROLI Vincent', 500, 1044, 32, 'AURIOLLES (7.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [22, 'MANSAN', '65140 MANSAN', '65', 'BOURDETTES Pierre', 500, 1044, 32, 'VIC-EN-BIGORRE (10.8 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [23, 'MAISONNISSES', '23150 MAISONNISSES', '23', 'LARDY Christian', 500, 1044, 32, 'LAVAUD (10.6 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [24, 'SAINT EUTROPE DE BORN', '47210 ST-EUTROPE', '47', 'FRECHEVILLE Mathieu', 500, 1044, 32, 'CANCON (7.2 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [25, 'BEYCHAC-ET-CAILLAU', '33750 BEYCHAC', '33', 'DOUMENS Jacques', 500, 1044, 32, 'POMPIGNAC (4.0 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [26, 'VENDAYS-MONTALIVET', '33930 VENDAYS', '33', 'HOUSSAIT-YOUNG Paul', 500, 1044, 32, 'ST-VIVIEN (9.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [27, 'SAINT-MARTIN-DE-FRESSENGEAS', '24800 ST-MARTIN', '24', 'MISSAULT Cécile', 500, 1044, 32, 'THIVIERS (6.7 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [28, 'BEYSSENAC', '19230 BEYSSENAC', '19', 'CELERIE Guy', 500, 1044, 32, 'LUBERSAC (7.1 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [29, 'MOURIOUX-VIEILLEVILLE 2', '23210 MOURIOUX', '23', 'MEILLAT Patrick', 500, 1044, 32, 'CHATELUS 2 (5.4 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [30, 'ARGENCES EN AUBRAC', '12420 ARGENCES', '12', 'DOMERGUE Daniel', 500, 1044, 32, 'RUEYRES (5.9 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    [31, 'SAINT-ÉLOY-LES-TUILERIES (COMBY)', '19210 ST-ELOY', '19', 'COMBY Fabrice', 500, 1044, 32, 'LUBERSAC (8.3 km)', 3000, 'PdB signée 20 ans', 'URBA OK'],
+    ['TOTAL', '31 STATIONS BESS (28 PROJETS DONT CLUSTER CASTEBRUNET)', 'AQUITAINE / OCCITANIE', '8 Dpts', '28 Bailleurs notariés', 15500, 32364, 992, '28 Postes sources', 93000, '100% Sécurisé', '100% Validé'],
   ];
-
-  // Remplir jusqu'à 31
-  for (let i = 21; i <= 31; i++) {
-    sitesData.push([
-      i,
-      `STATION BESS #${i}`,
-      'SUD-OUEST ENEDIS',
-      '31/32/33',
-      500,
-      1000,
-      32,
-      'HTA 20 kV (< 100m)',
-      2500,
-      'PdB signée 20 ans',
-      'DP obtenue'
-    ]);
-  }
-
-  sitesData.push([
-    'TOTAL',
-    '31 STATIONS BESS',
-    'FRANCE MÉTROPOLITAINE',
-    'Régional',
-    15500,
-    31000,
-    992,
-    '31 Départs HTA',
-    77500,
-    '100% Maîtrisé',
-    '100% Validé'
-  ]);
 
   const wsSites = XLSX.utils.aoa_to_sheet(sitesData);
   wsSites['!cols'] = [

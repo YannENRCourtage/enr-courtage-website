@@ -487,11 +487,16 @@ export default function TeaserSitesTable({
                   {/* Projet & Commune */}
                   <td className="py-3 px-4 relative whitespace-nowrap">
                     <div className={blurClass}>
-                      <div className="font-bold text-slate-900 text-[12px] flex items-center gap-1.5 whitespace-nowrap">
+                      <div className="font-bold text-slate-900 text-[12px] flex items-center gap-1.5 flex-wrap whitespace-nowrap">
                         <span>{site.name || site.ville}</span>
                         {site.cp && (
                           <span className="text-[10px] text-slate-500 font-medium">
                             ({site.cp})
+                          </span>
+                        )}
+                        {site.stationsCount > 1 && (
+                          <span className="px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 text-[9px] font-black border border-cyan-300">
+                            Cluster {site.stationsCount} {isPv ? 'hangars' : 'stations'}
                           </span>
                         )}
                         {site.isCustom && (
@@ -640,9 +645,12 @@ export default function TeaserSitesTable({
             const activeKw = activeSites.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
             const activePvCost = activeSites.reduce((sum, s) => sum + (Number(s.cost) || 0), 0);
             const activePvSurface = activeSites.reduce((sum, s) => sum + Math.round((Number(s.kwc) || 315) * 5.8), 0);
-            const neufsCount = activeSites.filter((s) => s.type === 'Construction').length;
+            const activeStationsCount = activeSites.reduce((sum, s) => sum + (Number(s.stationsCount) || 1), 0);
+            const totalStationsCount = allSitesCombined.reduce((sum, s) => sum + (Number(s.stationsCount) || 1), 0);
+            const neufsCount = activeSites.filter((s) => s.type === 'Construction' || (s.stationsCount && s.stationsCount > 1)).length;
             const toitCount = activeSites.filter((s) => s.type === 'Toitures').length;
-            const powerRatio = allSitesCombined.length > 0 ? (activeSites.length / allSitesCombined.length) : 1;
+            const baseTotalKw = isPv ? 6240 : 15500;
+            const powerRatio = isPv ? (activeKwc / baseTotalKw) : (activeKw / baseTotalKw);
             const activeBessEbitda = Math.round(1740000 * powerRatio);
 
             return (
@@ -651,7 +659,7 @@ export default function TeaserSitesTable({
                   <td className="py-3.5 px-3 text-center font-mono text-slate-400">-</td>
                   <td className="py-3.5 px-3 text-center font-mono text-slate-400">-</td>
                   <td className="py-3.5 px-4 font-black uppercase tracking-wider text-slate-900">
-                    TOTAL DISPONIBLE ({activeSites.length} / {allSitesCombined.length} SITES)
+                    TOTAL DISPONIBLE ({activeStationsCount} {isPv ? 'CENTRALES' : 'STATIONS'} DANS {activeSites.length} PROJETS)
                   </td>
                   <td className="py-3.5 px-3 text-center text-slate-400">-</td>
                   <td className="py-3.5 px-4 text-slate-600 font-medium">
@@ -928,6 +936,48 @@ export default function TeaserSitesTable({
                 </span>
               </div>
             </div>
+
+            {/* Détail du Cluster si plusieurs tranches regroupées */}
+            {activeModalSite.subSites && activeModalSite.subSites.length > 0 && (
+              <div className="bg-gradient-to-r from-blue-50/90 via-slate-50 to-indigo-50/90 p-3.5 rounded-2xl border border-blue-200 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-blue-900 flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-blue-600" />
+                    <span>Tranches regroupées dans ce cluster ({activeModalSite.subSites.length} {isPv ? 'hangars' : 'stations'})</span>
+                  </span>
+                  <span className="text-[10px] font-black text-blue-700 font-mono">
+                    Total {isPv ? `${activeModalSite.kwc} kWc` : `${(activeModalSite.kw / 1000).toFixed(1)} MW (${activeModalSite.kw} kW)`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {activeModalSite.subSites.map((sub, idx) => (
+                    <div key={idx} className="bg-white p-2.5 rounded-xl border border-slate-200 text-xs shadow-2xs space-y-1">
+                      <div className="flex items-center justify-between font-bold text-slate-900">
+                        <span className="text-[11px] text-blue-700 font-black">{sub.name}</span>
+                        <span className="font-mono text-[10px] font-black text-emerald-700">
+                          {isPv ? `${sub.kwc} kWc` : `${sub.kw} kW / ${sub.kwh} kWh`}
+                        </span>
+                      </div>
+                      <div className="text-[10px] text-slate-500 flex items-center justify-between font-medium">
+                        <span>{sub.ville} ({sub.cp || sub.dept})</span>
+                        <span className="font-bold text-slate-700">{sub.statut || 'URBA OK'}</span>
+                      </div>
+                      {sub.posteSource && (
+                        <div className="text-[9px] text-slate-500 font-mono flex items-center justify-between">
+                          <span>Poste : {sub.posteSource}</span>
+                          <span>{sub.distHta || ''}</span>
+                        </div>
+                      )}
+                      {sub.cost && (
+                        <div className="text-[9px] text-slate-500 font-mono">
+                          Travaux : {Number(sub.cost).toLocaleString('fr-FR')} € HT
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Site Contact & Land Details */}
             <div className="space-y-2 text-xs bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
