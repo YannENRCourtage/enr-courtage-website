@@ -1085,7 +1085,7 @@ export default function OfferModal({
                         required
                         value={amountEur}
                         onChange={(e) => handleAmountChange(e.target.value)}
-                        placeholder="Ex : 62 000"
+                        placeholder="—"
                         className="w-full pl-3.5 pr-20 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-base font-semibold placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                       />
                       <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500 font-mono">
@@ -1107,7 +1107,7 @@ export default function OfferModal({
                         type="text"
                         value={ratePerMw}
                         onChange={(e) => handleRatePerMwChange(e.target.value)}
-                        placeholder="Ex : 4 000"
+                        placeholder="—"
                         className="w-full pl-3.5 pr-24 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-base font-semibold placeholder-slate-400 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition shadow-xs"
                       />
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-amber-700 font-mono bg-amber-50 px-2 py-0.5 rounded border border-amber-200">

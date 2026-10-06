@@ -1334,7 +1334,7 @@ y.barberis@enr-courtage.fr`;
                                 type="text"
                                 value={counterAmount}
                                 onChange={(e) => setCounterAmount(formatThousands(e.target.value))}
-                                placeholder="ex: 4 000 000"
+                                placeholder="—"
                                 className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-white font-mono font-bold focus:outline-none focus:border-amber-400"
                               />
                             </div>
