@@ -14,20 +14,78 @@ if (typeof window !== 'undefined') {
   ensurePersistentStorage().catch(() => {});
 }
 
-// Immediately purge any legacy test sessions from browser localStorage
-if (typeof window !== 'undefined' && window.localStorage) {
-  try {
-    window.localStorage.removeItem('enr-investor-storage');
-    window.localStorage.removeItem('enr-investor-storage-v2');
-    window.localStorage.removeItem('enr-investor-storage-v3');
-    window.localStorage.removeItem('enr-investor-storage-v4');
-    window.localStorage.removeItem('enr-investor-storage-v5');
-    window.localStorage.removeItem('enr-investor-storage-v6');
-    window.localStorage.removeItem('enr-investor-storage-v7');
-    window.localStorage.removeItem('enr-investor-storage-v8');
-  } catch (e) {
-    // Ignore storage access errors in private mode
+// Migration & recovery: Safely restore custom documents and configurations from any previous versions
+export function recoverLegacyData() {
+  if (typeof window === 'undefined' || !window.localStorage) return {};
+  const legacyKeys = [
+    'enr-investor-storage-v9',
+    'enr-investor-storage-v8',
+    'enr-investor-storage-v7',
+    'enr-investor-storage-v6',
+    'enr-investor-storage-v5',
+    'enr-investor-storage-v4',
+    'enr-investor-storage-v3',
+    'enr-investor-storage-v2',
+    'enr-investor-storage',
+  ];
+  let recoveredCustomDataRoom = { helios: {}, volta: {} };
+  let recoveredDeletedDocs = { helios: [], volta: [] };
+  let recoveredAssignments = {};
+  let recoveredNdaFiles = [];
+  let recoveredCustomSites = { helios: [], volta: [] };
+
+  for (const key of legacyKeys) {
+    try {
+      const raw = window.localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        const state = parsed?.state || parsed;
+        if (state?.customDataRoom) {
+          Object.entries(state.customDataRoom).forEach(([pId, cats]) => {
+            recoveredCustomDataRoom[pId] = recoveredCustomDataRoom[pId] || {};
+            Object.entries(cats || {}).forEach(([catName, files]) => {
+              recoveredCustomDataRoom[pId][catName] = recoveredCustomDataRoom[pId][catName] || [];
+              (files || []).forEach((f) => {
+                if (!recoveredCustomDataRoom[pId][catName].some((existing) => existing.name === f.name || (existing.id && existing.id === f.id))) {
+                  recoveredCustomDataRoom[pId][catName].push(f);
+                }
+              });
+            });
+          });
+        }
+        if (state?.deletedDefaultDocs) {
+          Object.entries(state.deletedDefaultDocs).forEach(([pId, docs]) => {
+            recoveredDeletedDocs[pId] = Array.from(new Set([...(recoveredDeletedDocs[pId] || []), ...(docs || [])]));
+          });
+        }
+        if (state?.documentSiteAssignments) {
+          recoveredAssignments = { ...recoveredAssignments, ...state.documentSiteAssignments };
+        }
+        if (state?.uploadedSignedNdaFiles && Array.isArray(state.uploadedSignedNdaFiles)) {
+          recoveredNdaFiles = [...recoveredNdaFiles, ...state.uploadedSignedNdaFiles];
+        }
+        if (state?.customSites) {
+          Object.entries(state.customSites).forEach(([pId, sites]) => {
+            recoveredCustomSites[pId] = recoveredCustomSites[pId] || [];
+            (sites || []).forEach((s) => {
+              if (!recoveredCustomSites[pId].some((existing) => existing.id === s.id)) {
+                recoveredCustomSites[pId].push(s);
+              }
+            });
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Error reading legacy storage key:', key, e);
+    }
   }
+  return {
+    customDataRoom: recoveredCustomDataRoom,
+    deletedDefaultDocs: recoveredDeletedDocs,
+    documentSiteAssignments: recoveredAssignments,
+    uploadedSignedNdaFiles: recoveredNdaFiles,
+    customSites: recoveredCustomSites,
+  };
 }
 
 // Safe storage engine protecting against DOMException QuotaExceededError
@@ -1314,6 +1372,19 @@ y.barberis@enr-courtage.fr
         return { success: true };
       },
 
+      // Admin action: Batch upload / link multiple NDA files
+      adminBatchUploadNdaFiles: (ndaFilesPayload = []) => {
+        if (!Array.isArray(ndaFilesPayload) || ndaFilesPayload.length === 0) return { success: false, count: 0 };
+        let successCount = 0;
+        ndaFilesPayload.forEach((item) => {
+          if (item && (item.userId || item.userEmail)) {
+            const res = get().adminUploadSignedNda(item.userId || item.userEmail, item);
+            if (res?.success) successCount++;
+          }
+        });
+        return { success: true, count: successCount };
+      },
+
       // Admin action: Retirer un document NDA signé
       adminDeleteSignedNda: (userIdOrEmail) => {
         const target = String(userIdOrEmail || '').trim().toLowerCase();
@@ -1942,6 +2013,53 @@ y.barberis@enr-courtage.fr
         state.deletedSites = state.deletedSites || { helios: [], volta: [] };
         state.customSites = state.customSites || { helios: [], volta: [] };
         state.modifiedSites = state.modifiedSites || { helios: {}, volta: {} };
+
+        // Safely recover and merge any custom data room files from past storage keys
+        try {
+          const recovered = recoverLegacyData();
+          if (recovered.customDataRoom) {
+            Object.entries(recovered.customDataRoom).forEach(([pId, cats]) => {
+              state.customDataRoom[pId] = state.customDataRoom[pId] || {};
+              Object.entries(cats || {}).forEach(([catName, files]) => {
+                state.customDataRoom[pId][catName] = state.customDataRoom[pId][catName] || [];
+                (files || []).forEach((f) => {
+                  if (!state.customDataRoom[pId][catName].some((existing) => existing.name === f.name || (existing.id && existing.id === f.id))) {
+                    state.customDataRoom[pId][catName].push(f);
+                  }
+                });
+              });
+            });
+          }
+          if (recovered.deletedDefaultDocs) {
+            Object.entries(recovered.deletedDefaultDocs).forEach(([pId, docs]) => {
+              state.deletedDefaultDocs[pId] = Array.from(new Set([...(state.deletedDefaultDocs[pId] || []), ...(docs || [])]));
+            });
+          }
+          if (recovered.documentSiteAssignments) {
+            state.documentSiteAssignments = { ...(state.documentSiteAssignments || {}), ...recovered.documentSiteAssignments };
+          }
+          if (recovered.uploadedSignedNdaFiles && Array.isArray(recovered.uploadedSignedNdaFiles)) {
+            const currentNda = state.uploadedSignedNdaFiles || [];
+            recovered.uploadedSignedNdaFiles.forEach((rf) => {
+              if (!currentNda.some((cf) => cf.userId === rf.userId || cf.fileName === rf.fileName)) {
+                currentNda.push(rf);
+              }
+            });
+            state.uploadedSignedNdaFiles = currentNda;
+          }
+          if (recovered.customSites) {
+            Object.entries(recovered.customSites).forEach(([pId, sites]) => {
+              state.customSites[pId] = state.customSites[pId] || [];
+              (sites || []).forEach((s) => {
+                if (!state.customSites[pId].some((existing) => existing.id === s.id)) {
+                  state.customSites[pId].push(s);
+                }
+              });
+            });
+          }
+        } catch (recErr) {
+          console.warn('recoverLegacyData notice:', recErr);
+        }
 
         // Ensure soldSites doesn't retain any deleted sites
         if (state.soldSites && state.deletedSites) {

@@ -44,6 +44,9 @@ import {
   Wrench,
   Calculator,
   Network,
+  Files,
+  FolderCheck,
+  FileStack,
 } from 'lucide-react';
 import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
@@ -51,6 +54,7 @@ import { storeDocumentBinary, getDocumentBinary, downloadDocumentBinary } from '
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 import { uploadDataRoomFileToFirebase } from '@/lib/firebase';
+import { matchNdaFileToInvestor } from '@/utils/ndaMatcher';
 import NdaDocumentModal from './NdaDocumentModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import TeaserSitesTable from './TeaserSitesTable';
@@ -62,6 +66,44 @@ function safeText(val, fallback = '') {
   return fallback;
 }
 
+// Helpers de détection automatique pour l'importation de documents en masse
+function autoDetectCategory(fileName, currentSubTab) {
+  const lower = (fileName || '').toLowerCase();
+  if (lower.includes('bail') || lower.includes('promesse') || lower.includes('statut') || lower.includes('notari') || lower.includes('kbis') || lower.includes('convention') || lower.includes('cession') || lower.includes('mandat')) {
+    return 'Juridique';
+  }
+  if (lower.includes('urba') || lower.includes('permis') || lower.includes('dp') || lower.includes('certificat d\'urbanisme') || lower.includes('recours')) {
+    return 'Urbanisme';
+  }
+  if (lower.includes('enedis') || lower.includes('reseau') || lower.includes('réseau') || lower.includes('s3renr') || lower.includes('raccordement') || lower.includes('poste') || lower.includes('transformateur') || lower.includes('hta') || lower.includes('bt')) {
+    return 'Réseau';
+  }
+  if (lower.includes('matrice') || lower.includes('financ') || lower.includes('bp') || lower.includes('business') || lower.includes('tresorerie') || lower.includes('turpe') || lower.includes('hypothese') || lower.includes('revenu') || lower.includes('fcr') || lower.includes('arbitrage') || lower.includes('ebitda') || lower.includes('capex')) {
+    return 'Financier';
+  }
+  if (lower.includes('fiche') || lower.includes('synoptique') || lower.includes('devis') || lower.includes('technique') || lower.includes('armoire') || lower.includes('batterie') || lower.includes('panneau') || lower.includes('onduleur') || lower.includes('plan') || lower.includes('dalle') || lower.includes('charpente')) {
+    return 'Technique';
+  }
+  if (currentSubTab && ['juridique', 'technique', 'financier', 'urbanisme', 'reseau'].includes(currentSubTab)) {
+    return currentSubTab.charAt(0).toUpperCase() + currentSubTab.slice(1);
+  }
+  return 'Juridique';
+}
+
+function autoDetectSite(fileName, allSites = []) {
+  const lower = (fileName || '').toLowerCase();
+  for (const s of allSites) {
+    if (!s) continue;
+    const nameLower = (s.name || '').toLowerCase();
+    const clientLower = (s.client || '').toLowerCase();
+    const bailleurLower = (s.bailleur || '').toLowerCase();
+    if (nameLower && nameLower.length >= 3 && lower.includes(nameLower)) return s.id;
+    if (clientLower && clientLower.length >= 3 && lower.includes(clientLower)) return s.id;
+    if (bailleurLower && bailleurLower.length >= 3 && lower.includes(bailleurLower)) return s.id;
+  }
+  return 'ALL';
+}
+
 export default function AdminConsoleView({ initialTab = 'users', initialChatEmail = '', onBackToDashboard }) {
   const {
     investors,
@@ -70,6 +112,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     adminAddUser,
     adminUpdateUser,
     adminUploadSignedNda,
+    adminBatchUploadNdaFiles,
     adminDeleteUser,
     adminResetPassword,
     offers,
@@ -114,6 +157,13 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [isUploadingNda, setIsUploadingNda] = useState(false);
   const [editUserNdaFile, setEditUserNdaFile] = useState(null);
 
+  // Mass Upload NDA Modal State (Auto-Match)
+  const [isMassNdaModalOpen, setIsMassNdaModalOpen] = useState(false);
+  const [massNdaFiles, setMassNdaFiles] = useState([]);
+  const [isProcessingMassNda, setIsProcessingMassNda] = useState(false);
+  const [massNdaProgress, setMassNdaProgress] = useState(0);
+  const [massNdaStatusText, setMassNdaStatusText] = useState('');
+
   // New user form state
   const [newUserData, setNewUserData] = useState({
     name: '',
@@ -147,6 +197,15 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatusText, setUploadStatusText] = useState('');
 
+  // Mass Upload Data Room State
+  const [isMassUploadModalOpen, setIsMassUploadModalOpen] = useState(false);
+  const [massUploadFiles, setMassUploadFiles] = useState([]);
+  const [isProcessingMassUpload, setIsProcessingMassUpload] = useState(false);
+  const [massUploadProgress, setMassUploadProgress] = useState(0);
+  const [massUploadStatusText, setMassUploadStatusText] = useState('');
+  const [massBulkPortfolio, setMassBulkPortfolio] = useState('helios');
+  const [massBulkCategory, setMassBulkCategory] = useState('Juridique');
+
   // Moving doc modal state
   const [movingDoc, setMovingDoc] = useState(null);
   const [targetMovePortfolio, setTargetMovePortfolio] = useState('volta');
@@ -176,7 +235,13 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        if (uploadNdaModalUser) {
+        if (isMassUploadModalOpen && !isProcessingMassUpload) {
+          setIsMassUploadModalOpen(false);
+          setMassUploadFiles([]);
+        } else if (isMassNdaModalOpen && !isProcessingMassNda) {
+          setIsMassNdaModalOpen(false);
+          setMassNdaFiles([]);
+        } else if (uploadNdaModalUser) {
           setUploadNdaModalUser(null);
           setUploadNdaFile(null);
         } else if (editingUser) {
@@ -200,10 +265,15 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    isMassUploadModalOpen,
+    isProcessingMassUpload,
+    isMassNdaModalOpen,
+    isProcessingMassNda,
     uploadNdaModalUser,
     editingUser,
     isAddUserModalOpen,
     isUploadModalOpen,
+    isUploadingToFirebase,
     selectedInvestorForNda,
     selectedUserDownloadsModal,
     mandateModalOffer,
@@ -359,10 +429,13 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     if (dataRoomSubTab === 'financier') {
       return dataRoomCategoriesWithFiles.filter((c) => c.name.toLowerCase().includes('financier'));
     }
+    if (dataRoomSubTab === 'urbanisme') {
+      return dataRoomCategoriesWithFiles.filter((c) => c.name.toLowerCase().includes('urbanisme'));
+    }
     if (dataRoomSubTab === 'reseau') {
       return dataRoomCategoriesWithFiles.filter((c) => {
         const lower = c.name.toLowerCase();
-        return lower.includes('reseau') || lower.includes('réseau') || lower.includes('urbanisme');
+        return (lower.includes('reseau') || lower.includes('réseau')) && !lower.includes('urbanisme');
       });
     }
     return dataRoomCategoriesWithFiles;
@@ -378,9 +451,10 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     const juridCount = getCount((c) => c.name.toLowerCase().includes('juridique'));
     const techCount = getCount((c) => c.name.toLowerCase().includes('technique'));
     const finCount = getCount((c) => c.name.toLowerCase().includes('financier'));
+    const urbaCount = getCount((c) => c.name.toLowerCase().includes('urbanisme'));
     const resCount = getCount((c) => {
       const lower = c.name.toLowerCase();
-      return lower.includes('reseau') || lower.includes('réseau') || lower.includes('urbanisme');
+      return (lower.includes('reseau') || lower.includes('réseau')) && !lower.includes('urbanisme');
     });
     const ndaFilesCount = safeInvestors.filter((u) => u && u.ndaFileName).length;
 
@@ -388,6 +462,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       juridique: juridCount,
       technique: techCount,
       financier: finCount,
+      urbanisme: urbaCount,
       reseau: resCount,
       nda: ndaFilesCount,
     };
@@ -624,6 +699,225 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     setTimeout(() => setUploadSuccessMsg(''), 4000);
   };
 
+  // ============================================================================
+  // GESTION IMPORTATION DE DOCUMENTS EN MASSE (DATA ROOM)
+  // ============================================================================
+  const handleMassUploadFilesSelect = (e) => {
+    const rawFiles = Array.from(e.target.files || []);
+    if (rawFiles.length === 0) return;
+
+    const allCurrentSites = [
+      ...(portfolios.find((p) => p.id === 'helios')?.sites || []),
+      ...(portfolios.find((p) => p.id === 'volta')?.sites || []),
+    ];
+
+    const newItems = rawFiles.map((file, idx) => {
+      const cleanName = file.name.replace(/\.[^/.]+$/, '');
+      const detectedCategory = autoDetectCategory(file.name, dataRoomSubTab);
+      const detectedSite = autoDetectSite(file.name, allCurrentSites);
+      const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
+      const sizeFormatted = file.size >= 1024 * 1024
+        ? `${(file.size / (1024 * 1024)).toFixed(1)} Mo`
+        : `${(file.size / 1024).toFixed(0)} Ko`;
+
+      return {
+        id: 'MASS-DOC-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
+        file,
+        name: cleanName,
+        rawFileName: file.name,
+        ext,
+        mimeType: file.type || (ext === 'PDF' ? 'application/pdf' : 'application/octet-stream'),
+        sizeFormatted,
+        size: file.size,
+        portfolioId: selectedDataRoomPortfolio,
+        category: detectedCategory,
+        targetSite: detectedSite,
+      };
+    });
+
+    setMassUploadFiles((prev) => [...prev, ...newItems]);
+    e.target.value = '';
+  };
+
+  const handleExecuteMassUpload = async () => {
+    if (massUploadFiles.length === 0) return;
+    setIsProcessingMassUpload(true);
+    setMassUploadProgress(0);
+    setMassUploadStatusText('Démarrage du versement en masse...');
+
+    const total = massUploadFiles.length;
+    let processedCount = 0;
+    const heliosBatch = [];
+    const voltaBatch = [];
+
+    for (let i = 0; i < total; i++) {
+      const item = massUploadFiles[i];
+      setMassUploadStatusText(`Téléversement ${i + 1}/${total} : ${item.name}...`);
+      const docId = 'DOC-' + Date.now() + '-' + i;
+
+      // 1. Stockage binaire local IndexedDB
+      try {
+        await storeDocumentBinary(docId, item.file, item.file.name);
+        await storeDocumentBinary(item.name, item.file, item.file.name);
+      } catch (err) {
+        console.warn('Erreur stockage binaire local:', err);
+      }
+
+      // 2. Envoi cloud Firebase Storage (avec fallback gracieux)
+      let downloadUrl = null;
+      let storagePath = null;
+      let fullPath = null;
+      try {
+        const uploadResult = await uploadDataRoomFileToFirebase(item.file, {
+          category: item.category,
+          portfolioId: item.portfolioId === 'both' ? 'helios' : item.portfolioId,
+          customFileName: item.name,
+        });
+        downloadUrl = uploadResult?.downloadUrl || null;
+        storagePath = uploadResult?.storagePath || null;
+        fullPath = uploadResult?.fullPath || null;
+      } catch (fbErr) {
+        // En cas de non-connexion Firebase, le document reste parfaitement accessible via IndexedDB
+      }
+
+      const assignedSites = item.targetSite === 'ALL' || !item.targetSite ? [] : [Number(item.targetSite)];
+
+      const docPayload = {
+        id: docId,
+        name: item.name,
+        type: item.ext,
+        mimeType: item.mimeType,
+        size: item.sizeFormatted,
+        fileSize: item.size,
+        fileUrl: downloadUrl,
+        storagePath,
+        fullPath,
+        category: item.category,
+        portfolioId: item.portfolioId,
+        siteIds: assignedSites,
+        uploadedAt: new Date().toISOString(),
+        uploadedBy: 'Yann BARBERIS',
+      };
+
+      if (item.portfolioId === 'both' || item.portfolioId === 'global') {
+        heliosBatch.push({ ...docPayload, portfolioId: 'helios' });
+        voltaBatch.push({ ...docPayload, portfolioId: 'volta' });
+      } else if (item.portfolioId === 'volta') {
+        voltaBatch.push(docPayload);
+      } else {
+        heliosBatch.push(docPayload);
+      }
+
+      if (assignedSites.length > 0) {
+        assignDocumentToSites(docId, assignedSites);
+        assignDocumentToSites(item.name, assignedSites);
+      }
+
+      processedCount++;
+      setMassUploadProgress(Math.round((processedCount / total) * 100));
+    }
+
+    if (heliosBatch.length > 0) {
+      addBatchDocumentsToDataRoom('helios', heliosBatch);
+    }
+    if (voltaBatch.length > 0) {
+      addBatchDocumentsToDataRoom('volta', voltaBatch);
+    }
+
+    setIsProcessingMassUpload(false);
+    setMassUploadProgress(100);
+    setMassUploadStatusText('Versement des documents terminé avec succès !');
+    setUserActionNotice(`✓ ${total} document(s) importé(s) avec succès dans la Data Room.`);
+    setTimeout(() => {
+      setIsMassUploadModalOpen(false);
+      setMassUploadFiles([]);
+      setUserActionNotice('');
+    }, 1200);
+  };
+
+  // ============================================================================
+  // GESTION IMPORTATION DE NDA EN MASSE (AVEC MATCH AUTOMATIQUE)
+  // ============================================================================
+  const handleMassNdaFilesSelect = (e) => {
+    const rawFiles = Array.from(e.target.files || []);
+    if (rawFiles.length === 0) return;
+
+    const newItems = rawFiles.map((file, idx) => {
+      const matchResult = matchNdaFileToInvestor(file.name, safeInvestors);
+      const matchedInvestor = matchResult?.investor || null;
+      return {
+        id: 'MASS-NDA-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
+        file,
+        fileName: file.name,
+        fileSize: file.size,
+        matchedInvestorId: matchedInvestor?.id || '',
+        matchedInvestorEmail: matchedInvestor?.email || '',
+        matchScore: matchResult?.score || 0,
+        matchReason: matchResult?.matchReason || 'Sélectionnez manuellement l\'investisseur',
+        signedDate: new Date().toISOString().slice(0, 10),
+      };
+    });
+
+    setMassNdaFiles((prev) => [...prev, ...newItems]);
+    e.target.value = '';
+  };
+
+  const handleExecuteMassNdaUpload = async () => {
+    if (massNdaFiles.length === 0) return;
+    setIsProcessingMassNda(true);
+    setMassNdaProgress(0);
+    setMassNdaStatusText('Traitement des accords de confidentialité (NDA)...');
+
+    const total = massNdaFiles.length;
+    let processedCount = 0;
+    const payload = [];
+
+    for (let i = 0; i < total; i++) {
+      const item = massNdaFiles[i];
+      if (!item.matchedInvestorId && !item.matchedInvestorEmail) {
+        continue;
+      }
+      const targetInv = safeInvestors.find(
+        (inv) => inv.id === item.matchedInvestorId || (inv.email && inv.email.toLowerCase() === item.matchedInvestorEmail?.toLowerCase())
+      );
+      const docId = 'nda_user_' + (targetInv?.id || item.matchedInvestorId || Date.now());
+
+      try {
+        await storeDocumentBinary(docId, item.file, item.fileName);
+        await storeDocumentBinary(item.fileName, item.file, item.fileName);
+        if (targetInv?.email) {
+          await storeDocumentBinary('nda_email_' + targetInv.email.toLowerCase(), item.file, item.fileName);
+        }
+      } catch (err) {
+        console.warn('Erreur stockage NDA binaire local:', err);
+      }
+
+      payload.push({
+        userId: targetInv?.id || item.matchedInvestorId,
+        userEmail: targetInv?.email || item.matchedInvestorEmail,
+        fileName: item.fileName,
+        fileSize: item.fileSize,
+        documentId: docId,
+        signedAt: item.signedDate ? new Date(item.signedDate).toISOString() : new Date().toISOString(),
+      });
+
+      processedCount++;
+      setMassNdaProgress(Math.round((processedCount / total) * 100));
+    }
+
+    const res = adminBatchUploadNdaFiles(payload);
+
+    setIsProcessingMassNda(false);
+    setMassNdaProgress(100);
+    setMassNdaStatusText('Traitement terminé avec succès !');
+    setUserActionNotice(`✓ ${res?.count || payload.length} accord(s) de confidentialité (NDA) associés avec succès !`);
+    setTimeout(() => {
+      setIsMassNdaModalOpen(false);
+      setMassNdaFiles([]);
+      setUserActionNotice('');
+    }, 1200);
+  };
+
   // Conversation users & active chat
   const availableChatUsers = useMemo(() => {
     return safeInvestors.filter((u) => !u.isAdmin);
@@ -826,7 +1120,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <input
@@ -834,7 +1128,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       value={userSearch}
                       onChange={(e) => setUserSearch(e.target.value)}
                       placeholder="Rechercher nom, société..."
-                      className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-500 w-56"
+                      className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-500 w-52"
                     />
                   </div>
 
@@ -848,6 +1142,26 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                     <option value="pending">En attente ({pendingInvestorsCount})</option>
                     <option value="rejected">Refusés ({rejectedInvestorsCount})</option>
                   </select>
+
+                  <button
+                    onClick={() => {
+                      setMassNdaFiles([]);
+                      setIsMassNdaModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                    title="Importer plusieurs NDA signés et les associer automatiquement aux comptes investisseurs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>+ Importer des NDA (Auto-Match)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsAddUserModalOpen(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>+ Ajouter un compte</span>
+                  </button>
                 </div>
               </div>
 
@@ -1328,19 +1642,25 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   </p>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
                     <button
-                      onClick={() => setSelectedDataRoomPortfolio('helios')}
-                      className={`px-3 py-1.5 rounded-lg transition ${
+                      onClick={() => {
+                        setSelectedDataRoomPortfolio('helios');
+                        if (dataRoomSubTab === 'reseau') setDataRoomSubTab('urbanisme');
+                      }}
+                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
                         selectedDataRoomPortfolio === 'helios' ? 'bg-amber-500 text-slate-950 font-black shadow-xs' : 'text-slate-600'
                       }`}
                     >
                       ☀️ HÉLIOS (PV)
                     </button>
                     <button
-                      onClick={() => setSelectedDataRoomPortfolio('volta')}
-                      className={`px-3 py-1.5 rounded-lg transition ${
+                      onClick={() => {
+                        setSelectedDataRoomPortfolio('volta');
+                        if (dataRoomSubTab === 'urbanisme') setDataRoomSubTab('reseau');
+                      }}
+                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
                         selectedDataRoomPortfolio === 'volta' ? 'bg-cyan-600 text-white font-black shadow-xs' : 'text-slate-600'
                       }`}
                     >
@@ -1350,13 +1670,26 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
                   <button
                     onClick={() => {
+                      setMassUploadFiles([]);
+                      setIsMassUploadModalOpen(true);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                    title="Importer plusieurs documents à la fois dans la Data Room"
+                  >
+                    <FolderPlus className="w-3.5 h-3.5" />
+                    <span>+ Importer des documents en masse</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
                       if (dataRoomSubTab === 'technique') setUploadCategory('Technique');
                       else if (dataRoomSubTab === 'financier') setUploadCategory('Financier');
+                      else if (dataRoomSubTab === 'urbanisme') setUploadCategory('Urbanisme');
                       else if (dataRoomSubTab === 'reseau') setUploadCategory('Réseau');
                       else setUploadCategory('Juridique');
                       setIsUploadModalOpen(true);
                     }}
-                    className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>+ Ajouter un document</span>
@@ -1364,7 +1697,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 </div>
               </div>
 
-              {/* SOUS-ONGLETS DE NAVIGATION DATA ROOM : JURIDIQUE, TECHNIQUE, FINANCIER, RESEAU, NDA */}
+              {/* SOUS-ONGLETS DE NAVIGATION DATA ROOM : JURIDIQUE, TECHNIQUE, FINANCIER, URBANISME, RESEAU, NDA */}
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
                 <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-2xl text-xs font-bold">
                   {/* 1. JURIDIQUE */}
@@ -1424,26 +1757,49 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                     </span>
                   </button>
 
-                  {/* 4. RESEAU */}
-                  <button
-                    type="button"
-                    onClick={() => setDataRoomSubTab('reseau')}
-                    className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
-                      dataRoomSubTab === 'reseau'
-                        ? 'bg-white text-slate-900 shadow-xs font-black'
-                        : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-                    }`}
-                  >
-                    <Network className="w-3.5 h-3.5 text-cyan-600" />
-                    <span>RESEAU</span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                      dataRoomSubTab === 'reseau' ? 'bg-cyan-100 text-cyan-800 font-bold' : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      {subTabCounts.reseau}
-                    </span>
-                  </button>
+                  {/* 4. URBANISME (HÉLIOS PV ou si présent) */}
+                  {(selectedDataRoomPortfolio === 'helios' || subTabCounts.urbanisme > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setDataRoomSubTab('urbanisme')}
+                      className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                        dataRoomSubTab === 'urbanisme'
+                          ? 'bg-white text-slate-900 shadow-xs font-black'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      }`}
+                    >
+                      <MapPin className="w-3.5 h-3.5 text-amber-600" />
+                      <span>URBANISME</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                        dataRoomSubTab === 'urbanisme' ? 'bg-amber-100 text-amber-800 font-bold' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {subTabCounts.urbanisme}
+                      </span>
+                    </button>
+                  )}
 
-                  {/* 5. NDA (en dernier à droite) */}
+                  {/* 5. RESEAU (VOLTA BESS ou si présent) */}
+                  {(selectedDataRoomPortfolio === 'volta' || subTabCounts.reseau > 0) && (
+                    <button
+                      type="button"
+                      onClick={() => setDataRoomSubTab('reseau')}
+                      className={`px-3.5 py-2 rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+                        dataRoomSubTab === 'reseau'
+                          ? 'bg-white text-slate-900 shadow-xs font-black'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+                      }`}
+                    >
+                      <Network className="w-3.5 h-3.5 text-cyan-600" />
+                      <span>RESEAU</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                        dataRoomSubTab === 'reseau' ? 'bg-cyan-100 text-cyan-800 font-bold' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {subTabCounts.reseau}
+                      </span>
+                    </button>
+                  )}
+
+                  {/* 6. NDA */}
                   <button
                     type="button"
                     onClick={() => setDataRoomSubTab('nda')}
@@ -1482,23 +1838,47 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 const usersWithFiles = safeInvestors.filter((u) => u && u.ndaFileName);
                 if (usersWithFiles.length === 0) {
                   return (
-                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-2 animate-fadeIn">
+                    <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-4 animate-fadeIn">
                       <FolderLock className="w-8 h-8 text-slate-300 mx-auto" />
-                      <div className="text-xs font-bold text-slate-700">Aucun Accord de Confidentialité déposé</div>
-                      <div className="text-[11px] text-slate-500">Les NDA signés et téléversés par les investisseurs accrédités apparaîtront ici.</div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-700">Aucun Accord de Confidentialité déposé</div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">Les NDA signés et téléversés par les investisseurs accrédités apparaîtront ici.</div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setMassNdaFiles([]);
+                          setIsMassNdaModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                        <span>+ Importer des NDA signés (Auto-Match)</span>
+                      </button>
                     </div>
                   );
                 }
                 return (
                   <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-slate-50 to-purple-50 border border-purple-200 space-y-3 animate-fadeIn">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="font-black text-xs uppercase tracking-wider text-purple-950 flex items-center gap-2">
                         <span className="w-2.5 h-2.5 rounded-full bg-purple-600"></span>
                         Accords de Confidentialité (NDA) Signés Déposés ({usersWithFiles.length} fichiers)
                       </span>
-                      <span className="text-[10px] text-purple-700 font-bold bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
-                        Documents légaux investisseurs
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setMassNdaFiles([]);
+                            setIsMassNdaModalOpen(true);
+                          }}
+                          className="px-3 py-1 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sparkles className="w-3 h-3 text-amber-300" />
+                          <span>+ Importer des NDA (Auto-Match)</span>
+                        </button>
+                        <span className="text-[10px] text-purple-700 font-bold bg-purple-100 px-2.5 py-0.5 rounded-full border border-purple-200">
+                          Documents légaux
+                        </span>
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -2404,6 +2784,579 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODALE : IMPORTATION DE DOCUMENTS EN MASSE (DATA ROOM)              */}
+      {/* =================================================================== */}
+      {isMassUploadModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isProcessingMassUpload) {
+              setIsMassUploadModalOpen(false);
+              setMassUploadFiles([]);
+            }
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-5 relative my-8 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">
+                  <FolderPlus className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-[#0b192c]">
+                    Importation de Documents en Masse — Data Room
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Sélectionnez plusieurs fichiers. La catégorie et l'affectation projet sont pré-remplies automatiquement.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isProcessingMassUpload}
+                onClick={() => {
+                  if (isProcessingMassUpload) return;
+                  setIsMassUploadModalOpen(false);
+                  setMassUploadFiles([]);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer disabled:opacity-40"
+                title="Fermer (Échap)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Zone de sélection de fichiers */}
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+              <div className="border-2 border-dashed border-blue-300 hover:border-blue-500 rounded-2xl p-6 text-center bg-blue-50/40 hover:bg-blue-50/70 transition cursor-pointer relative">
+                <input
+                  type="file"
+                  multiple
+                  disabled={isProcessingMassUpload}
+                  onChange={handleMassUploadFilesSelect}
+                  accept=".pdf,.xlsx,.xls,.docx,.doc,.zip,.csv,.png,.jpg"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
+                <div className="space-y-2 pointer-events-none">
+                  <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center mx-auto">
+                    <Upload className="w-6 h-6" />
+                  </div>
+                  <div className="text-sm font-bold text-slate-800">
+                    Cliquez ou glissez-déposez vos documents ici (Sélection multiple)
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Formats acceptés : PDF, Excel (.xlsx/.xls), Word (.docx), Archives ZIP, Images
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions groupées si fichiers présents */}
+              {massUploadFiles.length > 0 && (
+                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-700">
+                      {massUploadFiles.length} fichier(s) sélectionné(s)
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Portefeuille groupé */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 font-medium text-[11px]">Portefeuille :</span>
+                      <select
+                        value={massBulkPortfolio}
+                        onChange={(e) => setMassBulkPortfolio(e.target.value)}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-800"
+                      >
+                        <option value="helios">☀️ HÉLIOS (PV)</option>
+                        <option value="volta">🔋 VOLTA (BESS)</option>
+                        <option value="both">🌐 Les deux (Global)</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMassUploadFiles((prev) =>
+                            prev.map((f) => ({ ...f, portfolioId: massBulkPortfolio }))
+                          );
+                        }}
+                        className="px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[10px] cursor-pointer"
+                        title="Appliquer ce portefeuille à tous les fichiers"
+                      >
+                        Appliquer à tous
+                      </button>
+                    </div>
+
+                    {/* Catégorie groupée */}
+                    <div className="flex items-center gap-1">
+                      <span className="text-slate-500 font-medium text-[11px]">Dossier :</span>
+                      <select
+                        value={massBulkCategory}
+                        onChange={(e) => setMassBulkCategory(e.target.value)}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-800"
+                      >
+                        <option value="Juridique">Juridique</option>
+                        <option value="Technique">Technique</option>
+                        <option value="Financier">Financier</option>
+                        <option value="Urbanisme">Urbanisme</option>
+                        <option value="Réseau">Réseau</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMassUploadFiles((prev) =>
+                            prev.map((f) => ({ ...f, category: massBulkCategory }))
+                          );
+                        }}
+                        className="px-2 py-1 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-[10px] cursor-pointer"
+                        title="Appliquer cette catégorie à tous les fichiers"
+                      >
+                        Appliquer à tous
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tableau / Liste détaillée des fichiers */}
+              {massUploadFiles.length > 0 && (
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {massUploadFiles.map((item, idx) => {
+                    const portfolioSites = item.portfolioId === 'volta'
+                      ? (portfolios.find((p) => p.id === 'volta')?.sites || [])
+                      : (portfolios.find((p) => p.id === 'helios')?.sites || []);
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className="p-3 bg-white border border-slate-200 rounded-xl shadow-2xs hover:border-blue-300 transition flex flex-wrap items-center justify-between gap-3 text-xs"
+                      >
+                        {/* Infos fichier */}
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <span
+                            className={`px-2 py-1 font-bold text-[10px] rounded shrink-0 ${
+                              item.ext === 'XLSX' || item.ext === 'XLS'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}
+                          >
+                            {item.ext}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <input
+                              type="text"
+                              value={item.name}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setMassUploadFiles((prev) =>
+                                  prev.map((f, i) => (i === idx ? { ...f, name: val } : f))
+                                );
+                              }}
+                              className="w-full font-bold text-slate-900 bg-transparent border-b border-dashed border-slate-300 hover:border-blue-500 focus:border-blue-600 focus:outline-none text-xs py-0.5"
+                            />
+                            <div className="text-[10px] text-slate-400 font-mono">
+                              {item.sizeFormatted} • {item.rawFileName}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Sélecteurs individuels */}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* Portefeuille */}
+                          <select
+                            value={item.portfolioId}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMassUploadFiles((prev) =>
+                                prev.map((f, i) => (i === idx ? { ...f, portfolioId: val } : f))
+                              );
+                            }}
+                            className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-bold text-[11px] text-slate-800"
+                          >
+                            <option value="helios">☀️ HÉLIOS</option>
+                            <option value="volta">🔋 VOLTA</option>
+                            <option value="both">🌐 Global</option>
+                          </select>
+
+                          {/* Catégorie */}
+                          <select
+                            value={item.category}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMassUploadFiles((prev) =>
+                                prev.map((f, i) => (i === idx ? { ...f, category: val } : f))
+                              );
+                            }}
+                            className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-bold text-[11px] text-slate-800"
+                          >
+                            <option value="Juridique">Juridique</option>
+                            <option value="Technique">Technique</option>
+                            <option value="Financier">Financier</option>
+                            <option value="Urbanisme">Urbanisme</option>
+                            <option value="Réseau">Réseau</option>
+                          </select>
+
+                          {/* Site spécifique (optionnel) */}
+                          <select
+                            value={item.targetSite || 'ALL'}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setMassUploadFiles((prev) =>
+                                prev.map((f, i) => (i === idx ? { ...f, targetSite: val } : f))
+                              );
+                            }}
+                            className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-medium text-[11px] text-slate-700 max-w-[130px]"
+                          >
+                            <option value="ALL">Tous les projets</option>
+                            {portfolioSites.map((site) => (
+                              <option key={site.id} value={site.id}>
+                                #{site.id} - {site.name}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Supprimer de la liste */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMassUploadFiles((prev) => prev.filter((_, i) => i !== idx));
+                            }}
+                            className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                            title="Retirer ce fichier"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Barre de progression pendant l'import */}
+              {isProcessingMassUpload && (
+                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-blue-900 flex items-center gap-1.5">
+                      <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                      {massUploadStatusText}
+                    </span>
+                    <span className="font-mono font-bold text-blue-700">{massUploadProgress}%</span>
+                  </div>
+                  <div className="w-full bg-blue-200/60 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${massUploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
+              <div className="text-xs text-slate-500">
+                {massUploadFiles.length > 0 ? (
+                  <span>
+                    Prêt à importer <strong className="text-slate-900">{massUploadFiles.length}</strong> document(s)
+                  </span>
+                ) : (
+                  <span>Sélectionnez des fichiers pour commencer</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isProcessingMassUpload}
+                  onClick={() => {
+                    setIsMassUploadModalOpen(false);
+                    setMassUploadFiles([]);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={isProcessingMassUpload || massUploadFiles.length === 0}
+                  onClick={handleExecuteMassUpload}
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-500/20 disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+                >
+                  {isProcessingMassUpload ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Versement en cours ({massUploadProgress}%)...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Importer les {massUploadFiles.length} document(s)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =================================================================== */}
+      {/* MODALE : IMPORTATION & MATCH AUTOMATIQUE DE NDA SIGNÉS              */}
+      {/* =================================================================== */}
+      {isMassNdaModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isProcessingMassNda) {
+              setIsMassNdaModalOpen(false);
+              setMassNdaFiles([]);
+            }
+          }}
+        >
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-5 relative my-8 max-h-[90vh] flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-black">
+                  <Sparkles className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-[#0b192c]">
+                    Importation & Association Automatique de NDA Signés
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Glissez vos fichiers PDF. Le système associe automatiquement l'investisseur correspondant (ex: « NDA ALBIOMA x ENR COURTAGE.pdf » → Quentin TROLONGE / ALBIOMA).
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                disabled={isProcessingMassNda}
+                onClick={() => {
+                  if (isProcessingMassNda) return;
+                  setIsMassNdaModalOpen(false);
+                  setMassNdaFiles([]);
+                }}
+                className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer disabled:opacity-40"
+                title="Fermer (Échap)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Zone de sélection */}
+            <div className="space-y-4 overflow-y-auto flex-1 pr-1">
+              <div className="border-2 border-dashed border-purple-300 hover:border-purple-500 rounded-2xl p-6 text-center bg-purple-50/40 hover:bg-purple-50/70 transition cursor-pointer relative">
+                <input
+                  type="file"
+                  multiple
+                  disabled={isProcessingMassNda}
+                  onChange={handleMassNdaFilesSelect}
+                  accept=".pdf"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                />
+                <div className="space-y-2 pointer-events-none">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center mx-auto">
+                    <FileSignature className="w-6 h-6" />
+                  </div>
+                  <div className="text-sm font-bold text-slate-800">
+                    Cliquez ou glissez-déposez vos NDA signés (Sélection multiple de PDF)
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    Reconnaissance intelligente des 24 comptes investisseurs partenaires (Albioma, Altarea, Babel, Devenco, MCEL, Valorem, Sunvolt, etc.)
+                  </div>
+                </div>
+              </div>
+
+              {/* Tableau des NDA avec correspondances */}
+              {massNdaFiles.length > 0 && (
+                <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                  {massNdaFiles.map((item, idx) => {
+                    const hasMatch = !!item.matchedInvestorId;
+                    const matchedInv = safeInvestors.find(
+                      (inv) => inv.id === item.matchedInvestorId || (inv.email && inv.email.toLowerCase() === item.matchedInvestorEmail?.toLowerCase())
+                    );
+
+                    return (
+                      <div
+                        key={item.id || idx}
+                        className={`p-3.5 rounded-2xl border transition-all space-y-2 text-xs ${
+                          hasMatch
+                            ? 'bg-purple-50/50 border-purple-200 hover:border-purple-400'
+                            : 'bg-amber-50/50 border-amber-200 hover:border-amber-400'
+                        }`}
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          {/* Fichier */}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-8 h-8 rounded-xl bg-purple-600 text-white font-black text-[10px] flex items-center justify-center shrink-0">
+                              PDF
+                            </span>
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 truncate">
+                                {item.fileName}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-mono">
+                                {(item.fileSize / 1024).toFixed(0)} Ko
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Statut du Match */}
+                          <div className="flex items-center gap-2">
+                            {hasMatch ? (
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>{item.matchReason}</span>
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-600" />
+                                <span>Sélectionnez un compte</span>
+                              </span>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setMassNdaFiles((prev) => prev.filter((_, i) => i !== idx));
+                              }}
+                              className="p-1 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                              title="Retirer ce fichier"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Sélecteur de compte & date de signature */}
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 border-t border-purple-100/60">
+                          <div className="sm:col-span-2">
+                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                              Compte Investisseur Associé *
+                            </label>
+                            <select
+                              value={item.matchedInvestorId || ''}
+                              onChange={(e) => {
+                                const selectedId = e.target.value;
+                                const inv = safeInvestors.find((i) => i.id === selectedId);
+                                setMassNdaFiles((prev) =>
+                                  prev.map((f, i) =>
+                                    i === idx
+                                      ? {
+                                          ...f,
+                                          matchedInvestorId: selectedId,
+                                          matchedInvestorEmail: inv?.email || '',
+                                          matchReason: inv ? `Sélection manuelle (${inv.company || inv.name})` : 'Non assigné',
+                                        }
+                                      : f
+                                  )
+                                );
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-300 font-semibold text-slate-900 text-xs"
+                            >
+                              <option value="">-- Choisir un investisseur dans la liste --</option>
+                              {safeInvestors.map((inv) => (
+                                <option key={inv.id} value={inv.id}>
+                                  {inv.name} • {inv.company} ({inv.email})
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-bold text-slate-600 mb-0.5">
+                              Date de signature
+                            </label>
+                            <input
+                              type="date"
+                              value={item.signedDate || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setMassNdaFiles((prev) =>
+                                  prev.map((f, i) => (i === idx ? { ...f, signedDate: val } : f))
+                                );
+                              }}
+                              className="w-full px-2.5 py-1.5 rounded-xl bg-white border border-slate-300 font-medium text-slate-900 text-xs"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Barre de progression pendant l'import */}
+              {isProcessingMassNda && (
+                <div className="p-4 rounded-2xl bg-purple-50 border border-purple-200 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-purple-900 flex items-center gap-1.5">
+                      <Loader2 className="w-4 h-4 text-purple-600 animate-spin" />
+                      {massNdaStatusText}
+                    </span>
+                    <span className="font-mono font-bold text-purple-700">{massNdaProgress}%</span>
+                  </div>
+                  <div className="w-full bg-purple-200/60 rounded-full h-2.5 overflow-hidden">
+                    <div
+                      className="bg-purple-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${massNdaProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between shrink-0">
+              <div className="text-xs text-slate-500">
+                {massNdaFiles.length > 0 ? (
+                  <span>
+                    <strong className="text-purple-900 font-bold">{massNdaFiles.filter((f) => f.matchedInvestorId).length}</strong> / {massNdaFiles.length} NDA associé(s) prêt(s) à être validé(s)
+                  </span>
+                ) : (
+                  <span>Sélectionnez des fichiers PDF de NDA</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={isProcessingMassNda}
+                  onClick={() => {
+                    setIsMassNdaModalOpen(false);
+                    setMassNdaFiles([]);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={isProcessingMassNda || massNdaFiles.filter((f) => f.matchedInvestorId).length === 0}
+                  onClick={handleExecuteMassNdaUpload}
+                  className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-600/20 disabled:opacity-40 cursor-pointer flex items-center gap-1.5"
+                >
+                  {isProcessingMassNda ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>Association en cours ({massNdaProgress}%)...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Valider les {massNdaFiles.filter((f) => f.matchedInvestorId).length} NDA</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
