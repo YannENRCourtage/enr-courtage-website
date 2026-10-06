@@ -194,14 +194,15 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
             </nav>
 
             {/* Desktop Actions : Espace Partenaire + Nous contacter */}
-            <div className="hidden md:flex items-center space-x-3">
+            <div className="hidden md:flex items-center space-x-5">
               <button
                 onClick={() => navigate('/investisseurs')}
-                className="px-4 py-2.5 rounded-full text-xs font-bold border border-[#0f2847]/20 text-[#0f2847] hover:bg-[#0f2847]/5 hover:border-[#0f2847]/40 transition-all duration-200 flex items-center gap-1.5 shadow-xs cursor-pointer"
+                style={{ backgroundColor: '#0f2847', color: '#ffffff' }}
+                className="px-5 py-2.5 rounded-full text-xs font-bold bg-[#0f2847] hover:bg-[#1a3a5c] text-white shadow-md border border-[#0f2847] transition-all duration-200 flex items-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95"
                 title="Accès Espace Partenaire & Investisseurs"
               >
-                <Lock className="h-3.5 w-3.5 text-[#0f2847]" />
-                <span>Espace Partenaire</span>
+                <Lock className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                <span className="text-white font-bold">Espace Partenaire</span>
               </button>
 
               <div className="relative group">
@@ -321,10 +322,11 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                       navigate('/investisseurs');
                       setIsMenuOpen(false);
                     }}
-                    className="w-full mt-3 px-4 py-3 rounded-xl border border-[#0f2847]/20 text-[#0f2847] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#0f2847]/5 transition cursor-pointer"
+                    style={{ backgroundColor: '#0f2847', color: '#ffffff' }}
+                    className="w-full mt-3 px-4 py-3 rounded-xl bg-[#0f2847] hover:bg-[#1a3a5c] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md transition cursor-pointer"
                   >
-                    <Lock className="h-4 w-4 text-[#0f2847]" />
-                    <span>Espace Partenaire</span>
+                    <Lock className="h-4 w-4 text-amber-400 shrink-0" />
+                    <span className="text-white font-bold">Espace Partenaire</span>
                   </button>
 
                   {/* Contact Button - Mobile */}
