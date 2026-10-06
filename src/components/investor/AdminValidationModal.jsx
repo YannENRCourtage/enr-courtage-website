@@ -354,7 +354,7 @@ Voici vos identifiants d'accès à l'Espace Investisseurs d'ENR Courtage :
 
 Vous pouvez dès à présent vous connecter pour accéder aux Teasers complets et aux Data Rooms des portefeuilles :
 - Portefeuille HÉLIOS (PV 6.24 MWc / 15 centrales solaires)
-- Portefeuille VOLTA (BESS 15.50 MW / 32.36 MWh / 31 sites)
+- Portefeuille VOLTA (BESS 14.50 MW / 30.28 MWh / 29 stations)
 
 Bien cordialement,
 Yann BARBERIS — ENR COURTAGE

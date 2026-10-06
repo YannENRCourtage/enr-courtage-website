@@ -263,7 +263,7 @@ export const useInvestorStore = create(
           authorName: 'Jean DUS',
           authorCompany: 'ENEE Energy Partners',
           investorEmail: 'yannbarberis@msn.com',
-          text: 'Bonjour Yann, pouvez-vous nous confirmer que les 31 sites BESS bénéficient bien du tarif HTA1 Courte Utilisation sous CRE 2025-227 ?',
+          text: 'Bonjour Yann, pouvez-vous nous confirmer que les 29 stations BESS bénéficient bien du tarif HTA1 Courte Utilisation sous CRE 2025-227 ?',
           createdAt: '2026-09-17T14:15:00Z',
         },
         {
@@ -1107,7 +1107,7 @@ Vos identifiants personnels de connexion sont les suivants :
 
 Vous pouvez dès à présent vous connecter pour accéder à l'ensemble des éléments transactionnels :
 - Portefeuille HÉLIOS (PV 6.24 MWc / 15 centrales solaires en toitures et hangars)
-- Portefeuille VOLTA (BESS 15.50 MW / 32.36 MWh / 31 sites BESS)
+- Portefeuille VOLTA (BESS 14.50 MW / 30.28 MWh / 29 stations BESS)
 - Teasers d'investissement et matrices économiques détaillées
 - Data Room virtuelle complète (fiches synoptiques, devis travaux, PdB, accord fournisseur BESS)
 - Formulaire de proposition d'achat indicatif (global ou partiel selon jalonnements)
@@ -1944,7 +1944,7 @@ y.barberis@enr-courtage.fr
                 id: 'DL-SEED-02',
                 portfolioId: 'volta',
                 portfolioName: 'PROJET VOLTA',
-                fileName: 'Fiches synoptiques — 31 sites BESS',
+                fileName: 'Fiches synoptiques — 29 stations BESS',
                 fileType: 'PDF',
                 fileSize: '22.4 Mo',
                 downloadedAt: '2026-09-17T11:42:00.000Z',

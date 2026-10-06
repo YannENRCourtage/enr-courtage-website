@@ -1781,7 +1781,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   <div className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-cyan-500"></span>
                     <h3 className="text-base font-black text-[#0b192c]">
-                      Portefeuille VOLTA — Stockage Réseau Stand-Alone (BESS 15,50 MW)
+                      Portefeuille VOLTA — Stockage Réseau Stand-Alone (BESS 14,50 MW)
                     </h3>
                   </div>
                 </div>
@@ -1975,7 +1975,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       className="sr-only"
                     />
                     <span className="font-bold text-slate-900 block text-xs">Projet VOLTA</span>
-                    <span className="text-[10px] text-slate-400">BESS 15,5 MW</span>
+                    <span className="text-[10px] text-slate-400">BESS 14,5 MW</span>
                   </label>
                   <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50 cursor-pointer text-center">
                     <input

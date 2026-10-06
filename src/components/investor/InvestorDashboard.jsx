@@ -466,7 +466,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                   </div>
                 </div>
 
-                {/* CARTE PORTEFEUILLE 2 : PROJET VOLTA (BATTERIES BESS 15,50 MW) */}
+                {/* CARTE PORTEFEUILLE 2 : PROJET VOLTA (BATTERIES BESS 14,50 MW) */}
                 <div className="bg-white border-2 border-cyan-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-cyan-400 transition-all relative">
                   <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-xs">
                     Optimisé Délibération CRE 2025-227
@@ -483,10 +483,10 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     </div>
 
                     <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                      Portefeuille VOLTA — 15.50 MW / 32.36 MWh
+                      Portefeuille VOLTA — 14.50 MW / 30.28 MWh
                     </h3>
                     <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
-                      31 sites (500 kW / 1 044 kWh). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, SPOT EPEX, Capacité RTE).
+                      29 stations BESS (26 projets). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, SPOT EPEX, Capacité RTE).
                     </p>
 
                     {/* Métriques Volta */}
@@ -495,14 +495,14 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
                           Unités BESS
                         </span>
-                        <span className="text-lg font-black text-[#0b192c]">31 sites</span>
+                        <span className="text-lg font-black text-[#0b192c]">29 stations</span>
                         <span className="text-[10px] font-bold text-cyan-700 block">500 kW / 1 044 kWh</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
                         <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
                           EBITDA An 1
                         </span>
-                        <span className="text-lg font-black text-emerald-700">1.74 M€</span>
+                        <span className="text-lg font-black text-emerald-700">1.62 M€</span>
                         <span className="text-[10px] font-bold text-slate-400 block">Marge &gt; 60%</span>
                       </div>
                       <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
@@ -518,7 +518,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     <ul className="text-xs space-y-2 text-slate-600 font-medium border-t border-slate-100 pt-4">
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>Gain TURPE 7 délibéré CRE 2025-227 (+439 673 €/an d'économie réseau consolidée)</span>
+                        <span>Gain TURPE 7 délibéré CRE 2025-227 (+411 307 €/an d'économie réseau consolidée)</span>
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-cyan-600 shrink-0" />
@@ -526,7 +526,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       </li>
                       <li className="flex items-center gap-2">
                         <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>CAPEX clé en main 8,98 M€ (~290 k€/site) • DSCR moyen portefeuille 1.91x</span>
+                        <span>CAPEX clé en main 8,40 M€ (~290 k€/site) • DSCR moyen portefeuille 1.91x</span>
                       </li>
                     </ul>
                   </div>

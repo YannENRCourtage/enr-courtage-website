@@ -592,7 +592,7 @@ export function getDocumentsForSite(site, portfolioId, state) {
       if (/fiche synoptique.*centrales pv|fiches synoptiques.*bess/i.test(docNameLower)) {
         return; // Ne pas encombrer le modal individuel avec le gros bundle de 31 fiches
       }
-      if (/promesses de bail.*sites fermes|promesses de bail.*31 sites/i.test(docNameLower)) {
+      if (/promesses de bail.*sites fermes|promesses de bail.*(?:29|31)\s*(?:sites|stations)/i.test(docNameLower)) {
         return;
       }
 
