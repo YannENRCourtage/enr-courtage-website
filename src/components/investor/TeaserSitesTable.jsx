@@ -53,6 +53,7 @@ export default function TeaserSitesTable({
     toggleSoldSite,
     deleteSite,
     deleteBatchSites,
+    restoreSite,
     addCustomSite,
     updateSite,
     batchUpdateSites,
@@ -251,7 +252,7 @@ export default function TeaserSitesTable({
             <span>RÉPERTOIRE FONCIER & RACCORDEMENT</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
-            Liste Complète des {allSitesCombined.length} Sites du Portefeuille {isPv ? 'HÉLIOS' : 'VOLTA'}
+            Liste Complète des {allSitesCombined.length} Projets {isPv ? `(${allSitesCombined.reduce((s, x) => s + (x.stationsCount || 1), 0)} Centrales)` : `(${allSitesCombined.reduce((s, x) => s + (x.stationsCount || 1), 0)} Stations)`} du Portefeuille {isPv ? 'HÉLIOS' : 'VOLTA'}
           </h2>
           <p className="text-xs text-slate-600 font-medium mt-1">
             Cliquez sur une ligne pour ouvrir la fiche détaillée et consulter les pièces justificatives associées.
@@ -270,6 +271,22 @@ export default function TeaserSitesTable({
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Ajouter un projet</span>
               </button>
+
+              {currentDeleted.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Restaurer les ${currentDeleted.length} projet(s) supprimé(s) ?`)) {
+                      currentDeleted.forEach((id) => restoreSite(portfolioKey, id));
+                    }
+                  }}
+                  className="px-3 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
+                  title="Restaurer tous les sites supprimés"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Restaurer ({currentDeleted.length})</span>
+                </button>
+              )}
 
               {selectedSiteIds.length > 0 && (
                 <>
@@ -649,9 +666,9 @@ export default function TeaserSitesTable({
             const totalStationsCount = allSitesCombined.reduce((sum, s) => sum + (Number(s.stationsCount) || 1), 0);
             const neufsCount = activeSites.filter((s) => s.type === 'Construction' || (s.stationsCount && s.stationsCount > 1)).length;
             const toitCount = activeSites.filter((s) => s.type === 'Toitures').length;
-            const baseTotalKw = isPv ? 6240 : 15500;
+            const baseTotalKw = isPv ? 6240 : 14500;
             const powerRatio = isPv ? (activeKwc / baseTotalKw) : (activeKw / baseTotalKw);
-            const activeBessEbitda = Math.round(1740000 * powerRatio);
+            const activeBessEbitda = Math.round(1624851 * powerRatio);
 
             return (
               <tfoot className="border-t-2 border-slate-300 bg-slate-100 font-bold text-xs text-slate-900">

@@ -193,8 +193,17 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
               </button>
             </nav>
 
-            {/* Contact / Estimer Button - Desktop */}
-            <div className="hidden md:flex items-center">
+            {/* Desktop Actions : Espace Partenaire + Nous contacter */}
+            <div className="hidden md:flex items-center space-x-3">
+              <button
+                onClick={() => navigate('/investisseurs')}
+                className="px-4 py-2.5 rounded-full text-xs font-bold border border-[#0f2847]/20 text-[#0f2847] hover:bg-[#0f2847]/5 hover:border-[#0f2847]/40 transition-all duration-200 flex items-center gap-1.5 shadow-xs cursor-pointer"
+                title="Accès Espace Partenaire & Investisseurs"
+              >
+                <Lock className="h-3.5 w-3.5 text-[#0f2847]" />
+                <span>Espace Partenaire</span>
+              </button>
+
               <div className="relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 rounded-full blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 group-hover:scale-105 animate-pulse" />
                 <Button 
@@ -304,6 +313,18 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
                     aria-current={activeTab === 'about' ? 'page' : undefined}
                   >
                     À propos
+                  </button>
+
+                  {/* Espace Partenaire Button - Mobile */}
+                  <button
+                    onClick={() => {
+                      navigate('/investisseurs');
+                      setIsMenuOpen(false);
+                    }}
+                    className="w-full mt-3 px-4 py-3 rounded-xl border border-[#0f2847]/20 text-[#0f2847] font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#0f2847]/5 transition cursor-pointer"
+                  >
+                    <Lock className="h-4 w-4 text-[#0f2847]" />
+                    <span>Espace Partenaire</span>
                   </button>
 
                   {/* Contact Button - Mobile */}

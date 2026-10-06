@@ -124,6 +124,9 @@ export default function PortfolioDetailPage() {
   }, [allSitesCombined, currentSold]);
 
   const displaySitesCount = activeAvailableSites.length;
+  const totalStations = useMemo(() => {
+    return activeAvailableSites.reduce((sum, s) => sum + (Number(s.stationsCount) || 1), 0);
+  }, [activeAvailableSites]);
 
   // Total power and ratio
   const { displayPower, displayPowerSub, powerRatio } = useMemo(() => {
@@ -400,7 +403,7 @@ export default function PortfolioDetailPage() {
                     href="#sites"
                     className="block w-full text-center py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-900 font-black text-xs uppercase tracking-wider transition shadow-xs"
                   >
-                    Consulter les {displaySitesCount} Sites
+                    Consulter les {isPv ? `${displaySitesCount} Centrales` : `${displaySitesCount} Projets (${totalStations} Stations)`}
                   </a>
                   <a
                     href="#carte"
@@ -440,7 +443,7 @@ export default function PortfolioDetailPage() {
                   </div>
                   <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500 font-medium">
                     <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 shadow-2xs">
-                      Audit certifié au 30 septembre 2026
+                      {isPv ? 'Audit certifié au 30 septembre 2026' : 'Audit certifié au 06 octobre 2026'}
                     </span>
                   </div>
                 </div>
@@ -660,7 +663,7 @@ export default function PortfolioDetailPage() {
                   CARTOGRAPHIE & IMPLANTATIONS GÉORÉFÉRENCÉES
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black text-[#0b192c] mt-1 tracking-tight">
-                  Maillage Territorial des {displaySitesCount} {isPv ? 'Toitures PV' : 'Stations BESS'} (Nouvelle-Aquitaine & Occitanie)
+                  Maillage Territorial des {isPv ? `${displaySitesCount} Centrales PV` : `${totalStations} Stations BESS (${displaySitesCount} Projets)`} (Nouvelle-Aquitaine & Occitanie)
                 </h2>
               </div>
 

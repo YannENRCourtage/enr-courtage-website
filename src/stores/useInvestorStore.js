@@ -24,6 +24,7 @@ if (typeof window !== 'undefined' && window.localStorage) {
     window.localStorage.removeItem('enr-investor-storage-v5');
     window.localStorage.removeItem('enr-investor-storage-v6');
     window.localStorage.removeItem('enr-investor-storage-v7');
+    window.localStorage.removeItem('enr-investor-storage-v8');
   } catch (e) {
     // Ignore storage access errors in private mode
   }
@@ -396,13 +397,20 @@ export const useInvestorStore = create(
           return;
         }
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        const numId = Number(siteId);
         set((state) => {
           const currentDeleted = state.deletedSites?.[pId] || [];
-          if (currentDeleted.includes(siteId)) return state;
+          const currentSold = state.soldSites?.[pId] || [];
+          const newDeleted = currentDeleted.includes(numId) ? currentDeleted : [...currentDeleted, numId];
+          const newSold = currentSold.filter((id) => Number(id) !== numId);
           return {
             deletedSites: {
               ...state.deletedSites,
-              [pId]: [...currentDeleted, siteId],
+              [pId]: newDeleted,
+            },
+            soldSites: {
+              ...state.soldSites,
+              [pId]: newSold,
             },
           };
         });
@@ -444,13 +452,20 @@ export const useInvestorStore = create(
         }
         if (!Array.isArray(siteIds) || siteIds.length === 0) return;
         const pId = String(portfolioId || 'helios').toLowerCase().includes('volta') ? 'volta' : 'helios';
+        const numIds = siteIds.map(Number);
         set((state) => {
           const currentDeleted = state.deletedSites?.[pId] || [];
-          const newDeleted = Array.from(new Set([...currentDeleted, ...siteIds]));
+          const currentSold = state.soldSites?.[pId] || [];
+          const newDeleted = Array.from(new Set([...currentDeleted, ...numIds]));
+          const newSold = currentSold.filter((id) => !numIds.includes(Number(id)));
           return {
             deletedSites: {
               ...state.deletedSites,
               [pId]: newDeleted,
+            },
+            soldSites: {
+              ...state.soldSites,
+              [pId]: newSold,
             },
           };
         });
@@ -1779,7 +1794,7 @@ y.barberis@enr-courtage.fr
       },
     }),
     {
-      name: 'enr-investor-storage-v8',
+      name: 'enr-investor-storage-v9',
       storage: safeStorage,
       partialize: (state) => {
         // Strip bulky binary fields from persistent localStorage (raw files are in IndexedDB)
@@ -1927,6 +1942,14 @@ y.barberis@enr-courtage.fr
         state.deletedSites = state.deletedSites || { helios: [], volta: [] };
         state.customSites = state.customSites || { helios: [], volta: [] };
         state.modifiedSites = state.modifiedSites || { helios: {}, volta: {} };
+
+        // Ensure soldSites doesn't retain any deleted sites
+        if (state.soldSites && state.deletedSites) {
+          state.soldSites = {
+            helios: (state.soldSites.helios || []).filter((id) => !(state.deletedSites.helios || []).includes(Number(id))),
+            volta: (state.soldSites.volta || []).filter((id) => !(state.deletedSites.volta || []).includes(Number(id))),
+          };
+        }
 
         if (!state.userDownloads || Object.keys(state.userDownloads).length === 0) {
           state.userDownloads = {

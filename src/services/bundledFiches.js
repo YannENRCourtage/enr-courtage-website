@@ -99,17 +99,7 @@ export const BUNDLED_FICHES_PROJETS = [
     "type": "fiche",
     "size": "319 Ko"
   },
-  {
-    "fileName": "Fiche projet - CELERIE 19230 BEYSSENAC.pdf",
-    "url": "/documents/dataroom/fiches/Fiche%20projet%20-%20CELERIE%2019230%20BEYSSENAC.pdf",
-    "keys": [
-      "celerie",
-      "19230",
-      "beyssenac"
-    ],
-    "type": "fiche",
-    "size": "47 Ko"
-  },
+
   {
     "fileName": "Fiche projet - CHAUCHET 17150 MIRAMBEAU.pdf",
     "url": "/documents/dataroom/fiches/Fiche%20projet%20-%20CHAUCHET%2017150%20MIRAMBEAU.pdf",
@@ -333,17 +323,7 @@ export const BUNDLED_FICHES_PROJETS = [
     "type": "fiche",
     "size": "331 Ko"
   },
-  {
-    "fileName": "Fiche projet - LARDY 23150 MAISONNISSES.pdf",
-    "url": "/documents/dataroom/fiches/Fiche%20projet%20-%20LARDY%2023150%20MAISONNISSES.pdf",
-    "keys": [
-      "lardy",
-      "23150",
-      "maisonnisses"
-    ],
-    "type": "fiche",
-    "size": "339 Ko"
-  },
+
   {
     "fileName": "Fiche projet - LATOURNERIE 24310 BRANTOME EN PERIGORD.pdf",
     "url": "/documents/dataroom/fiches/Fiche%20projet%20-%20LATOURNERIE%2024310%20BRANTOME%20EN%20PERIGORD.pdf",
@@ -684,17 +664,7 @@ export const BUNDLED_FICHES_PROJETS = [
     "type": "fiche",
     "size": "319 Ko"
   },
-  {
-    "fileName": "Fiche_projet_-_CELERIE_19230_BEYSSENAC.pdf",
-    "url": "/documents/dataroom/fiches/Fiche_projet_-_CELERIE_19230_BEYSSENAC.pdf",
-    "keys": [
-      "celerie",
-      "19230",
-      "beyssenac"
-    ],
-    "type": "fiche",
-    "size": "47 Ko"
-  },
+
   {
     "fileName": "Fiche_projet_-_CHAUCHET_17150_MIRAMBEAU.pdf",
     "url": "/documents/dataroom/fiches/Fiche_projet_-_CHAUCHET_17150_MIRAMBEAU.pdf",
@@ -918,17 +888,7 @@ export const BUNDLED_FICHES_PROJETS = [
     "type": "fiche",
     "size": "331 Ko"
   },
-  {
-    "fileName": "Fiche_projet_-_LARDY_23150_MAISONNISSES.pdf",
-    "url": "/documents/dataroom/fiches/Fiche_projet_-_LARDY_23150_MAISONNISSES.pdf",
-    "keys": [
-      "lardy",
-      "23150",
-      "maisonnisses"
-    ],
-    "type": "fiche",
-    "size": "339 Ko"
-  },
+
   {
     "fileName": "Fiche_projet_-_LATOURNERIE_24310_BRANTOME_EN_PERIGORD.pdf",
     "url": "/documents/dataroom/fiches/Fiche_projet_-_LATOURNERIE_24310_BRANTOME_EN_PERIGORD.pdf",
