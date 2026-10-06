@@ -14,6 +14,7 @@ import {
   Download,
   Filter,
   MapPin,
+  FileSignature,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { downloadOrViewDoc, isExcelFile } from '@/services/dataRoomDocumentService';
@@ -24,11 +25,13 @@ const categoryIconMap = {
   Calculator,
   Map,
   Network,
+  FileSignature,
   Juridique: Scale,
   Technique: Wrench,
   Financier: Calculator,
   Urbanisme: Map,
   Réseau: Network,
+  NDA: FileSignature,
 };
 
 export default function DataRoomSection({

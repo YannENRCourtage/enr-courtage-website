@@ -13,6 +13,7 @@ import {
   Sparkles,
   FileText,
   FileCheck,
+  Loader2,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { getDocumentBinary } from '@/services/fileStorageService';
@@ -36,15 +37,16 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
   const currentInvestor = activeInvestor;
 
   const [uploadedPdfUrl, setUploadedPdfUrl] = useState(null);
+  const [pdfBlob, setPdfBlob] = useState(null);
   const [isLoadingPdf, setIsLoadingPdf] = useState(false);
   const [viewMode, setViewMode] = useState('pdf'); // 'pdf' | 'generated'
 
   useEffect(() => {
-    let objectUrl = null;
     let isMounted = true;
 
     if (!isOpen || !activeInvestor) {
       setUploadedPdfUrl(null);
+      setPdfBlob(null);
       return;
     }
 
@@ -78,26 +80,43 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
     loadPdf().then((record) => {
       if (!isMounted) return;
       if (record && record.blob) {
-        objectUrl = URL.createObjectURL(record.blob);
-        setUploadedPdfUrl(objectUrl);
-        setViewMode('pdf');
+        setPdfBlob(record.blob);
+        // Convert Blob to Data URL so it is persistent and never revoked by browser re-renders
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          if (!isMounted) return;
+          if (reader.result) {
+            setUploadedPdfUrl(reader.result);
+            setViewMode('pdf');
+          } else {
+            setViewMode('generated');
+          }
+          setIsLoadingPdf(false);
+        };
+        reader.onerror = () => {
+          if (!isMounted) return;
+          setViewMode('generated');
+          setIsLoadingPdf(false);
+        };
+        reader.readAsDataURL(record.blob);
       } else {
+        setPdfBlob(null);
+        setUploadedPdfUrl(null);
         setViewMode('generated');
+        setIsLoadingPdf(false);
       }
-      setIsLoadingPdf(false);
     }).catch(() => {
       if (!isMounted) return;
-      setIsLoadingPdf(false);
+      setPdfBlob(null);
+      setUploadedPdfUrl(null);
       setViewMode('generated');
+      setIsLoadingPdf(false);
     });
 
     return () => {
       isMounted = false;
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl);
-      }
     };
-  }, [isOpen, activeInvestor]);
+  }, [isOpen, activeInvestor?.id, activeInvestor?.email, activeInvestor?.ndaFileName, activeInvestor?.ndaFileBase64]);
 
   if (!isOpen) return null;
 
@@ -225,6 +244,36 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
     }, 400);
   };
 
+  const handleDownloadSignedNda = () => {
+    if (pdfBlob) {
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = activeInvestor?.ndaFileName || 'Accord_Confidentialite_Signe.pdf';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) link.parentNode.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      }, 2000);
+      return;
+    }
+
+    if (uploadedPdfUrl) {
+      const link = document.createElement('a');
+      link.href = uploadedPdfUrl;
+      link.download = activeInvestor?.ndaFileName || 'Accord_Confidentialite_Signe.pdf';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (link.parentNode) link.parentNode.removeChild(link);
+      }, 2000);
+      return;
+    }
+
+    handlePrint();
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md overflow-y-auto p-3 sm:p-6 flex flex-col items-center justify-start print:p-0 print:bg-white print:static">
       {/* Floating always-visible close button in the top-right corner */}
@@ -262,20 +311,20 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
           <div className="flex flex-wrap items-center gap-2">
             {uploadedPdfUrl && (
               <>
-                <a
-                  href={uploadedPdfUrl}
-                  download={activeInvestor.ndaFileName || 'Accord_Confidentialite_Signe.pdf'}
-                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-2 shadow-sm"
+                <button
+                  type="button"
+                  onClick={handleDownloadSignedNda}
+                  className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer"
                   title="Télécharger le document PDF original signé"
                 >
                   <Download className="w-4 h-4" />
                   <span>Télécharger le PDF signé</span>
-                </a>
+                </button>
 
                 <button
                   type="button"
                   onClick={() => setViewMode((m) => (m === 'pdf' ? 'generated' : 'pdf'))}
-                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold border border-slate-300 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-amber-600" />
                   <span>{viewMode === 'pdf' ? 'Transcription textuelle' : 'Document PDF original'}</span>
@@ -285,8 +334,9 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
 
             {(!uploadedPdfUrl || viewMode === 'generated') && (
               <button
+                type="button"
                 onClick={handlePrint}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition flex items-center gap-2 shadow-sm cursor-pointer"
                 title="Imprimer ou enregistrer en PDF"
               >
                 <Printer className="w-4 h-4" />
@@ -296,7 +346,7 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
 
             <button
               onClick={onClose}
-              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition"
+              className="p-2 rounded-xl text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition cursor-pointer"
               title="Fermer"
             >
               <X className="w-5 h-5" />
@@ -305,25 +355,33 @@ export default function NdaDocumentModal({ isOpen, onClose, investor = null }) {
         </div>
 
         {/* ================================================================= */}
-        {/* VUE 1 : DOCUMENT PDF ORIGINAL CHARGÉ DEPUIS L'ORDINATEUR         */}
+        {/* ÉTAT DE CHARGEMENT OU VUES DU DOCUMENT                            */}
         {/* ================================================================= */}
-        {uploadedPdfUrl && viewMode === 'pdf' ? (
+        {isLoadingPdf ? (
+          <div className="py-16 text-center flex flex-col items-center justify-center space-y-3 bg-slate-50 rounded-2xl border border-slate-200">
+            <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+            <span className="text-xs font-bold text-slate-700">Chargement sécurisé du document NDA...</span>
+          </div>
+        ) : uploadedPdfUrl && viewMode === 'pdf' ? (
+          /* ================================================================= */
+          /* VUE 1 : DOCUMENT PDF ORIGINAL CHARGÉ DEPUIS L'ORDINATEUR         */
+          /* ================================================================= */
           <div className="space-y-4">
             <div className="p-3 bg-gradient-to-r from-amber-50 via-white to-amber-50 border border-amber-300 rounded-xl flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs">
               <div className="flex items-center space-x-2 text-slate-800">
                 <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                 <span>
-                  Fichier original signé : <strong className="text-slate-950 font-mono">{activeInvestor.ndaFileName || 'Document_NDA_Signe.pdf'}</strong>
+                  Fichier original signé : <strong className="text-slate-950 font-mono">{activeInvestor?.ndaFileName || 'Document_NDA_Signe.pdf'}</strong>
                 </span>
               </div>
-              <a
-                href={uploadedPdfUrl}
-                download={activeInvestor.ndaFileName || 'Accord_Confidentialite_Signe.pdf'}
-                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs"
+              <button
+                type="button"
+                onClick={handleDownloadSignedNda}
+                className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5 text-amber-400" />
                 <span>Télécharger ce PDF</span>
-              </a>
+              </button>
             </div>
 
             <iframe

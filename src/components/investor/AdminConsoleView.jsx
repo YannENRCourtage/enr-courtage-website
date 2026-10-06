@@ -69,6 +69,9 @@ function safeText(val, fallback = '') {
 // Helpers de détection automatique pour l'importation de documents en masse
 function autoDetectCategory(fileName, currentSubTab) {
   const lower = (fileName || '').toLowerCase();
+  if (lower.includes('nda') || lower.includes('confidentialit') || lower.includes('non-disclosure') || lower.includes('non disclosure')) {
+    return 'NDA';
+  }
   if (lower.includes('bail') || lower.includes('promesse') || lower.includes('statut') || lower.includes('notari') || lower.includes('kbis') || lower.includes('convention') || lower.includes('cession') || lower.includes('mandat')) {
     return 'Juridique';
   }
@@ -84,6 +87,7 @@ function autoDetectCategory(fileName, currentSubTab) {
   if (lower.includes('fiche') || lower.includes('synoptique') || lower.includes('devis') || lower.includes('technique') || lower.includes('armoire') || lower.includes('batterie') || lower.includes('panneau') || lower.includes('onduleur') || lower.includes('plan') || lower.includes('dalle') || lower.includes('charpente')) {
     return 'Technique';
   }
+  if (currentSubTab === 'nda') return 'NDA';
   if (currentSubTab && ['juridique', 'technique', 'financier', 'urbanisme', 'reseau'].includes(currentSubTab)) {
     return currentSubTab.charAt(0).toUpperCase() + currentSubTab.slice(1);
   }
@@ -191,6 +195,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const [uploadDocName, setUploadDocName] = useState('');
   const [uploadCategory, setUploadCategory] = useState('Juridique');
   const [uploadTargetSite, setUploadTargetSite] = useState('ALL');
+  const [uploadTargetInvestorId, setUploadTargetInvestorId] = useState('');
   const [uploadRawFile, setUploadRawFile] = useState(null);
   const [uploadSuccessMsg, setUploadSuccessMsg] = useState('');
   const [isUploadingToFirebase, setIsUploadingToFirebase] = useState(false);
@@ -689,13 +694,58 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       assignDocumentToSites(finalName, assignedSites);
     }
 
+    // Gestion spécifique si catégorie NDA : Lier au profil investisseur
+    let targetInv = null;
+    if (uploadCategory === 'NDA') {
+      if (uploadTargetInvestorId) {
+        targetInv = safeInvestors.find(
+          (i) =>
+            String(i.id).toLowerCase() === String(uploadTargetInvestorId).toLowerCase() ||
+            i.email?.toLowerCase() === String(uploadTargetInvestorId).toLowerCase()
+        );
+      }
+      if (!targetInv) {
+        const matched = matchNdaFileToInvestor(finalName || uploadRawFile?.name, safeInvestors);
+        targetInv = matched?.investor || null;
+      }
+
+      if (targetInv) {
+        if (uploadRawFile) {
+          try {
+            await storeDocumentBinary('nda_user_' + targetInv.id, uploadRawFile, uploadRawFile.name);
+            if (targetInv.email) {
+              await storeDocumentBinary('nda_email_' + targetInv.email.toLowerCase(), uploadRawFile, uploadRawFile.name);
+            }
+            await storeDocumentBinary(uploadRawFile.name, uploadRawFile, uploadRawFile.name);
+            await storeDocumentBinary(finalName, uploadRawFile, uploadRawFile.name);
+            await storeDocumentBinary(docId, uploadRawFile, uploadRawFile.name);
+          } catch (err) {
+            console.warn('Erreur stockage binaire NDA:', err);
+          }
+        }
+
+        adminUploadSignedNda(targetInv.id, {
+          fileName: uploadRawFile?.name || finalName,
+          fileSize: uploadRawFile?.size || 0,
+          documentId: docId,
+          userEmail: targetInv.email,
+          signedAt: new Date().toISOString(),
+        });
+      }
+    }
+
     setIsUploadingToFirebase(false);
     setUploadProgress(0);
     setUploadStatusText('');
     setIsUploadModalOpen(false);
     setUploadDocName('');
     setUploadRawFile(null);
-    setUploadSuccessMsg(`Document « ${finalName} » (${sizeFormatted}) versé avec succès dans la Data Room.`);
+    setUploadTargetInvestorId('');
+    setUploadSuccessMsg(
+      uploadCategory === 'NDA' && targetInv
+        ? `NDA « ${finalName} » (${sizeFormatted}) affecté avec succès à ${targetInv.name} (${targetInv.company}) et publié en Data Room.`
+        : `Document « ${finalName} » (${sizeFormatted}) versé avec succès dans la Data Room.`
+    );
     setTimeout(() => setUploadSuccessMsg(''), 4000);
   };
 
@@ -720,6 +770,8 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         ? `${(file.size / (1024 * 1024)).toFixed(1)} Mo`
         : `${(file.size / 1024).toFixed(0)} Ko`;
 
+      const matchedNda = detectedCategory === 'NDA' ? matchNdaFileToInvestor(file.name, safeInvestors) : null;
+
       return {
         id: 'MASS-DOC-' + Date.now() + '-' + idx + '-' + Math.random().toString(36).substring(2, 5),
         file,
@@ -732,6 +784,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         portfolioId: selectedDataRoomPortfolio,
         category: detectedCategory,
         targetSite: detectedSite,
+        matchedInvestorId: matchedNda?.investor?.id || '',
       };
     });
 
@@ -763,7 +816,36 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         console.warn('Erreur stockage binaire local:', err);
       }
 
-      // 2. Envoi cloud Firebase Storage (avec fallback gracieux)
+      // 2. Si catégorie NDA, rattacher immédiatement au compte investisseur
+      if (item.category === 'NDA' || item.matchedInvestorId) {
+        const targetInv = safeInvestors.find(
+          (inv) =>
+            String(inv.id).toLowerCase() === String(item.matchedInvestorId).toLowerCase() ||
+            inv.email?.toLowerCase() === String(item.matchedInvestorId).toLowerCase()
+        ) || matchNdaFileToInvestor(item.name, safeInvestors)?.investor;
+
+        if (targetInv) {
+          try {
+            await storeDocumentBinary('nda_user_' + targetInv.id, item.file, item.file.name);
+            if (targetInv.email) {
+              await storeDocumentBinary('nda_email_' + targetInv.email.toLowerCase(), item.file, item.file.name);
+            }
+            await storeDocumentBinary(item.file.name, item.file, item.file.name);
+          } catch (err) {
+            console.warn('Erreur liaison binaire NDA:', err);
+          }
+
+          adminUploadSignedNda(targetInv.id, {
+            fileName: item.file.name,
+            fileSize: item.file.size,
+            documentId: docId,
+            userEmail: targetInv.email,
+            signedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      // 3. Envoi cloud Firebase Storage (avec fallback gracieux)
       let downloadUrl = null;
       let storagePath = null;
       let fullPath = null;
@@ -1686,6 +1768,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                       else if (dataRoomSubTab === 'financier') setUploadCategory('Financier');
                       else if (dataRoomSubTab === 'urbanisme') setUploadCategory('Urbanisme');
                       else if (dataRoomSubTab === 'reseau') setUploadCategory('Réseau');
+                      else if (dataRoomSubTab === 'nda') setUploadCategory('NDA');
                       else setUploadCategory('Juridique');
                       setIsUploadModalOpen(true);
                     }}
@@ -2385,8 +2468,34 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   <option value="Financier">Financier (Modélisations & BP)</option>
                   <option value="Urbanisme">Urbanisme (Autorisations & DP)</option>
                   <option value="Réseau">Réseau (Enedis & S3REnR)</option>
+                  <option value="NDA">🔒 NDA (Accord de Confidentialité)</option>
                 </select>
               </div>
+
+              {uploadCategory === 'NDA' && (
+                <div className="p-3.5 bg-purple-50/80 border border-purple-200 rounded-2xl space-y-2">
+                  <label className="block font-bold text-purple-900 text-xs flex items-center justify-between">
+                    <span>Affecter au compte investisseur *</span>
+                    <span className="text-[10px] text-purple-600 font-mono font-normal">Liaison de compte</span>
+                  </label>
+                  <select
+                    disabled={isUploadingToFirebase}
+                    value={uploadTargetInvestorId}
+                    onChange={(e) => setUploadTargetInvestorId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-white border border-purple-300 font-bold text-xs text-slate-900 focus:outline-none focus:border-purple-600 focus:ring-1 focus:ring-purple-600 disabled:opacity-60"
+                  >
+                    <option value="">-- Sélectionner un compte investisseur --</option>
+                    {safeInvestors.map((inv) => (
+                      <option key={inv.id || inv.email} value={inv.id || inv.email}>
+                        {inv.name} ({inv.company || 'Partenaire'}) — {inv.email}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-purple-700">
+                    Ce NDA sera automatiquement rattaché au compte de l'investisseur pour consultation et téléchargement immédiat.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Titre du document *</label>
@@ -2905,6 +3014,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                         <option value="Financier">Financier</option>
                         <option value="Urbanisme">Urbanisme</option>
                         <option value="Réseau">Réseau</option>
+                        <option value="NDA">🔒 NDA (Accord de Confidentialité)</option>
                       </select>
                       <button
                         type="button"
@@ -2940,12 +3050,14 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
                           <span
                             className={`px-2 py-1 font-bold text-[10px] rounded shrink-0 ${
-                              item.ext === 'XLSX' || item.ext === 'XLS'
+                              item.category === 'NDA'
+                                ? 'bg-purple-100 text-purple-800'
+                                : item.ext === 'XLSX' || item.ext === 'XLS'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : 'bg-rose-100 text-rose-800'
                             }`}
                           >
-                            {item.ext}
+                            {item.category === 'NDA' ? 'NDA' : item.ext}
                           </span>
                           <div className="min-w-0 flex-1">
                             <input
@@ -2989,7 +3101,17 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                             onChange={(e) => {
                               const val = e.target.value;
                               setMassUploadFiles((prev) =>
-                                prev.map((f, i) => (i === idx ? { ...f, category: val } : f))
+                                prev.map((f, i) => {
+                                  if (i !== idx) return f;
+                                  const updated = { ...f, category: val };
+                                  if (val === 'NDA' && !f.matchedInvestorId) {
+                                    const matchRes = matchNdaFileToInvestor(f.name, safeInvestors);
+                                    if (matchRes?.investor?.id) {
+                                      updated.matchedInvestorId = matchRes.investor.id;
+                                    }
+                                  }
+                                  return updated;
+                                })
                               );
                             }}
                             className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-bold text-[11px] text-slate-800"
@@ -2999,26 +3121,48 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                             <option value="Financier">Financier</option>
                             <option value="Urbanisme">Urbanisme</option>
                             <option value="Réseau">Réseau</option>
+                            <option value="NDA">🔒 NDA</option>
                           </select>
 
-                          {/* Site spécifique (optionnel) */}
-                          <select
-                            value={item.targetSite || 'ALL'}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setMassUploadFiles((prev) =>
-                                prev.map((f, i) => (i === idx ? { ...f, targetSite: val } : f))
-                              );
-                            }}
-                            className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-medium text-[11px] text-slate-700 max-w-[130px]"
-                          >
-                            <option value="ALL">Tous les projets</option>
-                            {portfolioSites.map((site) => (
-                              <option key={site.id} value={site.id}>
-                                #{site.id} - {site.name}
-                              </option>
-                            ))}
-                          </select>
+                          {/* Si NDA : Sélecteur d'investisseur cible. Sinon : Sélecteur de site */}
+                          {item.category === 'NDA' ? (
+                            <select
+                              value={item.matchedInvestorId || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setMassUploadFiles((prev) =>
+                                  prev.map((f, i) => (i === idx ? { ...f, matchedInvestorId: val } : f))
+                                );
+                              }}
+                              className="px-2 py-1 rounded-lg bg-purple-50 border border-purple-300 font-bold text-[11px] text-purple-900 max-w-[170px]"
+                              title="Affecter ce NDA à un investisseur"
+                            >
+                              <option value="">-- Investisseur --</option>
+                              {safeInvestors.map((inv) => (
+                                <option key={inv.id || inv.email} value={inv.id || inv.email}>
+                                  {inv.name} ({inv.company || 'Inv'})
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <select
+                              value={item.targetSite || 'ALL'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setMassUploadFiles((prev) =>
+                                  prev.map((f, i) => (i === idx ? { ...f, targetSite: val } : f))
+                                );
+                              }}
+                              className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-medium text-[11px] text-slate-700 max-w-[130px]"
+                            >
+                              <option value="ALL">Tous les projets</option>
+                              {portfolioSites.map((site) => (
+                                <option key={site.id} value={site.id}>
+                                  #{site.id} - {site.name}
+                                </option>
+                              ))}
+                            </select>
+                          )}
 
                           {/* Supprimer de la liste */}
                           <button
