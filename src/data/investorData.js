@@ -374,6 +374,26 @@ export const INVESTORS = [
     ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',
   },
+  {
+    id: 'INV-GIOVSOLAR',
+    email: 'm.lagares@giov.fr',
+    password: '',
+    name: 'Mathieu LAGARES',
+    company: 'GIOV SOLAR',
+    legalForm: 'SASU',
+    headOffice: '6 Rue Baudrand, 69540 Irigny, France',
+    rcsNumber: '99996924900013',
+    rcsCity: 'Irigny',
+    role: 'Président',
+    phone: '0698341438',
+    isAdmin: false,
+    status: 'pending',
+    divers: 'GIOV SOLAR',
+    hasUploadedSignedNda: false,
+    userNdaSignedAt: '2026-10-07T06:40:00Z',
+    ndaSignedByAdmin: false,
+    createdAt: '2026-10-07T06:40:00Z',
+  },
 ];
 
 // ============================================================================
@@ -565,6 +585,7 @@ export const USER_PASSWORD_ALIASES = {
     'zh4vcabb3rvki5x5',
     'Zh4vcAbb3rvkI5X5',
   ],
+  'm.lagares@giov.fr': [],
 };
 
 export function fuzzyNormalizePassword(str) {
@@ -581,6 +602,7 @@ export function normalizeInvestorEmail(email) {
   if (!email) return '';
   const s = String(email).trim().toLowerCase();
 
+  if (s.includes('lagares') || s.includes('giov')) return 'm.lagares@giov.fr';
   if (s.includes('rusmann') || s.includes('kusmann') || s === 'l.kusmann@aliaxis.com') return 'lrusmann@altarea.com';
   if (s.includes('moucer') || s.includes('mouser')) return 'farid.moucer@enoe-energie.fr';
   if (s.includes('nicoli')) return 'lnicoli02@gmail.com';

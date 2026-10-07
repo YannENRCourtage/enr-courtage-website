@@ -140,9 +140,9 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     sendMessage,
   } = useInvestorStore();
 
-  const [activeSection, setActiveSection] = useState(initialTab); // 'users' | 'offers' | 'dataroom' | 'messages'
+  const [activeSection, setActiveSection] = useState(initialTab === 'requests' ? 'users' : initialTab); // 'users' | 'offers' | 'dataroom' | 'messages'
   const [userSearch, setUserSearch] = useState('');
-  const [userStatusFilter, setUserStatusFilter] = useState('all'); // 'all' | 'active' | 'pending' | 'rejected'
+  const [userStatusFilter, setUserStatusFilter] = useState(initialTab === 'requests' ? 'pending' : 'all'); // 'all' | 'active' | 'pending' | 'rejected'
 
   // Modals & User State
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
@@ -223,10 +223,17 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   // Central Messaging State
   const [selectedChatEmail, setSelectedChatEmail] = useState(initialChatEmail || '');
   const [adminChatText, setAdminChatText] = useState('');
+  const [chatSearch, setChatSearch] = useState('');
+  const [chatFilter, setChatFilter] = useState('all'); // 'all' | 'active'
 
   useEffect(() => {
     if (initialTab) {
-      setActiveSection(initialTab);
+      if (initialTab === 'requests') {
+        setActiveSection('users');
+        setUserStatusFilter('pending');
+      } else {
+        setActiveSection(initialTab);
+      }
     }
   }, [initialTab]);
 
@@ -1000,16 +1007,73 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     }, 1200);
   };
 
-  // Conversation users & active chat
-  const availableChatUsers = useMemo(() => {
-    return safeInvestors.filter((u) => !u.isAdmin);
-  }, [safeInvestors]);
+  // Conversation users with message metadata & smart sorting
+  const chatUsersWithMeta = useMemo(() => {
+    const list = safeInvestors.filter((u) => !u.isAdmin);
+    const msgs = messages || [];
 
-  const activeChatEmail = selectedChatEmail || availableChatUsers[0]?.email || 'yannbarberis@msn.com';
+    return list
+      .map((user) => {
+        const userEmailLower = (user.email || '').toLowerCase().trim();
+        const userMsgs = msgs.filter(
+          (m) => (m.investorEmail || '').toLowerCase().trim() === userEmailLower
+        );
+        const lastMsg = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1] : null;
+        const lastMsgDate = lastMsg ? new Date(lastMsg.createdAt).getTime() : 0;
+        const investorMsgCount = userMsgs.filter((m) => m.from === 'investor').length;
+
+        return {
+          ...user,
+          messageCount: userMsgs.length,
+          investorMsgCount,
+          lastMsg,
+          lastMsgDate,
+        };
+      })
+      .sort((a, b) => {
+        // Prioritize investors with messages first, sorted by latest message descending
+        if (a.messageCount > 0 && b.messageCount === 0) return -1;
+        if (a.messageCount === 0 && b.messageCount > 0) return 1;
+        if (a.messageCount > 0 && b.messageCount > 0) {
+          return b.lastMsgDate - a.lastMsgDate;
+        }
+        return safeText(a.name).localeCompare(safeText(b.name));
+      });
+  }, [safeInvestors, messages]);
+
+  const defaultChatUserEmail = useMemo(() => {
+    const userWithMsgs = chatUsersWithMeta.find((u) => u.messageCount > 0);
+    return userWithMsgs?.email || chatUsersWithMeta[0]?.email || 'yannbarberis@msn.com';
+  }, [chatUsersWithMeta]);
+
+  const activeChatEmail = selectedChatEmail || defaultChatUserEmail;
 
   const activeChatUser = useMemo(() => {
-    return safeInvestors.find((u) => (u.email || '').toLowerCase() === activeChatEmail.toLowerCase()) || null;
-  }, [safeInvestors, activeChatEmail]);
+    return (
+      safeInvestors.find(
+        (u) => (u.email || '').toLowerCase().trim() === activeChatEmail.toLowerCase().trim()
+      ) ||
+      chatUsersWithMeta[0] ||
+      null
+    );
+  }, [safeInvestors, activeChatEmail, chatUsersWithMeta]);
+
+  const totalActiveConversations = useMemo(() => {
+    return chatUsersWithMeta.filter((u) => u.messageCount > 0).length;
+  }, [chatUsersWithMeta]);
+
+  const filteredChatUsers = useMemo(() => {
+    return chatUsersWithMeta.filter((u) => {
+      if (chatFilter === 'active' && u.messageCount === 0) return false;
+      if (!chatSearch.trim()) return true;
+      const q = chatSearch.toLowerCase().trim();
+      return (
+        safeText(u.name).toLowerCase().includes(q) ||
+        safeText(u.company).toLowerCase().includes(q) ||
+        safeText(u.email).toLowerCase().includes(q)
+      );
+    });
+  }, [chatUsersWithMeta, chatSearch, chatFilter]);
 
   // Handle Admin Message Send
   const handleSendAdminMessage = (e) => {
@@ -1028,7 +1092,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   };
 
   const chatMessages = (messages || []).filter(
-    (m) => !m.investorEmail || m.investorEmail.toLowerCase() === activeChatEmail.toLowerCase()
+    (m) => (m.investorEmail || '').toLowerCase().trim() === activeChatEmail.toLowerCase().trim()
   );
 
   return (
@@ -1394,16 +1458,34 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                               )}
 
                               {/* Contacter par message */}
-                              <button
-                                onClick={() => {
-                                  setSelectedChatEmail(inv.email);
-                                  setActiveSection('messages');
-                                }}
-                                className="p-1 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-blue-600 transition"
-                                title="Ouvrir la conversation avec cet investisseur"
-                              >
-                                <MessageSquare className="w-3.5 h-3.5" />
-                              </button>
+                              {(() => {
+                                const userMsgCount = (messages || []).filter(
+                                  (m) => (m.investorEmail || '').toLowerCase().trim() === (inv.email || '').toLowerCase().trim()
+                                ).length;
+                                return (
+                                  <button
+                                    onClick={() => {
+                                      setSelectedChatEmail(inv.email);
+                                      setActiveSection('messages');
+                                    }}
+                                    className={`p-1.5 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                                      userMsgCount > 0
+                                        ? 'bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold border border-purple-300'
+                                        : 'hover:bg-slate-100 text-slate-500 hover:text-blue-600'
+                                    }`}
+                                    title={
+                                      userMsgCount > 0
+                                        ? `${userMsgCount} message(s) échangé(s) — Ouvrir la discussion`
+                                        : `Ouvrir la conversation avec ${inv.name}`
+                                    }
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5" />
+                                    {userMsgCount > 0 && (
+                                      <span className="text-[10px] font-black">{userMsgCount}</span>
+                                    )}
+                                  </button>
+                                );
+                              })()}
 
                               {/* Modifier */}
                               <button
@@ -2097,122 +2179,334 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
           {/* SECTION 4 : MESSAGERIE CENTRALE M&A                            */}
           {/* --------------------------------------------------------------- */}
           {activeSection === 'messages' && (
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="bg-white border border-slate-200 rounded-3xl p-4 sm:p-6 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div>
-                  <h3 className="text-sm font-black text-[#0b192c] uppercase tracking-wider">
-                    Messagerie Centrale M&A
-                  </h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-black text-[#0b192c] uppercase tracking-wider">
+                      Messagerie Centrale M&A
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      {(messages || []).length} message{(messages || []).length > 1 ? 's' : ''} au total
+                    </span>
+                  </div>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
-                    Échangez directement avec chaque investisseur en direct.
+                    Échangez directement et en toute confidentialité avec chaque investisseur qualifié.
                   </p>
                 </div>
 
-                {/* Sélecteur de conversation investisseur */}
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-600">Conversation avec :</span>
-                  <select
-                    value={activeChatEmail}
-                    onChange={(e) => setSelectedChatEmail(e.target.value)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800"
-                  >
-                    {availableChatUsers.map((u) => (
-                      <option key={u.id} value={u.email}>
-                        {u.name} ({u.company})
-                      </option>
-                    ))}
-                  </select>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-slate-500 font-medium">Fils de discussion actifs :</span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-900 font-bold font-mono">
+                    {totalActiveConversations}
+                  </span>
                 </div>
               </div>
 
-              {/* Bandeau d'information du contact actif */}
-              {activeChatUser && (
-                <div className="bg-slate-50 border border-slate-200 rounded-2xl px-4 py-2.5 flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-purple-600 text-white font-black text-xs flex items-center justify-center">
-                      {safeText(activeChatUser.name).charAt(0).toUpperCase() || 'I'}
+              {/* Layout 2 colonnes : Liste des conversations à gauche + Fil de discussion à droite */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[580px]">
+                {/* Colonne Gauche : Liste des conversations (4 cols) */}
+                <div className="lg:col-span-4 xl:col-span-4 flex flex-col border border-slate-200 rounded-2xl bg-slate-50/70 overflow-hidden">
+                  {/* Recherche & Filtres */}
+                  <div className="p-3 border-b border-slate-200 bg-white space-y-2 shrink-0">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        value={chatSearch}
+                        onChange={(e) => setChatSearch(e.target.value)}
+                        placeholder="Rechercher contact..."
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-500"
+                      />
                     </div>
-                    <div>
-                      <div className="font-bold text-slate-900">
-                        {safeText(activeChatUser.name)} • <span className="text-slate-600">{safeText(activeChatUser.company)}</span>
-                      </div>
-                      <div className="text-[11px] font-mono text-slate-400">
-                        {safeText(activeChatUser.email)} {activeChatUser.phone ? `• ${activeChatUser.phone}` : ''}
-                      </div>
-                    </div>
-                  </div>
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-100 text-purple-800">
-                    Fil Direct Administrateur ↔ Investisseur
-                  </span>
-                </div>
-              )}
 
-              {/* Boîte de discussion */}
-              <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50/50 flex flex-col h-[420px]">
-                <div className="flex-1 overflow-y-auto space-y-3 py-2 pr-4 sm:pr-6">
-                  {chatMessages.length === 0 ? (
-                    <div className="text-center py-12 text-slate-400 text-xs">
-                      Aucun message échangé pour l'instant avec cet investisseur.
-                    </div>
-                  ) : (
-                    chatMessages.map((msg) => {
-                      const isAdminMsg = msg.from === 'admin';
-
-                      return (
-                        <div
-                          key={msg.id}
-                          className={`flex items-start gap-2.5 max-w-[78%] sm:max-w-[65%] ${
-                            isAdminMsg ? 'ml-auto flex-row-reverse mr-2 sm:mr-3' : 'mr-auto'
+                    <div className="flex items-center gap-1 text-[11px] font-bold">
+                      <button
+                        type="button"
+                        onClick={() => setChatFilter('all')}
+                        className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                          chatFilter === 'all'
+                            ? 'bg-purple-600 text-white shadow-2xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        Tous ({chatUsersWithMeta.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setChatFilter('active')}
+                        className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                          chatFilter === 'active'
+                            ? 'bg-purple-600 text-white shadow-2xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        <span>Actifs</span>
+                        <span
+                          className={`px-1 rounded-full text-[9px] ${
+                            chatFilter === 'active'
+                              ? 'bg-purple-800 text-purple-100'
+                              : 'bg-purple-100 text-purple-800'
                           }`}
                         >
-                          <div
-                            className={`w-7 h-7 rounded-lg text-white font-bold text-[10px] flex items-center justify-center shrink-0 ${
-                              isAdminMsg ? 'bg-purple-600' : 'bg-blue-600'
-                            }`}
-                          >
-                            {isAdminMsg ? 'YB' : 'INV'}
-                          </div>
+                          {totalActiveConversations}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
 
-                          <div
-                            className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                              isAdminMsg
-                                ? 'bg-purple-600 text-white rounded-tr-none shadow-sm'
-                                : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none'
+                  {/* Liste défilante des contacts */}
+                  <div className="flex-1 overflow-y-auto p-1.5 space-y-1 divide-y divide-slate-200/60 max-h-[500px]">
+                    {filteredChatUsers.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400 text-xs font-medium px-4">
+                        Aucun contact correspondant.
+                      </div>
+                    ) : (
+                      filteredChatUsers.map((u) => {
+                        const isSelected =
+                          (u.email || '').toLowerCase().trim() === activeChatEmail.toLowerCase().trim();
+                        const hasMsgs = u.messageCount > 0;
+
+                        return (
+                          <button
+                            key={u.id}
+                            type="button"
+                            onClick={() => setSelectedChatEmail(u.email)}
+                            className={`w-full text-left p-2.5 rounded-xl transition-all cursor-pointer flex items-start gap-2.5 ${
+                              isSelected
+                                ? 'bg-purple-600 text-white shadow-sm'
+                                : hasMsgs
+                                ? 'bg-white hover:bg-purple-50/70 text-slate-800 border border-purple-200/90'
+                                : 'bg-white/60 hover:bg-white text-slate-700 border border-slate-100'
                             }`}
                           >
-                            <div>{msg.text}</div>
-                            <span
-                              className={`text-[9px] block mt-1 ${
-                                isAdminMsg ? 'text-purple-200' : 'text-slate-400'
+                            <div
+                              className={`w-8 h-8 rounded-xl font-black text-xs flex items-center justify-center shrink-0 ${
+                                isSelected
+                                  ? 'bg-white text-purple-700 shadow-2xs'
+                                  : hasMsgs
+                                  ? 'bg-purple-100 text-purple-700'
+                                  : 'bg-slate-200 text-slate-600'
                               }`}
                             >
-                              {msg.authorName} • {new Date(msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+                              {safeText(u.name).charAt(0).toUpperCase() || 'I'}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <span
+                                  className={`font-bold text-xs truncate ${
+                                    isSelected ? 'text-white' : 'text-slate-900'
+                                  }`}
+                                >
+                                  {safeText(u.name)}
+                                </span>
+                                {hasMsgs && (
+                                  <span
+                                    className={`text-[9px] font-mono shrink-0 ${
+                                      isSelected ? 'text-purple-200' : 'text-slate-400'
+                                    }`}
+                                  >
+                                    {new Date(u.lastMsgDate).toLocaleDateString('fr-FR', {
+                                      day: '2-digit',
+                                      month: '2-digit',
+                                    })}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div
+                                className={`text-[11px] truncate font-medium ${
+                                  isSelected ? 'text-purple-100' : 'text-slate-500'
+                                }`}
+                              >
+                                {safeText(u.company)}
+                              </div>
+
+                              {hasMsgs ? (
+                                <div className="flex items-center justify-between gap-1 mt-1">
+                                  <p
+                                    className={`text-[10px] truncate max-w-[150px] ${
+                                      isSelected ? 'text-purple-200' : 'text-slate-600'
+                                    }`}
+                                  >
+                                    {u.lastMsg?.text || ''}
+                                  </p>
+                                  <span
+                                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold shrink-0 ${
+                                      isSelected
+                                        ? 'bg-white text-purple-900'
+                                        : 'bg-purple-100 text-purple-800'
+                                    }`}
+                                  >
+                                    {u.messageCount} msg{u.messageCount > 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div
+                                  className={`text-[10px] italic mt-0.5 ${
+                                    isSelected ? 'text-purple-200' : 'text-slate-400'
+                                  }`}
+                                >
+                                  Aucun message
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
 
-                {/* Saisie administrateur */}
-                <form onSubmit={handleSendAdminMessage} className="pt-3 border-t border-slate-200 flex gap-2">
-                  <input
-                    type="text"
-                    required
-                    value={adminChatText}
-                    onChange={(e) => setAdminChatText(e.target.value)}
-                    placeholder={`Répondre en tant que Yann BARBERIS à ${activeChatEmail}...`}
-                    className="flex-1 px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-xs font-medium text-slate-800 focus:outline-none focus:border-purple-600"
-                  />
-                  <button
-                    type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer"
+                {/* Colonne Droite : Fil de discussion actif & Saisie (8 cols) */}
+                <div className="lg:col-span-8 xl:col-span-8 flex flex-col border border-slate-200 rounded-2xl bg-white overflow-hidden shadow-xs">
+                  {/* Bandeau d'information du contact actif */}
+                  {activeChatUser ? (
+                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-purple-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
+                          {safeText(activeChatUser.name).charAt(0).toUpperCase() || 'I'}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-black text-slate-900 text-xs">
+                              {safeText(activeChatUser.name)}
+                            </span>
+                            <span className="text-slate-400">•</span>
+                            <span className="font-bold text-slate-600 text-xs">
+                              {safeText(activeChatUser.company)}
+                            </span>
+                            {activeChatUser.status === 'pending' && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                En attente
+                              </span>
+                            )}
+                            {activeChatUser.status === 'active' && (
+                              <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                Actif
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-500 flex items-center gap-2">
+                            <span>{safeText(activeChatUser.email)}</span>
+                            {activeChatUser.phone && <span>• {activeChatUser.phone}</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedInvestorForNda(activeChatUser)}
+                          className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-[11px] transition flex items-center gap-1 cursor-pointer"
+                          title="Consulter le NDA / dossier de cet investisseur"
+                        >
+                          <FileSignature className="w-3 h-3 text-purple-600" />
+                          <span>Voir NDA</span>
+                        </button>
+                        <a
+                          href={`mailto:${activeChatUser.email}`}
+                          className="p-1 rounded-lg bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 transition"
+                          title="Envoyer un e-mail direct"
+                        >
+                          <Mail className="w-3.5 h-3.5 text-slate-600" />
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 px-4 py-3 border-b border-slate-200 text-xs text-slate-500">
+                      Sélectionnez un investisseur dans la liste de gauche pour échanger.
+                    </div>
+                  )}
+
+                  {/* Boîte des messages */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/40 min-h-[380px]">
+                    {chatMessages.length === 0 ? (
+                      <div className="h-full flex flex-col items-center justify-center text-center p-6 text-slate-400 text-xs">
+                        <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-2">
+                          <MessageSquare className="w-6 h-6" />
+                        </div>
+                        <p className="font-bold text-slate-600">Aucun message échangé pour l'instant</p>
+                        <p className="text-[11px] text-slate-400 mt-0.5 max-w-sm">
+                          Envoyez un message ci-dessous pour initier la discussion avec{' '}
+                          {safeText(activeChatUser?.name || 'cet investisseur')}.
+                        </p>
+                      </div>
+                    ) : (
+                      chatMessages.map((msg) => {
+                        const isAdminMsg = msg.from === 'admin';
+
+                        return (
+                          <div
+                            key={msg.id}
+                            className={`flex items-start gap-2.5 max-w-[85%] sm:max-w-[75%] ${
+                              isAdminMsg ? 'ml-auto flex-row-reverse' : 'mr-auto'
+                            }`}
+                          >
+                            <div
+                              className={`w-7 h-7 rounded-lg text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow-2xs ${
+                                isAdminMsg ? 'bg-purple-600' : 'bg-blue-600'
+                              }`}
+                            >
+                              {isAdminMsg ? 'YB' : 'INV'}
+                            </div>
+
+                            <div
+                              className={`p-3 rounded-2xl text-xs leading-relaxed ${
+                                isAdminMsg
+                                  ? 'bg-purple-600 text-white rounded-tr-none shadow-sm'
+                                  : 'bg-white border border-slate-200 text-slate-800 rounded-tl-none shadow-2xs'
+                              }`}
+                            >
+                              <div className="whitespace-pre-wrap">{msg.text}</div>
+                              <span
+                                className={`text-[9px] block mt-1.5 font-medium ${
+                                  isAdminMsg ? 'text-purple-200' : 'text-slate-400'
+                                }`}
+                              >
+                                {msg.authorName} {msg.authorCompany ? `(${msg.authorCompany})` : ''} •{' '}
+                                {new Date(msg.createdAt).toLocaleDateString('fr-FR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                })}{' '}
+                                à{' '}
+                                {new Date(msg.createdAt).toLocaleTimeString('fr-FR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Saisie administrateur */}
+                  <form
+                    onSubmit={handleSendAdminMessage}
+                    className="p-3 border-t border-slate-200 bg-white flex gap-2 shrink-0"
                   >
-                    <span>Envoyer</span>
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
+                    <input
+                      type="text"
+                      required
+                      value={adminChatText}
+                      onChange={(e) => setAdminChatText(e.target.value)}
+                      placeholder={`Répondre en tant que Yann BARBERIS à ${
+                        activeChatUser?.name || activeChatEmail
+                      }...`}
+                      className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:border-purple-600 focus:bg-white transition"
+                    />
+                    <button
+                      type="submit"
+                      className="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      <span>Envoyer</span>
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
               </div>
             </div>
           )}
