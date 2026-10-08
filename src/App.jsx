@@ -26,6 +26,7 @@ import NdaSignaturePage from '@/components/investor/NdaSignaturePage';
 import InvestorDashboard from '@/components/investor/InvestorDashboard';
 import PortfolioDetailPage from '@/components/investor/PortfolioDetailPage';
 import ProtectedRoute from '@/components/investor/ProtectedRoute';
+import DataRoomCloudSync from '@/components/investor/DataRoomCloudSync';
 function MainPage() {
   const [activeTab, setActiveTab] = useState('home');
   const contactFormRef = useRef(null);
@@ -221,6 +222,7 @@ function App() {
         <Route path="/investisseurs/admin" element={<ProtectedRoute requireAdmin={true}><InvestorDashboard defaultToAdmin={true} /></ProtectedRoute>} />
         <Route path="/investisseurs/portefeuille/:id" element={<ProtectedRoute><PortfolioDetailPage /></ProtectedRoute>} />
       </Routes>
+      <DataRoomCloudSync />
       <Toaster />
     </BrowserRouter>
   );

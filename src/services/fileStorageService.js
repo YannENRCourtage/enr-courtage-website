@@ -184,6 +184,28 @@ export async function getDocumentBinary(idOrName) {
 }
 
 /**
+ * Récupérer un fichier binaire par clé EXACTE (sans correspondance approximative sur le nom).
+ * Utilisé pour la migration vers le stockage cloud afin d'éviter toute confusion de fichiers.
+ */
+export async function getDocumentBinaryExact(key) {
+  if (!key) return null;
+  const k = String(key);
+  if (memoryCache.has(k)) return memoryCache.get(k);
+  try {
+    const db = await openDB();
+    if (!db) return null;
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const req = tx.objectStore(STORE_NAME).get(k);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => resolve(null);
+    });
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Télécharger directement un document binaire dans le navigateur
  */
 export async function downloadDocumentBinary(idOrName, preferredFileName = '') {

@@ -54,6 +54,7 @@ import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorSt
 import { investorService } from '@/services/investorService';
 import { storeDocumentBinary, deleteDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
+import { uploadFileToCloud, deleteCloudFiles, ensureAdminToken } from '@/services/dataRoomCloudService';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import NdaDocumentModal from './NdaDocumentModal';
 import ErrorBoundary from './ErrorBoundary';
@@ -561,9 +562,30 @@ y.barberis@enr-courtage.fr`;
   const handlePublishStagedFiles = async () => {
     if (stagedFiles.length === 0) return;
 
-    // Persist real file binaries into IndexedDB
+    setUploadSuccessMsg('⏳ Publication et téléversement des documents vers le cloud partagé...');
+
+    try {
+      await ensureAdminToken();
+    } catch (authErr) {
+      console.warn('Jeton admin non confirmé pour upload direct:', authErr);
+    }
+
+    // Persist real file binaries into Cloud & IndexedDB
     for (const item of stagedFiles) {
       if (item.rawFile) {
+        try {
+          const cloudRes = await uploadFileToCloud(item.rawFile, {
+            portfolioId: selectedDataRoomPortfolio,
+            category: item.category || 'Juridique',
+            fileName: item.name,
+          });
+          item.fileUrl = cloudRes.url;
+          item.blobPathname = cloudRes.pathname;
+          item.storage = 'cloud';
+        } catch (cloudErr) {
+          console.warn('Upload cloud échoué pour ce fichier, mise en cache locale:', cloudErr);
+        }
+
         try {
           await storeDocumentBinary(item.id, item.rawFile, item.name, item.rawFile.type || 'application/pdf');
           await storeDocumentBinary(item.name, item.rawFile, item.name, item.rawFile.type || 'application/pdf');
@@ -575,7 +597,7 @@ y.barberis@enr-courtage.fr`;
 
     addBatchDocumentsToDataRoom(selectedDataRoomPortfolio, stagedFiles);
     const targetName = selectedDataRoomPortfolio === 'volta' ? 'VOLTA (Batteries)' : 'HÉLIOS (PV)';
-    setUploadSuccessMsg(`🚀 ${stagedFiles.length} document(s) publiés avec succès dans la Data Room ${targetName} !`);
+    setUploadSuccessMsg(`🚀 ${stagedFiles.length} document(s) publiés avec succès dans la Data Room ${targetName} et disponibles pour tous les utilisateurs !`);
     setStagedFiles([]);
     setDocName('');
     setDocNotes('');
@@ -591,9 +613,25 @@ y.barberis@enr-courtage.fr`;
 
     const docId = 'DOC-' + Date.now();
     const finalDocName = docName.trim();
+    let cloudUrl = null;
+    let cloudBlobPath = null;
 
-    // Persist real file binary into IndexedDB
     if (singleRawFile) {
+      setUploadSuccessMsg('⏳ Téléversement du document vers le cloud partagé...');
+      try {
+        await ensureAdminToken();
+        const cloudRes = await uploadFileToCloud(singleRawFile, {
+          portfolioId: selectedDataRoomPortfolio,
+          category: docCategory,
+          fileName: finalDocName,
+        });
+        cloudUrl = cloudRes.url;
+        cloudBlobPath = cloudRes.pathname;
+      } catch (cloudErr) {
+        console.warn('Upload cloud direct échoué, utilisation stockage local:', cloudErr);
+      }
+
+      // Persist real file binary into IndexedDB
       try {
         await storeDocumentBinary(docId, singleRawFile, finalDocName, singleRawFile.type || 'application/pdf');
         await storeDocumentBinary(finalDocName, singleRawFile, finalDocName, singleRawFile.type || 'application/pdf');
@@ -611,7 +649,9 @@ y.barberis@enr-courtage.fr`;
       size: docSize || '1.0 Mo',
       notes: docNotes,
       fileData: docFileData,
-      fileUrl: serverMatch ? serverMatch.url : null,
+      fileUrl: cloudUrl || (serverMatch ? serverMatch.url : null),
+      blobPathname: cloudBlobPath,
+      storage: cloudUrl ? 'cloud' : undefined,
       siteIds: docAssignedSiteIds,
     });
 
@@ -714,9 +754,16 @@ y.barberis@enr-courtage.fr`;
   };
 
   // Delete Custom Document
-  const handleDeleteCustomDoc = (portfolioId, categoryName, docId, fileName) => {
+  const handleDeleteCustomDoc = async (portfolioId, categoryName, docId, fileName, fileUrl = '') => {
     if (window.confirm(`Confirmez-vous la suppression du document « ${fileName} » ?`)) {
       deleteDocumentFromDataRoom(portfolioId, categoryName, docId);
+      if (fileUrl && fileUrl.includes('.blob.vercel-storage.com/')) {
+        try {
+          await deleteCloudFiles([fileUrl]);
+        } catch (cloudDelErr) {
+          console.warn('Erreur suppression fichier cloud:', cloudDelErr);
+        }
+      }
       try {
         deleteDocumentBinary(docId);
         deleteDocumentBinary(fileName);
@@ -1959,7 +2006,7 @@ y.barberis@enr-courtage.fr`;
                                 {/* Delete custom document button */}
                                 <button
                                   type="button"
-                                  onClick={() => handleDeleteCustomDoc(selectedDataRoomPortfolio, cat.name, file.id, file.name)}
+                                  onClick={() => handleDeleteCustomDoc(selectedDataRoomPortfolio, cat.name, file.id, file.name, file.fileUrl)}
                                   className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded transition"
                                   title="Supprimer définitivement ce document"
                                 >
@@ -2064,7 +2111,7 @@ y.barberis@enr-courtage.fr`;
                               </button>
                               <button
                                 type="button"
-                                onClick={() => handleDeleteCustomDoc(selectedDataRoomPortfolio, customCatName, file.id, file.name)}
+                                onClick={() => handleDeleteCustomDoc(selectedDataRoomPortfolio, customCatName, file.id, file.name, file.fileUrl)}
                                 className="p-1 text-gray-500 hover:text-red-400 rounded transition"
                                 title="Retirer le document"
                               >

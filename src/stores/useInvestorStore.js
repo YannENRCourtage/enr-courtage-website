@@ -7,12 +7,65 @@ import {
   verifyInvestorPassword,
 } from '@/data/investorData';
 import { formatThousands } from '@/utils/mnaUtils';
-import { ensurePersistentStorage } from '@/services/fileStorageService';
+import { ensurePersistentStorage, getDocumentBinaryExact } from '@/services/fileStorageService';
+import {
+  fetchCloudManifest,
+  saveCloudManifest,
+  uploadFileToCloud,
+  isCloudUrl,
+  getAdminToken,
+  authenticateAdmin,
+  clearAdminToken,
+} from '@/services/dataRoomCloudService';
 
 // Automatically request persistent storage & maximize quota on startup
 if (typeof window !== 'undefined') {
   ensurePersistentStorage().catch(() => {});
 }
+
+// ============================================================================
+// SYNCHRONISATION CLOUD DE LA DATA ROOM (Vercel Blob via /api/dataroom)
+// Les documents et leur liste sont partagés pour tous les utilisateurs.
+// ============================================================================
+const ADMIN_EMAIL_DR = 'y.barberis@enr-courtage.fr';
+const isAdminInvestor = (inv) => inv?.email?.trim().toLowerCase() === ADMIN_EMAIL_DR;
+let dataRoomPushTimer = null;
+let dataRoomPushChain = Promise.resolve();
+let dataRoomLoadPromise = null;
+let applyingCloudManifest = false;
+
+function buildDataRoomPayload(state) {
+  const customDataRoom = {};
+  Object.entries(state.customDataRoom || {}).forEach(([pId, cats]) => {
+    customDataRoom[pId] = {};
+    Object.entries(cats || {}).forEach(([cat, files]) => {
+      customDataRoom[pId][cat] = (Array.isArray(files) ? files : []).map((f) => {
+        // eslint-disable-next-line no-unused-vars
+        const { fileData, rawFile, site, ...rest } = f || {};
+        return rest;
+      });
+    });
+  });
+  return {
+    customDataRoom,
+    deletedDefaultDocs: state.deletedDefaultDocs || {},
+    documentSiteAssignments: state.documentSiteAssignments || {},
+  };
+}
+
+function dataUrlToBlob(dataUrl) {
+  try {
+    const [meta, b64] = String(dataUrl).split(',');
+    const mime = (meta.match(/data:([^;]+)/) || [])[1] || 'application/octet-stream';
+    const bin = atob(b64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new Blob([bytes], { type: mime });
+  } catch {
+    return null;
+  }
+}
+
 
 // Migration & recovery: Safely restore custom documents and configurations from any previous versions
 export function recoverLegacyData() {
@@ -655,6 +708,193 @@ export const useInvestorStore = create(
         return { success: true };
       },
 
+      // ======================================================================
+      // DATA ROOM CLOUD — état de synchronisation (non persisté localement)
+      // ======================================================================
+      dataRoomCloud: {
+        loaded: false,
+        loading: false,
+        exists: false,
+        version: 0,
+        updatedAt: null,
+        dirty: false,
+        saving: false,
+        migrating: false,
+        progress: null,
+        needsAuth: false,
+        error: null,
+      },
+
+      _setDataRoomCloud: (patch) => set((s) => ({ dataRoomCloud: { ...(s.dataRoomCloud || {}), ...patch } })),
+
+      _applyCloudManifest: (manifest) => {
+        applyingCloudManifest = true;
+        set((s) => ({
+          customDataRoom: manifest.customDataRoom || {},
+          deletedDefaultDocs: manifest.deletedDefaultDocs || {},
+          documentSiteAssignments: manifest.documentSiteAssignments || {},
+          dataRoomCloud: {
+            ...(s.dataRoomCloud || {}),
+            loaded: true,
+            loading: false,
+            exists: true,
+            version: manifest.version || 0,
+            updatedAt: manifest.updatedAt || null,
+            error: null,
+          },
+        }));
+        applyingCloudManifest = false;
+      },
+
+      // Charge la Data Room partagée depuis le cloud (pour TOUS les utilisateurs)
+      loadDataRoomFromCloud: async () => {
+        if (typeof window === 'undefined') return;
+        if (dataRoomLoadPromise) return dataRoomLoadPromise;
+        dataRoomLoadPromise = (async () => {
+          const cur = get().dataRoomCloud || {};
+          if (cur.dirty || cur.saving || cur.migrating) return; // ne jamais écraser des modifications admin en cours
+          get()._setDataRoomCloud({ loading: true, error: null });
+          try {
+            const manifest = await fetchCloudManifest();
+            if (manifest) {
+              get()._applyCloudManifest(manifest);
+            } else {
+              get()._setDataRoomCloud({ loading: false, exists: false, loaded: false });
+              // Première mise en ligne : l'administrateur transfère ses documents locaux vers le cloud
+              if (isAdminInvestor(get().currentInvestor)) {
+                await get().migrateLocalDataRoomToCloud();
+              }
+            }
+          } catch (err) {
+            console.warn('Chargement Data Room cloud impossible:', err);
+            get()._setDataRoomCloud({ loading: false, error: err?.message || 'Erreur réseau' });
+          }
+        })().finally(() => {
+          dataRoomLoadPromise = null;
+        });
+        return dataRoomLoadPromise;
+      },
+
+      // Migration unique : téléverse dans le cloud les documents stockés localement sur le poste admin
+      migrateLocalDataRoomToCloud: async () => {
+        const state = get();
+        if (!isAdminInvestor(state.currentInvestor)) return;
+        if (state.dataRoomCloud?.migrating) return;
+        if (!getAdminToken()) {
+          get()._setDataRoomCloud({ needsAuth: true });
+          return;
+        }
+
+        const payload = buildDataRoomPayload(state);
+        const tasks = [];
+        for (const [pId, cats] of Object.entries(state.customDataRoom || {})) {
+          for (const [cat, files] of Object.entries(cats || {})) {
+            (files || []).forEach((doc, idx) => {
+              if (doc && !isCloudUrl(doc.fileUrl)) tasks.push({ pId, cat, idx, doc });
+            });
+          }
+        }
+
+        get()._setDataRoomCloud({ migrating: true, error: null, progress: { done: 0, total: tasks.length } });
+
+        try {
+          let done = 0;
+          const worker = async () => {
+            while (tasks.length > 0) {
+              const t = tasks.shift();
+              const { doc } = t;
+              let blob = null;
+              let fileName = doc.fileName || doc.name || 'document.pdf';
+              for (const key of [doc.id, doc.name, doc.fileName]) {
+                if (!key) continue;
+                const rec = await getDocumentBinaryExact(key);
+                if (rec?.blob) {
+                  blob = rec.blob;
+                  if (rec.fileName && !/\.[a-z0-9]{2,5}$/i.test(fileName)) fileName = rec.fileName;
+                  break;
+                }
+              }
+              if (!blob && typeof doc.fileData === 'string' && doc.fileData.startsWith('data:')) {
+                blob = dataUrlToBlob(doc.fileData);
+              }
+              if (blob) {
+                if (!/\.[a-z0-9]{2,5}$/i.test(fileName)) {
+                  const ext = String(doc.type || '').toLowerCase() || (blob.type.includes('pdf') ? 'pdf' : 'bin');
+                  fileName = `${fileName}.${ext}`;
+                }
+                const res = await uploadFileToCloud(blob, { portfolioId: t.pId, category: t.cat, fileName });
+                const target = payload.customDataRoom[t.pId][t.cat][t.idx];
+                target.fileUrl = res.url;
+                target.blobPathname = res.pathname;
+                target.fileName = target.fileName || fileName;
+                target.mimeType = blob.type || target.mimeType;
+                target.storage = 'cloud';
+              }
+              done += 1;
+              get()._setDataRoomCloud({ progress: { done, total: done + tasks.length } });
+            }
+          };
+          await Promise.all([worker(), worker(), worker()]);
+
+          const manifest = await saveCloudManifest(payload, 0);
+          get()._setDataRoomCloud({ migrating: false, progress: null, dirty: false });
+          get()._applyCloudManifest(manifest);
+        } catch (err) {
+          console.error('Migration Data Room vers le cloud échouée:', err);
+          get()._setDataRoomCloud({
+            migrating: false,
+            progress: null,
+            needsAuth: !!err?.authRequired,
+            error: err?.message || 'Échec de la migration',
+          });
+          if (err?.conflict && err.manifest) get()._applyCloudManifest(err.manifest);
+        }
+      },
+
+      // Planifie l'enregistrement cloud après une modification administrateur
+      scheduleDataRoomCloudPush: () => {
+        if (typeof window === 'undefined') return;
+        const s = get();
+        if (!isAdminInvestor(s.currentInvestor) || !s.dataRoomCloud?.loaded) return;
+        get()._setDataRoomCloud({ dirty: true });
+        clearTimeout(dataRoomPushTimer);
+        dataRoomPushTimer = setTimeout(() => get().pushDataRoomToCloud(), 300);
+      },
+
+      // Enregistre la Data Room dans le cloud (sérialisé, versionné)
+      pushDataRoomToCloud: () => {
+        dataRoomPushChain = dataRoomPushChain.then(async () => {
+          const s = get();
+          if (!s.dataRoomCloud?.dirty || !s.dataRoomCloud?.loaded) return;
+          get()._setDataRoomCloud({ dirty: false, saving: true, error: null });
+          try {
+            const manifest = await saveCloudManifest(buildDataRoomPayload(s), s.dataRoomCloud.version);
+            get()._setDataRoomCloud({
+              saving: false,
+              version: manifest.version,
+              updatedAt: manifest.updatedAt,
+              exists: true,
+            });
+          } catch (err) {
+            if (err?.authRequired) {
+              get()._setDataRoomCloud({ saving: false, dirty: true, needsAuth: true, error: err.message });
+            } else if (err?.conflict) {
+              get()._setDataRoomCloud({ saving: false, dirty: false });
+              if (err.manifest) get()._applyCloudManifest(err.manifest);
+              if (typeof window !== 'undefined') {
+                window.alert("La Data Room a été modifiée depuis un autre poste ou onglet. Elle vient d'être rechargée : merci de renouveler votre dernière opération.");
+              }
+            } else {
+              console.warn('Enregistrement Data Room cloud échoué, nouvel essai dans 5 s:', err);
+              get()._setDataRoomCloud({ saving: false, dirty: true, error: err?.message || 'Erreur réseau' });
+              clearTimeout(dataRoomPushTimer);
+              dataRoomPushTimer = setTimeout(() => get().pushDataRoomToCloud(), 5000);
+            }
+          }
+        }).catch(() => {});
+        return dataRoomPushChain;
+      },
+
       // Add document to Data Room
       addDocumentToDataRoom: (portfolioId, categoryName, fileObj) => {
         set((state) => {
@@ -963,6 +1203,10 @@ export const useInvestorStore = create(
               details: `Connexion administrateur de ${adminUser.name} (${adminUser.email})`,
             });
           }
+          // Jeton serveur signé : seul l'administrateur peut ajouter / supprimer des documents Data Room
+          authenticateAdmin(adminUser.email, cleanPass)
+            .then(() => get().loadDataRoomFromCloud())
+            .catch((err) => console.warn('Jeton Data Room admin non obtenu:', err));
           return { success: true, isAdmin: true, status: 'active' };
         }
 
@@ -1439,6 +1683,7 @@ y.barberis@enr-courtage.fr
 
       // Logout
       logout: () => {
+        clearAdminToken();
         set({ currentInvestor: null });
       },
 
@@ -1877,8 +2122,10 @@ y.barberis@enr-courtage.fr
           ? (({ ndaFileBase64, ...rest }) => rest)(state.currentInvestor)
           : null;
 
+        // eslint-disable-next-line no-unused-vars
+        const { dataRoomCloud, ...persistable } = state;
         return {
-          ...state,
+          ...persistable,
           investors: leanInvestors,
           currentInvestor: leanCurrentInvestor,
         };
@@ -2117,3 +2364,20 @@ y.barberis@enr-courtage.fr
     }
   )
 );
+
+// ============================================================================
+// Toute modification administrateur de la Data Room (ajout, suppression, déplacement,
+// affectation aux projets...) est automatiquement enregistrée dans le cloud partagé.
+// ============================================================================
+if (typeof window !== 'undefined') {
+  useInvestorStore.subscribe((state, prev) => {
+    if (applyingCloudManifest) return;
+    if (
+      state.customDataRoom !== prev.customDataRoom ||
+      state.deletedDefaultDocs !== prev.deletedDefaultDocs ||
+      state.documentSiteAssignments !== prev.documentSiteAssignments
+    ) {
+      state.scheduleDataRoomCloudPush?.();
+    }
+  });
+}

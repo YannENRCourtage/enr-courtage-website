@@ -7,3 +7,5 @@ node_modules
 !public/documents/dataroom/*.xlsx
 *.mp4
 NELSON/
+
+.env*
