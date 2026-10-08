@@ -9,23 +9,33 @@ import {
   AlertCircle,
   KeyRound,
   Mail,
+  CheckCircle,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import RegisterNdaModal from './RegisterNdaModal';
+import ResetPasswordModal from './ResetPasswordModal';
 import EnrCourtageLogo from './EnrCourtageLogo';
 
 export default function InvestorAuthPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, currentInvestor } = useInvestorStore();
+  const { login, currentInvestor, syncCloudCredentials } = useInvestorStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(location.state?.error || '');
+  const [successNotice, setSuccessNotice] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
-  const [forgotPasswordNotice, setForgotPasswordNotice] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  // Synchronisation proactive des mots de passe cloud au chargement
+  useEffect(() => {
+    if (syncCloudCredentials) {
+      syncCloudCredentials().catch(() => {});
+    }
+  }, [syncCloudCredentials]);
 
   // If already authenticated, redirect to dashboard
   useEffect(() => {
@@ -34,9 +44,10 @@ export default function InvestorAuthPage() {
     }
   }, [currentInvestor, navigate]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setSuccessNotice('');
     setIsLoading(true);
 
     const formData = new FormData(e.currentTarget);
@@ -55,11 +66,22 @@ export default function InvestorAuthPage() {
       return;
     }
 
-    const result = login(formEmail, formPassword);
+    let result = login(formEmail, formPassword);
+
+    // Si échec local, tenter une synchronisation cloud immédiate au cas où le mdp vienne d'être modifié
+    if (!result.success && syncCloudCredentials) {
+      try {
+        await syncCloudCredentials();
+        result = login(formEmail, formPassword);
+      } catch (err) {
+        // ignore
+      }
+    }
+
     setIsLoading(false);
 
     if (!result.success) {
-      setError(result.error || 'Identifiants incorrects. Veuillez vérifier votre adresse e-mail et votre mot de passe.');
+      setError(result.error || 'Identifiant (e-mail) ou mot de passe incorrect.');
       return;
     }
 
@@ -103,22 +125,11 @@ export default function InvestorAuthPage() {
               </div>
             )}
 
-            {/* Message mot de passe oublié */}
-            {forgotPasswordNotice && (
-              <div className="mb-4 p-3.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-800 text-xs flex items-start justify-between gap-2.5 leading-relaxed">
-                <div className="flex items-start gap-2">
-                  <KeyRound className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
-                  <span>
-                    Pour réinitialiser votre mot de passe, contactez la direction M&amp;A à : <strong>contact@enr-courtage.fr</strong>
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setForgotPasswordNotice(false)}
-                  className="text-blue-500 hover:text-blue-800 text-xs font-bold cursor-pointer"
-                >
-                  ✕
-                </button>
+            {/* Notification de réinitialisation réussie */}
+            {successNotice && (
+              <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-start gap-2.5 leading-relaxed shadow-2xs">
+                <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                <span>{successNotice}</span>
               </div>
             )}
 
@@ -151,7 +162,11 @@ export default function InvestorAuthPage() {
                   </label>
                   <button
                     type="button"
-                    onClick={() => setForgotPasswordNotice(true)}
+                    onClick={() => {
+                      setError('');
+                      setSuccessNotice('');
+                      setIsResetModalOpen(true);
+                    }}
                     className="text-xs font-bold text-blue-600 hover:underline cursor-pointer"
                   >
                     Mot de passe oublié ?
@@ -226,6 +241,18 @@ export default function InvestorAuthPage() {
       <RegisterNdaModal
         isOpen={isRegisterModalOpen}
         onClose={() => setIsRegisterModalOpen(false)}
+      />
+
+      {/* Modale de réinitialisation de mot de passe */}
+      <ResetPasswordModal
+        isOpen={isResetModalOpen}
+        onClose={() => setIsResetModalOpen(false)}
+        initialEmail={email}
+        onSuccess={(resetEmail, newPass) => {
+          setEmail(resetEmail);
+          setPassword(newPass);
+          setSuccessNotice('Votre mot de passe a été réinitialisé avec succès ! Vous pouvez maintenant vous connecter.');
+        }}
       />
     </div>
   );

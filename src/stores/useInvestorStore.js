@@ -17,6 +17,7 @@ import {
   authenticateAdmin,
   clearAdminToken,
 } from '@/services/dataRoomCloudService';
+import { fetchCloudCredentials, saveCloudPassword } from '@/services/credentialsService';
 
 // Automatically request persistent storage & maximize quota on startup
 if (typeof window !== 'undefined') {
@@ -269,6 +270,9 @@ export const useInvestorStore = create(
         }
         set({ currentInvestor: null });
       },
+
+      // Cache des mots de passe synchronisés via le Cloud (Vercel Blob)
+      cloudCredentials: {},
 
       // List of all investors (starts with default admin and demo accounts, then persisted)
       investors: INVESTORS,
@@ -1223,13 +1227,28 @@ export const useInvestorStore = create(
 
         let investor = null;
 
+        // Check if there is a cloud-synced password override
+        const cloudCreds = get().cloudCredentials || {};
+        const cloudPass = cloudCreds[cleanEmail] || cloudCreds[normCleanEmail];
+        const isCloudPasswordMatch = Boolean(
+          cloudPass && (
+            cleanPass === cloudPass ||
+            cleanPass === cloudPass.trim() ||
+            cleanPass.toLowerCase() === cloudPass.trim().toLowerCase()
+          )
+        );
+
         // Check against default authoritative investor
         if (defaultMatch && (
+          isCloudPasswordMatch ||
           verifyInvestorPassword(defaultMatch.email, cleanPass, defaultMatch.password) ||
           verifyInvestorPassword(cleanEmail, cleanPass, defaultMatch.password) ||
           verifyInvestorPassword(normCleanEmail, cleanPass, defaultMatch.password)
         )) {
-          investor = defaultMatch;
+          investor = {
+            ...defaultMatch,
+            password: isCloudPasswordMatch ? cloudPass : defaultMatch.password,
+          };
         }
 
         // If not matched yet, check in store investors
@@ -1244,19 +1263,28 @@ export const useInvestorStore = create(
             )
           );
           if (storeMatch && (
+            isCloudPasswordMatch ||
             verifyInvestorPassword(storeMatch.email, cleanPass, storeMatch.password) ||
             verifyInvestorPassword(cleanEmail, cleanPass, storeMatch.password) ||
             verifyInvestorPassword(normCleanEmail, cleanPass, storeMatch.password)
           )) {
-            investor = storeMatch;
+            investor = {
+              ...storeMatch,
+              password: isCloudPasswordMatch ? cloudPass : storeMatch.password,
+            };
           }
         }
 
         // If matched, synchronize store so user is updated with latest credentials
         if (investor && defaultMatch) {
+          const syncedUser = {
+            ...defaultMatch,
+            ...investor,
+            password: investor.password || defaultMatch.password,
+          };
           set((state) => ({
             investors: [
-              defaultMatch,
+              syncedUser,
               ...(state.investors || []).filter((i) => normalizeInvestorEmail(i.email) !== normCleanEmail),
             ],
           }));
@@ -1300,6 +1328,149 @@ export const useInvestorStore = create(
           isAdmin: isRealAdmin,
           status: 'active',
           ndaRequired: false,
+        };
+      },
+
+      // Synchronisation périodique / au chargement des identifiants stockés dans le Cloud
+      syncCloudCredentials: async () => {
+        try {
+          const creds = await fetchCloudCredentials();
+          if (creds && typeof creds === 'object' && Object.keys(creds).length > 0) {
+            set((state) => {
+              const updatedInvestors = (state.investors || []).map((inv) => {
+                const invEmail = (inv.email || '').trim().toLowerCase();
+                const normInvEmail = normalizeInvestorEmail(invEmail);
+                const overridePass = creds[invEmail] || creds[normInvEmail];
+                if (overridePass && overridePass !== inv.password) {
+                  return { ...inv, password: overridePass };
+                }
+                return inv;
+              });
+              return {
+                cloudCredentials: { ...(state.cloudCredentials || {}), ...creds },
+                investors: updatedInvestors,
+              };
+            });
+            return creds;
+          }
+        } catch (err) {
+          console.warn('Erreur sync cloud credentials:', err);
+        }
+        return {};
+      },
+
+      // Réinitialisation de mot de passe autonome par l'investisseur (avec persistance Cloud & notification admin)
+      resetInvestorPassword: async (email, newPassword) => {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const normCleanEmail = normalizeInvestorEmail(cleanEmail);
+        const cleanPass = (newPassword || '').trim();
+
+        if (!cleanEmail || !cleanPass) {
+          return { success: false, error: 'Email et nouveau mot de passe requis.' };
+        }
+
+        if (cleanPass.length < 6) {
+          return { success: false, error: 'Le nouveau mot de passe doit comporter au moins 6 caractères.' };
+        }
+
+        const allInvestors = get().investors || [];
+        let existingInv = allInvestors.find((inv) => {
+          const invEmail = (inv.email || '').trim().toLowerCase();
+          return (
+            invEmail === cleanEmail ||
+            invEmail === normCleanEmail ||
+            normalizeInvestorEmail(invEmail) === normCleanEmail
+          );
+        });
+
+        if (!existingInv) {
+          const defaultMatch = INVESTORS.find((inv) => {
+            const invEmail = (inv.email || '').trim().toLowerCase();
+            return (
+              invEmail === cleanEmail ||
+              invEmail === normCleanEmail ||
+              normalizeInvestorEmail(invEmail) === normCleanEmail
+            );
+          });
+          if (defaultMatch) {
+            existingInv = defaultMatch;
+          }
+        }
+
+        if (!existingInv) {
+          return {
+            success: false,
+            error: 'Cette adresse e-mail n\'est pas reconnue parmi les investisseurs accrédités. Contactez le bureau M&A ou inscrivez-vous.',
+          };
+        }
+
+        // 1. Sauvegarde dans le Cloud (Vercel Blob) & notification Formspree côté serveur + client
+        await saveCloudPassword({
+          email: cleanEmail,
+          newPassword: cleanPass,
+          investorName: existingInv.name,
+          companyName: existingInv.company,
+          action: 'reset-password',
+        });
+
+        // 2. Mise à jour de l'état local immédiat
+        set((state) => {
+          let found = false;
+          const updatedInvestors = (state.investors || []).map((inv) => {
+            const invEmail = (inv.email || '').trim().toLowerCase();
+            if (
+              invEmail === cleanEmail ||
+              invEmail === normCleanEmail ||
+              normalizeInvestorEmail(invEmail) === normCleanEmail
+            ) {
+              found = true;
+              return {
+                ...inv,
+                password: cleanPass,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return inv;
+          });
+
+          if (!found) {
+            updatedInvestors.push({
+              ...existingInv,
+              password: cleanPass,
+              updatedAt: new Date().toISOString(),
+            });
+          }
+
+          const notif = {
+            id: 'notif-pwd-' + Date.now(),
+            target: 'admin',
+            type: 'password_reset',
+            title: `Mot de passe réinitialisé : ${existingInv.name || cleanEmail} (${existingInv.company || 'Investisseur'})`,
+            message: `L'utilisateur a réinitialisé son mot de passe. Nouveau mot de passe effectif sur tous les supports.`,
+            investorEmail: cleanEmail,
+            createdAt: new Date().toISOString(),
+            read: false,
+            linkTab: 'users',
+          };
+
+          return {
+            investors: updatedInvestors,
+            cloudCredentials: { ...(state.cloudCredentials || {}), [cleanEmail]: cleanPass },
+            notifications: [notif, ...(state.notifications || [])],
+          };
+        });
+
+        if (get().logSecurityEvent) {
+          get().logSecurityEvent({
+            eventType: 'PASSWORD_RESET',
+            targetResource: 'COMPTE_INVESTISSEUR',
+            details: `Réinitialisation de mot de passe effectuée par ${existingInv.name} (${cleanEmail})`,
+          });
+        }
+
+        return {
+          success: true,
+          message: 'Votre mot de passe a été réinitialisé avec succès ! L\'administrateur a été notifié.',
         };
       },
 
@@ -1547,6 +1718,18 @@ y.barberis@enr-courtage.fr
             return updated;
           }),
         }));
+        if (sanitizedFields.password) {
+          const invFound = (get().investors || []).find((i) => i.id === userId);
+          if (invFound?.email) {
+            saveCloudPassword({
+              email: invFound.email,
+              newPassword: sanitizedFields.password.trim(),
+              investorName: invFound.name,
+              companyName: invFound.company,
+              action: 'admin-update',
+            }).catch(() => {});
+          }
+        }
         return { success: true };
       },
 
@@ -1668,9 +1851,11 @@ y.barberis@enr-courtage.fr
       // Admin action: Reset user password
       adminResetPassword: (userId, newPassword) => {
         const pass = (newPassword || '').trim() || generateRandomPassword();
+        let targetInv = null;
         set((state) => ({
           investors: state.investors.map((inv) => {
             if (inv.id !== userId) return inv;
+            targetInv = inv;
             return {
               ...inv,
               password: pass,
@@ -1678,6 +1863,15 @@ y.barberis@enr-courtage.fr
             };
           }),
         }));
+        if (targetInv?.email) {
+          saveCloudPassword({
+            email: targetInv.email,
+            newPassword: pass,
+            investorName: targetInv.name,
+            companyName: targetInv.company,
+            action: 'admin-reset',
+          }).catch(() => {});
+        }
         return { success: true, password: pass };
       },
 
@@ -2211,7 +2405,7 @@ y.barberis@enr-courtage.fr
                 company: defaultInv.company,
                 role: defaultInv.role,
                 divers: defaultInv.divers,
-                password: defaultInv.password,
+                password: (state.investors[idx]?.password && state.investors[idx]?.password.trim() !== '') ? state.investors[idx].password : defaultInv.password,
                 status: state.investors[idx].status || defaultInv.status,
                 hasUploadedSignedNda: state.investors[idx].hasUploadedSignedNda || defaultInv.hasUploadedSignedNda || false,
                 ndaFileName: state.investors[idx].ndaFileName || defaultInv.ndaFileName || '',

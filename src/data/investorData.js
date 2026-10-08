@@ -375,9 +375,24 @@ export const INVESTORS = [
     createdAt: '2026-09-20T08:00:00Z',
   },
   {
+    id: 'INV-ENERVIVO',
+    email: 'manuel.vigier@gmail.com',
+    password: 'sukKYeek1Qt2XZtt',
+    name: 'Manuel VIGIER',
+    company: 'ENERVIVO',
+    role: 'Investisseur',
+    isAdmin: false,
+    status: 'active',
+    divers: 'ENERVIVO',
+    hasUploadedSignedNda: true,
+    ndaSignedAt: '2026-09-20T08:00:00Z',
+    ndaSignedByAdmin: true,
+    createdAt: '2026-09-20T08:00:00Z',
+  },
+  {
     id: 'INV-GIOVSOLAR',
     email: 'm.lagares@giov.fr',
-    password: '',
+    password: 'w1ucyJxxj282JpnX',
     name: 'Mathieu LAGARES',
     company: 'GIOV SOLAR',
     legalForm: 'SASU',
@@ -387,11 +402,12 @@ export const INVESTORS = [
     role: 'Président',
     phone: '0698341438',
     isAdmin: false,
-    status: 'pending',
+    status: 'active',
     divers: 'GIOV SOLAR',
-    hasUploadedSignedNda: false,
+    hasUploadedSignedNda: true,
     userNdaSignedAt: '2026-10-07T06:40:00Z',
-    ndaSignedByAdmin: false,
+    ndaSignedAt: '2026-10-07T06:40:00Z',
+    ndaSignedByAdmin: true,
     createdAt: '2026-10-07T06:40:00Z',
   },
 ];
@@ -585,7 +601,20 @@ export const USER_PASSWORD_ALIASES = {
     'zh4vcabb3rvki5x5',
     'Zh4vcAbb3rvkI5X5',
   ],
-  'm.lagares@giov.fr': [],
+  'manuel.vigier@gmail.com': [
+    'sukKYeek1Qt2XZtt',
+    'sukKYeek1Qt2xztt',
+    'sukyyeek1qt2xztt',
+    'sukKYeek1Qt2XZtt ',
+    ' sukKYeek1Qt2XZtt',
+  ],
+  'm.lagares@giov.fr': [
+    'w1ucyJxxj282JpnX',
+    'w1ucyJxxj282jpnx',
+    'w1ucyjxxj282jpnx',
+    'w1ucyJxxj282JpnX ',
+    ' w1ucyJxxj282JpnX',
+  ],
 };
 
 export function fuzzyNormalizePassword(str) {
@@ -602,6 +631,7 @@ export function normalizeInvestorEmail(email) {
   if (!email) return '';
   const s = String(email).trim().toLowerCase();
 
+  if (s.includes('manuel.vigier') || s.includes('vigier') || s.includes('enervivo')) return 'manuel.vigier@gmail.com';
   if (s.includes('lagares') || s.includes('giov')) return 'm.lagares@giov.fr';
   if (s.includes('rusmann') || s.includes('kusmann') || s === 'l.kusmann@aliaxis.com') return 'lrusmann@altarea.com';
   if (s.includes('moucer') || s.includes('mouser')) return 'farid.moucer@enoe-energie.fr';

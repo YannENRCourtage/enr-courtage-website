@@ -11,23 +11,45 @@ import {
   Download,
   Info,
   Lock,
+  KeyRound,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 
 export default function InvestorSettingsModal({ isOpen, onClose, onOpenNda }) {
-  const { currentInvestor, updateCurrentInvestorProfile } = useInvestorStore();
+  const { currentInvestor, updateCurrentInvestorProfile, resetInvestorPassword } = useInvestorStore();
 
   const [name, setName] = useState(currentInvestor?.name || '');
   const [company, setCompany] = useState(currentInvestor?.company || '');
   const [email, setEmail] = useState(currentInvestor?.email || '');
   const [phone, setPhone] = useState(currentInvestor?.phone || '');
   const [address, setAddress] = useState(currentInvestor?.address || '');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [pwdError, setPwdError] = useState('');
   const [isSaved, setIsSaved] = useState(false);
 
   if (!isOpen) return null;
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
+    setPwdError('');
+
+    if (newPassword) {
+      if (newPassword.length < 6) {
+        setPwdError('Le nouveau mot de passe doit comporter au moins 6 caractères.');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setPwdError('Les deux mots de passe ne correspondent pas.');
+        return;
+      }
+      if (resetInvestorPassword) {
+        await resetInvestorPassword(currentInvestor?.email || email, newPassword);
+      }
+    }
 
     if (updateCurrentInvestorProfile) {
       updateCurrentInvestorProfile({
@@ -217,6 +239,61 @@ export default function InvestorSettingsModal({ isOpen, onClose, onOpenNda }) {
                 placeholder="Ex : 12 Avenue des Champs-Élysées, 75008 Paris"
                 className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 font-medium text-xs focus:outline-none focus:border-blue-600 focus:bg-white transition"
               />
+            </div>
+          </div>
+
+          {/* SÉCURITÉ & MODIFICATION DU MOT DE PASSE */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <KeyRound className="w-4 h-4 text-blue-600" />
+              <span>Sécurité &amp; Mot de Passe</span>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Laissez ces champs vides si vous ne souhaitez pas modifier votre mot de passe actuel.
+            </p>
+
+            {pwdError && (
+              <div className="p-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs">
+                {pwdError}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">
+                  Nouveau mot de passe
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Laisser vide ou min. 6 car."
+                    className="w-full pl-3 pr-8 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:border-blue-600 transition"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">
+                  Confirmer le mot de passe
+                </label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirmer le nouveau mot de passe"
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-slate-900 font-mono text-xs focus:outline-none focus:border-blue-600 transition"
+                />
+              </div>
             </div>
           </div>
 

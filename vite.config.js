@@ -300,6 +300,13 @@ export default defineConfig({
 			'.app-preview.com',
 			'.app-preview.io',
 		],
+		proxy: {
+			'/api': {
+				target: 'https://www.enr-courtage.fr',
+				changeOrigin: true,
+				secure: true,
+			},
+		},
 	},
 	resolve: {
 		extensions: ['.jsx', '.js', '.tsx', '.ts', '.json', ],
