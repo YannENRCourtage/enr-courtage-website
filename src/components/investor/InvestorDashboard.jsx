@@ -362,7 +362,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                 }`}
               >
                 <Coins className="w-4 h-4" />
-                <span>Mes Offres & Négociations ({myOffers.length})</span>
+                <span>Mes Offres & Négociations ({myOffers.filter((o) => o && o.status !== 'rejected').length})</span>
               </button>
 
               <button
@@ -561,7 +561,13 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             {investorSubTab === 'offers' && (
               <div id="mes-offres" className="space-y-6">
                 {activeOffer ? (
-                  <div className="bg-white border-2 border-amber-200 rounded-3xl p-6 sm:p-7 shadow-sm space-y-6">
+                  <div
+                    className={`rounded-3xl p-6 sm:p-7 shadow-sm space-y-6 transition-all ${
+                      activeOffer.status === 'rejected'
+                        ? 'bg-slate-100/90 border-2 border-slate-300 opacity-70 grayscale-[35%]'
+                        : 'bg-white border-2 border-amber-200'
+                    }`}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-100">
                       <div>
                         <div className="flex items-center gap-2">
@@ -746,8 +752,16 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
 
                     {/* Statut : Rejeté */}
                     {activeOffer.status === 'rejected' && (
-                      <div className="p-4 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 text-xs">
-                        Cette proposition d'offre n'a pas été retenue ou a été déclinée. Vous pouvez formuler une nouvelle offre d'acquisition.
+                      <div className="p-4 rounded-2xl bg-slate-200/80 border border-slate-300 text-slate-800 text-xs space-y-1.5">
+                        <div className="font-bold text-slate-900">
+                          Cette proposition d'offre n'a pas été retenue ou a été déclinée par le Cédant.
+                        </div>
+                        <div className="text-slate-700">
+                          <span className="font-semibold text-slate-600">Commentaire / motif du refus indiqué : </span>
+                          <span className="italic font-bold text-slate-900 bg-white/80 px-2 py-0.5 rounded border border-slate-300">
+                            "{activeOffer.rejectionReason || activeOffer.adminNotes || 'Non'}"
+                          </span>
+                        </div>
                       </div>
                     )}
                   </div>

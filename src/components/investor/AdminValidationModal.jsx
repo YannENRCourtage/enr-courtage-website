@@ -445,9 +445,9 @@ y.barberis@enr-courtage.fr`;
   };
 
   const handleAdminReject = (offerId) => {
-    const reason = window.prompt("Indiquez un motif de refus à communiquer à l'investisseur (optionnel) :");
+    const reason = window.prompt("Indiquez un motif de refus à communiquer à l'investisseur :", "Non");
     if (reason !== null) {
-      adminRejectOffer(offerId, reason);
+      adminRejectOffer(offerId, reason || "Non");
     }
   };
 
@@ -900,7 +900,7 @@ y.barberis@enr-courtage.fr`;
               }`}
             >
               <Coins className="w-3.5 h-3.5" />
-              <span>Synthèse des Offres ({offers.length})</span>
+              <span>Synthèse des Offres ({offers.filter((o) => o && o.status !== 'rejected').length})</span>
             </button>
 
             <button
@@ -1090,7 +1090,7 @@ y.barberis@enr-courtage.fr`;
                 <div className="text-xl font-bold font-mono text-emerald-400 mt-0.5">
                   {new Intl.NumberFormat('fr-FR').format(totalOffersValue)} € HT
                 </div>
-                <span className="text-[10px] text-gray-500">{offers.length} proposition(s) reçue(s)</span>
+                <span className="text-[10px] text-gray-500">{offers.filter((o) => o && o.status !== 'rejected').length} proposition(s) active(s)</span>
               </div>
 
               <div className="bg-gray-800/60 p-3.5 rounded-xl border border-gray-700">
@@ -1128,7 +1128,7 @@ y.barberis@enr-courtage.fr`;
                       : 'text-gray-400 hover:text-white'
                   }`}
                 >
-                  Tous ({offers.length})
+                  Tous ({offers.filter((o) => o && o.status !== 'rejected').length})
                 </button>
                 <button
                   onClick={() => setOfferPortfolioFilter('helios')}
@@ -1170,10 +1170,16 @@ y.barberis@enr-courtage.fr`;
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredOffers.map((offer) => (
+                {filteredOffers.map((offer) => {
+                  const isRejected = offer.status === 'rejected';
+                  return (
                   <div
                     key={offer.id}
-                    className="p-5 rounded-2xl bg-gray-800/60 border border-gray-700 text-xs space-y-3.5 shadow-lg"
+                    className={`p-5 rounded-2xl text-xs space-y-3.5 shadow-lg transition-all ${
+                      isRejected
+                        ? 'bg-gray-900/40 border border-gray-800 opacity-60 grayscale-[35%]'
+                        : 'bg-gray-800/60 border border-gray-700'
+                    }`}
                   >
                     {/* Header */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-700/80 pb-3">
@@ -1211,6 +1217,22 @@ y.barberis@enr-courtage.fr`;
                         )}
                       </div>
                     </div>
+
+                    {/* Motif de refus affiché */}
+                    {isRejected && (
+                      <div className="bg-red-950/40 p-3 rounded-xl border border-red-900/60 text-xs text-red-200 space-y-1">
+                        <div className="font-bold text-red-400 flex items-center gap-1.5">
+                          <XCircle className="w-4 h-4 text-red-400" />
+                          <span>Offre refusée par le Cédant</span>
+                        </div>
+                        <div className="text-[11px] text-gray-300">
+                          <span className="font-semibold text-gray-400">Commentaire / motif de refus indiqué : </span>
+                          <span className="italic font-bold text-white bg-gray-900/80 px-2 py-0.5 rounded border border-gray-700">
+                            "{offer.rejectionReason || offer.adminNotes || 'Non'}"
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* TABLE DES MODALITÉS & JALONNEMENTS */}
                     <div className="bg-gray-900/80 p-3.5 rounded-xl border border-gray-800 space-y-2">
@@ -1482,7 +1504,8 @@ y.barberis@enr-courtage.fr`;
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

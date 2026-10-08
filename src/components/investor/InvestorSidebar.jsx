@@ -224,7 +224,7 @@ export default function InvestorSidebar({
                     <span>Synthèse des Offres</span>
                   </div>
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">
-                    {offers.length}
+                    {offers.filter((o) => o && o.status !== 'rejected').length}
                   </span>
                 </button>
 
@@ -354,12 +354,12 @@ export default function InvestorSidebar({
                 </div>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    myOffers.length > 0
+                    myOffers.filter((o) => o && o.status !== 'rejected').length > 0
                       ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
                       : 'bg-gray-800 text-gray-400'
                   }`}
                 >
-                  {myOffers.length}
+                  {myOffers.filter((o) => o && o.status !== 'rejected').length}
                 </span>
               </button>
             </div>

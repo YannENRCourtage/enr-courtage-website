@@ -401,13 +401,33 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   const rejectedInvestorsCount = safeInvestors.filter((i) => i && i.status === 'rejected').length;
 
   // Catégories Data Room consolidées avec fichiers filtrés pour le portefeuille actif
+  const isExcludedDataroomDoc = (f) => {
+    if (!f) return true;
+    const name = String(f.name || '').trim().toUpperCase();
+    const fileName = String(f.fileName || '').trim().toUpperCase();
+    const fileUrl = String(f.fileUrl || '').toUpperCase();
+    return (
+      name === 'ENERVIVO' ||
+      name.includes('ACCORD DE CONFIDENTIALITÉ ENERVIVO') ||
+      name.includes('ACCORD_DE_CONFIDENTIALITE_ENERVIVO') ||
+      fileName.includes('ENERVIVO') ||
+      fileName.includes('ACCORD_DE_CONFIDENTIALITE_ENERVIVO') ||
+      fileUrl.includes('ACCORD_DE_CONFIDENTIALITE_ENERVIVO') ||
+      f.id === 'DOC-1791293194267'
+    );
+  };
+
   const dataRoomCategoriesWithFiles = useMemo(() => {
     const deletedForPortfolio = deletedDefaultDocs?.[selectedDataRoomPortfolio] || [];
     const baseCats = currentPortfolioObj?.dataRoom?.categories || [];
 
     const result = baseCats.map((cat) => {
-      const defaultFiles = (cat.files || []).filter((f) => !deletedForPortfolio.includes(f.name));
-      const customFiles = customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || [];
+      const defaultFiles = (cat.files || []).filter(
+        (f) => !deletedForPortfolio.includes(f.name) && !isExcludedDataroomDoc(f)
+      );
+      const customFiles = (customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || []).filter(
+        (f) => !isExcludedDataroomDoc(f)
+      );
       return {
         name: cat.name,
         icon: cat.icon,
@@ -417,11 +437,12 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
     const customCats = customDataRoom?.[selectedDataRoomPortfolio] || {};
     Object.entries(customCats).forEach(([catName, files]) => {
-      if (!result.some((c) => c.name.toLowerCase() === catName.toLowerCase()) && Array.isArray(files) && files.length > 0) {
+      const validFiles = (Array.isArray(files) ? files : []).filter((f) => !isExcludedDataroomDoc(f));
+      if (!result.some((c) => c.name.toLowerCase() === catName.toLowerCase()) && validFiles.length > 0) {
         result.push({
           name: catName,
           icon: 'Folder',
-          files,
+          files: validFiles,
         });
       }
     });
@@ -1191,7 +1212,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               <span className="truncate">Offres & Négociations</span>
             </span>
             <span className="px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-mono shrink-0 ml-1">
-              {safeOffers.length}
+              {safeOffers.filter((o) => o && o.status !== 'rejected').length}
             </span>
           </button>
 
@@ -1533,7 +1554,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div>
                   <h3 className="text-sm font-black text-[#0b192c] uppercase tracking-wider">
-                    Offres d'Acquisition Reçues & Décisions ({filteredOffers.length})
+                    Offres d'Acquisition Reçues & Décisions ({filteredOffers.filter((o) => o && o.status !== 'rejected').length})
                   </h3>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
                     Validez, refusez ou formulez une contre-proposition chiffrée avec ajustement des jalons.
@@ -1576,22 +1597,37 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                 <div className="space-y-4">
                   {filteredOffers.map((offer) => {
                     const isCountering = counteringOfferId === offer.id;
+                    const isRejected = offer.status === 'rejected';
 
                     return (
                       <div
                         key={offer.id}
-                        className="p-5 rounded-2xl bg-white border-2 border-slate-200 hover:border-amber-300 transition-all space-y-4 shadow-xs"
+                        className={`p-5 rounded-2xl transition-all space-y-4 shadow-xs ${
+                          isRejected
+                            ? 'bg-slate-100/90 border-2 border-slate-300 opacity-60 grayscale-[35%]'
+                            : 'bg-white border-2 border-slate-200 hover:border-amber-300'
+                        }`}
                       >
                         {/* Header de l'offre */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider bg-amber-100 text-amber-950 border border-amber-300">
+                              <span
+                                className={`px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider ${
+                                  isRejected
+                                    ? 'bg-slate-200 text-slate-700 border border-slate-300'
+                                    : offer.status === 'agreement_reached'
+                                    ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                    : offer.status === 'counter_by_admin'
+                                    ? 'bg-purple-100 text-purple-900 border border-purple-200'
+                                    : 'bg-amber-100 text-amber-950 border border-amber-300'
+                                }`}
+                              >
                                 {offer.status === 'agreement_reached'
                                   ? 'Accord Trouvé'
                                   : offer.status === 'counter_by_admin'
                                   ? 'Contre-proposition transmise'
-                                  : offer.status === 'rejected'
+                                  : isRejected
                                   ? 'Refusée'
                                   : 'En attente de décision'}
                               </span>
@@ -1621,6 +1657,22 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                             )}
                           </div>
                         </div>
+
+                        {/* Motif de refus affiché si refusée */}
+                        {isRejected && (
+                          <div className="p-3.5 rounded-xl bg-slate-200/80 border border-slate-300 text-slate-800 text-xs flex items-start gap-2.5">
+                            <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                              <div className="font-bold text-slate-900">Offre refusée</div>
+                              <div className="text-slate-700">
+                                <span className="font-semibold text-slate-600">Commentaire / motif de refus indiqué : </span>
+                                <span className="italic font-bold text-slate-900 bg-white/80 px-2 py-0.5 rounded border border-slate-300">
+                                  "{offer.rejectionReason || offer.adminNotes || 'Non'}"
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Tableau des jalons */}
                         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/60">
@@ -1731,6 +1783,25 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                               </button>
                             </div>
                           </div>
+                        ) : isRejected ? (
+                          /* Offre refusée : statut clôturé et suppression */
+                          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                            <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 italic">
+                              <XCircle className="w-4 h-4 text-slate-400" />
+                              <span>Offre clôturée (refusée) — Motif : "{offer.rejectionReason || offer.adminNotes || 'Non'}"</span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                if (window.confirm("Supprimer définitivement cette offre ?")) {
+                                  deleteOffer(offer.id);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-red-600 transition"
+                              title="Supprimer cette offre"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
                         ) : (
                           /* Boutons de décision */
                           <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
@@ -1758,9 +1829,9 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
                               <button
                                 onClick={() => {
-                                  const reason = window.prompt("Motif du refus (optionnel) :");
+                                  const reason = window.prompt("Motif du refus (optionnel) :", "Non");
                                   if (reason !== null) {
-                                    adminRejectOffer(offer.id, reason);
+                                    adminRejectOffer(offer.id, reason || "Non");
                                     setUserActionNotice(`Offre refusée.`);
                                   }
                                 }}

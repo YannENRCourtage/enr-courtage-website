@@ -66,6 +66,23 @@ export default function DataRoomSection({
     return matched;
   };
 
+  // Exclusion des documents NDA privés de la Data Room publique générale
+  const isExcludedDataroomDoc = (f) => {
+    if (!f) return true;
+    const name = String(f.name || '').trim().toUpperCase();
+    const fileName = String(f.fileName || '').trim().toUpperCase();
+    const fileUrl = String(f.fileUrl || '').toUpperCase();
+    return (
+      name === 'ENERVIVO' ||
+      name.includes('ACCORD DE CONFIDENTIALITÉ ENERVIVO') ||
+      name.includes('ACCORD_DE_CONFIDENTIALITE_ENERVIVO') ||
+      fileName.includes('ENERVIVO') ||
+      fileName.includes('ACCORD_DE_CONFIDENTIALITE_ENERVIVO') ||
+      fileUrl.includes('ACCORD_DE_CONFIDENTIALITE_ENERVIVO') ||
+      f.id === 'DOC-1791293194267'
+    );
+  };
+
   // Fusionner les catégories par défaut avec les fichiers personnalisés téléversés et appliquer le filtre de site
   const categories = useMemo(() => {
     if (!portfolio || !portfolio.dataRoom) return [];
@@ -74,7 +91,9 @@ export default function DataRoomSection({
 
     const defaultCats = portfolio.dataRoom.categories.map((cat) => ({
       ...cat,
-      files: (cat.files || []).filter((f) => !deletedForPortfolio.includes(f.name)),
+      files: (cat.files || []).filter(
+        (f) => !deletedForPortfolio.includes(f.name) && !isExcludedDataroomDoc(f)
+      ),
     }));
 
     const customDocsForPortfolio = customDataRoom?.[portfolio.id] || {};
@@ -84,17 +103,21 @@ export default function DataRoomSection({
         (c) => c.name.toLowerCase() === catName.toLowerCase()
       );
 
+      const validCustomFiles = (Array.isArray(customFiles) ? customFiles : []).filter(
+        (cf) => !isExcludedDataroomDoc(cf)
+      );
+
       if (existingCat) {
-        customFiles.forEach((cf) => {
+        validCustomFiles.forEach((cf) => {
           if (!existingCat.files.some((f) => f.name === cf.name)) {
             existingCat.files.push(cf);
           }
         });
-      } else if (customFiles && customFiles.length > 0) {
+      } else if (validCustomFiles.length > 0) {
         defaultCats.push({
           name: catName,
           icon: 'Paperclip',
-          files: customFiles,
+          files: validCustomFiles,
         });
       }
     });

@@ -2030,6 +2030,7 @@ y.barberis@enr-courtage.fr
 
       // Admin Action: Reject offer
       adminRejectOffer: (offerId, reason = '') => {
+        const finalReason = reason && String(reason).trim() ? String(reason).trim() : 'Non';
         let rejectedOffer = null;
         set((state) => {
           const updatedOffers = state.offers.map((off) => {
@@ -2038,7 +2039,8 @@ y.barberis@enr-courtage.fr
             return {
               ...off,
               status: 'rejected',
-              adminNotes: reason,
+              rejectionReason: finalReason,
+              adminNotes: finalReason,
               updatedAt: new Date().toISOString(),
               history: [
                 ...(off.history || []),
@@ -2046,7 +2048,7 @@ y.barberis@enr-courtage.fr
                   type: 'rejection',
                   author: 'Yann BARBERIS (ENR COURTAGE)',
                   authorRole: 'admin',
-                  comments: reason || 'Offre non retenue par le Cédant.',
+                  comments: finalReason,
                   date: new Date().toISOString(),
                 },
               ],
@@ -2060,7 +2062,7 @@ y.barberis@enr-courtage.fr
                   target: rejectedOffer.investorEmail,
                   type: 'offer_rejected',
                   title: 'Mise à jour concernant votre offre',
-                  message: reason || 'Votre offre n\'a pas été retenue par le Cédant.',
+                  message: finalReason,
                   investorEmail: rejectedOffer.investorEmail,
                   createdAt: new Date().toISOString(),
                   read: false,
@@ -2508,6 +2510,21 @@ y.barberis@enr-courtage.fr
             helios: (state.soldSites.helios || []).filter((id) => !(state.deletedSites.helios || []).includes(Number(id))),
             volta: (state.soldSites.volta || []).filter((id) => !(state.deletedSites.volta || []).includes(Number(id))),
           };
+        }
+
+        // Normalize any rejected offers to ensure rejectionReason and adminNotes are populated
+        if (state.offers && Array.isArray(state.offers)) {
+          state.offers = state.offers.map((off) => {
+            if (off && off.status === 'rejected') {
+              const reason = off.rejectionReason || off.adminNotes || 'Non';
+              return {
+                ...off,
+                rejectionReason: reason,
+                adminNotes: reason,
+              };
+            }
+            return off;
+          });
         }
 
         if (!state.userDownloads || Object.keys(state.userDownloads).length === 0) {
