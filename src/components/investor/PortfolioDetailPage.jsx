@@ -15,7 +15,6 @@ import {
   Lock,
   Layers,
   TableProperties,
-  Printer,
   SlidersHorizontal,
   FileSignature,
   MapPin,
@@ -412,16 +411,6 @@ export default function PortfolioDetailPage() {
                     Carte des Implantations
                   </a>
                 </div>
-
-                {/* Print / PDF Button located immediately under Volume Consolidé */}
-                <button
-                  onClick={() => window.print()}
-                  className="w-full mt-3 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs transition flex items-center justify-center gap-2 cursor-pointer shadow-2xs"
-                  title="Générer un PDF complet de la page"
-                >
-                  <Printer className="w-3.5 h-3.5 text-slate-600" />
-                  <span>Imprimer / Télécharger en PDF</span>
-                </button>
               </div>
             </div>
           </section>
