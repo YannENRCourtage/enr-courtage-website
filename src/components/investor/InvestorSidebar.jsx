@@ -11,10 +11,11 @@ import {
   Users,
   ShieldAlert,
   FolderLock,
+  MessageSquare,
   X,
   Settings,
 } from 'lucide-react';
-import { useInvestorStore } from '@/stores/useInvestorStore';
+import { useInvestorStore, getUnansweredMessagesCount } from '@/stores/useInvestorStore';
 import { PORTFOLIOS } from '@/data/investorData';
 import EnrCourtageLogo from './EnrCourtageLogo';
 import InvestorSettingsModal from './InvestorSettingsModal';
@@ -33,11 +34,15 @@ export default function InvestorSidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { currentInvestor, logout, offers, investors, soldSites, deletedSites, customSites } = useInvestorStore();
+  const { currentInvestor, logout, offers, investors, soldSites, deletedSites, customSites, messages } = useInvestorStore();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
   const pendingCount = investors.filter((i) => i.status === 'pending').length;
+
+  const unansweredMessagesCount = useMemo(() => {
+    return getUnansweredMessagesCount(messages);
+  }, [messages]);
 
   const heliosStats = useMemo(() => {
     const p = PORTFOLIOS.find((x) => x.id === 'helios');
@@ -260,6 +265,28 @@ export default function InvestorSidebar({
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-800 text-gray-300 font-mono">
                     {investors.length}
                   </span>
+                </button>
+
+                {/* 5. Messagerie Centrale */}
+                <button
+                  onClick={() => handleAdminSelect('messages')}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition text-left cursor-pointer ${
+                    adminActiveTab === 'messages'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold shadow-sm'
+                      : 'text-gray-300 hover:bg-gray-800/60 hover:text-white'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2.5">
+                    <MessageSquare className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Messagerie Centrale</span>
+                  </div>
+                  {unansweredMessagesCount > 0 ? (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-500 text-gray-950 font-mono animate-pulse">
+                      {unansweredMessagesCount}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-gray-500 font-mono">0</span>
+                  )}
                 </button>
               </div>
             </div>

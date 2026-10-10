@@ -27,7 +27,17 @@ export default function InvestorHeader({
   onNavigateNotif = null,
 }) {
   const navigate = useNavigate();
-  const { currentInvestor, logout, investors, offers, notifications, markNotificationsAsRead, messages } = useInvestorStore();
+  const {
+    currentInvestor,
+    logout,
+    investors,
+    offers,
+    notifications,
+    markNotificationsAsRead,
+    dismissBellNotifications,
+    bellDismissedAt,
+    messages,
+  } = useInvestorStore();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
 
   const isAdmin = currentInvestor?.email?.trim().toLowerCase() === 'y.barberis@enr-courtage.fr';
@@ -74,12 +84,53 @@ export default function InvestorHeader({
     }
     return n.target && n.target.toLowerCase() === userTarget;
   });
-  const unreadCount = userNotifications.filter((n) => !n.read).length;
+
+  // Notifications sur la cloche pour messages et offres reçus
+  const bellNotificationData = React.useMemo(() => {
+    if (isAdmin) {
+      const dismissedTime = bellDismissedAt || 0;
+      // 1. Notifications non lues ciblant l'admin
+      const unreadList = (notifications || []).filter((n) => n.target === 'admin' && !n.read);
+
+      // 2. Nouveaux messages investisseurs reçus depuis le dernier clic sur la cloche
+      const newMessages = (messages || []).filter(
+        (m) =>
+          m.from === 'investor' &&
+          new Date(m.createdAt).getTime() > dismissedTime &&
+          !unreadList.some((n) => n.type === 'message' && n.createdAt === m.createdAt)
+      );
+
+      // 3. Nouvelles offres investisseurs reçues depuis le dernier clic sur la cloche
+      const newOffers = (offers || []).filter(
+        (o) =>
+          o.status === 'submitted' &&
+          new Date(o.createdAt).getTime() > dismissedTime &&
+          !unreadList.some((n) => n.type === 'offer' && n.id === o.id)
+      );
+
+      const totalCount = unreadList.length + newMessages.length + newOffers.length;
+      return {
+        count: totalCount,
+        hasNotification: totalCount > 0,
+      };
+    } else {
+      const myEmail = (currentInvestor?.email || '').trim().toLowerCase();
+      const myNotifs = (notifications || []).filter(
+        (n) => n.target && n.target.toLowerCase() === myEmail && !n.read
+      );
+      return {
+        count: myNotifs.length,
+        hasNotification: myNotifs.length > 0,
+      };
+    }
+  }, [isAdmin, notifications, messages, offers, bellDismissedAt, currentInvestor]);
 
   const handleToggleNotif = () => {
-    const nextState = !isNotifOpen;
-    setIsNotifOpen(nextState);
-    if (!isNotifOpen && unreadCount > 0) {
+    setIsNotifOpen((prev) => !prev);
+    // Effacer immédiatement la notification de la cloche dès qu'on clique dessus
+    if (dismissBellNotifications) {
+      dismissBellNotifications(isAdmin ? 'admin' : userTarget);
+    } else {
       markNotificationsAsRead(isAdmin ? 'admin' : userTarget);
     }
   };
@@ -180,13 +231,19 @@ export default function InvestorHeader({
             <button
               onClick={handleToggleNotif}
               className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
-              title={unreadCount > 0 ? `${unreadCount} notification(s) non lue(s)` : 'Notifications M&A'}
+              title={
+                bellNotificationData.hasNotification
+                  ? `${bellNotificationData.count} notification(s) M&A (cliquer pour effacer)`
+                  : 'Notifications M&A'
+              }
             >
               <Bell className="w-4 h-4" />
-              {unreadCount > 0 && (
+              {bellNotificationData.hasNotification && (
                 <>
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-ping"></span>
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-rose-500 rounded-full animate-ping" />
+                  <span className="absolute -top-1 -right-1 min-w-[17px] h-[17px] px-1 rounded-full bg-rose-600 text-white text-[10px] font-black flex items-center justify-center shadow-xs">
+                    {bellNotificationData.count > 9 ? '9+' : bellNotificationData.count}
+                  </span>
                 </>
               )}
             </button>

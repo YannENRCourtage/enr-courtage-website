@@ -30,6 +30,56 @@ if (typeof window !== 'undefined') {
 // ============================================================================
 const ADMIN_EMAIL_DR = 'y.barberis@enr-courtage.fr';
 const isAdminInvestor = (inv) => inv?.email?.trim().toLowerCase() === ADMIN_EMAIL_DR;
+
+// Calcul du nombre de nouveaux messages d'investisseurs non répondus par l'administrateur
+export function getUnansweredMessagesCount(messages) {
+  const msgs = messages || [];
+  const msgsByInvestor = {};
+  msgs.forEach((m) => {
+    const email = (m.investorEmail || '').toLowerCase().trim();
+    if (!email) return;
+    if (!msgsByInvestor[email]) msgsByInvestor[email] = [];
+    msgsByInvestor[email].push(m);
+  });
+
+  let count = 0;
+  Object.values(msgsByInvestor).forEach((convo) => {
+    const sorted = [...convo].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    let lastAdminTime = 0;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      if (sorted[i].from === 'admin') {
+        lastAdminTime = new Date(sorted[i].createdAt).getTime();
+        break;
+      }
+    }
+    const unreplied = sorted.filter(
+      (m) => m.from === 'investor' && new Date(m.createdAt).getTime() > lastAdminTime
+    );
+    count += unreplied.length;
+  });
+
+  return count;
+}
+
+// Calcul du nombre de nouveaux messages d'un investisseur spécifique non répondus par l'admin
+export function getUnansweredMessagesForUser(userMsgs) {
+  if (!userMsgs || userMsgs.length === 0) return 0;
+  const sorted = [...userMsgs].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+  let lastAdminTime = 0;
+  for (let i = sorted.length - 1; i >= 0; i--) {
+    if (sorted[i].from === 'admin') {
+      lastAdminTime = new Date(sorted[i].createdAt).getTime();
+      break;
+    }
+  }
+  return sorted.filter(
+    (m) => m.from === 'investor' && new Date(m.createdAt).getTime() > lastAdminTime
+  ).length;
+}
 let dataRoomPushTimer = null;
 let dataRoomPushChain = Promise.resolve();
 let dataRoomLoadPromise = null;
@@ -357,8 +407,27 @@ export const useInvestorStore = create(
       // Centralized M&A notifications (dynamic: message, proposal, counter-proposal)
       notifications: [],
 
+      // Timestamp de la dernière consultation / effacement de la cloche de notification
+      bellDismissedAt: 0,
+
       markNotificationsAsRead: (target) => {
         set((state) => ({
+          bellDismissedAt: Date.now(),
+          notifications: (state.notifications || []).map((n) => {
+            if (target === 'admin' && n.target === 'admin') {
+              return { ...n, read: true };
+            }
+            if (target && n.target && n.target.toLowerCase() === target.toLowerCase()) {
+              return { ...n, read: true };
+            }
+            return n;
+          }),
+        }));
+      },
+
+      dismissBellNotifications: (target = 'admin') => {
+        set((state) => ({
+          bellDismissedAt: Date.now(),
           notifications: (state.notifications || []).map((n) => {
             if (target === 'admin' && n.target === 'admin') {
               return { ...n, read: true };
@@ -429,10 +498,26 @@ export const useInvestorStore = create(
               linkTab: 'messages',
             };
 
-        set((state) => ({
-          messages: [...(state.messages || []), msg],
-          notifications: [newNotif, ...(state.notifications || [])],
-        }));
+        set((state) => {
+          let updatedNotifs = [newNotif, ...(state.notifications || [])];
+          if (from === 'admin') {
+            // Si l'administrateur répond, marquer les anciennes notifications de messages de cet investisseur comme lues
+            updatedNotifs = updatedNotifs.map((n) => {
+              if (
+                n.target === 'admin' &&
+                n.type === 'message' &&
+                (n.investorEmail || '').toLowerCase().trim() === (investorEmail || '').toLowerCase().trim()
+              ) {
+                return { ...n, read: true };
+              }
+              return n;
+            });
+          }
+          return {
+            messages: [...(state.messages || []), msg],
+            notifications: updatedNotifs,
+          };
+        });
       },
 
       // Sites marqués comme "Vendu !" par l'administrateur

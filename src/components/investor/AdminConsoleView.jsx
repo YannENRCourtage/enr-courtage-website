@@ -48,7 +48,12 @@ import {
   FolderCheck,
   FileStack,
 } from 'lucide-react';
-import { useInvestorStore, generateRandomPassword } from '@/stores/useInvestorStore';
+import {
+  useInvestorStore,
+  generateRandomPassword,
+  getUnansweredMessagesCount,
+  getUnansweredMessagesForUser,
+} from '@/stores/useInvestorStore';
 import { investorService } from '@/services/investorService';
 import { storeDocumentBinary, getDocumentBinary, downloadDocumentBinary } from '@/services/fileStorageService';
 import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
@@ -1028,6 +1033,11 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     }, 1200);
   };
 
+  // Nombre de nouveaux messages non répondus par l'administrateur
+  const unansweredMessagesCount = useMemo(() => {
+    return getUnansweredMessagesCount(messages);
+  }, [messages]);
+
   // Conversation users with message metadata & smart sorting
   const chatUsersWithMeta = useMemo(() => {
     const list = safeInvestors.filter((u) => !u.isAdmin);
@@ -1042,17 +1052,25 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
         const lastMsg = userMsgs.length > 0 ? userMsgs[userMsgs.length - 1] : null;
         const lastMsgDate = lastMsg ? new Date(lastMsg.createdAt).getTime() : 0;
         const investorMsgCount = userMsgs.filter((m) => m.from === 'investor').length;
+        const unansweredCount = getUnansweredMessagesForUser(userMsgs);
 
         return {
           ...user,
           messageCount: userMsgs.length,
+          unansweredCount,
           investorMsgCount,
           lastMsg,
           lastMsgDate,
         };
       })
       .sort((a, b) => {
-        // Prioritize investors with messages first, sorted by latest message descending
+        // 1. Priorité absolue aux contacts avec messages non répondus
+        if (a.unansweredCount > 0 && b.unansweredCount === 0) return -1;
+        if (a.unansweredCount === 0 && b.unansweredCount > 0) return 1;
+        if (a.unansweredCount > 0 && b.unansweredCount > 0) {
+          return b.lastMsgDate - a.lastMsgDate;
+        }
+        // 2. Contacts ayant des messages
         if (a.messageCount > 0 && b.messageCount === 0) return -1;
         if (a.messageCount === 0 && b.messageCount > 0) return 1;
         if (a.messageCount > 0 && b.messageCount > 0) {
@@ -1245,8 +1263,14 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               <MessageSquare className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="truncate">Messagerie Centrale</span>
             </span>
-            <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-mono shrink-0 ml-1">
-              {(messages || []).length}
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono shrink-0 ml-1 ${
+                unansweredMessagesCount > 0
+                  ? 'bg-emerald-600 text-white font-bold animate-pulse'
+                  : 'bg-slate-100 text-slate-500 font-medium'
+              }`}
+            >
+              {unansweredMessagesCount}
             </span>
           </button>
 
@@ -2257,8 +2281,14 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                     <h3 className="text-sm font-black text-[#0b192c] uppercase tracking-wider">
                       Messagerie Centrale M&A
                     </h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      {(messages || []).length} message{(messages || []).length > 1 ? 's' : ''} au total
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                      unansweredMessagesCount > 0
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                        : 'bg-slate-100 text-slate-600 border-slate-200'
+                    }`}>
+                      {unansweredMessagesCount > 0
+                        ? `${unansweredMessagesCount} message${unansweredMessagesCount > 1 ? 's' : ''} en attente de réponse`
+                        : '0 message en attente (à jour)'}
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -2403,15 +2433,21 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                                   >
                                     {u.lastMsg?.text || ''}
                                   </p>
-                                  <span
-                                    className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold shrink-0 ${
-                                      isSelected
-                                        ? 'bg-white text-purple-900'
-                                        : 'bg-purple-100 text-purple-800'
-                                    }`}
-                                  >
-                                    {u.messageCount} msg{u.messageCount > 1 ? 's' : ''}
-                                  </span>
+                                  {u.unansweredCount > 0 ? (
+                                    <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold shrink-0 bg-emerald-600 text-white animate-pulse">
+                                      {u.unansweredCount} nouveau{u.unansweredCount > 1 ? 'x' : ''}
+                                    </span>
+                                  ) : (
+                                    <span
+                                      className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold shrink-0 ${
+                                        isSelected
+                                          ? 'bg-white text-purple-900'
+                                          : 'bg-slate-100 text-slate-600'
+                                      }`}
+                                    >
+                                      {u.messageCount} msg{u.messageCount > 1 ? 's' : ''}
+                                    </span>
+                                  )}
                                 </div>
                               ) : (
                                 <div
