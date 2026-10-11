@@ -2558,6 +2558,22 @@ y.barberis@enr-courtage.fr
               });
             });
           }
+
+          // Garantir que les fiches techniques & certificats Mercury 261 ont leur fileUrl dans customDataRoom
+          if (state.customDataRoom?.volta) {
+            Object.keys(state.customDataRoom.volta).forEach((cat) => {
+              state.customDataRoom.volta[cat] = (state.customDataRoom.volta[cat] || []).map((f) => {
+                const fName = String(f.name || f.fileName || '').toLowerCase();
+                if (fName.includes('mercury') && fName.includes('fiche')) {
+                  return { ...f, fileUrl: f.fileUrl || '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf' };
+                }
+                if (fName.includes('mercury') && (fName.includes('garantie') || fName.includes('warranty'))) {
+                  return { ...f, fileUrl: f.fileUrl || '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf' };
+                }
+                return f;
+              });
+            });
+          }
           if (recovered.deletedDefaultDocs) {
             Object.entries(recovered.deletedDefaultDocs).forEach(([pId, docs]) => {
               state.deletedDefaultDocs[pId] = Array.from(new Set([...(state.deletedDefaultDocs[pId] || []), ...(docs || [])]));

@@ -261,14 +261,18 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
   }
 
   // Recherche dans IndexedDB si document téléversé localement
-  if (!rawBuffer && (file.id || file.name)) {
-    try {
-      const stored = await getDocumentBinary(file.id || file.name);
-      if (stored && stored.blob) {
-        rawBuffer = await stored.blob.arrayBuffer();
+  if (!rawBuffer) {
+    const candidates = [file.id, file.name, file.fileName, file.storagePath, realDoc?.fileName].filter(Boolean);
+    for (const key of candidates) {
+      try {
+        const stored = await getDocumentBinary(key);
+        if (stored && stored.blob) {
+          rawBuffer = await stored.blob.arrayBuffer();
+          break;
+        }
+      } catch (e) {
+        console.warn('Erreur lecture IndexedDB:', e);
       }
-    } catch (e) {
-      console.warn('Erreur lecture IndexedDB:', e);
     }
   }
 

@@ -1057,6 +1057,8 @@ export const PORTFOLIOS = [
           { name: 'Accord fournisseur batteries CESC (35 k€ / 125 kW)', type: 'PDF', size: '3.2 Mo' },
         ]},
         { name: 'Technique', icon: 'Wrench', files: [
+          { name: 'Fiche technique CESC Mercury 261', type: 'PDF', size: '270 Ko', fileUrl: '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf' },
+          { name: 'Certificat de garantie CESC Mercury 261', type: 'PDF', size: '491 Ko', fileUrl: '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf' },
           { name: 'Fiches synoptiques — 29 stations BESS', type: 'PDF', size: '22.4 Mo' },
           { name: 'Spécifications batteries 125 kW', type: 'PDF', size: '4.8 Mo' },
           { name: 'Plans dalle & implantation type', type: 'PDF', size: '6.1 Mo' },

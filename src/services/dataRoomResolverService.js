@@ -206,6 +206,22 @@ export const BUNDLED_DATAROOM_FILES = [
     size: '840 Ko',
     type: 'bail',
   },
+  {
+    fileName: 'Fiche_technique_CESC_Mercury_261.pdf',
+    url: '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
+    keys: ['fiche technique', 'cesc', 'mercury 261', 'mercury', '261', 'fiche technique cesc mercury 261'],
+    pages: 2,
+    size: '270 Ko',
+    type: 'technique',
+  },
+  {
+    fileName: 'Certificat_de_garantie_CESC_Mercury_261.pdf',
+    url: '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
+    keys: ['certificat de garantie', 'garantie', 'warranty', 'cesc mercury 261', 'certificat de garantie cesc mercury 261'],
+    pages: 16,
+    size: '491 Ko',
+    type: 'technique',
+  },
 
   // --- PV (HÉLIOS) ---
   {
@@ -237,16 +253,18 @@ export function normalizeString(str = '') {
 }
 
 /**
- * Détermine si la requête porte sur une fiche projet.
+ * Détermine si la requête porte sur une fiche projet (et non une fiche technique équipement / matériel).
  */
 export function isFicheProjetRequest(docOrName) {
   if (!docOrName) return false;
+  const rawName = typeof docOrName === 'string' ? docOrName : (docOrName.name || docOrName.fileName || '');
+  if (/fiche\s*technique/i.test(rawName)) return false;
+
   if (typeof docOrName === 'object') {
     if (docOrName.isFiche === true || docOrName.type === 'fiche') return true;
-    if (docOrName.category?.toLowerCase() === 'technique' && /fiche/i.test(docOrName.name || '')) return true;
+    if (docOrName.category?.toLowerCase() === 'technique' && /fiche\s*projet/i.test(docOrName.name || '')) return true;
   }
-  const rawName = typeof docOrName === 'string' ? docOrName : (docOrName.name || docOrName.fileName || '');
-  return /fiche/i.test(rawName);
+  return /fiche\s*projet/i.test(rawName) || (/fiche/i.test(rawName) && !/technique|synoptique/i.test(rawName));
 }
 
 /**
@@ -416,6 +434,17 @@ export function findMatchingServerDocument(docOrName, site = null) {
     }
     for (const item of BUNDLED_FICHES_PROJETS) {
       if (normalizeString(item.fileName) === targetNorm) return item;
+    }
+
+    // Recherche par clés / mots-clés dans les documents Data Room
+    for (const item of BUNDLED_DATAROOM_FILES) {
+      if (item.keys && Array.isArray(item.keys)) {
+        const hasKeyMatch = item.keys.some((k) => {
+          const kNorm = normalizeString(k);
+          return kNorm.length >= 4 && (targetNorm.includes(kNorm) || kNorm.includes(targetNorm));
+        });
+        if (hasKeyMatch) return item;
+      }
     }
   }
 
