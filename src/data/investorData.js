@@ -205,6 +205,7 @@ export const INVESTORS = [
     status: 'active',
     divers: 'ENOE',
     hasUploadedSignedNda: true,
+    ndaFileName: 'ACCORD DE CONFIDENTIALITÉ ENOE x ENR Courtage signé.pdf',
     ndaSignedAt: '2026-09-20T08:00:00Z',
     ndaSignedByAdmin: true,
     createdAt: '2026-09-20T08:00:00Z',

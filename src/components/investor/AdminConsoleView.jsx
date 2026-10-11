@@ -60,6 +60,8 @@ import { findMatchingServerDocument } from '@/services/dataRoomResolverService';
 import { formatThousands, parseThousands, autoBalanceMilestones } from '@/utils/mnaUtils';
 import { uploadDataRoomFileToFirebase } from '@/lib/firebase';
 import { matchNdaFileToInvestor } from '@/utils/ndaMatcher';
+import { PORTFOLIOS } from '@/data/investorData';
+import { downloadOrViewDoc } from '@/services/dataRoomDocumentService';
 import NdaDocumentModal from './NdaDocumentModal';
 import ExclusiveMandateModal from './ExclusiveMandateModal';
 import TeaserSitesTable from './TeaserSitesTable';
@@ -143,6 +145,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     userDownloads,
     messages,
     sendMessage,
+    uploadedSignedNdaFiles,
   } = useInvestorStore();
 
   const [activeSection, setActiveSection] = useState(initialTab === 'requests' ? 'users' : initialTab); // 'users' | 'offers' | 'dataroom' | 'messages'
@@ -295,6 +298,35 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     selectedUserDownloadsModal,
     mandateModalOffer,
   ]);
+
+  const handleViewDataRoomDoc = async (file) => {
+    if (!file) return;
+    try {
+      if (file.fileUrl) {
+        window.open(file.fileUrl, '_blank');
+        return;
+      }
+      const docCandidates = [file.id, file.name, file.fileName, file.storagePath].filter(Boolean);
+      for (const candidate of docCandidates) {
+        const stored = await getDocumentBinary(candidate);
+        if (stored && stored.blob) {
+          const blobUrl = URL.createObjectURL(stored.blob);
+          window.open(blobUrl, '_blank');
+          return;
+        }
+      }
+      const pObj = PORTFOLIOS.find((p) => p.id === selectedDataRoomPortfolio) || {
+        id: selectedDataRoomPortfolio,
+        name: selectedDataRoomPortfolio === 'volta' ? 'VOLTA (BESS)' : 'HÉLIOS (PV)',
+      };
+      await downloadOrViewDoc(file, pObj, 'view');
+    } catch (err) {
+      console.warn('Erreur ouverture aperçu document admin:', err);
+      if (file.fileUrl) {
+        window.open(file.fileUrl, '_blank');
+      }
+    }
+  };
 
   const handleDownloadNdaFile = async (inv) => {
     if (!inv) return;
@@ -479,6 +511,66 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
     return dataRoomCategoriesWithFiles;
   }, [dataRoomCategoriesWithFiles, dataRoomSubTab]);
 
+  // Liste consolidée de TOUS les accords de confidentialité signés disponibles
+  const allNdaDocuments = useMemo(() => {
+    const list = [];
+    const seenEmails = new Set();
+    const seenNames = new Set();
+
+    // 1. Tous les investisseurs accrédités ayant signé ou déposé un NDA
+    safeInvestors.forEach((u) => {
+      if (!u || u.status === 'rejected') return;
+      const isSigned =
+        u.hasUploadedSignedNda ||
+        u.ndaFileName ||
+        u.ndaSignedAt ||
+        u.ndaSignedByAdmin;
+
+      if (isSigned) {
+        const emailKey = (u.email || '').trim().toLowerCase();
+        if (emailKey) seenEmails.add(emailKey);
+        const fileName =
+          u.ndaFileName ||
+          (u.company
+            ? `ACCORD DE CONFIDENTIALITÉ ${u.company} x ENR Courtage signé.pdf`
+            : `ACCORD DE CONFIDENTIALITÉ ${u.name} x ENR Courtage signé.pdf`);
+        seenNames.add(fileName.toLowerCase());
+
+        list.push({
+          ...u,
+          id: u.id || (emailKey ? `nda_${emailKey}` : `nda_${Math.random()}`),
+          name: u.name || 'Investisseur Qualifié',
+          company: u.company || 'Investisseur',
+          email: u.email || '',
+          ndaFileName: fileName,
+          ndaFileSize: u.ndaFileSize || 524288,
+          ndaDocumentId: u.ndaDocumentId || (u.id ? `nda_user_${u.id}` : null),
+        });
+      }
+    });
+
+    // 2. Fichiers NDA issus de téléversements complémentaires (uploadedSignedNdaFiles)
+    (uploadedSignedNdaFiles || []).forEach((f, idx) => {
+      if (!f) return;
+      const fName = f.fileName || f.name || `NDA_Signe_${idx + 1}.pdf`;
+      const email = (f.userEmail || f.email || '').trim().toLowerCase();
+      if ((email && seenEmails.has(email)) || seenNames.has(fName.toLowerCase())) return;
+
+      list.push({
+        id: f.id || f.documentId || `nda_file_${idx}`,
+        name: f.userName || f.name || 'Investisseur Téléversé',
+        company: f.userCompany || f.company || 'Partenaire Qualifié',
+        email: email,
+        ndaFileName: fName,
+        ndaFileSize: f.fileSize || f.size || 524288,
+        ndaDocumentId: f.documentId || f.id || null,
+        hasUploadedSignedNda: true,
+      });
+    });
+
+    return list;
+  }, [safeInvestors, uploadedSignedNdaFiles]);
+
   // Compteurs de fichiers par sous-onglet
   const subTabCounts = useMemo(() => {
     const getCount = (filterFn) =>
@@ -494,7 +586,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       const lower = c.name.toLowerCase();
       return (lower.includes('reseau') || lower.includes('réseau')) && !lower.includes('urbanisme');
     });
-    const ndaFilesCount = safeInvestors.filter((u) => u && u.ndaFileName).length;
+    const ndaFilesCount = allNdaDocuments.length;
 
     return {
       juridique: juridCount,
@@ -504,7 +596,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       reseau: resCount,
       nda: ndaFilesCount,
     };
-  }, [dataRoomCategoriesWithFiles, safeInvestors]);
+  }, [dataRoomCategoriesWithFiles, allNdaDocuments]);
 
   // Filtered Users
   const filteredUsers = useMemo(() => {
@@ -2095,7 +2187,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
               {/* CONTENU DU SOUS-ONGLET NDA */}
               {dataRoomSubTab === 'nda' && (() => {
-                const usersWithFiles = safeInvestors.filter((u) => u && u.ndaFileName);
+                const usersWithFiles = allNdaDocuments;
                 if (usersWithFiles.length === 0) {
                   return (
                     <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl space-y-4 animate-fadeIn">
@@ -2228,17 +2320,14 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                               </div>
 
                               <div className="flex items-center gap-2">
-                                {file.fileUrl && (
-                                  <a
-                                    href={file.fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="p-1.5 text-slate-400 hover:text-blue-600 transition"
-                                    title="Ouvrir le document"
-                                  >
-                                    <Eye className="w-3.5 h-3.5" />
-                                  </a>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleViewDataRoomDoc(file)}
+                                  className="p-1.5 text-slate-400 hover:text-blue-600 transition cursor-pointer"
+                                  title="Consulter / Aperçu du document"
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </button>
                                 <button
                                   onClick={() => {
                                     deleteDefaultDoc(selectedDataRoomPortfolio, file.name);
