@@ -211,7 +211,16 @@ export function resolveRealDocument(file, portfolio) {
  * @param {'view'|'download'} action - 'view' pour consultation nouvel onglet, 'download' pour enregistrer le fichier
  * @param {Function} trackAction - Callback optionnel de suivi
  */
+const inFlightDownloads = new Set();
+
 export async function downloadOrViewDoc(file, portfolio, action = 'download', trackAction = null) {
+  const docKey = `${file?.id || file?.name || file?.fileName || 'doc'}_${action}`;
+  if (inFlightDownloads.has(docKey)) {
+    return;
+  }
+  inFlightDownloads.add(docKey);
+  setTimeout(() => inFlightDownloads.delete(docKey), 2000);
+
   const store = useInvestorStore.getState();
   const currentInvestor = store.currentInvestor;
 
@@ -386,11 +395,10 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
       setTimeout(() => URL.revokeObjectURL(url), 15000);
       return;
     } else {
-      // Sur mobile (Android / iOS), ouvrir ou télécharger directement pour éviter le blocage des popups ou les erreurs blob Android
+      // Consultation PDF : ouvrir UNE SEULE FOIS dans un nouvel onglet
       if (isMobile) {
         const a = document.createElement('a');
         a.href = url;
-        a.download = targetFileName;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         document.body.appendChild(a);
@@ -400,17 +408,14 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
         return;
       }
 
-      let win = null;
-      try {
-        win = window.open(url, '_blank', 'noopener,noreferrer');
-      } catch (e) {
-        win = null;
-      }
-      if (!win || win.closed || typeof win.closed === 'undefined') {
-        // Fallback si popup bloquée sur desktop
+      // Desktop : un seul window.open sans second déclenchement
+      const win = window.open(url, '_blank');
+      if (!win) {
+        // En cas de blocage strict de popup uniquement
         const a = document.createElement('a');
         a.href = url;
-        a.download = targetFileName;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
