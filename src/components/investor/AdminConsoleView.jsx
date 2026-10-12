@@ -465,10 +465,16 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
       const customFiles = (customDataRoom?.[selectedDataRoomPortfolio]?.[cat.name] || []).filter(
         (f) => !isExcludedDataroomDoc(f)
       );
+      const mergedFiles = [...defaultFiles];
+      customFiles.forEach((cf) => {
+        if (!mergedFiles.some((f) => f.name === cf.name || (f.id && f.id === cf.id))) {
+          mergedFiles.push(cf);
+        }
+      });
       return {
         name: cat.name,
         icon: cat.icon,
-        files: [...defaultFiles, ...customFiles],
+        files: mergedFiles,
       };
     });
 

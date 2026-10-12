@@ -43,6 +43,29 @@ export function isExcelFile(file, fileName = '') {
 export function resolveRealDocument(file, portfolio) {
   if (!file) return null;
 
+  // Résolution prioritaire des documents d'équipements Mercury 261 (VOLTA BESS)
+  const docLower = String(file.name || file.fileName || '').toLowerCase();
+  if (docLower.includes('mercury')) {
+    if (docLower.includes('fiche')) {
+      return {
+        url: file.fileUrl || '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
+        fileName: 'Fiche_technique_CESC_Mercury_261.pdf',
+        isExcel: false,
+        isFiche: false,
+        isBail: false,
+      };
+    }
+    if (docLower.includes('garantie') || docLower.includes('warranty')) {
+      return {
+        url: file.fileUrl || '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
+        fileName: 'Certificat_de_garantie_CESC_Mercury_261.pdf',
+        isExcel: false,
+        isFiche: false,
+        isBail: false,
+      };
+    }
+  }
+
   const isExcel = isExcelFile(file);
   const isFiche = !isExcel && isFicheProjetRequest(file);
   const isBail = !isExcel && isPromesseBailRequest(file);
@@ -351,6 +374,7 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
   // Téléchargement ou Affichage
   if (finalBlob) {
     const url = URL.createObjectURL(finalBlob);
+    const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
 
     if (effectiveAction === 'download' || isExcel) {
       const a = document.createElement('a');
@@ -362,7 +386,35 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
       setTimeout(() => URL.revokeObjectURL(url), 15000);
       return;
     } else {
-      window.open(url, '_blank', 'noopener,noreferrer');
+      // Sur mobile (Android / iOS), ouvrir ou télécharger directement pour éviter le blocage des popups ou les erreurs blob Android
+      if (isMobile) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = targetFileName;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return;
+      }
+
+      let win = null;
+      try {
+        win = window.open(url, '_blank', 'noopener,noreferrer');
+      } catch (e) {
+        win = null;
+      }
+      if (!win || win.closed || typeof win.closed === 'undefined') {
+        // Fallback si popup bloquée sur desktop
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = targetFileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
       setTimeout(() => URL.revokeObjectURL(url), 60000);
       return;
     }
@@ -370,17 +422,16 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
 
   // Fallback si URL distante directe
   if (resolvedUrl) {
+    const a = document.createElement('a');
+    a.href = resolvedUrl;
     if (isExcel) {
-      const a = document.createElement('a');
-      a.href = resolvedUrl;
       a.download = targetFileName;
-      a.target = '_blank';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } else {
-      window.open(resolvedUrl, '_blank', 'noopener,noreferrer');
     }
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     return;
   }
 
@@ -628,6 +679,40 @@ export function getDocumentsForSite(site, portfolioId, state) {
         }
       }
     });
+  }
+
+  // Pour VOLTA (BESS) : rattacher également la fiche technique et le certificat de garantie Mercury 261
+  if (pId === 'volta') {
+    if (!siteDocs.some((d) => (d.name || '').toLowerCase().includes('garantie') && (d.name || '').toLowerCase().includes('mercury'))) {
+      siteDocs.push({
+        id: `garantie-mercury-${site.id}`,
+        name: 'Certificat de garantie CESC Mercury 261',
+        fileName: 'Certificat_de_garantie_CESC_Mercury_261.pdf',
+        fileUrl: '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
+        category: 'Technique',
+        type: 'PDF',
+        size: '491 Ko',
+        isFiche: false,
+        isBail: false,
+        site,
+        portfolioId: 'volta',
+      });
+    }
+    if (!siteDocs.some((d) => (d.name || '').toLowerCase().includes('fiche') && (d.name || '').toLowerCase().includes('mercury'))) {
+      siteDocs.push({
+        id: `fiche-tech-mercury-${site.id}`,
+        name: 'Fiche technique CESC Mercury 261',
+        fileName: 'Fiche_technique_CESC_Mercury_261.pdf',
+        fileUrl: '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
+        category: 'Technique',
+        type: 'PDF',
+        size: '270 Ko',
+        isFiche: false,
+        isBail: false,
+        site,
+        portfolioId: 'volta',
+      });
+    }
   }
 
   return siteDocs;

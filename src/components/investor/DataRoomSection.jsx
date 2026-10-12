@@ -122,6 +122,65 @@ export default function DataRoomSection({
       }
     });
 
+    // Garantir la présence des documents techniques et garanties Mercury 261 pour VOLTA
+    if (portfolio.id === 'volta') {
+      const techCat = defaultCats.find((c) => c.name.toLowerCase() === 'technique');
+      if (techCat) {
+        const hasGarantie = techCat.files.some((f) => {
+          const fn = (f.name || f.fileName || '').toLowerCase();
+          return fn.includes('mercury') && (fn.includes('garantie') || fn.includes('warranty'));
+        });
+        const hasFiche = techCat.files.some((f) => {
+          const fn = (f.name || f.fileName || '').toLowerCase();
+          return fn.includes('mercury') && fn.includes('fiche');
+        });
+        if (!hasGarantie) {
+          techCat.files.push({
+            id: 'DOC-1791635597171',
+            name: 'Certificat de garantie CESC Mercury 261',
+            type: 'PDF',
+            size: '491 Ko',
+            fileUrl: '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
+            fileName: 'Certificat_de_garantie_CESC_Mercury_261.pdf',
+            category: 'Technique',
+            portfolioId: 'volta',
+          });
+        }
+        if (!hasFiche) {
+          techCat.files.push({
+            id: 'DOC-1791724039758',
+            name: 'Fiche technique CESC Mercury 261',
+            type: 'PDF',
+            size: '270 Ko',
+            fileUrl: '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
+            fileName: 'Fiche_technique_CESC_Mercury_261.pdf',
+            category: 'Technique',
+            portfolioId: 'volta',
+          });
+        }
+
+        // Compléter les URLs si null
+        techCat.files = techCat.files.map((f) => {
+          const fn = (f.name || f.fileName || '').toLowerCase();
+          if (fn.includes('mercury') && fn.includes('fiche')) {
+            return {
+              ...f,
+              fileUrl: f.fileUrl || '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
+              fileName: f.fileName || 'Fiche_technique_CESC_Mercury_261.pdf',
+            };
+          }
+          if (fn.includes('mercury') && (fn.includes('garantie') || fn.includes('warranty'))) {
+            return {
+              ...f,
+              fileUrl: f.fileUrl || '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
+              fileName: f.fileName || 'Certificat_de_garantie_CESC_Mercury_261.pdf',
+            };
+          }
+          return f;
+        });
+      }
+    }
+
     // Appliquer le filtre par projet sélectionné
     return defaultCats
       .map((cat) => {

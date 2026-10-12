@@ -818,8 +818,31 @@ export const useInvestorStore = create(
 
       _applyCloudManifest: (manifest) => {
         applyingCloudManifest = true;
+        const customDataRoom = manifest.customDataRoom || {};
+        if (customDataRoom.volta) {
+          Object.keys(customDataRoom.volta).forEach((cat) => {
+            customDataRoom.volta[cat] = (customDataRoom.volta[cat] || []).map((f) => {
+              const fName = String(f.name || f.fileName || '').toLowerCase();
+              if (fName.includes('mercury') && fName.includes('fiche')) {
+                return {
+                  ...f,
+                  fileUrl: f.fileUrl || '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
+                  fileName: f.fileName || 'Fiche_technique_CESC_Mercury_261.pdf',
+                };
+              }
+              if (fName.includes('mercury') && (fName.includes('garantie') || fName.includes('warranty'))) {
+                return {
+                  ...f,
+                  fileUrl: f.fileUrl || '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
+                  fileName: f.fileName || 'Certificat_de_garantie_CESC_Mercury_261.pdf',
+                };
+              }
+              return f;
+            });
+          });
+        }
         set((s) => ({
-          customDataRoom: manifest.customDataRoom || {},
+          customDataRoom,
           deletedDefaultDocs: manifest.deletedDefaultDocs || {},
           documentSiteAssignments: manifest.documentSiteAssignments || {},
           dataRoomCloud: {
@@ -1394,6 +1417,7 @@ export const useInvestorStore = create(
 
         set({ currentInvestor: safeInvestor });
         setSecureSessionCookie(safeInvestor.email, isRealAdmin ? 'ADMIN' : 'INVESTOR');
+        get().loadDataRoomFromCloud?.();
 
         if (typeof window !== 'undefined' && window.sessionStorage) {
           window.sessionStorage.setItem('enr_last_activity', Date.now().toString());
