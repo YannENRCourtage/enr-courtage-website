@@ -45,8 +45,11 @@ import {
   Calculator,
   Network,
   Files,
-  FolderCheck,
   FileStack,
+  ShieldAlert,
+  Copy,
+  ExternalLink,
+  Key,
 } from 'lucide-react';
 import {
   useInvestorStore,
@@ -155,12 +158,30 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
   // Modals & User State
   const [selectedInvestorForNda, setSelectedInvestorForNda] = useState(null);
   const [isAddUserModalOpen, setIsAddUserModalOpen] = useState(false);
+  const [validatedCredentialsModal, setValidatedCredentialsModal] = useState(null);
+  const [hasCopiedPass, setHasCopiedPass] = useState(false);
+  const [hasCopiedEmailBody, setHasCopiedEmailBody] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [editingUserData, setEditingUserData] = useState({});
   const [showEditPassword, setShowEditPassword] = useState(false);
   const [selectedUserDownloadsModal, setSelectedUserDownloadsModal] = useState(null);
   const [mandateModalOffer, setMandateModalOffer] = useState(null);
   const [userActionNotice, setUserActionNotice] = useState('');
+
+  const handleValidateInvestorClick = (inv) => {
+    if (!inv) return;
+    const pass = generateRandomPassword();
+    const result = adminValidateInvestor(inv.id, pass);
+    setValidatedCredentialsModal({
+      investor: result?.investor || inv,
+      password: pass,
+      emailSubject: result?.emailSubject || 'Validation de votre accès Espace Investisseurs ENR Courtage & NDA contre-signé',
+      emailBody: result?.emailBody || '',
+    });
+    setHasCopiedPass(false);
+    setHasCopiedEmailBody(false);
+    setUserActionNotice(`Accès validé avec succès pour ${inv.company || inv.name}. Mot de passe généré : ${pass}`);
+  };
 
   // Upload NDA Modal State
   const [uploadNdaModalUser, setUploadNdaModalUser] = useState(null);
@@ -1310,9 +1331,16 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
               <Users className="w-4 h-4 text-purple-700 shrink-0" />
               <span className="truncate">Investisseurs & Accès</span>
             </span>
-            <span className="px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-900 text-[10px] font-mono shrink-0 ml-1">
-              {safeInvestors.length}
-            </span>
+            <div className="flex items-center gap-1 shrink-0 ml-1">
+              {pendingInvestorsCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-gray-950 text-[10px] font-black animate-pulse">
+                  {pendingInvestorsCount} en attente
+                </span>
+              )}
+              <span className="px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-900 text-[10px] font-mono">
+                {safeInvestors.length}
+              </span>
+            </div>
           </button>
 
           <button
@@ -1399,6 +1427,48 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
           {/* --------------------------------------------------------------- */}
           {activeSection === 'users' && (
             <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
+              {/* Alerte si des demandes d'inscription sont en attente */}
+              {pendingInvestorsCount > 0 && (
+                <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500 text-gray-950 flex items-center justify-center font-black shrink-0 mt-0.5 shadow-xs">
+                      <ShieldAlert className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                          {pendingInvestorsCount} demande{pendingInvestorsCount > 1 ? 's' : ''} d&apos;inscription en attente
+                        </span>
+                        <span className="text-xs font-black text-amber-950">
+                          {safeInvestors
+                            .filter((i) => i.status === 'pending')
+                            .map((i) => `${i.name || 'Investisseur'} (${i.company || ''})`)
+                            .join(', ')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-amber-900/90 font-medium mt-1 leading-relaxed">
+                        L&apos;accord de confidentialité bilatéral (NDA) a été signé par l&apos;investisseur. Vous pouvez contre-signer le document, lui attribuer ses accès et lui transmettre ses codes de connexion.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const firstPending = safeInvestors.find((i) => i.status === 'pending');
+                        if (firstPending) {
+                          handleValidateInvestorClick(firstPending);
+                        }
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Valider & Transmettre les codes</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
                 <div>
                   <h3 className="text-sm font-black text-[#0b192c] uppercase tracking-wider">
@@ -1559,13 +1629,9 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                               {inv.status === 'pending' && (
                                 <>
                                   <button
-                                    onClick={() => {
-                                      const pass = generateRandomPassword();
-                                      adminValidateInvestor(inv.id, pass);
-                                      setUserActionNotice(`Accès validé pour ${inv.company}. Mot de passe : ${pass}`);
-                                    }}
+                                    onClick={() => handleValidateInvestorClick(inv)}
                                     className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer"
-                                    title="Valider la demande et contre-signer le NDA"
+                                    title="Valider la demande et donner ses codes"
                                   >
                                     <CheckCircle2 className="w-3 h-3" />
                                     <span>Valider</span>
@@ -1587,11 +1653,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                               {/* Réactiver si refusé */}
                               {inv.status === 'rejected' && (
                                 <button
-                                  onClick={() => {
-                                    const pass = generateRandomPassword();
-                                    adminValidateInvestor(inv.id, pass);
-                                    setUserActionNotice(`Accès validé et réactivé pour ${inv.company}. Mot de passe : ${pass}`);
-                                  }}
+                                  onClick={() => handleValidateInvestorClick(inv)}
                                   className="px-2 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition shadow-xs flex items-center gap-1 cursor-pointer"
                                   title="Réactiver et valider cet investisseur"
                                 >
@@ -4021,6 +4083,142 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
           isOpen={!!mandateModalOffer}
           onClose={() => setMandateModalOffer(null)}
         />
+      )}
+
+      {/* =================================================================== */}
+      {/* MODALE VALIDATION ACCÈS & TRANSMISSION DES CODES                   */}
+      {/* =================================================================== */}
+      {validatedCredentialsModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-slate-900 animate-in fade-in zoom-in-95 duration-200">
+            <button
+              onClick={() => setValidatedCredentialsModal(null)}
+              className="absolute top-5 right-5 text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6" />
+              </div>
+              <div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-widest bg-emerald-50 text-emerald-700 border border-emerald-200 inline-block">
+                  Inscription validée & NDA contre-signé
+                </span>
+                <h3 className="text-xl font-black text-slate-900">
+                  Codes d&apos;accès générés avec succès
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {validatedCredentialsModal.investor?.name} · {validatedCredentialsModal.investor?.company}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 my-6">
+              {/* Identifiants Box */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
+                <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                  Identifiants de connexion investisseur
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200">
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Identifiant (E-mail)</span>
+                    <span className="text-xs font-mono font-bold text-slate-800 break-all select-all">
+                      {validatedCredentialsModal.investor?.email}
+                    </span>
+                  </div>
+
+                  <div className="bg-white p-3 rounded-xl border border-emerald-300 relative flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] uppercase font-bold text-emerald-600 block">Mot de passe temporaire</span>
+                      <span className="text-sm font-mono font-black text-slate-900 select-all">
+                        {validatedCredentialsModal.password}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(validatedCredentialsModal.password);
+                        setHasCopiedPass(true);
+                        setTimeout(() => setHasCopiedPass(false), 3000);
+                      }}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                        hasCopiedPass
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                      }`}
+                      title="Copier le mot de passe"
+                    >
+                      {hasCopiedPass ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{hasCopiedPass ? 'Copié !' : 'Copier'}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-[11px] text-emerald-700 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-100">
+                  <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
+                  <span>
+                    <strong>Synchronisé dans le Cloud sécurisé :</strong> ce mot de passe est immédiatement fonctionnel pour l&apos;investisseur sur ordinateur et mobile.
+                  </span>
+                </div>
+              </div>
+
+              {/* Message d'accompagnement pré-rédigé */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-blue-600" />
+                    <span>E-mail pré-rédigé avec identifiants & contre-signature NDA :</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(validatedCredentialsModal.emailBody);
+                        setHasCopiedEmailBody(true);
+                        setTimeout(() => setHasCopiedEmailBody(false), 3000);
+                      }}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                        hasCopiedEmailBody
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {hasCopiedEmailBody ? <Check className="w-3.5 h-3.5 text-white" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{hasCopiedEmailBody ? 'Copié !' : 'Copier le texte'}</span>
+                    </button>
+
+                    <a
+                      href={`mailto:${validatedCredentialsModal.investor?.email}?subject=${encodeURIComponent(
+                        validatedCredentialsModal.emailSubject
+                      )}&body=${encodeURIComponent(validatedCredentialsModal.emailBody)}`}
+                      className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Envoyer par e-mail</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono text-slate-700 max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed select-all">
+                  {validatedCredentialsModal.emailBody}
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setValidatedCredentialsModal(null)}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs shadow-md cursor-pointer"
+              >
+                Terminer et fermer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1444,19 +1444,56 @@ export const useInvestorStore = create(
       syncCloudCredentials: async () => {
         try {
           const creds = await fetchCloudCredentials();
-          if (creds && typeof creds === 'object' && Object.keys(creds).length > 0) {
+          if (creds && typeof creds === 'object') {
+            const passwords = creds.passwords || creds;
+            const pendingRequests = Array.isArray(creds.pendingRequests) ? creds.pendingRequests : [];
+
             set((state) => {
-              const updatedInvestors = (state.investors || []).map((inv) => {
+              let updatedInvestors = (state.investors || []).map((inv) => {
                 const invEmail = (inv.email || '').trim().toLowerCase();
                 const normInvEmail = normalizeInvestorEmail(invEmail);
-                const overridePass = creds[invEmail] || creds[normInvEmail];
+                const overridePass = passwords[invEmail] || passwords[normInvEmail];
                 if (overridePass && overridePass !== inv.password) {
                   return { ...inv, password: overridePass };
                 }
                 return inv;
               });
+
+              // Fusionner les éventuelles demandes en attente synchronisées dans le cloud
+              if (pendingRequests.length > 0) {
+                pendingRequests.forEach((req) => {
+                  const reqEmail = (req.email || '').trim().toLowerCase();
+                  if (!reqEmail) return;
+                  const alreadyExists = updatedInvestors.some((inv) => {
+                    const invEmail = (inv.email || '').trim().toLowerCase();
+                    return invEmail === reqEmail || normalizeInvestorEmail(invEmail) === normalizeInvestorEmail(reqEmail);
+                  });
+                  if (!alreadyExists) {
+                    updatedInvestors.unshift({
+                      id: req.id || 'INV-' + Date.now(),
+                      email: reqEmail,
+                      password: '',
+                      name: req.representativeName || req.name || 'Investisseur',
+                      company: req.companyName || req.company || '',
+                      legalForm: req.legalForm || 'SAS',
+                      headOffice: req.headOffice || '',
+                      rcsNumber: req.rcsNumber || '',
+                      rcsCity: req.rcsCity || '',
+                      role: req.representativeRole || req.role || 'Investisseur',
+                      phone: req.phone || '',
+                      isAdmin: false,
+                      status: 'pending',
+                      userNdaSignedAt: req.userNdaSignedAt || req.createdAt || new Date().toISOString(),
+                      ndaSignedByAdmin: false,
+                      ndaText: req.ndaText || '',
+                      createdAt: req.createdAt || new Date().toISOString(),
+                    });
+                  }
+                });
+              }
+
               return {
-                cloudCredentials: { ...(state.cloudCredentials || {}), ...creds },
+                cloudCredentials: { ...(state.cloudCredentials || {}), ...passwords },
                 investors: updatedInvestors,
               };
             });
@@ -1690,6 +1727,25 @@ export const useInvestorStore = create(
         });
 
         set({ investors: updatedInvestors });
+
+        if (validatedInvestor?.email) {
+          const cleanEmail = validatedInvestor.email.trim().toLowerCase();
+          saveCloudPassword({
+            email: cleanEmail,
+            newPassword: pass,
+            investorName: validatedInvestor.name,
+            companyName: validatedInvestor.company,
+            action: 'update-password',
+          }).catch((err) => {
+            console.warn('Erreur synchro cloud mot de passe:', err);
+          });
+          set((state) => ({
+            cloudCredentials: {
+              ...(state.cloudCredentials || {}),
+              [cleanEmail]: pass,
+            },
+          }));
+        }
 
         // Generate email template
         const emailSubject = `Validation de votre accès Espace Investisseurs ENR Courtage & NDA contre-signé`;

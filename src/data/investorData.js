@@ -415,6 +415,93 @@ export const INVESTORS = [
     ndaSignedByAdmin: true,
     createdAt: '2026-10-07T06:40:00Z',
   },
+  {
+    id: 'INV-HORIZON',
+    email: 'laurent.bellard@horizon-renouvelable.com',
+    password: '',
+    name: 'Laurent BELLARD',
+    company: 'Horizon Développement',
+    legalForm: 'SAS',
+    headOffice: '2 rue du Puigmal, 66800 Saillagouse',
+    rcsNumber: '130086853',
+    rcsCity: 'Perpignan',
+    role: 'Président',
+    phone: '0768380135',
+    isAdmin: false,
+    status: 'pending',
+    divers: 'Horizon Développement',
+    hasUploadedSignedNda: true,
+    userNdaSignedAt: '2026-10-13T15:15:19Z',
+    ndaSignedAt: '2026-10-13T15:15:19Z',
+    ndaSignedByAdmin: false,
+    createdAt: '2026-10-13T15:15:19Z',
+    ndaText: `ACCORD DE CONFIDENTIALITÉ (NDA)
+
+ENTRE LES SOUSSIGNÉS :
+
+1. ENR COURTAGE,
+SAS, société par actions simplifiée, dont le siège social est situé au 7 RUE GUTENBERG 33700 MERIGNAC, France, immatriculée au Registre du Commerce et des Sociétés sous le numéro 881 500 552, représentée par Monsieur Yann BARBERIS, en sa qualité de Président.
+(Ci-après désignée la "Partie Divulgatrice")
+
+ET
+
+2. Horizon Développement,
+SAS, dont le siège social est situé au 2 rue du Puigmal, 66800 Saillagouse, immatriculée au Registre du Commerce et des Sociétés de Perpignan sous le numéro 130086853, représentée par Laurent BELLARD, en sa qualité de Président.
+(Ci-après désignée la "Partie Réceptrice")
+
+(Ci-après désignées collectivement les "Parties" et individuellement une "Partie")
+
+PRÉAMBULE
+Les Parties souhaitent entrer en discussions concernant l'acquisition potentielle par la Partie Réceptrice des droits de développement d'un ou plusieurs portefeuilles de projets photovoltaïques et de stockage d'énergie par batteries (BESS) développés par la Partie Divulgatrice (ci-après le "Projet").
+Dans ce cadre, la Partie Divulgatrice sera amenée à communiquer à la Partie Réceptrice des informations strictement confidentielles et stratégiques.
+
+ARTICLE 1 - DÉFINITION DES INFORMATIONS CONFIDENTIELLES
+Sont considérées comme "Informations Confidentielles" toutes les informations, données, documents et savoir-faire, de quelque nature que ce soit (commerciale, technique, financière, juridique ou administrative), transmis par la Partie Divulgatrice à la Partie Réceptrice.
+Cela inclut expressément, sans s'y limiter :
+- Les listes de projets, fichiers Excel, coordonnées géographiques, parcelles cadastrales et documents d'urbanisme (Déclarations Préalables, Permis de Construire).
+- Les accords fonciers, promesses de bail emphytéotique et conditions financières associées.
+- Les accords de distribution, de partenariat, et les structures de coûts (CAPEX/OPEX) négociés avec des tiers (notamment les fournisseurs de batteries et constructeurs).
+- L'existence même des discussions entre les Parties.
+
+ARTICLE 2 - OBLIGATIONS DE LA PARTIE RÉCEPTRICE
+La Partie Réceptrice s'engage strictement à :
+- Garder les Informations Confidentielles rigoureusement secrètes et ne pas les divulguer à des tiers.
+- N'utiliser ces Informations Confidentielles qu'aux seules fins de l'évaluation, de la négociation et de la réalisation du Projet.
+- Ne communiquer ces Informations Confidentielles qu'à ses dirigeants, employés, ou conseils professionnels (avocats, auditeurs) ayant une stricte nécessité d'en connaître pour l'évaluation du Projet, et sous réserve que ces personnes soient soumises à des obligations de confidentialité au moins aussi strictes que celles du présent accord.
+
+ARTICLE 3 - EXCLUSIONS
+Les obligations de confidentialité ne s'appliquent pas aux informations pour lesquelles la Partie Réceptrice peut prouver :
+- Qu'elles étaient dans le domaine public au moment de leur divulgation ou y sont tombées par la suite sans faute de sa part.
+- Qu'elles étaient déjà valablement en sa possession avant la divulgation par la Partie Divulgatrice.
+- Qu'elles ont été reçues de manière licite d'un tiers n'étant pas soumis à une obligation de confidentialité.
+
+ARTICLE 4 - NON-CONTOURNEMENT ET NON-SOLLICITATION
+Pendant la durée du présent accord, la Partie Réceptrice s'interdit formellement de :
+- Contacter, solliciter ou tenter de contracter directement avec les propriétaires fonciers, apporteurs d'affaires, fournisseurs ou partenaires techniques dont l'identité aurait été révélée par les Informations Confidentielles, dans le but de contourner la Partie Divulgatrice.
+- Débaucher, solliciter ou engager tout salarié ou collaborateur de la Partie Divulgatrice.
+
+ARTICLE 5 - RESTITUTION ET DESTRUCTION
+À la première demande écrite de la Partie Divulgatrice, ou en cas de cessation des discussions concernant le Projet, la Partie Réceptrice s'engage à restituer ou détruire (à la discrétion de la Partie Divulgatrice) l'intégralité des Informations Confidentielles en sa possession dans un délai de sept (7) jours, et à en certifier la destruction par écrit.
+
+ARTICLE 6 - DURÉE
+Le présent accord entre en vigueur à la date de signature par les deux Parties et restera en vigueur pour une durée de deux (2) ans à compter de sa signature.
+
+ARTICLE 7 - LOI APPLICABLE ET JURIDICTION
+Le présent accord est régi et interprété conformément au droit français.
+Tout litige relatif à sa validité, son interprétation ou son exécution sera soumis à la compétence exclusive du Tribunal de Commerce de Bordeaux.
+
+Fait à Saillagouse / Mérignac, le 13/10/2026
+
+Pour la Partie Divulgatrice :
+ENR COURTAGE
+Yann BARBERIS, Président
+[Signature en attente de contre-signature]
+
+Pour la Partie Réceptrice :
+Horizon Développement
+Laurent BELLARD, Président
+(Signé électroniquement le 13/10/2026 à 15:15:19)`,
+  },
 ];
 
 // ============================================================================
@@ -638,6 +725,7 @@ export function normalizeInvestorEmail(email) {
 
   if (s.includes('manuel.vigier') || s.includes('vigier') || s.includes('enervivo')) return 'manuel.vigier@gmail.com';
   if (s.includes('lagares') || s.includes('giov')) return 'm.lagares@giov.fr';
+  if (s.includes('bellard') || s.includes('horizon')) return 'laurent.bellard@horizon-renouvelable.com';
   if (s.includes('rusmann') || s.includes('kusmann') || s === 'l.kusmann@aliaxis.com') return 'lrusmann@altarea.com';
   if (s.includes('moucer') || s.includes('mouser')) return 'farid.moucer@enoe-energie.fr';
   if (s.includes('nicoli')) return 'lnicoli02@gmail.com';

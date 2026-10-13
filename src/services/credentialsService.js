@@ -20,12 +20,35 @@ export async function fetchCloudCredentials() {
       cache: 'no-store',
     });
     clearTimeout(timeoutId);
-    if (!res.ok) return {};
+    if (!res.ok) return { passwords: {}, pendingRequests: [] };
     const data = await res.json();
-    return data?.passwords || {};
+    const passwords = data?.passwords || {};
+    return {
+      ...passwords,
+      passwords,
+      pendingRequests: data?.pendingRequests || [],
+    };
   } catch (err) {
     // Si hors ligne ou réseau restreint, renvoyer un mapping vide
-    return {};
+    return { passwords: {}, pendingRequests: [] };
+  }
+}
+
+export async function saveCloudRegistrationRequest(registrationData) {
+  try {
+    const res = await fetch(API_CREDENTIALS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        action: 'register-request',
+        email: (registrationData?.email || '').trim().toLowerCase(),
+        registrationData,
+      }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('saveCloudRegistrationRequest notice:', err);
+    return false;
   }
 }
 

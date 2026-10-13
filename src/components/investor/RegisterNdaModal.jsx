@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, FileText, CheckCircle2, ShieldCheck, Building, User, Mail, Phone, MapPin, AlertCircle, Send, FileSignature } from 'lucide-react';
 import { useInvestorStore } from '@/stores/useInvestorStore';
 import { generateBilateralNdaText } from '@/data/investorData';
+import { saveCloudRegistrationRequest } from '@/services/credentialsService';
 
 export default function RegisterNdaModal({ isOpen, onClose }) {
   const { registerRequest } = useInvestorStore();
@@ -75,6 +76,15 @@ export default function RegisterNdaModal({ isOpen, onClose }) {
         setIsSubmitting(false);
         return;
       }
+
+      // Synchroniser la demande dans le Cloud (Vercel Blob) pour visibilité universelle par l'administrateur
+      saveCloudRegistrationRequest({
+        ...formData,
+        id: result.investor?.id,
+        status: 'pending',
+        userNdaSignedAt: new Date().toISOString(),
+        ndaText: result.investor?.ndaText,
+      }).catch(() => {});
 
       // Notify admin via Formspree in background
       try {

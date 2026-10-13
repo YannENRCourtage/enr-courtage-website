@@ -111,6 +111,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         success: true,
         passwords: credentials?.passwords || {},
+        pendingRequests: credentials?.pendingRequests || [],
         updatedAt: credentials?.updatedAt || null,
       });
     }
@@ -130,6 +131,39 @@ export default async function handler(req, res) {
 
     if (!cleanEmail) {
       return res.status(400).json({ error: 'Adresse e-mail requise.' });
+    }
+
+    // Gestion de l'enregistrement d'une nouvelle demande d'inscription
+    if (action === 'register-request') {
+      const reg = body.registrationData || {};
+      if (process.env.BLOB_READ_WRITE_TOKEN) {
+        const { credentials, versions } = await readCurrentCredentials();
+        const currentVersion = credentials?.version || 0;
+        const nextVersion = currentVersion + 1;
+        const currentPending = credentials?.pendingRequests || [];
+        const existingIdx = currentPending.findIndex((r) => (r.email || '').toLowerCase() === cleanEmail);
+        let updatedPending;
+        if (existingIdx >= 0) {
+          updatedPending = [...currentPending];
+          updatedPending[existingIdx] = { ...updatedPending[existingIdx], ...reg, email: cleanEmail, updatedAt: new Date().toISOString() };
+        } else {
+          updatedPending = [{ ...reg, email: cleanEmail, createdAt: new Date().toISOString() }, ...currentPending];
+        }
+        const nextManifest = {
+          ...credentials,
+          version: nextVersion,
+          updatedAt: new Date().toISOString(),
+          pendingRequests: updatedPending,
+        };
+        const padded = String(nextVersion).padStart(8, '0');
+        await put(`${CREDENTIALS_PREFIX}v${padded}-${Date.now()}.json`, JSON.stringify(nextManifest), {
+          access: 'public',
+          contentType: 'application/json',
+          addRandomSuffix: true,
+          cacheControlMaxAge: 10,
+        });
+      }
+      return res.status(200).json({ success: true, message: 'Demande enregistrée dans le cloud.' });
     }
 
     if (!newPassword || newPassword.length < 4) {

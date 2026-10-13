@@ -111,12 +111,12 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
   // Admin navigation state from notifications or sidebar
   const [adminInitialTab, setAdminInitialTab] = useState(() => {
     const at = searchParams.get('adminTab');
-    return at === 'requests' || at === 'users' ? 'users' : at || 'users';
+    return at || 'users';
   });
 
   React.useEffect(() => {
     if (adminTabParam) {
-      setAdminInitialTab(adminTabParam === 'requests' || adminTabParam === 'users' ? 'users' : adminTabParam);
+      setAdminInitialTab(adminTabParam);
     }
   }, [adminTabParam]);
 
@@ -269,6 +269,15 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
       {/* Sidebar Latérale intégrée */}
       <InvestorSidebar
         activePage="dashboard"
+        adminActiveTab={activeView === 'admin' ? adminInitialTab : null}
+        onSelectAdminTab={(tabKey) => {
+          if (!tabKey) {
+            setActiveView('investor');
+          } else {
+            setActiveView('admin');
+            setAdminInitialTab(tabKey);
+          }
+        }}
         onSelectInvestorTab={(tab) => {
           setActiveView('investor');
           setInvestorSubTab(tab);
