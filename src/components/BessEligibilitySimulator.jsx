@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Navigation,
-  Zap,
   Coins,
   ShieldCheck,
   ArrowRight,
@@ -55,58 +54,32 @@ function offsetCoordsMeters(center, dNorthMeters, dEastMeters) {
   };
 }
 
-// Icônes personnalisées pour le Transformateur (A), le Terrain (B) et les postes Enedis
+// Icônes épurées uniquement avec le point A et le point B
 const createMarkerAIcon = () =>
   new L.DivIcon({
     className: 'bess-marker-a',
     html: `
-      <div style="position:relative;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);cursor:grab;">
-        <div style="background:#f97316;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:9999px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.45);border:2px solid #fff;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
-          <span>⚡ A : Transformateur</span>
-        </div>
-        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px;">
-          A
-        </div>
-        <div style="width:4px;height:8px;background:#ea580c;border-radius:2px;"></div>
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;cursor:grab;user-select:none;">
+        A
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
   });
 
 const createMarkerBIcon = () =>
   new L.DivIcon({
     className: 'bess-marker-b',
     html: `
-      <div style="position:relative;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-100%);cursor:grab;">
-        <div style="background:#10b981;color:#fff;font-weight:800;font-size:11px;padding:3px 8px;border-radius:9999px;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,0.45);border:2px solid #fff;margin-bottom:3px;display:flex;align-items:center;gap:4px;">
-          <span>🔋 B : Mon terrain</span>
-        </div>
-        <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px;">
-          B
-        </div>
-        <div style="width:4px;height:8px;background:#059669;border-radius:2px;"></div>
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;cursor:grab;user-select:none;">
+        B
       </div>
     `,
-    iconSize: [0, 0],
-    iconAnchor: [0, 0],
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
   });
 
-const createEnedisPosteIcon = () =>
-  new L.DivIcon({
-    className: 'enedis-poste-marker',
-    html: `
-      <div style="position:relative;display:flex;flex-direction:column;align-items:center;transform:translate(-50%,-50%);cursor:pointer;" title="Poste électrique Enedis détecté — Cliquez pour sélectionner">
-        <div style="width:26px;height:26px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-shadow:0 2px 10px rgba(37,99,235,0.7);display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;">
-          ⚡
-        </div>
-      </div>
-    `,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-  });
-
-// Composant dédié pour la Carte Satellite Leaflet (garantit le montage DOM immédiat)
+// Composant dédié pour la Carte Satellite Leaflet (déplacement fluide sans recréer les marqueurs pendant le glissement)
 function BessInteractiveMap({
   mapCenter,
   markerA,
@@ -115,17 +88,50 @@ function BessInteractiveMap({
   setMarkerB,
   activeClickTarget,
   setActiveClickTarget,
-  enedisPostes,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const overlayGroupRef = useRef(null);
+  const markerARef = useRef(null);
+  const markerBRef = useRef(null);
+  const circleRef = useRef(null);
+  const lineRef = useRef(null);
   const satLayerRef = useRef(null);
   const osmLayerRef = useRef(null);
   const [mapMode, setMapMode] = useState('satellite'); // 'satellite' | 'plan'
 
   const activeClickTargetRef = useRef(activeClickTarget);
   activeClickTargetRef.current = activeClickTarget;
+
+  // Mise à jour impérative de la ligne, du cercle et du tooltip pendant le glissement pour une fluidité parfaite
+  const updateGeometryOverlay = useCallback((ptA, ptB) => {
+    const map = mapRef.current;
+    if (!map || !ptA || !ptB) return;
+
+    const dist = calculateDistanceMeters(ptA, ptB);
+    const color = dist <= 30 ? '#10b981' : dist <= 50 ? '#f59e0b' : '#ef4444';
+
+    if (circleRef.current) {
+      circleRef.current.setLatLng([ptA.lat, ptA.lng]);
+      circleRef.current.setStyle({
+        color,
+        fillColor: color,
+      });
+    }
+
+    if (lineRef.current) {
+      lineRef.current.setLatLngs([
+        [ptA.lat, ptA.lng],
+        [ptB.lat, ptB.lng],
+      ]);
+      lineRef.current.setStyle({
+        color,
+        dashArray: dist <= 30 ? null : '6, 6',
+      });
+      lineRef.current.setTooltipContent(
+        `<div style="font-weight:900;font-size:12px;color:#0f172a;padding:2px 6px;">${dist} m</div>`
+      );
+    }
+  }, []);
 
   // Initialisation de la carte au montage du composant
   useEffect(() => {
@@ -139,7 +145,7 @@ function BessInteractiveMap({
       zoomControl: true,
     });
 
-    // Couche Plan OpenStreetMap en fond de secours immédiat
+    // Couche Plan OpenStreetMap
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxNativeZoom: 19,
       maxZoom: 21,
@@ -147,18 +153,14 @@ function BessInteractiveMap({
     });
 
     // Couche Satellite Haute Résolution Google / Esri World Imagery
-    const satLayer = L.tileLayer(
-      'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
-      {
-        maxNativeZoom: 20,
-        maxZoom: 21,
-        attribution: '&copy; Google Satellite / IGN',
-      }
-    );
+    const satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      maxNativeZoom: 20,
+      maxZoom: 21,
+      attribution: '&copy; Google Satellite / IGN',
+    });
 
-    // Fallback automatique sur Esri World Imagery si une tuile Google échoue
     satLayer.on('tileerror', () => {
-      if (map.hasLayer(satLayer) && ! satLayer._esriFallbackApplied) {
+      if (map.hasLayer(satLayer) && !satLayer._esriFallbackApplied) {
         satLayer._esriFallbackApplied = true;
         L.tileLayer(
           'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -174,21 +176,101 @@ function BessInteractiveMap({
     satLayerRef.current = satLayer;
     osmLayerRef.current = osmLayer;
 
-    overlayGroupRef.current = L.layerGroup().addTo(map);
+    // Création unique du cercle, de la ligne et des marqueurs A et B
+    const initialA = markerA || offsetCoordsMeters(mapCenter, 6, -8);
+    const initialB = markerB || offsetCoordsMeters(mapCenter, -4, 6);
+    const initialDist = calculateDistanceMeters(initialA, initialB);
+    const initialColor =
+      initialDist <= 30 ? '#10b981' : initialDist <= 50 ? '#f59e0b' : '#ef4444';
 
+    const circle = L.circle([initialA.lat, initialA.lng], {
+      radius: 30,
+      color: initialColor,
+      weight: 2.5,
+      fillColor: initialColor,
+      fillOpacity: 0.18,
+    }).addTo(map);
+
+    const line = L.polyline(
+      [
+        [initialA.lat, initialA.lng],
+        [initialB.lat, initialB.lng],
+      ],
+      {
+        color: initialColor,
+        weight: 4,
+        dashArray: initialDist <= 30 ? null : '6, 6',
+      }
+    ).addTo(map);
+
+    line
+      .bindTooltip(
+        `<div style="font-weight:900;font-size:12px;color:#0f172a;padding:2px 6px;">${initialDist} m</div>`,
+        {
+          permanent: true,
+          direction: 'center',
+          className: 'bess-distance-tooltip',
+        }
+      )
+      .openTooltip();
+
+    const mA = L.marker([initialA.lat, initialA.lng], {
+      icon: createMarkerAIcon(),
+      draggable: true,
+      autoPan: true,
+      zIndexOffset: 1000,
+    }).addTo(map);
+
+    const mB = L.marker([initialB.lat, initialB.lng], {
+      icon: createMarkerBIcon(),
+      draggable: true,
+      autoPan: true,
+      zIndexOffset: 950,
+    }).addTo(map);
+
+    // Glissement ultra-fluide de A (sans recréer l'instance du marqueur)
+    mA.on('drag', (e) => {
+      const posA = e.target.getLatLng();
+      const posB = mB.getLatLng();
+      const nextA = { lat: posA.lat, lng: posA.lng };
+      const nextB = { lat: posB.lat, lng: posB.lng };
+      updateGeometryOverlay(nextA, nextB);
+      setMarkerA(nextA);
+    });
+
+    // Glissement ultra-fluide de B (sans recréer l'instance du marqueur)
+    mB.on('drag', (e) => {
+      const posA = mA.getLatLng();
+      const posB = e.target.getLatLng();
+      const nextA = { lat: posA.lat, lng: posA.lng };
+      const nextB = { lat: posB.lat, lng: posB.lng };
+      updateGeometryOverlay(nextA, nextB);
+      setMarkerB(nextB);
+    });
+
+    // Clic sur la carte pour positionner A ou B directement
     map.on('click', (e) => {
       const { lat, lng } = e.latlng;
       if (activeClickTargetRef.current === 'A') {
+        mA.setLatLng([lat, lng]);
+        const posB = mB.getLatLng();
+        updateGeometryOverlay({ lat, lng }, { lat: posB.lat, lng: posB.lng });
         setMarkerA({ lat, lng });
         setActiveClickTarget('B');
       } else {
+        mB.setLatLng([lat, lng]);
+        const posA = mA.getLatLng();
+        updateGeometryOverlay({ lat: posA.lat, lng: posA.lng }, { lat, lng });
         setMarkerB({ lat, lng });
       }
     });
 
+    circleRef.current = circle;
+    lineRef.current = line;
+    markerARef.current = mA;
+    markerBRef.current = mB;
     mapRef.current = map;
 
-    // Forcer le recalcul des dimensions pour éviter toute carte grise ou blanche
     const t1 = setTimeout(() => map.invalidateSize(), 50);
     const t2 = setTimeout(() => map.invalidateSize(), 250);
     const t3 = setTimeout(() => map.invalidateSize(), 600);
@@ -220,6 +302,26 @@ function BessInteractiveMap({
     }
   }, [mapCenter]);
 
+  // Synchronisation externe (ex: bouton "Réinitialiser les marqueurs") sans interrompre un drag en cours
+  useEffect(() => {
+    const mA = markerARef.current;
+    const mB = markerBRef.current;
+    if (!mA || !mB || !markerA || !markerB) return;
+
+    const curA = mA.getLatLng();
+    const curB = mB.getLatLng();
+    const diffA = Math.abs(curA.lat - markerA.lat) + Math.abs(curA.lng - markerA.lng);
+    const diffB = Math.abs(curB.lat - markerB.lat) + Math.abs(curB.lng - markerB.lng);
+
+    if (diffA > 1e-7) {
+      mA.setLatLng([markerA.lat, markerA.lng]);
+    }
+    if (diffB > 1e-7) {
+      mB.setLatLng([markerB.lat, markerB.lng]);
+    }
+    updateGeometryOverlay(markerA, markerB);
+  }, [markerA, markerB, updateGeometryOverlay]);
+
   // Bascule Satellite / Plan
   const toggleMapMode = () => {
     const map = mapRef.current;
@@ -234,109 +336,6 @@ function BessInteractiveMap({
       setMapMode('satellite');
     }
   };
-
-  // Rendu des marqueurs A, B, cercle et ligne de distance
-  useEffect(() => {
-    const map = mapRef.current;
-    const group = overlayGroupRef.current;
-    if (!map || !group) return;
-
-    group.clearLayers();
-
-    // 1. Afficher les postes Enedis détectés
-    enedisPostes.forEach((poste) => {
-      L.circle([poste.lat, poste.lng], {
-        radius: 30,
-        color: '#3b82f6',
-        weight: 1.5,
-        dashArray: '4, 4',
-        fillColor: '#3b82f6',
-        fillOpacity: 0.08,
-      }).addTo(group);
-
-      const pMarker = L.marker([poste.lat, poste.lng], {
-        icon: createEnedisPosteIcon(),
-      }).addTo(group);
-
-      pMarker.on('click', (e) => {
-        L.DomEvent.stopPropagation(e);
-        setMarkerA({ lat: poste.lat, lng: poste.lng });
-        setActiveClickTarget('B');
-      });
-    });
-
-    // 2. Zone autour du Transformateur A
-    if (markerA) {
-      const dist = calculateDistanceMeters(markerA, markerB);
-      const circleColor =
-        dist === null || dist <= 30 ? '#10b981' : dist <= 50 ? '#f59e0b' : '#ef4444';
-
-      L.circle([markerA.lat, markerA.lng], {
-        radius: 30,
-        color: circleColor,
-        weight: 2.5,
-        fillColor: circleColor,
-        fillOpacity: 0.18,
-      }).addTo(group);
-    }
-
-    // 3. Ligne entre A et B avec étiquette de distance en direct
-    if (markerA && markerB) {
-      const dist = calculateDistanceMeters(markerA, markerB);
-      const lineColor = dist <= 30 ? '#10b981' : dist <= 50 ? '#f59e0b' : '#ef4444';
-
-      const line = L.polyline(
-        [
-          [markerA.lat, markerA.lng],
-          [markerB.lat, markerB.lng],
-        ],
-        {
-          color: lineColor,
-          weight: 4,
-          dashArray: dist <= 30 ? null : '6, 6',
-        }
-      ).addTo(group);
-
-      line
-        .bindTooltip(
-          `<div style="font-weight:900;font-size:12px;color:#0f172a;padding:2px 6px;">📏 Distance : ${dist} m</div>`,
-          {
-            permanent: true,
-            direction: 'center',
-            className: 'bess-distance-tooltip',
-          }
-        )
-        .openTooltip();
-    }
-
-    // 4. Marqueur A (Transformateur)
-    if (markerA) {
-      const mA = L.marker([markerA.lat, markerA.lng], {
-        icon: createMarkerAIcon(),
-        draggable: true,
-        zIndexOffset: 1000,
-      }).addTo(group);
-
-      mA.on('drag', (e) => {
-        const pos = e.target.getLatLng();
-        setMarkerA({ lat: pos.lat, lng: pos.lng });
-      });
-    }
-
-    // 5. Marqueur B (Emplacement terrain)
-    if (markerB) {
-      const mB = L.marker([markerB.lat, markerB.lng], {
-        icon: createMarkerBIcon(),
-        draggable: true,
-        zIndexOffset: 950,
-      }).addTo(group);
-
-      mB.on('drag', (e) => {
-        const pos = e.target.getLatLng();
-        setMarkerB({ lat: pos.lat, lng: pos.lng });
-      });
-    }
-  }, [markerA, markerB, enedisPostes, setMarkerA, setMarkerB, setActiveClickTarget]);
 
   return (
     <div className="relative w-full h-[400px] sm:h-[480px] bg-slate-200">
@@ -369,13 +368,11 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
   const [selectedAddress, setSelectedAddress] = useState('');
   const [addressError, setAddressError] = useState('');
 
-  // Étape 2 : Coordonnées Carte, Postes Enedis & Marqueurs A / B
+  // Étape 2 : Coordonnées Carte & Marqueurs A / B
   const [mapCenter, setMapCenter] = useState({ lat: 44.8378, lng: -0.5792 });
   const [markerA, setMarkerA] = useState(null); // Transformateur
   const [markerB, setMarkerB] = useState(null); // Terrain
   const [activeClickTarget, setActiveClickTarget] = useState('A'); // 'A' | 'B'
-  const [enedisPostes, setEnedisPostes] = useState([]);
-  const [isLoadingEnedis, setIsLoadingEnedis] = useState(false);
   const [enedisNotice, setEnedisNotice] = useState('');
 
   // Étape 4 : Formulaire de capture de lead
@@ -430,67 +427,16 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
     return () => clearTimeout(timer);
   }, [addressQuery, selectedAddress]);
 
-  // Interrogation automatique de l'API Open Data Enedis autour de la parcelle (rayon 150m)
-  const fetchNearbyEnedisTransformers = useCallback(async (lat, lng) => {
-    setIsLoadingEnedis(true);
-    setEnedisNotice('');
-    try {
-      const whereClause = `within_distance(geo_point_2d, GEOM'POINT(${lng} ${lat})', 150m)`;
-      const url = `https://data.enedis.fr/api/explore/v2.1/catalog/datasets/poste-electrique/records?where=${encodeURIComponent(
-        whereClause
-      )}&limit=20`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('API Enedis indisponible');
-      const data = await res.json();
-      const results = Array.isArray(data?.results) ? data.results : [];
-
-      const parsedPostes = results
-        .map((rec, idx) => {
-          const pt = rec.geo_point_2d || rec.geometry?.coordinates;
-          const pLat = pt?.lat ?? (Array.isArray(pt) ? pt[1] : null);
-          const pLng = pt?.lon ?? (Array.isArray(pt) ? pt[0] : null);
-          if (typeof pLat !== 'number' || typeof pLng !== 'number') return null;
-          return {
-            id: rec.id || `enedis-${idx}`,
-            lat: pLat,
-            lng: pLng,
-            name: rec.nom_poste || rec.libelle || `Poste électrique Enedis #${idx + 1}`,
-          };
-        })
-        .filter(Boolean);
-
-      setEnedisPostes(parsedPostes);
-
-      if (parsedPostes.length > 0) {
-        const closest = parsedPostes[0];
-        setMarkerA({ lat: closest.lat, lng: closest.lng });
-        setMarkerB({ lat, lng });
-        setActiveClickTarget('B');
-        setEnedisNotice(
-          `${parsedPostes.length} transformateur(s) électrique(s) détecté(s) à proximité ! Le marqueur A a été pré-positionné sur le poste le plus proche.`
-        );
-      } else {
-        const initA = offsetCoordsMeters({ lat, lng }, 6, -8);
-        const initB = offsetCoordsMeters({ lat, lng }, -4, 6);
-        setMarkerA(initA);
-        setMarkerB(initB);
-        setActiveClickTarget('A');
-        setEnedisNotice(
-          'Placez le marqueur A sur le transformateur électrique visible sur la carte satellite, puis le marqueur B sur votre terrain.'
-        );
-      }
-    } catch {
-      const initA = offsetCoordsMeters({ lat, lng }, 6, -8);
-      const initB = offsetCoordsMeters({ lat, lng }, -4, 6);
-      setMarkerA(initA);
-      setMarkerB(initB);
-      setActiveClickTarget('A');
-      setEnedisNotice(
-        'Déplacez le marqueur A sur le transformateur électrique, et le marqueur B sur l’emplacement souhaité sur votre terrain.'
-      );
-    } finally {
-      setIsLoadingEnedis(false);
-    }
+  // Initialisation des marqueurs A et B autour de la parcelle
+  const initializeMarkersAroundLocation = useCallback((lat, lng) => {
+    const initA = offsetCoordsMeters({ lat, lng }, 6, -8);
+    const initB = offsetCoordsMeters({ lat, lng }, -4, 6);
+    setMarkerA(initA);
+    setMarkerB(initB);
+    setActiveClickTarget('A');
+    setEnedisNotice(
+      'Déplacez le point A sur le transformateur électrique, et le point B sur l’emplacement souhaité sur votre terrain.'
+    );
   }, []);
 
   // Sélection d'une adresse depuis l'autocomplétion
@@ -502,7 +448,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
     setSuggestions([]);
     setAddressError('');
     setMapCenter({ lat, lng });
-    fetchNearbyEnedisTransformers(lat, lng);
+    initializeMarkersAroundLocation(lat, lng);
     setStep(2);
   };
 
@@ -560,7 +506,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
         setSelectedAddress(label);
         setAddressQuery(label);
         setMapCenter({ lat, lng });
-        fetchNearbyEnedisTransformers(lat, lng);
+        initializeMarkersAroundLocation(lat, lng);
         setIsLocatingGps(false);
         setStep(2);
       },
@@ -696,24 +642,19 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
           </div>
         )}
 
-        {/* En-tête du Simulateur (sans dévoiler le montant avant la simulation) */}
+        {/* En-tête du Simulateur */}
         <div className="text-center mb-8 md:mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs sm:text-sm font-bold uppercase tracking-wider mb-4">
-            <Zap className="w-4 h-4 text-emerald-400" />
-            <span>Simulateur officiel ENR COURTAGE • Réponse immédiate</span>
-          </div>
           <h2
             id="simulator-heading"
             className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-white mb-4"
           >
             Vérifiez l&apos;éligibilité de votre terrain en{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-amber-300">
-              30 secondes
-            </span>
+            <span className="text-yellow-400">30 secondes</span>
           </h2>
-          <p className="text-base sm:text-lg text-slate-300 max-w-3xl mx-auto">
-            Localisez votre parcelle sur la carte satellite et découvrez immédiatement votre éligibilité ainsi que le
-            montant de votre rente annuelle garantie, 100 % financée et installée par ENR COURTAGE.
+          <p className="text-base sm:text-lg text-slate-300 max-w-5xl mx-auto leading-relaxed">
+            Localisez votre parcelle sur la carte satellite et découvrez immédiatement votre éligibilité
+            <br className="hidden sm:inline" /> ainsi que le montant de votre rente annuelle garantie, 100 % financée et
+            installée par ENR COURTAGE.
           </p>
         </div>
 
@@ -898,18 +839,11 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                 </button>
               </div>
 
-              {/* Bandeau d'information Enedis */}
+              {/* Bandeau d'information */}
               <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs sm:text-sm text-blue-950 flex items-start gap-2.5">
-                {isLoadingEnedis ? (
-                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0 mt-0.5" />
-                ) : (
-                  <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                )}
+                <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
                 <div>
-                  <strong>Aide au repérage :</strong>{' '}
-                  {isLoadingEnedis
-                    ? 'Recherche des transformateurs électriques autour de votre parcelle...'
-                    : enedisNotice}
+                  <strong>Aide au repérage :</strong> {enedisNotice}
                 </div>
               </div>
 
@@ -930,10 +864,10 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                     </span>
                     <div>
                       <div className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                        Marqueur A : Transformateur électrique
+                        Point A : Transformateur électrique
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        Cliquez sur la carte ou glissez A sur le transformateur
+                        Cliquez sur la carte ou glissez le point A
                       </div>
                     </div>
                   </div>
@@ -959,10 +893,10 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                     </span>
                     <div>
                       <div className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                        Marqueur B : Emplacement sur mon terrain
+                        Point B : Emplacement sur mon terrain
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        Cliquez sur la carte ou glissez B sur votre parcelle
+                        Cliquez sur la carte ou glissez le point B
                       </div>
                     </div>
                   </div>
@@ -984,28 +918,22 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   setMarkerB={setMarkerB}
                   activeClickTarget={activeClickTarget}
                   setActiveClickTarget={setActiveClickTarget}
-                  enedisPostes={enedisPostes}
                 />
 
                 {/* Jauge de distance en direct superposée */}
                 <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[400] bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl border border-white/15 flex items-center justify-between sm:justify-start gap-4">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-slate-400 font-bold">
-                      Distance A ↔ B mesurée en direct
-                    </div>
-                    <div className="text-xl sm:text-2xl font-black flex items-center gap-2">
-                      <span>{distanceMeters !== null ? `${distanceMeters} m` : '—'}</span>
-                      {distanceMeters !== null && distanceMeters <= 30 && (
-                        <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950">
-                          ✓ Zone optimale
-                        </span>
-                      )}
-                      {distanceMeters !== null && distanceMeters > 30 && (
-                        <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950">
-                          Étude spécifique
-                        </span>
-                      )}
-                    </div>
+                  <div className="text-xl sm:text-2xl font-black flex items-center gap-2">
+                    <span>{distanceMeters !== null ? `${distanceMeters} m` : '—'}</span>
+                    {distanceMeters !== null && distanceMeters <= 30 && (
+                      <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950">
+                        ✓ Zone optimale
+                      </span>
+                    )}
+                    {distanceMeters !== null && distanceMeters > 30 && (
+                      <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950">
+                        Étude spécifique
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1049,9 +977,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   <div className="w-16 h-16 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-lg">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
-                  <span className="inline-block px-4 py-1 rounded-full bg-emerald-200 text-emerald-900 font-black text-xs uppercase tracking-widest">
-                    Distance mesurée : {distanceMeters} mètres
-                  </span>
                   <h3 className="text-3xl sm:text-4xl font-black text-emerald-950">
                     Félicitations, votre terrain est Éligible !
                   </h3>
@@ -1069,9 +994,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   <div className="w-16 h-16 rounded-full bg-amber-500 text-white flex items-center justify-center mx-auto shadow-lg">
                     <AlertTriangle className="w-10 h-10" />
                   </div>
-                  <span className="inline-block px-4 py-1 rounded-full bg-amber-200 text-amber-950 font-black text-xs uppercase tracking-widest">
-                    Distance mesurée : {distanceMeters} mètres
-                  </span>
                   <h3 className="text-2xl sm:text-3xl font-black text-amber-950">
                     Éligibilité sous réserve d&apos;étude technique
                   </h3>
@@ -1092,9 +1014,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                       Résultat de votre simulation : Offre de Location Garantie
                     </h4>
                   </div>
-                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                    0 € à débourser • 100 % financé par ENR COURTAGE
-                  </span>
                 </div>
 
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1127,8 +1046,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
                   <span>
                     <strong>Engagement clé en main ENR COURTAGE :</strong> Frais d&apos;étude, dalle béton, 4 armoires
-                    batteries CESC, clôture en grillage rigide vert, raccordement Enedis, assurance et maintenance sur
-                    20 ans sont <strong>100 % pris en charge par ENR COURTAGE</strong>.
+                    batteries, clôture en grillage rigide vert, raccordement Enedis, assurance et maintenance sur 20 ans
+                    sont <strong>100 % pris en charge par ENR COURTAGE</strong>.
                   </span>
                 </div>
               </div>
@@ -1180,9 +1099,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                       <strong>Adresse :</strong> {selectedAddress}
                     </div>
                     <div>
-                      <strong>Distance mesurée :</strong> {distanceMeters} mètres
-                    </div>
-                    <div>
                       <strong>Rémunération :</strong> 2 000 € / an pendant 20 ans (40 000 € garantis pour 20 m²)
                     </div>
                   </div>
@@ -1223,8 +1139,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                     <div>
                       <div className="font-bold text-emerald-950">{selectedAddress}</div>
                       <div className="text-emerald-800">
-                        Distance mesurée : <strong>{distanceMeters} m</strong> • Surface :{' '}
-                        <strong>20 m²</strong>
+                        Surface : <strong>20 m²</strong>
                       </div>
                     </div>
                     <div className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black">
@@ -1412,8 +1327,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                     </button>
 
                     <p className="text-[11px] text-center text-slate-500">
-                      Étude 100 % gratuite et sans engagement • Vos coordonnées GPS ({distanceMeters} m) sont jointes
-                      automatiquement pour validation par un ingénieur ENR COURTAGE.
+                      Étude 100 % gratuite et sans engagement • Vos coordonnées GPS sont jointes automatiquement pour
+                      validation par un ingénieur ENR COURTAGE.
                     </p>
                   </form>
                 </div>
