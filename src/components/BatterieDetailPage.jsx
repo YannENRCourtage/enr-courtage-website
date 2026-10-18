@@ -69,18 +69,18 @@ const BatterieDetailPage = () => {
   const benefits = [
     {
       icon: <Coins className="h-12 w-12 text-green-600" />,
-      title: 'Rente annuelle garantie de 2 000 € / an',
-      description: '40 000 € cumulés sur 20 ans par contrat de bail pour seulement 20 m² loués',
+      title: 'Rente annuelle garantie',
+      description: 'Des revenus stables et prévisibles sur le long terme',
     },
     {
       icon: <CheckCircle className="h-12 w-12 text-blue-600" />,
       title: 'Aucun investissement',
-      description: 'Installation, raccordement et grillage de sécurité 100 % financés par nos soins',
+      description: 'Installation et équipement 100 % financés par nos soins',
     },
     {
       icon: <Shield className="h-12 w-12 text-orange-600" />,
       title: 'Aucune maintenance',
-      description: "Nous gérons tout de A à Z pendant 20 ans, vous n'avez rien à faire",
+      description: "Nous gérons tout de A à Z, vous n'avez rien à faire",
     },
     {
       icon: <Leaf className="h-12 w-12 text-teal-600" />,
@@ -90,25 +90,25 @@ const BatterieDetailPage = () => {
     {
       icon: <TrendingUp className="h-12 w-12 text-purple-600" />,
       title: 'Aucune contrainte pour votre activité',
-      description: 'Empreinte minimale de 20 m², impact maximal sur votre patrimoine',
+      description: 'Empreinte minimale, impact maximal sur votre patrimoine',
     },
   ];
 
   return (
     <div className="min-h-screen bg-white text-gray-900 w-full max-w-full overflow-x-hidden relative">
       <Helmet>
-        <title>Louez 20 m² de terrain à 2 000 €/an pendant 20 ans | Simulateur ENR COURTAGE</title>
+        <title>Batterie de soutien réseau - Percevez une rente sans rien faire | ENR COURTAGE</title>
         <meta
           name="description"
-          content="Vous avez un transformateur électrique au sol à moins de 30m de votre terrain ? Vérifiez votre éligibilité en 30 secondes et percevez une rente garantie de 2 000 €/an pendant 20 ans sans aucun investissement."
+          content="Valorisez votre terrain grâce à une batterie de soutien réseau. Vérifiez l'éligibilité de votre parcelle en 30 secondes et découvrez le montant de votre rente annuelle garantie sans aucun investissement."
         />
         <meta
           property="og:title"
-          content="Louez 20 m² de terrain à 2 000 €/an pendant 20 ans | Simulateur ENR COURTAGE"
+          content="Batterie de soutien réseau - Percevez une rente sans rien faire | ENR COURTAGE"
         />
         <meta
           property="og:description"
-          content="Vous avez un transformateur électrique au sol à moins de 30m de votre terrain ? Vérifiez votre éligibilité en 30 secondes et percevez une rente garantie sans aucun investissement."
+          content="Vérifiez l'éligibilité de votre terrain en 30 secondes sur notre carte satellite et découvrez votre rente annuelle garantie sans aucun investissement."
         />
         <meta property="og:url" content="https://www.enr-courtage.fr/batterie-soutien-reseau" />
         <meta property="og:type" content="website" />
@@ -119,11 +119,11 @@ const BatterieDetailPage = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content="Louez 20 m² de terrain à 2 000 €/an pendant 20 ans | Simulateur ENR COURTAGE"
+          content="Batterie de soutien réseau - Percevez une rente sans rien faire | ENR COURTAGE"
         />
         <meta
           name="twitter:description"
-          content="Vous avez un transformateur électrique au sol à moins de 30m de votre terrain ? Vérifiez votre éligibilité en 30 secondes et percevez une rente garantie sans aucun investissement."
+          content="Vérifiez l'éligibilité de votre terrain en 30 secondes sur notre carte satellite et découvrez votre rente annuelle garantie sans aucun investissement."
         />
         <meta
           name="twitter:image"
@@ -167,13 +167,8 @@ const BatterieDetailPage = () => {
               >
                 Batterie de <span className="enr-gradient-text-gold">soutien réseau</span>
               </h1>
-              <p className="text-lg sm:text-xl text-gray-200 max-w-3xl mx-auto font-light leading-relaxed mb-4">
-                Percevez <strong className="text-amber-300 font-bold">2 000 € / an pendant 20 ans</strong> en louant{' '}
-                <strong className="text-white font-bold">20 m²</strong> à moins de 30 m d&apos;un transformateur HTA/BT
-                au sol
-              </p>
-              <p className="text-sm sm:text-base text-emerald-300 font-semibold mb-8">
-                0 € d&apos;investissement • 100 % financé, clôturé et entretenu par ENR COURTAGE
+              <p className="text-lg sm:text-xl text-gray-200 max-w-3xl mx-auto font-light leading-relaxed mb-8">
+                Percevez une rente annuelle sans rien faire
               </p>
               <Button
                 onClick={scrollToSimulator}
@@ -222,9 +217,7 @@ const BatterieDetailPage = () => {
                   </p>
                   <div className="mt-8 flex items-center space-x-4">
                     <CheckSquare className="h-10 w-10 text-blue-600 flex-shrink-0" />
-                    <span className="text-lg text-gray-600 font-medium">
-                      Installation complète sur 20 m² (dalle béton + grillage rigide vert)
-                    </span>
+                    <span className="text-lg text-gray-600 font-medium">Installation complète</span>
                   </div>
                   <div className="mt-4 flex items-center space-x-4">
                     <CheckSquare className="h-10 w-10 text-blue-600 flex-shrink-0" />
@@ -232,7 +225,7 @@ const BatterieDetailPage = () => {
                   </div>
                   <div className="mt-4 flex items-center space-x-4">
                     <CheckSquare className="h-10 w-10 text-blue-600 flex-shrink-0" />
-                    <span className="text-lg text-gray-600 font-medium">Maintenance assurée pendant 20 ans</span>
+                    <span className="text-lg text-gray-600 font-medium">Maintenance assurée</span>
                   </div>
                 </div>
               </motion.div>
@@ -250,13 +243,11 @@ const BatterieDetailPage = () => {
                     VOUS
                   </h3>
                   <p className="text-2xl md:text-3xl font-bold text-gray-800 leading-relaxed">
-                    Percevez une rente annuelle garantie de 2 000 € / an
+                    Percevez une rente annuelle garantie
                   </p>
                   <div className="mt-8 flex items-center space-x-4">
                     <Coins className="h-10 w-10 text-green-600 flex-shrink-0" />
-                    <span className="text-lg text-gray-600 font-medium">
-                      2 000 € / an pendant 20 ans (40 000 € garantis)
-                    </span>
+                    <span className="text-lg text-gray-600 font-medium">Revenus réguliers</span>
                   </div>
                   <div className="mt-4 flex items-center space-x-4">
                     <CheckCircle className="h-10 w-10 text-green-600 flex-shrink-0" />
@@ -284,7 +275,7 @@ const BatterieDetailPage = () => {
           </div>
         </section>
 
-        {/* SIMULATEUR D'ÉLIGIBILITÉ INTERACTIF (30m & Transformateur au sol) */}
+        {/* SIMULATEUR D'ÉLIGIBILITÉ INTERACTIF */}
         <BessEligibilitySimulator isDirectMode={isDirectSimulatorMode} />
 
         {/* Section "Aucune installation solaire requise" */}
@@ -314,9 +305,8 @@ const BatterieDetailPage = () => {
                 <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg mt-6">
                   <p className="text-gray-800 font-semibold flex items-start">
                     <Zap className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0 mt-1" />
-                    Une solution simple et compacte qui nécessite uniquement un espace de 20 m² situés à moins de 30
-                    mètres d&apos;un transformateur électrique HTA/BT au sol, pour un loyer garanti de 2 000 € / an
-                    pendant 20 ans.
+                    Une solution simple et compacte qui nécessite uniquement un espace de 20 m² à proximité d&apos;un
+                    transformateur électrique.
                   </p>
                 </div>
               </motion.div>
@@ -374,8 +364,8 @@ const BatterieDetailPage = () => {
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Installation complète</h3>
                 <p className="text-blue-100 leading-relaxed">
-                  Tous les travaux d&apos;installation (dalle béton, armoires batteries et clôture rigide verte) sont
-                  réalisés par nos équipes certifiées, sans aucun frais pour vous.
+                  Tous les travaux d&apos;installation sont réalisés par nos équipes certifiées, sans aucun frais pour
+                  vous.
                 </p>
               </motion.div>
 
@@ -391,8 +381,7 @@ const BatterieDetailPage = () => {
                 </div>
                 <h3 className="text-2xl font-bold mb-4">Maintenance assurée</h3>
                 <p className="text-blue-100 leading-relaxed">
-                  Toute la maintenance préventive et corrective est prise en charge pendant toute la durée du contrat
-                  de 20 ans.
+                  Toute la maintenance préventive et corrective est prise en charge pendant toute la durée du contrat.
                 </p>
               </motion.div>
 
@@ -406,10 +395,10 @@ const BatterieDetailPage = () => {
                 <div className="bg-yellow-500 w-16 h-16 rounded-full flex items-center justify-center mb-6">
                   <Coins className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold mb-4">Rente garantie de 2 000 €/an</h3>
+                <h3 className="text-2xl font-bold mb-4">Rente garantie</h3>
                 <p className="text-blue-100 leading-relaxed">
-                  En échange de la mise à disposition de 20 m² de votre terrain, percevez 2 000 € / an garantis pendant
-                  20 ans (40 000 € au total).
+                  En échange de la mise à disposition de votre terrain, percevez une rente annuelle stable et
+                  prévisible.
                 </p>
               </motion.div>
             </div>
@@ -433,8 +422,8 @@ const BatterieDetailPage = () => {
                 Adapté à tous les propriétaires fonciers
               </h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                Que vous soyez agriculteur, chef d&apos;entreprise ou propriétaire résidentiel, valorisez 20 m² de
-                votre terrain
+                Que vous soyez agriculteur, chef d&apos;entreprise ou propriétaire résidentiel, cette opportunité est
+                faite pour vous
               </p>
             </motion.div>
 
@@ -457,8 +446,7 @@ const BatterieDetailPage = () => {
                     <Users className="h-10 w-10 text-green-600 mb-4" />
                     <h3 className="text-xl font-bold text-gray-900 mb-3">Propriétés agricoles</h3>
                     <p className="text-gray-600">
-                      Agriculteurs et exploitants disposant de 20 m² à moins de 30 m d&apos;un transformateur HTA/BT au
-                      sol
+                      Agriculteurs et exploitants disposant d&apos;un terrain à proximité d&apos;un transformateur
                     </p>
                   </CardContent>
                 </Card>
@@ -482,8 +470,7 @@ const BatterieDetailPage = () => {
                     <Building2 className="h-10 w-10 text-blue-600 mb-4" />
                     <h3 className="text-xl font-bold text-gray-900 mb-3">Sites industriels</h3>
                     <p className="text-gray-600">
-                      Entreprises et collectivités avec un espace de 20 m² disponible à proximité d&apos;un
-                      transformateur au sol
+                      Entreprises et collectivités avec un espace disponible pour l&apos;installation
                     </p>
                   </CardContent>
                 </Card>
@@ -507,8 +494,7 @@ const BatterieDetailPage = () => {
                     <Home className="h-10 w-10 text-orange-600 mb-4" />
                     <h3 className="text-xl font-bold text-gray-900 mb-3">Propriétaire foncier</h3>
                     <p className="text-gray-600">
-                      Particuliers et propriétaires tertiaires disposant de 20 m² inutilisés à moins de 30 m d&apos;un
-                      transformateur au sol
+                      Particuliers disposant d&apos;un terrain inutilisé à proximité d&apos;infrastructures électriques
                     </p>
                   </CardContent>
                 </Card>
@@ -532,12 +518,9 @@ const BatterieDetailPage = () => {
                     1
                   </div>
                   <div>
-                    <h4 className="text-lg font-bold text-gray-900 mb-2">
-                      Être propriétaire de 20 m² disponibles
-                    </h4>
+                    <h4 className="text-lg font-bold text-gray-900 mb-2">Être propriétaire du terrain</h4>
                     <p className="text-gray-700">
-                      Vous devez être le propriétaire légal de la parcelle où sera installée la station batterie
-                      clôturée (20 m² seulement).
+                      Vous devez être le propriétaire légal de la parcelle où sera installée la batterie
                     </p>
                   </div>
                 </div>
@@ -547,11 +530,11 @@ const BatterieDetailPage = () => {
                   </div>
                   <div>
                     <h4 className="text-lg font-bold text-gray-900 mb-2">
-                      Transformateur HTA/BT au sol à moins de 30 mètres
+                      Proximité d&apos;un transformateur électrique
                     </h4>
                     <p className="text-gray-700">
-                      Le terrain de 20 m² doit être situé à moins de 30 mètres d&apos;un transformateur électrique posé
-                      au sol (cabine maçonnée ou préfabriquée, hors poteau).
+                      Le terrain doit être situé à proximité d&apos;un transformateur pour une connexion optimale au
+                      réseau
                     </p>
                   </div>
                 </div>
@@ -662,8 +645,8 @@ const BatterieDetailPage = () => {
                   Intéressé ? Contactez-nous
                 </h2>
                 <p className="text-xl md:text-2xl text-blue-100 mb-10 leading-relaxed">
-                  Transformez 20 m² de votre terrain en une rente garantie de 2 000 € / an pendant 20 ans tout en
-                  contribuant à la stabilisation du réseau électrique français. Sans investissement, sans contrainte.
+                  Transformez votre terrain en source de revenus réguliers tout en contribuant à la stabilisation du
+                  réseau électrique français. Sans investissement, sans contrainte.
                 </p>
                 <Button
                   onClick={scrollToSimulator}
