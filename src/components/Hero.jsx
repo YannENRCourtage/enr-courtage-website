@@ -1,12 +1,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Battery, Car, Building, Zap, ArrowRight, Sun, Building2, CheckCircle2, Wheat } from 'lucide-react';
+import { Battery, Car, Building, Zap, ArrowRight, Sun, Building2, Wheat, MapPin } from 'lucide-react';
 
 const Hero = ({ setActiveTab }) => {
   const navigate = useNavigate();
 
   const cards = [
+    {
+      id: 'batterie',
+      icon: <Battery className="h-7 w-7" />,
+      title: "Batterie de soutien réseau",
+      description: "Valorisez 20 m² de votre terrain, renforcez la stabilité du réseau électrique et générez une rente annuelle garantie pendant 20 ans",
+      accent: "#10b981",
+      isFeatured: true,
+      bgClass: "bg-gradient-to-b from-emerald-950/60 via-[#0a101d] to-[#070b14] border-emerald-400/50 hover:border-emerald-300 ring-1 ring-emerald-500/30"
+    },
     {
       id: 'toiture',
       icon: <Sun className="h-7 w-7" />,
@@ -14,15 +23,6 @@ const Hero = ({ setActiveTab }) => {
       description: "Valorisez votre toiture et générez des revenus annuels en revente d'électricité",
       accent: "#84cc16",
       bgClass: "bg-gradient-to-b from-lime-950/40 via-[#0a101d] to-[#070b14] border-lime-500/30 hover:border-lime-400"
-    },
-    {
-      id: 'batterie',
-      icon: <Battery className="h-7 w-7" />,
-      title: "Batterie de soutien réseau",
-      description: "Renforcez la stabilité du réseau électrique et générez des revenus passifs",
-      accent: "#0f9b8e",
-      isFeatured: true,
-      bgClass: "bg-gradient-to-b from-teal-950/40 via-[#0a101d] to-[#070b14] border-teal-500/30 hover:border-teal-400"
     },
     {
       id: 'irve',
@@ -76,6 +76,16 @@ const Hero = ({ setActiveTab }) => {
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const scrollToBessSimulator = (e) => {
+    if (e) e.stopPropagation();
+    const el = document.getElementById('simulateur-eligibilite');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      navigate('/batterie-soutien-reseau#simulateur-eligibilite');
+    }
+  };
+
   return (
     <div className="relative pt-20 pb-24 flex flex-col items-center justify-center min-h-[90vh] overflow-hidden bg-[#090d16]">
       {/* Background Video /1.mp4 */}
@@ -100,7 +110,7 @@ const Hero = ({ setActiveTab }) => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
-          className="text-center max-w-4xl mx-auto mb-16"
+          className="text-center max-w-4xl mx-auto mb-12"
         >
           <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white mb-8 leading-tight tracking-tight max-w-5xl mx-auto">
             <span className="block">La transition énergétique</span>
@@ -108,32 +118,103 @@ const Hero = ({ setActiveTab }) => {
           </h1>
 
           <p className="text-lg md:text-xl text-gray-300 font-light leading-relaxed mb-10 max-w-3xl mx-auto">
-            Une offre complète pour valoriser vos toitures et terrains partout en France : bâtiments neufs, batteries réseau, IRVE & autoconsommation.
+            Une offre complète pour valoriser vos terrains et toitures partout en France : batteries de soutien réseau, bâtiments neufs, IRVE & autoconsommation.
           </p>
 
           {/* Action CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <div className="relative group w-full sm:w-auto">
-              <div className="absolute -inset-1 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 rounded-full blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 group-hover:scale-105 animate-pulse" />
+              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-400 rounded-full blur-md opacity-75 group-hover:opacity-100 group-hover:blur-lg transition-all duration-300 group-hover:scale-105 animate-pulse" />
               <button
-                onClick={scrollToContact}
-                className="relative w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-extrabold rounded-full shadow-2xl text-base transition-all transform group-hover:scale-105 flex items-center justify-center space-x-3"
+                onClick={scrollToBessSimulator}
+                className="relative w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-extrabold rounded-full shadow-2xl text-base transition-all transform group-hover:scale-105 flex items-center justify-center space-x-3 cursor-pointer"
               >
-                <span>Nous contacter</span>
+                <Battery className="w-5 h-5 text-emerald-600" />
+                <span>Tester l&apos;éligibilité Batterie (30s)</span>
                 <ArrowRight className="w-5 h-5 text-amber-500" />
               </button>
             </div>
-            <a
-              href="#solutions-bento"
-              className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 backdrop-blur-md text-base transition-all text-center"
+            <button
+              onClick={scrollToContact}
+              className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-full border border-white/20 backdrop-blur-md text-base transition-all text-center cursor-pointer"
             >
-              Découvrir nos solutions
-            </a>
+              Nous contacter
+            </button>
           </div>
         </motion.div>
 
         {/* Solutions Bento Grid Section */}
-        <div id="solutions-bento" className="pt-8">
+        <div id="solutions-bento" className="pt-4">
+          {/* Mise en avant Phare : Batterie de Soutien Réseau (Pleine largeur en haut) */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+            className="mb-10"
+          >
+            <div
+              className="relative rounded-3xl border-2 border-emerald-400/60 hover:border-emerald-300 bg-gradient-to-r from-emerald-950/80 via-[#0a1424] to-teal-950/70 transition-all duration-300 shadow-2xl backdrop-blur-md overflow-hidden group cursor-pointer"
+              onClick={() => handleCardClick('batterie')}
+            >
+              <div className="absolute top-4 right-4 bg-amber-400 text-slate-950 text-[11px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-lg z-10">
+                Offre Phare • Nouveau
+              </div>
+              <div className="flex flex-col lg:flex-row items-center gap-6 p-6 sm:p-8">
+                {/* Left: Image preview */}
+                <div className="w-full lg:w-2/5 rounded-2xl overflow-hidden flex-shrink-0 border border-emerald-400/30 shadow-xl">
+                  <img
+                    src="/images/bess-agricole-grillage.jpg?v=2"
+                    alt="Batterie de soutien réseau ENR COURTAGE"
+                    className="w-full h-52 lg:h-64 object-cover rounded-2xl transition-transform duration-500 group-hover:scale-105"
+                  />
+                </div>
+                {/* Center & Right: Content + Actions */}
+                <div className="flex-1 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0"
+                      style={{ backgroundColor: '#10b98120', color: '#34d399', borderColor: '#10b98150' }}
+                    >
+                      <Battery className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 block">
+                        0 € d&apos;investissement • 100 % financé par ENR COURTAGE
+                      </span>
+                      <h3 className="text-2xl lg:text-3xl font-black text-white group-hover:text-amber-300 transition-colors leading-tight">
+                        Batterie de <span className="enr-gradient-text-gold">Soutien Réseau</span>
+                      </h3>
+                    </div>
+                  </div>
+                  <p className="text-gray-200 text-sm lg:text-base leading-relaxed">
+                    Valorisez seulement <strong>20 m²</strong> de votre propriété (agricole, industrielle ou foncière) sans aucune installation solaire requise. Percevez une rente locative annuelle garantie pendant 20 ans tout en stabilisant le réseau électrique français.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={scrollToBessSimulator}
+                      className="px-6 py-3.5 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-black text-xs sm:text-sm uppercase tracking-wider shadow-lg transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <MapPin className="w-4 h-4" />
+                      <span>Simuler l&apos;éligibilité de mon terrain</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCardClick('batterie');
+                      }}
+                      className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs sm:text-sm border border-white/20 transition flex items-center gap-2 cursor-pointer"
+                    >
+                      <span>Découvrir l&apos;offre en détail</span>
+                      <ArrowRight className="w-4 h-4 text-emerald-400" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Nos Solutions Clé en Main
@@ -229,8 +310,8 @@ const Hero = ({ setActiveTab }) => {
                     </h3>
                   </div>
                   <p className="text-gray-300 text-sm lg:text-base leading-relaxed max-w-2xl">
-                    Séchez fourrage, céréales et plaquettes forestières grâce à la technologie thermovoltaïque Cogen'Air®. 
-                    Production d'électricité photovoltaïque + récupération de chaleur air/solaire dans un bâtiment clé en main.
+                    Séchez fourrage, céréales et plaquettes forestières grâce à la technologie thermovoltaïque Cogen&apos;Air®. 
+                    Production d&apos;électricité photovoltaïque + récupération de chaleur air/solaire dans un bâtiment clé en main.
                   </p>
                 </div>
                 {/* Right: CTA */}

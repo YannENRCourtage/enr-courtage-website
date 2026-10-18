@@ -11,6 +11,13 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
 
   const solutions = [
     { 
+      id: 'batterie', 
+      label: 'Batterie de soutien réseau', 
+      icon: <Battery className="h-5 w-5" />,
+      color: 'hover:bg-teal-50 hover:text-teal-700',
+      isNew: true
+    },
+    { 
       id: 'structure_sur_mesure', 
       label: 'Structure métallique sur-mesure', 
       icon: <Building2 className="h-5 w-5" />,
@@ -21,12 +28,6 @@ const Header = ({ activeTab, setActiveTab, scrollToContact }) => {
       label: 'Toiture photovoltaïque', 
       icon: <Sun className="h-5 w-5" />,
       color: 'hover:bg-lime-50 hover:text-lime-700'
-    },
-    { 
-      id: 'batterie', 
-      label: 'Batterie de soutien réseau', 
-      icon: <Battery className="h-5 w-5" />,
-      color: 'hover:bg-teal-50 hover:text-teal-700'
     },
     { 
       id: 'irve', 

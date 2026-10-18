@@ -9,6 +9,7 @@ import ConstructionSection from '@/components/ConstructionSection';
 import AboutSection from '@/components/AboutSection';
 import BatterieSection from '@/components/BatterieSection';
 import BatterieDetailPage from '@/components/BatterieDetailPage';
+import BessEligibilitySimulator from '@/components/BessEligibilitySimulator';
 import TestimonialsCarousel from '@/components/TestimonialsCarousel';
 import ContactForm from '@/components/ContactForm';
 import Footer from '@/components/Footer';
@@ -155,6 +156,7 @@ function MainPage() {
           <motion.div key="batterie" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-20">
               <BatterieSection scrollToContact={scrollToContact} />
+              <BessEligibilitySimulator />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
             </div>
           </motion.div>
@@ -173,6 +175,7 @@ function MainPage() {
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-20">
               <Hero setActiveTab={handleSetActiveTab} />
+              <BessEligibilitySimulator />
               <ConfigurateurCharpente />
               <WhyUsBentoSection scrollToContact={scrollToContact} />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>
