@@ -22,16 +22,18 @@ import {
   User,
   Building2,
   Layers,
+  Zap,
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mrblwazb';
+const ENEDIS_DATAFAIR_BASE = 'https://opendata.enedis.fr/data-fair/api/v1/datasets';
 
 // Calcul exact de la distance en mètres entre 2 points GPS (formule de Haversine)
 function calculateDistanceMeters(pointA, pointB) {
   if (!pointA || !pointB) return null;
-  const R = 6371000; // Rayon de la Terre en mètres
+  const R = 6371000;
   const dLat = ((pointB.lat - pointA.lat) * Math.PI) / 180;
   const dLng = ((pointB.lng - pointA.lng) * Math.PI) / 180;
   const a =
@@ -44,13 +46,173 @@ function calculateDistanceMeters(pointA, pointB) {
   return Math.round(R * c * 10) / 10;
 }
 
-// Décaler légèrement un point GPS de X mètres (pour initialiser B à ~15m de A)
+// Décaler légèrement un point GPS de X mètres
 function offsetCoordsMeters(center, dNorthMeters, dEastMeters) {
   const dLat = dNorthMeters / 111320;
   const dLng = dEastMeters / (111320 * Math.cos((center.lat * Math.PI) / 180));
   return {
     lat: center.lat + dLat,
     lng: center.lng + dLng,
+  };
+}
+
+// ============================================================================
+// MOTEUR SIG ENEDIS & CADASTRE IGN (issu de NELSON bessProspectingGisService)
+// ============================================================================
+
+function toLocalXY(lng, lat, lat0) {
+  const x = lng * 111320 * Math.cos((lat0 * Math.PI) / 180);
+  const y = lat * 110540;
+  return { x, y };
+}
+
+function fromLocalXY(x, y, lat0) {
+  return {
+    lat: y / 110540,
+    lng: x / (111320 * Math.cos((lat0 * Math.PI) / 180)),
+  };
+}
+
+function pointToSegmentDistMeters(px, py, x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  if (dx === 0 && dy === 0) return Math.hypot(px - x1, py - y1);
+  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)));
+  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+}
+
+function minDistanceToEnedisLines(lng, lat, lineFeatures) {
+  if (!lineFeatures || lineFeatures.length === 0) return Infinity;
+  const { x: px, y: py } = toLocalXY(lng, lat, lat);
+  let minD = Infinity;
+
+  for (const feat of lineFeatures) {
+    const geom = feat.geometry;
+    if (!geom) continue;
+    const lines =
+      geom.type === 'LineString'
+        ? [geom.coordinates]
+        : geom.type === 'MultiLineString'
+        ? geom.coordinates
+        : [];
+
+    for (const coords of lines) {
+      for (let i = 0; i < coords.length - 1; i++) {
+        const [lng1, lat1] = coords[i];
+        const [lng2, lat2] = coords[i + 1];
+        const p1 = toLocalXY(lng1, lat1, lat);
+        const p2 = toLocalXY(lng2, lat2, lat);
+        const d = pointToSegmentDistMeters(px, py, p1.x, p1.y, p2.x, p2.y);
+        if (d < minD) minD = d;
+      }
+    }
+  }
+  return Math.round(minD * 10) / 10;
+}
+
+async function fetchEnedisDatasetBbox(dataset, bbox) {
+  const [minLng, minLat, maxLng, maxLat] = bbox;
+  const url = `${ENEDIS_DATAFAIR_BASE}/${dataset}/lines?size=1000&bbox=${minLng},${minLat},${maxLng},${maxLat}&select=geometry,_id,code_commune,nom_commune,code_departement`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Erreur API Enedis (${dataset}): ${res.status}`);
+  const data = await res.json();
+  return (data.results || [])
+    .map((item) => {
+      let geom = item.geometry;
+      if (typeof geom === 'string') {
+        try {
+          geom = JSON.parse(geom);
+        } catch {
+          return null;
+        }
+      }
+      return { ...item, geometry: geom };
+    })
+    .filter((item) => item && item.geometry);
+}
+
+async function fetchCadastralParcelAtPoint(lat, lng) {
+  try {
+    const geom = encodeURIComponent(JSON.stringify({ type: 'Point', coordinates: [lng, lat] }));
+    const res = await fetch(
+      `https://apicarto.ign.fr/api/cadastre/parcelle?geom=${geom}&source_ign=PCI`
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const feat = data.features?.[0];
+    if (!feat) return null;
+    return {
+      section: feat.properties?.section || '',
+      numero: feat.properties?.numero || '',
+      commune: feat.properties?.nom_com || '',
+      contenance: feat.properties?.contenance || null,
+      geometry: feat.geometry || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// Trouve le point le plus proche sur le contour de la parcelle par rapport à un transformateur
+function closestPointOnParcelToTransformer(tLat, tLng, parcelGeometry, fallbackLat, fallbackLng) {
+  if (!parcelGeometry) {
+    const dist = calculateDistanceMeters({ lat: tLat, lng: tLng }, { lat: fallbackLat, lng: fallbackLng });
+    return {
+      distToParcel: dist ?? 9999,
+      suggestedTerrainPoint: { lat: fallbackLat, lng: fallbackLng },
+    };
+  }
+
+  const tXY = toLocalXY(tLng, tLat, tLat);
+  const addrXY = toLocalXY(fallbackLng, fallbackLat, tLat);
+  let bestDist = Infinity;
+  let bestX = addrXY.x;
+  let bestY = addrXY.y;
+
+  const rings =
+    parcelGeometry.type === 'MultiPolygon'
+      ? parcelGeometry.coordinates.flat(1)
+      : parcelGeometry.type === 'Polygon'
+      ? parcelGeometry.coordinates
+      : [];
+
+  for (const ring of rings) {
+    for (let i = 0; i < ring.length - 1; i++) {
+      const p1 = toLocalXY(ring[i][0], ring[i][1], tLat);
+      const p2 = toLocalXY(ring[i + 1][0], ring[i + 1][1], tLat);
+      const dx = p2.x - p1.x;
+      const dy = p2.y - p1.y;
+      const t =
+        dx === 0 && dy === 0
+          ? 0
+          : Math.max(
+              0,
+              Math.min(1, ((tXY.x - p1.x) * dx + (tXY.y - p1.y) * dy) / (dx * dx + dy * dy))
+            );
+      const cx = p1.x + t * dx;
+      const cy = p1.y + t * dy;
+      const d = Math.hypot(tXY.x - cx, tXY.y - cy);
+      if (d < bestDist) {
+        bestDist = d;
+        bestX = cx;
+        bestY = cy;
+      }
+    }
+  }
+
+  // On décale légèrement (7m) vers l'intérieur de la parcelle pour poser le point B sur le terrain
+  const vx = addrXY.x - bestX;
+  const vy = addrXY.y - bestY;
+  const vLen = Math.hypot(vx, vy) || 1;
+  const nudge = Math.min(7, vLen * 0.4);
+  const bXY = {
+    x: bestX + (vx / vLen) * nudge,
+    y: bestY + (vy / vLen) * nudge,
+  };
+
+  return {
+    distToParcel: Math.round(bestDist * 10) / 10,
+    suggestedTerrainPoint: fromLocalXY(bXY.x, bXY.y, tLat),
   };
 }
 
@@ -79,7 +241,24 @@ const createMarkerBIcon = () =>
     iconAnchor: [18, 18],
   });
 
-// Composant dédié pour la Carte Satellite Leaflet (déplacement fluide sans recréer les marqueurs pendant le glissement)
+// Icône des postes HTA/BT Enedis (style NELSON : carré rouge avec éclair ⚡)
+const createEnedisPosteIcon = (isGround) =>
+  new L.DivIcon({
+    className: 'enedis-poste-marker',
+    html: `
+      <div style="width:22px;height:22px;background:${
+        isGround ? '#dc2626' : '#64748b'
+      };border:2px solid #ffffff;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:pointer;" title="${
+      isGround ? 'Transformateur HTA/BT au Sol (Enedis)' : 'Poste HTA/BT Aérien/Poteau (Enedis)'
+    }">
+        ⚡
+      </div>
+    `,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11],
+  });
+
+// Composant dédié pour la Carte Satellite Leaflet (avec couches Enedis HTA & Cadastre de NELSON)
 function BessInteractiveMap({
   mapCenter,
   markerA,
@@ -88,6 +267,9 @@ function BessInteractiveMap({
   setMarkerB,
   activeClickTarget,
   setActiveClickTarget,
+  enedisNetwork,
+  parcelData,
+  onSelectEnedisTransformer,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
@@ -95,9 +277,11 @@ function BessInteractiveMap({
   const markerBRef = useRef(null);
   const circleRef = useRef(null);
   const lineRef = useRef(null);
+  const enedisLayerGroupRef = useRef(null);
+  const parcelLayerGroupRef = useRef(null);
   const satLayerRef = useRef(null);
   const osmLayerRef = useRef(null);
-  const [mapMode, setMapMode] = useState('satellite'); // 'satellite' | 'plan'
+  const [mapMode, setMapMode] = useState('satellite');
 
   const activeClickTargetRef = useRef(activeClickTarget);
   activeClickTargetRef.current = activeClickTarget;
@@ -145,18 +329,16 @@ function BessInteractiveMap({
       zoomControl: true,
     });
 
-    // Couche Plan OpenStreetMap
     const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxNativeZoom: 19,
       maxZoom: 21,
       attribution: '&copy; OpenStreetMap',
     });
 
-    // Couche Satellite Haute Résolution Google / Esri World Imagery
     const satLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
       maxNativeZoom: 20,
       maxZoom: 21,
-      attribution: '&copy; Google Satellite / IGN',
+      attribution: '&copy; Google Satellite / IGN / Enedis Open Data',
     });
 
     satLayer.on('tileerror', () => {
@@ -176,6 +358,12 @@ function BessInteractiveMap({
     satLayerRef.current = satLayer;
     osmLayerRef.current = osmLayer;
 
+    // Groupes de calques pour le cadastre et le réseau Enedis HTA/BT
+    const parcelGroup = L.layerGroup().addTo(map);
+    const enedisGroup = L.layerGroup().addTo(map);
+    parcelLayerGroupRef.current = parcelGroup;
+    enedisLayerGroupRef.current = enedisGroup;
+
     // Création unique du cercle, de la ligne et des marqueurs A et B
     const initialA = markerA || offsetCoordsMeters(mapCenter, 6, -8);
     const initialB = markerB || offsetCoordsMeters(mapCenter, -4, 6);
@@ -188,7 +376,7 @@ function BessInteractiveMap({
       color: initialColor,
       weight: 2.5,
       fillColor: initialColor,
-      fillOpacity: 0.18,
+      fillOpacity: 0.16,
     }).addTo(map);
 
     const line = L.polyline(
@@ -228,7 +416,6 @@ function BessInteractiveMap({
       zIndexOffset: 950,
     }).addTo(map);
 
-    // Glissement ultra-fluide de A (sans recréer l'instance du marqueur)
     mA.on('drag', (e) => {
       const posA = e.target.getLatLng();
       const posB = mB.getLatLng();
@@ -238,7 +425,6 @@ function BessInteractiveMap({
       setMarkerA(nextA);
     });
 
-    // Glissement ultra-fluide de B (sans recréer l'instance du marqueur)
     mB.on('drag', (e) => {
       const posA = mA.getLatLng();
       const posB = e.target.getLatLng();
@@ -248,7 +434,6 @@ function BessInteractiveMap({
       setMarkerB(nextB);
     });
 
-    // Clic sur la carte pour positionner A ou B directement
     map.on('click', (e) => {
       const { lat, lng } = e.latlng;
       if (activeClickTargetRef.current === 'A') {
@@ -302,7 +487,7 @@ function BessInteractiveMap({
     }
   }, [mapCenter]);
 
-  // Synchronisation externe (ex: bouton "Réinitialiser les marqueurs") sans interrompre un drag en cours
+  // Synchronisation externe des marqueurs A et B sans interrompre un drag en cours
   useEffect(() => {
     const mA = markerARef.current;
     const mB = markerBRef.current;
@@ -322,6 +507,82 @@ function BessInteractiveMap({
     updateGeometryOverlay(markerA, markerB);
   }, [markerA, markerB, updateGeometryOverlay]);
 
+  // Affichage de la parcelle cadastrale IGN (comme dans NELSON BessSimulator)
+  useEffect(() => {
+    const parcelGroup = parcelLayerGroupRef.current;
+    if (!parcelGroup) return;
+    parcelGroup.clearLayers();
+
+    if (parcelData?.geometry) {
+      L.geoJSON(parcelData.geometry, {
+        style: {
+          color: '#38bdf8',
+          weight: 2.5,
+          fillColor: '#0284c7',
+          fillOpacity: 0.14,
+          dashArray: '5, 5',
+        },
+        interactive: false,
+      }).addTo(parcelGroup);
+    }
+  }, [parcelData]);
+
+  // Affichage du réseau Enedis HTA :
+  // - Lignes HTA souterraines en pointillé jaune
+  // - Lignes HTA aériennes en trait plein jaune/orangé
+  // - Postes HTA/BT avec carré rouge ⚡ cliquable pour positionner A
+  useEffect(() => {
+    const enedisGroup = enedisLayerGroupRef.current;
+    if (!enedisGroup) return;
+    enedisGroup.clearLayers();
+
+    if (!enedisNetwork) return;
+
+    // 1. Lignes HTA souterraines (en pointillé)
+    for (const feat of enedisNetwork.souterrainLines || []) {
+      if (!feat.geometry) continue;
+      L.geoJSON(feat.geometry, {
+        style: {
+          color: '#facc15',
+          weight: 3.5,
+          opacity: 0.95,
+          dashArray: '8, 8',
+        },
+        interactive: false,
+      }).addTo(enedisGroup);
+    }
+
+    // 2. Lignes HTA aériennes (en trait plein)
+    for (const feat of enedisNetwork.aerienLines || []) {
+      if (!feat.geometry) continue;
+      L.geoJSON(feat.geometry, {
+        style: {
+          color: '#f59e0b',
+          weight: 3.5,
+          opacity: 0.95,
+        },
+        interactive: false,
+      }).addTo(enedisGroup);
+    }
+
+    // 3. Transformateurs HTA/BT (Postes électriques Enedis)
+    for (const poste of enedisNetwork.postes || []) {
+      const pMarker = L.marker([poste.lat, poste.lng], {
+        icon: createEnedisPosteIcon(poste.isGround),
+        zIndexOffset: 500,
+      });
+
+      pMarker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e);
+        if (onSelectEnedisTransformer) {
+          onSelectEnedisTransformer(poste);
+        }
+      });
+
+      pMarker.addTo(enedisGroup);
+    }
+  }, [enedisNetwork, onSelectEnedisTransformer]);
+
   // Bascule Satellite / Plan
   const toggleMapMode = () => {
     const map = mapRef.current;
@@ -338,12 +599,42 @@ function BessInteractiveMap({
   };
 
   return (
-    <div className="relative w-full h-[400px] sm:h-[480px] bg-slate-200">
+    <div className="relative w-full h-[420px] sm:h-[500px] bg-slate-200">
       <div
         ref={containerRef}
-        style={{ width: '100%', height: '100%', minHeight: '400px' }}
+        style={{ width: '100%', height: '100%', minHeight: '420px' }}
         className="w-full h-full z-0"
       />
+
+      {/* Légende Enedis HTA/BT & Cadastre (en haut à gauche, décalée des contrôles de zoom) */}
+      <div className="absolute top-3 left-14 z-[400] bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-xl shadow-lg border border-white/15 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold pointer-events-none">
+        <span className="flex items-center gap-1.5">
+          <span className="w-4 h-4 rounded bg-red-600 border border-white flex items-center justify-center text-[10px]">
+            ⚡
+          </span>
+          <span>Transfo HTA/BT</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span
+            className="w-6 h-0 border-t-[3px] border-dashed border-yellow-400 inline-block"
+            aria-hidden="true"
+          />
+          <span>HTA souterraine</span>
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-6 h-[3px] bg-amber-500 inline-block" aria-hidden="true" />
+          <span>HTA aérienne</span>
+        </span>
+        {parcelData?.section && (
+          <span className="flex items-center gap-1.5 text-sky-300">
+            <span className="w-3.5 h-2.5 border border-dashed border-sky-400 bg-sky-500/20 inline-block" />
+            <span>
+              Parcelle {parcelData.section} {parcelData.numero}
+            </span>
+          </span>
+        )}
+      </div>
+
       <button
         type="button"
         onClick={toggleMapMode}
@@ -368,12 +659,17 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
   const [selectedAddress, setSelectedAddress] = useState('');
   const [addressError, setAddressError] = useState('');
 
-  // Étape 2 : Coordonnées Carte & Marqueurs A / B
+  // Étape 2 : Coordonnées Carte, Réseau Enedis HTA/BT & Parcelle Cadastrale
   const [mapCenter, setMapCenter] = useState({ lat: 44.8378, lng: -0.5792 });
+  const [searchedCoords, setSearchedCoords] = useState(null);
   const [markerA, setMarkerA] = useState(null); // Transformateur
   const [markerB, setMarkerB] = useState(null); // Terrain
-  const [activeClickTarget, setActiveClickTarget] = useState('A'); // 'A' | 'B'
+  const [activeClickTarget, setActiveClickTarget] = useState('B'); // 'A' | 'B'
+  const [isLoadingEnedis, setIsLoadingEnedis] = useState(false);
   const [enedisNotice, setEnedisNotice] = useState('');
+  const [enedisNetwork, setEnedisNetwork] = useState(null);
+  const [parcelData, setParcelData] = useState(null);
+  const [detectedPoste, setDetectedPoste] = useState(null);
 
   // Étape 4 : Formulaire de capture de lead
   const [fullName, setFullName] = useState('');
@@ -427,17 +723,127 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
     return () => clearTimeout(timer);
   }, [addressQuery, selectedAddress]);
 
-  // Initialisation des marqueurs A et B autour de la parcelle
-  const initializeMarkersAroundLocation = useCallback((lat, lng) => {
-    const initA = offsetCoordsMeters({ lat, lng }, 6, -8);
-    const initB = offsetCoordsMeters({ lat, lng }, -4, 6);
-    setMarkerA(initA);
-    setMarkerB(initB);
-    setActiveClickTarget('A');
-    setEnedisNotice(
-      'Déplacez le point A sur le transformateur électrique, et le point B sur l’emplacement souhaité sur votre terrain.'
-    );
+  // Analyse SIG Enedis Data-Fair + Cadastre IGN (comme dans NELSON)
+  const analyzeLocationWithEnedisAndCadastre = useCallback(async (lat, lng) => {
+    setSearchedCoords({ lat, lng });
+    setIsLoadingEnedis(true);
+    setEnedisNotice('Recherche automatique du transformateur HTA/BT Enedis et des lignes HTA...');
+
+    // Placement initial provisoire pendant le chargement
+    const fallbackA = offsetCoordsMeters({ lat, lng }, 6, -8);
+    const fallbackB = offsetCoordsMeters({ lat, lng }, -4, 6);
+    setMarkerA(fallbackA);
+    setMarkerB(fallbackB);
+    setMapCenter({ lat, lng });
+
+    try {
+      const delta = 0.008; // ~800m autour de l'adresse
+      const bbox = [lng - delta, lat - delta, lng + delta, lat + delta];
+
+      const [parcel, rawPostes, souterrainLines, aerienLines] = await Promise.all([
+        fetchCadastralParcelAtPoint(lat, lng),
+        fetchEnedisDatasetBbox('poste-electrique', bbox),
+        fetchEnedisDatasetBbox('reseau-souterrain-hta', bbox),
+        fetchEnedisDatasetBbox('reseau-hta', bbox),
+      ]);
+
+      setParcelData(parcel);
+
+      // Qualification de chaque poste HTA/BT Enedis selon la règle NELSON :
+      // Transfo Sol si alimenté en souterrain (distSouterrain <= 25m) et non sur ligne aérienne (distAerien > 15m)
+      const qualifiedPostes = [];
+      for (const p of rawPostes) {
+        const coords = p.geometry?.coordinates;
+        if (!coords || coords.length < 2) continue;
+        const [pLng, pLat] = coords;
+        const distSouterrain = minDistanceToEnedisLines(pLng, pLat, souterrainLines);
+        const distAerien = minDistanceToEnedisLines(pLng, pLat, aerienLines);
+        const isGround =
+          (distSouterrain <= 25 && distAerien > 15) ||
+          (distSouterrain <= 35 && distSouterrain < distAerien);
+
+        const { distToParcel, suggestedTerrainPoint } = closestPointOnParcelToTransformer(
+          pLat,
+          pLng,
+          parcel?.geometry,
+          lat,
+          lng
+        );
+
+        qualifiedPostes.push({
+          id: p._id,
+          lat: pLat,
+          lng: pLng,
+          commune: p.nom_commune || '',
+          distSouterrain,
+          distAerien,
+          isGround,
+          distToParcel,
+          suggestedTerrainPoint,
+        });
+      }
+
+      // Tri : priorité aux Transfos Sol proches de la parcelle, sinon le poste Enedis le plus proche
+      qualifiedPostes.sort((a, b) => {
+        const aNearGround = a.isGround && a.distToParcel <= 350 ? 1 : 0;
+        const bNearGround = b.isGround && b.distToParcel <= 350 ? 1 : 0;
+        if (aNearGround !== bNearGround) return bNearGround - aNearGround;
+        return a.distToParcel - b.distToParcel;
+      });
+
+      setEnedisNetwork({
+        postes: qualifiedPostes,
+        souterrainLines,
+        aerienLines,
+      });
+
+      if (qualifiedPostes.length > 0) {
+        const best = qualifiedPostes[0];
+        const nextA = { lat: best.lat, lng: best.lng };
+        const nextB = best.suggestedTerrainPoint || { lat, lng };
+
+        setDetectedPoste(best);
+        setMarkerA(nextA);
+        setMarkerB(nextB);
+        setMapCenter(nextA);
+        setActiveClickTarget('B');
+
+        const typeLabel = best.isGround
+          ? 'Transformateur HTA/BT au sol détecté automatiquement via Enedis'
+          : 'Poste HTA/BT Enedis détecté';
+        setEnedisNotice(
+          `${typeLabel}. Le point A a été placé sur le transformateur et le point B sur votre parcelle. Vous pouvez ajuster B sur l'emplacement souhaité.`
+        );
+      } else {
+        setDetectedPoste(null);
+        setActiveClickTarget('A');
+        setEnedisNotice(
+          "Aucun poste Enedis répertorié à proximité immédiate. Déplacez le point A sur le transformateur et le point B sur votre terrain."
+        );
+      }
+    } catch (err) {
+      console.warn('Erreur chargement SIG Enedis / Cadastre:', err);
+      setEnedisNotice(
+        'Déplacez le point A sur le transformateur électrique et le point B sur votre terrain.'
+      );
+    } finally {
+      setIsLoadingEnedis(false);
+    }
   }, []);
+
+  // Clic sur un autre transformateur Enedis affiché sur la carte
+  const handleSelectEnedisTransformer = useCallback(
+    (poste) => {
+      const nextA = { lat: poste.lat, lng: poste.lng };
+      setDetectedPoste(poste);
+      setMarkerA(nextA);
+      if (poste.suggestedTerrainPoint) {
+        setMarkerB(poste.suggestedTerrainPoint);
+      }
+      setActiveClickTarget('B');
+    },
+    []
+  );
 
   // Sélection d'une adresse depuis l'autocomplétion
   const handleSelectAddressFeature = (feature) => {
@@ -447,9 +853,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
     setAddressQuery(label);
     setSuggestions([]);
     setAddressError('');
-    setMapCenter({ lat, lng });
-    initializeMarkersAroundLocation(lat, lng);
     setStep(2);
+    analyzeLocationWithEnedisAndCadastre(lat, lng);
   };
 
   // Soumission manuelle du champ d'adresse
@@ -505,10 +910,9 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
         }
         setSelectedAddress(label);
         setAddressQuery(label);
-        setMapCenter({ lat, lng });
-        initializeMarkersAroundLocation(lat, lng);
         setIsLocatingGps(false);
         setStep(2);
+        analyzeLocationWithEnedisAndCadastre(lat, lng);
       },
       () => {
         setIsLocatingGps(false);
@@ -563,6 +967,14 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
         email: email.trim(),
         profilProprietaire: ownerProfile,
         adresseTerrain: selectedAddress || addressQuery,
+        parcelleCadastrale: parcelData
+          ? `Section ${parcelData.section} n°${parcelData.numero} (${parcelData.contenance || '?'} m²)`
+          : 'Non renseignée',
+        typeTransformateurEnedis: detectedPoste
+          ? detectedPoste.isGround
+            ? `Transfo Sol Enedis (HTA souterrain à ${detectedPoste.distSouterrain}m)`
+            : `Poste HTA/BT Enedis (HTA aérien à ${detectedPoste.distAerien}m)`
+          : 'Positionné manuellement',
         distanceMesureeMetres: `${distanceMeters ?? 'Non mesurée'} m`,
         statutEligibilite:
           eligibilityStatus === 'eligible'
@@ -724,7 +1136,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                           type="text"
                           value={addressQuery}
                           onChange={(e) => setAddressQuery(e.target.value)}
-                          placeholder="Ex : 12 Route des Vignes, 33700 Mérignac..."
+                          placeholder="Ex : 48 Chemin d'Espeyran, 30800 Saint-Gilles..."
                           style={{
                             color: '#0f172a',
                             WebkitTextFillColor: '#0f172a',
@@ -818,15 +1230,29 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
               <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
                 <div>
                   <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs uppercase tracking-wider mb-1">
-                    Étape 2 sur 4 • Localisation Satellite
+                    Étape 2 sur 4 • Localisation Satellite & Réseau Enedis
                   </span>
                   <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">
                     Positionnez le transformateur (A) et votre terrain (B)
                   </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
-                    <span className="font-semibold text-slate-800">{selectedAddress}</span>
-                  </p>
+                  <div className="flex flex-wrap items-center gap-3 mt-1">
+                    <p className="text-xs sm:text-sm text-slate-600 flex items-center gap-1.5">
+                      <MapPin className="w-4 h-4 text-blue-600 shrink-0" />
+                      <span className="font-semibold text-slate-800">{selectedAddress}</span>
+                    </p>
+                    {detectedPoste && (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          detectedPoste.isGround
+                            ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                            : 'bg-amber-100 text-amber-800 border border-amber-300'
+                        }`}
+                      >
+                        <Zap className="w-3.5 h-3.5" />
+                        {detectedPoste.isGround ? 'Transfo Sol Enedis détecté' : 'Poste HTA/BT Enedis détecté'}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <button
@@ -839,11 +1265,15 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                 </button>
               </div>
 
-              {/* Bandeau d'information */}
+              {/* Bandeau d'information Enedis */}
               <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs sm:text-sm text-blue-950 flex items-start gap-2.5">
-                <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                {isLoadingEnedis ? (
+                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0 mt-0.5" />
+                ) : (
+                  <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                )}
                 <div>
-                  <strong>Aide au repérage :</strong> {enedisNotice}
+                  <strong>Réseau Enedis HTA/BT :</strong> {enedisNotice}
                 </div>
               </div>
 
@@ -867,7 +1297,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                         Point A : Transformateur électrique
                       </div>
                       <div className="text-[11px] text-slate-500">
-                        Cliquez sur la carte ou glissez le point A
+                        Placé automatiquement sur le transfo Enedis (ou glissez A)
                       </div>
                     </div>
                   </div>
@@ -918,6 +1348,9 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   setMarkerB={setMarkerB}
                   activeClickTarget={activeClickTarget}
                   setActiveClickTarget={setActiveClickTarget}
+                  enedisNetwork={enedisNetwork}
+                  parcelData={parcelData}
+                  onSelectEnedisTransformer={handleSelectEnedisTransformer}
                 />
 
                 {/* Jauge de distance en direct superposée */}
@@ -943,15 +1376,22 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                 <button
                   type="button"
                   onClick={() => {
-                    const initA = offsetCoordsMeters(mapCenter, 6, -8);
-                    const initB = offsetCoordsMeters(mapCenter, -4, 6);
-                    setMarkerA(initA);
-                    setMarkerB(initB);
+                    if (detectedPoste) {
+                      const nextA = { lat: detectedPoste.lat, lng: detectedPoste.lng };
+                      setMarkerA(nextA);
+                      setMarkerB(
+                        detectedPoste.suggestedTerrainPoint ||
+                          offsetCoordsMeters(nextA, -6, 6)
+                      );
+                      setMapCenter(nextA);
+                    } else if (searchedCoords) {
+                      analyzeLocationWithEnedisAndCadastre(searchedCoords.lat, searchedCoords.lng);
+                    }
                   }}
                   className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer"
                 >
                   <RotateCcw className="w-4 h-4" />
-                  <span>Réinitialiser les marqueurs</span>
+                  <span>Recaler sur le transfo Enedis</span>
                 </button>
 
                 <button
