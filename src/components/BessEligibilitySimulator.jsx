@@ -20,6 +20,8 @@ import {
   Building2,
   Layers,
   Zap,
+  RotateCcw,
+  Check,
 } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -956,6 +958,17 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
     setTimeout(() => setShareCopied(false), 3000);
   };
 
+  // Réinitialisation complète pour refaire une nouvelle simulation
+  const handleResetSimulation = () => {
+    setAddressQuery('');
+    setSelectedAddress('');
+    setSuggestions([]);
+    setAddressError('');
+    setLeadSubmitted(false);
+    setSubmitError('');
+    setStep(1);
+  };
+
   return (
     <section
       id="simulateur-eligibilite"
@@ -1005,6 +1018,46 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
             <br className="hidden sm:inline" /> ainsi que le montant de votre rente annuelle garantie, 100 % financée et
             installée par ENR COURTAGE.
           </p>
+        </div>
+
+        {/* Barre de navigation interactive entre les étapes */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              { num: 1, label: '1. Adresse' },
+              { num: 2, label: '2. Carte satellite' },
+              { num: 3, label: '3. Votre Rente' },
+              { num: 4, label: '4. Validation' },
+            ].map((item) => {
+              const isActive = step === item.num;
+              const isDone = step > item.num;
+              const canNavigate = item.num === 1 || Boolean(selectedAddress);
+              return (
+                <button
+                  key={item.num}
+                  type="button"
+                  onClick={() => {
+                    if (canNavigate) {
+                      setStep(item.num);
+                    }
+                  }}
+                  disabled={!canNavigate}
+                  className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 border ${
+                    isActive
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-lg shadow-emerald-500/25 cursor-pointer'
+                      : isDone
+                      ? 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-500/40 cursor-pointer'
+                      : canNavigate
+                      ? 'bg-slate-800/90 hover:bg-slate-700 text-slate-200 border-slate-600 cursor-pointer'
+                      : 'bg-slate-800/50 text-slate-500 border-slate-700/60 cursor-not-allowed'
+                  }`}
+                >
+                  {isDone && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Conteneur Principal du Wizard */}
@@ -1150,14 +1203,24 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Changer d&apos;adresse</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Changer d&apos;adresse</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetSimulation}
+                    className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Nouvelle simulation</span>
+                  </button>
+                </div>
               </div>
 
               {/* Carte Satellite Interactive agrandie */}
@@ -1191,8 +1254,17 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
                 </div>
               </div>
 
-              {/* Bouton de validation vers l'Étape 3 */}
-              <div className="flex items-center justify-end pt-1">
+              {/* Boutons de navigation Étape 2 */}
+              <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center gap-2 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Étape précédente (Adresse)</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setStep(3)}
@@ -1210,6 +1282,26 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
           {/* =============================================================== */}
           {step === 3 && (
             <div className="p-6 sm:p-10 space-y-6">
+              {/* Barre supérieure d'actions rapides Étape 3 */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Retour à la carte</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetSimulation}
+                  className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Nouvelle simulation</span>
+                </button>
+              </div>
+
               {/* Cas 1 : Éligible */}
               {eligibilityStatus === 'eligible' && (
                 <div className="bg-emerald-50 border-2 border-emerald-500 rounded-3xl p-6 sm:p-8 text-center space-y-4">
@@ -1293,14 +1385,24 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
 
               {/* Boutons d'action Étape 3 */}
               <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center gap-2 cursor-pointer"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Retour à la carte</span>
-                </button>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center gap-2 cursor-pointer"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Retour à la carte</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetSimulation}
+                    className="px-5 py-3 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-sm flex items-center gap-2 cursor-pointer"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                    <span>Refaire une simulation</span>
+                  </button>
+                </div>
 
                 <button
                   type="button"
@@ -1343,10 +1445,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setLeadSubmitted(false);
-                      setStep(1);
-                    }}
+                    onClick={handleResetSimulation}
                     className="px-6 py-3 rounded-xl bg-slate-900 text-white font-bold text-sm cursor-pointer"
                   >
                     Faire une nouvelle simulation
@@ -1354,20 +1453,36 @@ export default function BessEligibilitySimulator({ isDirectMode = false, embedde
                 </div>
               ) : (
                 <div className="max-w-2xl mx-auto space-y-6">
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-200">
-                    <div>
-                      <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
-                        Où pouvons-nous vous envoyer votre proposition de bail ?
-                      </h3>
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
+                      Où pouvons-nous vous envoyer votre proposition de bail ?
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setStep(3)}
+                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <ArrowLeft className="w-4 h-4" />
+                        <span>Retour au résultat</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setStep(2)}
+                        className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Retour à la carte</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleResetSimulation}
+                        className="px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Nouvelle simulation</span>
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setStep(3)}
-                      className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      <span>Retour au résultat</span>
-                    </button>
                   </div>
 
                   {/* Rappel synthétique de la simulation */}
