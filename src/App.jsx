@@ -175,7 +175,6 @@ function MainPage() {
           <motion.div key="home" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={transition}>
             <div className="pt-20">
               <Hero setActiveTab={handleSetActiveTab} />
-              <BessEligibilitySimulator />
               <ConfigurateurCharpente />
               <WhyUsBentoSection scrollToContact={scrollToContact} />
               <div ref={contactFormRef} data-contact-form><ContactForm /></div>

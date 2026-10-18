@@ -1,21 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Battery, Car, Building, Zap, ArrowRight, Sun, Building2, Wheat, MapPin } from 'lucide-react';
+import { Car, Building, Zap, ArrowRight, Sun, Building2, Wheat, MapPin } from 'lucide-react';
+import BessEligibilitySimulator from '@/components/BessEligibilitySimulator';
 
 const Hero = ({ setActiveTab }) => {
   const navigate = useNavigate();
 
   const cards = [
-    {
-      id: 'batterie',
-      icon: <Battery className="h-7 w-7" />,
-      title: "Batterie de soutien réseau",
-      description: "Valorisez 20 m² de votre terrain, renforcez la stabilité du réseau électrique et générez une rente annuelle garantie pendant 20 ans",
-      accent: "#10b981",
-      isFeatured: true,
-      bgClass: "bg-gradient-to-b from-emerald-950/60 via-[#0a101d] to-[#070b14] border-emerald-400/50 hover:border-emerald-300 ring-1 ring-emerald-500/30"
-    },
     {
       id: 'toiture',
       icon: <Sun className="h-7 w-7" />,
@@ -23,6 +15,15 @@ const Hero = ({ setActiveTab }) => {
       description: "Valorisez votre toiture et générez des revenus annuels en revente d'électricité",
       accent: "#84cc16",
       bgClass: "bg-gradient-to-b from-lime-950/40 via-[#0a101d] to-[#070b14] border-lime-500/30 hover:border-lime-400"
+    },
+    {
+      id: 'sechoir',
+      icon: <Wheat className="h-7 w-7" />,
+      title: "Séchoir Multi-Matières BatiTech®",
+      description: "Séchez fourrage, céréales et plaquettes forestières grâce à la technologie thermovoltaïque Cogen'Air®",
+      accent: "#f59e0b",
+      isFeatured: true,
+      bgClass: "bg-gradient-to-b from-orange-950/40 via-[#0a101d] to-[#070b14] border-orange-500/30 hover:border-orange-400"
     },
     {
       id: 'irve',
@@ -65,6 +66,7 @@ const Hero = ({ setActiveTab }) => {
       navigate('/structure-metallique-sur-mesure');
       setActiveTab('structure_sur_mesure');
     } else if (cardId === 'sechoir') {
+      navigate('/sechoir-batitech');
       setActiveTab('sechoir');
     } else {
       setActiveTab(cardId);
@@ -129,7 +131,6 @@ const Hero = ({ setActiveTab }) => {
                 onClick={scrollToBessSimulator}
                 className="relative w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-100 text-slate-900 font-extrabold rounded-full shadow-2xl text-base transition-all transform group-hover:scale-105 flex items-center justify-center space-x-3 cursor-pointer"
               >
-                <Battery className="w-5 h-5 text-emerald-600" />
                 <span>Tester l&apos;éligibilité Batterie (30s)</span>
                 <ArrowRight className="w-5 h-5 text-amber-500" />
               </button>
@@ -150,7 +151,7 @@ const Hero = ({ setActiveTab }) => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-            className="mb-10"
+            className="mb-8"
           >
             <div
               className="relative rounded-3xl border-2 border-emerald-400/60 hover:border-emerald-300 bg-gradient-to-r from-emerald-950/80 via-[#0a1424] to-teal-950/70 transition-all duration-300 shadow-2xl backdrop-blur-md overflow-hidden group cursor-pointer"
@@ -170,22 +171,9 @@ const Hero = ({ setActiveTab }) => {
                 </div>
                 {/* Center & Right: Content + Actions */}
                 <div className="flex-1 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0"
-                      style={{ backgroundColor: '#10b98120', color: '#34d399', borderColor: '#10b98150' }}
-                    >
-                      <Battery className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400 block">
-                        0 € d&apos;investissement • 100 % financé par ENR COURTAGE
-                      </span>
-                      <h3 className="text-2xl lg:text-3xl font-black text-white group-hover:text-amber-300 transition-colors leading-tight">
-                        Batterie de <span className="enr-gradient-text-gold">Soutien Réseau</span>
-                      </h3>
-                    </div>
-                  </div>
+                  <h3 className="text-2xl lg:text-3xl font-black text-white group-hover:text-amber-300 transition-colors leading-tight">
+                    Batterie de <span className="enr-gradient-text-gold">Soutien Réseau</span>
+                  </h3>
                   <p className="text-gray-200 text-sm lg:text-base leading-relaxed">
                     Valorisez seulement <strong>20 m²</strong> de votre propriété (agricole, industrielle ou foncière) sans aucune installation solaire requise. Percevez une rente locative annuelle garantie pendant 20 ans tout en stabilisant le réseau électrique français.
                   </p>
@@ -215,7 +203,10 @@ const Hero = ({ setActiveTab }) => {
             </div>
           </motion.div>
 
-          <div className="text-center mb-10">
+          {/* Simulateur d'Éligibilité Batterie placé juste en dessous du grand cadre Batterie de soutien réseau */}
+          <BessEligibilitySimulator embeddedInHero={true} />
+
+          <div className="text-center mb-10 pt-4">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
               Nos Solutions Clé en Main
             </h2>
@@ -224,7 +215,7 @@ const Hero = ({ setActiveTab }) => {
             </p>
           </div>
 
-          {/* 6 Solution Cards (2 rows of 3) */}
+          {/* 6 Solution Cards (2 rows of 3) incluant Séchoir Multi-Matières BatiTech® en petit cadre */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cards.map((card, index) => (
               <motion.div
@@ -274,54 +265,6 @@ const Hero = ({ setActiveTab }) => {
               </motion.div>
             ))}
           </div>
-
-          {/* BatiTech Séchoir Full-Width Banner (Positionné sous la 2ème ligne des solutions) */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.7, ease: "easeOut" }}
-            className="mt-6"
-          >
-            <div
-              className="relative rounded-3xl border border-orange-500/30 hover:border-orange-400 bg-gradient-to-r from-orange-950/40 via-[#0a101d] to-amber-950/30 transition-all duration-300 shadow-2xl backdrop-blur-md cursor-pointer group overflow-hidden"
-              onClick={() => handleCardClick('sechoir')}
-            >
-              <div className="absolute top-4 right-4 bg-orange-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-lg z-10">
-                Nouveau
-              </div>
-              <div className="flex flex-col lg:flex-row items-center gap-6 p-7">
-                {/* Left: Image preview */}
-                <div className="w-full lg:w-1/3 rounded-2xl overflow-hidden flex-shrink-0">
-                  <img 
-                    src="/images/batitech/sechoir-batitech-3d.jpg?v=2" 
-                    alt="Séchoir Multi-Matières BatiTech" 
-                    className="w-full h-48 lg:h-56 object-cover rounded-2xl transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
-                {/* Center: Content */}
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 rounded-2xl flex items-center justify-center border transition-transform duration-300 group-hover:scale-110"
-                      style={{ backgroundColor: '#f59e0b15', color: '#f59e0b', borderColor: '#f59e0b30' }}>
-                      <Wheat className="h-6 w-6" />
-                    </div>
-                    <h3 className="text-2xl lg:text-3xl font-extrabold text-white group-hover:text-amber-300 transition-colors leading-tight">
-                      Séchoir Multi-Matières <span className="enr-gradient-text-gold">BatiTech<sup>®</sup></span>
-                    </h3>
-                  </div>
-                  <p className="text-gray-300 text-sm lg:text-base leading-relaxed max-w-2xl">
-                    Séchez fourrage, céréales et plaquettes forestières grâce à la technologie thermovoltaïque Cogen&apos;Air®. 
-                    Production d&apos;électricité photovoltaïque + récupération de chaleur air/solaire dans un bâtiment clé en main.
-                  </p>
-                </div>
-                {/* Right: CTA */}
-                <div className="flex items-center text-xs font-extrabold uppercase tracking-wider transition-all duration-300 group-hover:translate-x-1 text-orange-400 lg:flex-shrink-0">
-                  <span>Découvrir & Simuler</span>
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-2" />
-                </div>
-              </div>
-            </div>
-          </motion.div>
         </div>
 
       </div>

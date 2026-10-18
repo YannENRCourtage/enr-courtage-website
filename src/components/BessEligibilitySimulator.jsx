@@ -614,7 +614,7 @@ function BessInteractiveMap({
   );
 }
 
-export default function BessEligibilitySimulator({ isDirectMode = false }) {
+export default function BessEligibilitySimulator({ isDirectMode = false, embeddedInHero = false }) {
   // Wizard step: 1 = Adresse, 2 = Carte, 3 = Résultat, 4 = Contact Lead
   const [step, setStep] = useState(1);
 
@@ -959,14 +959,22 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
   return (
     <section
       id="simulateur-eligibilite"
-      className="py-12 md:py-20 bg-gradient-to-b from-slate-900 via-slate-900 to-blue-950 text-white relative overflow-hidden scroll-mt-16"
+      className={
+        embeddedInHero
+          ? 'pt-2 pb-14 text-white relative scroll-mt-24'
+          : 'py-12 md:py-20 bg-gradient-to-b from-slate-900 via-slate-900 to-blue-950 text-white relative overflow-hidden scroll-mt-16'
+      }
       aria-labelledby="simulator-heading"
     >
       {/* Halo lumineux d'arrière-plan */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+      {!embeddedInHero && (
+        <>
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
+        </>
+      )}
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div className={embeddedInHero ? 'w-full relative z-10' : 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10'}>
         {/* Bandeau compact spécial mode Facebook / Direct */}
         {isDirectMode && (
           <div className="mb-6 bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-4 py-3 rounded-2xl shadow-lg border border-emerald-400/40 flex flex-wrap items-center justify-between gap-3">
