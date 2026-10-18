@@ -12,10 +12,7 @@ import {
   Camera,
   Send,
   Loader2,
-  Check,
-  Info,
   Sparkles,
-  RotateCcw,
   Share2,
   Phone,
   Mail,
@@ -29,6 +26,7 @@ import 'leaflet/dist/leaflet.css';
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mrblwazb';
 const ENEDIS_DATAFAIR_BASE = 'https://opendata.enedis.fr/data-fair/api/v1/datasets';
+const OPTIMAL_RADIUS_METERS = 40;
 
 // Calcul exact de la distance en mètres entre 2 points GPS (formule de Haversine)
 function calculateDistanceMeters(pointA, pointB) {
@@ -44,16 +42,6 @@ function calculateDistanceMeters(pointA, pointB) {
       Math.sin(dLng / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Math.round(R * c * 10) / 10;
-}
-
-// Décaler légèrement un point GPS de X mètres
-function offsetCoordsMeters(center, dNorthMeters, dEastMeters) {
-  const dLat = dNorthMeters / 111320;
-  const dLng = dEastMeters / (111320 * Math.cos((center.lat * Math.PI) / 180));
-  return {
-    lat: center.lat + dLat,
-    lng: center.lng + dLng,
-  };
 }
 
 // ============================================================================
@@ -155,10 +143,21 @@ async function fetchCadastralParcelAtPoint(lat, lng) {
 
 // Trouve le point le plus proche sur le contour de la parcelle par rapport à un transformateur
 function closestPointOnParcelToTransformer(tLat, tLng, parcelGeometry, fallbackLat, fallbackLng) {
+  const directDist = calculateDistanceMeters(
+    { lat: tLat, lng: tLng },
+    { lat: fallbackLat, lng: fallbackLng }
+  );
   if (!parcelGeometry) {
-    const dist = calculateDistanceMeters({ lat: tLat, lng: tLng }, { lat: fallbackLat, lng: fallbackLng });
     return {
-      distToParcel: dist ?? 9999,
+      distToParcel: directDist ?? 9999,
+      suggestedTerrainPoint: { lat: fallbackLat, lng: fallbackLng },
+    };
+  }
+
+  // Si le point de l'adresse est déjà dans le rayon de 40m du transformateur, on garde directement le point de l'adresse
+  if (directDist !== null && directDist <= OPTIMAL_RADIUS_METERS) {
+    return {
+      distToParcel: directDist,
       suggestedTerrainPoint: { lat: fallbackLat, lng: fallbackLng },
     };
   }
@@ -200,45 +199,39 @@ function closestPointOnParcelToTransformer(tLat, tLng, parcelGeometry, fallbackL
     }
   }
 
-  // On décale légèrement (7m) vers l'intérieur de la parcelle pour poser le point B sur le terrain
-  const vx = addrXY.x - bestX;
-  const vy = addrXY.y - bestY;
-  const vLen = Math.hypot(vx, vy) || 1;
-  const nudge = Math.min(7, vLen * 0.4);
-  const bXY = {
-    x: bestX + (vx / vLen) * nudge,
-    y: bestY + (vy / vLen) * nudge,
-  };
+  // Si la bordure de la parcelle est proche du transfo (<= 40m), on place le curseur à l'intérieur de la parcelle près du transfo
+  if (bestDist <= OPTIMAL_RADIUS_METERS) {
+    const vx = addrXY.x - bestX;
+    const vy = addrXY.y - bestY;
+    const vLen = Math.hypot(vx, vy) || 1;
+    const nudge = Math.min(8, vLen * 0.4);
+    const bXY = {
+      x: bestX + (vx / vLen) * nudge,
+      y: bestY + (vy / vLen) * nudge,
+    };
+    return {
+      distToParcel: Math.round(bestDist * 10) / 10,
+      suggestedTerrainPoint: fromLocalXY(bXY.x, bXY.y, tLat),
+    };
+  }
 
   return {
     distToParcel: Math.round(bestDist * 10) / 10,
-    suggestedTerrainPoint: fromLocalXY(bXY.x, bXY.y, tLat),
+    suggestedTerrainPoint: { lat: fallbackLat, lng: fallbackLng },
   };
 }
 
-// Icônes épurées uniquement avec le point A et le point B
-const createMarkerAIcon = () =>
+// Curseur déplaçable unique pour l'emplacement sur le terrain
+const createTerrainCursorIcon = () =>
   new L.DivIcon({
-    className: 'bess-marker-a',
+    className: 'bess-marker-terrain',
     html: `
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#f97316,#ea580c);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;cursor:grab;user-select:none;">
-        A
+      <div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:15px;cursor:grab;user-select:none;">
+        <div style="width:10px;height:10px;border-radius:50%;background:#ffffff;"></div>
       </div>
     `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-  });
-
-const createMarkerBIcon = () =>
-  new L.DivIcon({
-    className: 'bess-marker-b',
-    html: `
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);border:3px solid #fff;box-shadow:0 4px 14px rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:16px;cursor:grab;user-select:none;">
-        B
-      </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
   });
 
 // Icône des postes HTA/BT Enedis (style NELSON : carré rouge avec éclair ⚡)
@@ -247,9 +240,9 @@ const createEnedisPosteIcon = (isGround) =>
     className: 'enedis-poste-marker',
     html: `
       <div style="width:22px;height:22px;background:${
-        isGround ? '#dc2626' : '#64748b'
-      };border:2px solid #ffffff;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:pointer;" title="${
-      isGround ? 'Transformateur HTA/BT au Sol (Enedis)' : 'Poste HTA/BT Aérien/Poteau (Enedis)'
+        isGround ? '#dc2626' : '#dc2626'
+      };border:2px solid #ffffff;border-radius:4px;box-shadow:0 2px 8px rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff;cursor:pointer;" title="${
+      isGround ? 'Transformateur HTA/BT au Sol (Enedis)' : 'Poste HTA/BT (Enedis)'
     }">
         ⚡
       </div>
@@ -258,24 +251,24 @@ const createEnedisPosteIcon = (isGround) =>
     iconAnchor: [11, 11],
   });
 
-// Composant dédié pour la Carte Satellite Leaflet (avec couches Enedis HTA & Cadastre de NELSON)
+// Composant dédié pour la Carte Satellite Leaflet
+// - Cercles fixes de 40m autour de CHAQUE transformateur Enedis présent sur la carte
+// - Aucun bouton/marqueur A déplaçable : les transformateurs Enedis sont fixes
+// - Un seul curseur terrain déplaçable relié au transformateur Enedis le plus proche (ou sélectionné)
+// - Aucune étiquette de distance sur la ligne de la carte (uniquement dans le cadre en bas à gauche)
 function BessInteractiveMap({
   mapCenter,
   markerA,
   markerB,
   setMarkerA,
   setMarkerB,
-  activeClickTarget,
-  setActiveClickTarget,
   enedisNetwork,
   parcelData,
   onSelectEnedisTransformer,
 }) {
   const containerRef = useRef(null);
   const mapRef = useRef(null);
-  const markerARef = useRef(null);
   const markerBRef = useRef(null);
-  const circleRef = useRef(null);
   const lineRef = useRef(null);
   const enedisLayerGroupRef = useRef(null);
   const parcelLayerGroupRef = useRef(null);
@@ -283,38 +276,44 @@ function BessInteractiveMap({
   const osmLayerRef = useRef(null);
   const [mapMode, setMapMode] = useState('satellite');
 
-  const activeClickTargetRef = useRef(activeClickTarget);
-  activeClickTargetRef.current = activeClickTarget;
+  const enedisPostesRef = useRef([]);
+  enedisPostesRef.current = enedisNetwork?.postes || [];
 
-  // Mise à jour impérative de la ligne, du cercle et du tooltip pendant le glissement pour une fluidité parfaite
-  const updateGeometryOverlay = useCallback((ptA, ptB) => {
-    const map = mapRef.current;
-    if (!map || !ptA || !ptB) return;
+  const markerARef = useRef(markerA);
+  markerARef.current = markerA;
 
+  // Trouve le transformateur Enedis le plus proche d'une position donnée sur le terrain
+  const findClosestEnedisPoste = useCallback((ptB) => {
+    const postes = enedisPostesRef.current;
+    if (!postes || postes.length === 0 || !ptB) return markerARef.current;
+    let best = postes[0];
+    let bestDist = calculateDistanceMeters(ptB, { lat: best.lat, lng: best.lng }) ?? Infinity;
+    for (let i = 1; i < postes.length; i++) {
+      const p = postes[i];
+      const d = calculateDistanceMeters(ptB, { lat: p.lat, lng: p.lng }) ?? Infinity;
+      if (d < bestDist) {
+        bestDist = d;
+        best = p;
+      }
+    }
+    return { lat: best.lat, lng: best.lng, poste: best };
+  }, []);
+
+  // Mise à jour impérative de la ligne reliant le transformateur fixe et le curseur terrain
+  const updateLineOverlay = useCallback((ptA, ptB) => {
+    if (!lineRef.current || !ptA || !ptB) return;
     const dist = calculateDistanceMeters(ptA, ptB);
-    const color = dist <= 30 ? '#10b981' : dist <= 50 ? '#f59e0b' : '#ef4444';
+    const color =
+      dist <= OPTIMAL_RADIUS_METERS ? '#10b981' : dist <= 60 ? '#f59e0b' : '#ef4444';
 
-    if (circleRef.current) {
-      circleRef.current.setLatLng([ptA.lat, ptA.lng]);
-      circleRef.current.setStyle({
-        color,
-        fillColor: color,
-      });
-    }
-
-    if (lineRef.current) {
-      lineRef.current.setLatLngs([
-        [ptA.lat, ptA.lng],
-        [ptB.lat, ptB.lng],
-      ]);
-      lineRef.current.setStyle({
-        color,
-        dashArray: dist <= 30 ? null : '6, 6',
-      });
-      lineRef.current.setTooltipContent(
-        `<div style="font-weight:900;font-size:12px;color:#0f172a;padding:2px 6px;">${dist} m</div>`
-      );
-    }
+    lineRef.current.setLatLngs([
+      [ptA.lat, ptA.lng],
+      [ptB.lat, ptB.lng],
+    ]);
+    lineRef.current.setStyle({
+      color,
+      dashArray: dist <= OPTIMAL_RADIUS_METERS ? null : '6, 6',
+    });
   }, []);
 
   // Initialisation de la carte au montage du composant
@@ -358,27 +357,19 @@ function BessInteractiveMap({
     satLayerRef.current = satLayer;
     osmLayerRef.current = osmLayer;
 
-    // Groupes de calques pour le cadastre et le réseau Enedis HTA/BT
+    // Groupes de calques pour le cadastre et le réseau Enedis HTA/BT (avec cercles fixes de 40m)
     const parcelGroup = L.layerGroup().addTo(map);
     const enedisGroup = L.layerGroup().addTo(map);
     parcelLayerGroupRef.current = parcelGroup;
     enedisLayerGroupRef.current = enedisGroup;
 
-    // Création unique du cercle, de la ligne et des marqueurs A et B
-    const initialA = markerA || offsetCoordsMeters(mapCenter, 6, -8);
-    const initialB = markerB || offsetCoordsMeters(mapCenter, -4, 6);
+    const initialA = markerA || mapCenter;
+    const initialB = markerB || mapCenter;
     const initialDist = calculateDistanceMeters(initialA, initialB);
     const initialColor =
-      initialDist <= 30 ? '#10b981' : initialDist <= 50 ? '#f59e0b' : '#ef4444';
+      initialDist <= OPTIMAL_RADIUS_METERS ? '#10b981' : initialDist <= 60 ? '#f59e0b' : '#ef4444';
 
-    const circle = L.circle([initialA.lat, initialA.lng], {
-      radius: 30,
-      color: initialColor,
-      weight: 2.5,
-      fillColor: initialColor,
-      fillOpacity: 0.16,
-    }).addTo(map);
-
+    // Ligne entre le transformateur fixe et le curseur terrain (sans étiquette de distance sur la carte)
     const line = L.polyline(
       [
         [initialA.lat, initialA.lng],
@@ -386,73 +377,43 @@ function BessInteractiveMap({
       ],
       {
         color: initialColor,
-        weight: 4,
-        dashArray: initialDist <= 30 ? null : '6, 6',
+        weight: 3.5,
+        dashArray: initialDist <= OPTIMAL_RADIUS_METERS ? null : '6, 6',
       }
     ).addTo(map);
 
-    line
-      .bindTooltip(
-        `<div style="font-weight:900;font-size:12px;color:#0f172a;padding:2px 6px;">${initialDist} m</div>`,
-        {
-          permanent: true,
-          direction: 'center',
-          className: 'bess-distance-tooltip',
-        }
-      )
-      .openTooltip();
-
-    const mA = L.marker([initialA.lat, initialA.lng], {
-      icon: createMarkerAIcon(),
-      draggable: true,
-      autoPan: true,
-      zIndexOffset: 1000,
-    }).addTo(map);
-
+    // Curseur déplaçable du terrain
     const mB = L.marker([initialB.lat, initialB.lng], {
-      icon: createMarkerBIcon(),
+      icon: createTerrainCursorIcon(),
       draggable: true,
       autoPan: true,
       zIndexOffset: 950,
     }).addTo(map);
 
-    mA.on('drag', (e) => {
-      const posA = e.target.getLatLng();
-      const posB = mB.getLatLng();
-      const nextA = { lat: posA.lat, lng: posA.lng };
-      const nextB = { lat: posB.lat, lng: posB.lng };
-      updateGeometryOverlay(nextA, nextB);
-      setMarkerA(nextA);
-    });
-
     mB.on('drag', (e) => {
-      const posA = mA.getLatLng();
       const posB = e.target.getLatLng();
-      const nextA = { lat: posA.lat, lng: posA.lng };
       const nextB = { lat: posB.lat, lng: posB.lng };
-      updateGeometryOverlay(nextA, nextB);
+      const closestA = findClosestEnedisPoste(nextB) || markerARef.current;
+      if (closestA) {
+        updateLineOverlay({ lat: closestA.lat, lng: closestA.lng }, nextB);
+        setMarkerA({ lat: closestA.lat, lng: closestA.lng });
+      }
       setMarkerB(nextB);
     });
 
     map.on('click', (e) => {
       const { lat, lng } = e.latlng;
-      if (activeClickTargetRef.current === 'A') {
-        mA.setLatLng([lat, lng]);
-        const posB = mB.getLatLng();
-        updateGeometryOverlay({ lat, lng }, { lat: posB.lat, lng: posB.lng });
-        setMarkerA({ lat, lng });
-        setActiveClickTarget('B');
-      } else {
-        mB.setLatLng([lat, lng]);
-        const posA = mA.getLatLng();
-        updateGeometryOverlay({ lat: posA.lat, lng: posA.lng }, { lat, lng });
-        setMarkerB({ lat, lng });
+      const nextB = { lat, lng };
+      mB.setLatLng([lat, lng]);
+      const closestA = findClosestEnedisPoste(nextB) || markerARef.current;
+      if (closestA) {
+        updateLineOverlay({ lat: closestA.lat, lng: closestA.lng }, nextB);
+        setMarkerA({ lat: closestA.lat, lng: closestA.lng });
       }
+      setMarkerB(nextB);
     });
 
-    circleRef.current = circle;
     lineRef.current = line;
-    markerARef.current = mA;
     markerBRef.current = mB;
     mapRef.current = map;
 
@@ -487,27 +448,21 @@ function BessInteractiveMap({
     }
   }, [mapCenter]);
 
-  // Synchronisation externe des marqueurs A et B sans interrompre un drag en cours
+  // Synchronisation externe du curseur terrain et de la ligne sans interrompre un drag en cours
   useEffect(() => {
-    const mA = markerARef.current;
     const mB = markerBRef.current;
-    if (!mA || !mB || !markerA || !markerB) return;
+    if (!mB || !markerA || !markerB) return;
 
-    const curA = mA.getLatLng();
     const curB = mB.getLatLng();
-    const diffA = Math.abs(curA.lat - markerA.lat) + Math.abs(curA.lng - markerA.lng);
     const diffB = Math.abs(curB.lat - markerB.lat) + Math.abs(curB.lng - markerB.lng);
 
-    if (diffA > 1e-7) {
-      mA.setLatLng([markerA.lat, markerA.lng]);
-    }
     if (diffB > 1e-7) {
       mB.setLatLng([markerB.lat, markerB.lng]);
     }
-    updateGeometryOverlay(markerA, markerB);
-  }, [markerA, markerB, updateGeometryOverlay]);
+    updateLineOverlay(markerA, markerB);
+  }, [markerA, markerB, updateLineOverlay]);
 
-  // Affichage de la parcelle cadastrale IGN (comme dans NELSON BessSimulator)
+  // Affichage de la parcelle cadastrale IGN
   useEffect(() => {
     const parcelGroup = parcelLayerGroupRef.current;
     if (!parcelGroup) return;
@@ -527,10 +482,11 @@ function BessInteractiveMap({
     }
   }, [parcelData]);
 
-  // Affichage du réseau Enedis HTA :
+  // Affichage du réseau Enedis HTA & des cercles fixes de 40m autour de CHAQUE transformateur :
   // - Lignes HTA souterraines en pointillé jaune
-  // - Lignes HTA aériennes en trait plein jaune/orangé
-  // - Postes HTA/BT avec carré rouge ⚡ cliquable pour positionner A
+  // - Lignes HTA aériennes en trait plein orangé
+  // - Cercle fixe de 40m autour de chaque poste HTA/BT Enedis présent sur la carte
+  // - Carré rouge ⚡ sur chaque poste HTA/BT Enedis
   useEffect(() => {
     const enedisGroup = enedisLayerGroupRef.current;
     if (!enedisGroup) return;
@@ -565,11 +521,22 @@ function BessInteractiveMap({
       }).addTo(enedisGroup);
     }
 
-    // 3. Transformateurs HTA/BT (Postes électriques Enedis)
+    // 3. Transformateurs HTA/BT Enedis + Cercle fixe de 40m autour de chaque transformateur
     for (const poste of enedisNetwork.postes || []) {
+      // Cercle fixe de 40m centré exactement sur le transformateur Enedis
+      L.circle([poste.lat, poste.lng], {
+        radius: OPTIMAL_RADIUS_METERS,
+        color: '#f59e0b',
+        weight: 2.5,
+        fillColor: '#f59e0b',
+        fillOpacity: 0.16,
+        interactive: false,
+      }).addTo(enedisGroup);
+
+      // Icône fixe du transformateur Enedis (carré rouge ⚡)
       const pMarker = L.marker([poste.lat, poste.lng], {
         icon: createEnedisPosteIcon(poste.isGround),
-        zIndexOffset: 500,
+        zIndexOffset: 700,
       });
 
       pMarker.on('click', (e) => {
@@ -599,20 +566,20 @@ function BessInteractiveMap({
   };
 
   return (
-    <div className="relative w-full h-[420px] sm:h-[500px] bg-slate-200">
+    <div className="relative w-full h-[560px] sm:h-[660px] bg-slate-200">
       <div
         ref={containerRef}
-        style={{ width: '100%', height: '100%', minHeight: '420px' }}
+        style={{ width: '100%', height: '100%', minHeight: '560px' }}
         className="w-full h-full z-0"
       />
 
-      {/* Légende Enedis HTA/BT & Cadastre (en haut à gauche, décalée des contrôles de zoom) */}
+      {/* Légende Enedis HTA/BT & Cadastre */}
       <div className="absolute top-3 left-14 z-[400] bg-slate-900/90 backdrop-blur-md text-white px-3 py-2 rounded-xl shadow-lg border border-white/15 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-semibold pointer-events-none">
         <span className="flex items-center gap-1.5">
           <span className="w-4 h-4 rounded bg-red-600 border border-white flex items-center justify-center text-[10px]">
             ⚡
           </span>
-          <span>Transfo HTA/BT</span>
+          <span>Transfo HTA/BT (rayon 40m)</span>
         </span>
         <span className="flex items-center gap-1.5">
           <span
@@ -661,12 +628,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
 
   // Étape 2 : Coordonnées Carte, Réseau Enedis HTA/BT & Parcelle Cadastrale
   const [mapCenter, setMapCenter] = useState({ lat: 44.8378, lng: -0.5792 });
-  const [searchedCoords, setSearchedCoords] = useState(null);
-  const [markerA, setMarkerA] = useState(null); // Transformateur
-  const [markerB, setMarkerB] = useState(null); // Terrain
-  const [activeClickTarget, setActiveClickTarget] = useState('B'); // 'A' | 'B'
-  const [isLoadingEnedis, setIsLoadingEnedis] = useState(false);
-  const [enedisNotice, setEnedisNotice] = useState('');
+  const [markerA, setMarkerA] = useState(null); // Transformateur Enedis fixe le plus proche
+  const [markerB, setMarkerB] = useState(null); // Emplacement sur le terrain
   const [enedisNetwork, setEnedisNetwork] = useState(null);
   const [parcelData, setParcelData] = useState(null);
   const [detectedPoste, setDetectedPoste] = useState(null);
@@ -684,14 +647,14 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
   const [submitError, setSubmitError] = useState('');
   const [shareCopied, setShareCopied] = useState(false);
 
-  // Distance en temps réel entre A et B
+  // Distance en temps réel entre le transformateur Enedis et le curseur terrain
   const distanceMeters = calculateDistanceMeters(markerA, markerB);
 
-  // Statut d'éligibilité
+  // Statut d'éligibilité (rayon de 40m autour du transformateur)
   const eligibilityStatus = (() => {
     if (distanceMeters === null) return 'pending';
-    if (distanceMeters <= 30) return 'eligible';
-    if (distanceMeters <= 50) return 'borderline';
+    if (distanceMeters <= OPTIMAL_RADIUS_METERS) return 'eligible';
+    if (distanceMeters <= 60) return 'borderline';
     return 'too_far';
   })();
 
@@ -725,15 +688,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
 
   // Analyse SIG Enedis Data-Fair + Cadastre IGN (comme dans NELSON)
   const analyzeLocationWithEnedisAndCadastre = useCallback(async (lat, lng) => {
-    setSearchedCoords({ lat, lng });
-    setIsLoadingEnedis(true);
-    setEnedisNotice('Recherche automatique du transformateur HTA/BT Enedis et des lignes HTA...');
-
-    // Placement initial provisoire pendant le chargement
-    const fallbackA = offsetCoordsMeters({ lat, lng }, 6, -8);
-    const fallbackB = offsetCoordsMeters({ lat, lng }, -4, 6);
-    setMarkerA(fallbackA);
-    setMarkerB(fallbackB);
+    setMarkerA({ lat, lng });
+    setMarkerB({ lat, lng });
     setMapCenter({ lat, lng });
 
     try {
@@ -749,8 +705,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
 
       setParcelData(parcel);
 
-      // Qualification de chaque poste HTA/BT Enedis selon la règle NELSON :
-      // Transfo Sol si alimenté en souterrain (distSouterrain <= 25m) et non sur ligne aérienne (distAerien > 15m)
+      // Qualification de chaque poste HTA/BT Enedis selon la règle NELSON
       const qualifiedPostes = [];
       for (const p of rawPostes) {
         const coords = p.geometry?.coordinates;
@@ -783,13 +738,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
         });
       }
 
-      // Tri : priorité aux Transfos Sol proches de la parcelle, sinon le poste Enedis le plus proche
-      qualifiedPostes.sort((a, b) => {
-        const aNearGround = a.isGround && a.distToParcel <= 350 ? 1 : 0;
-        const bNearGround = b.isGround && b.distToParcel <= 350 ? 1 : 0;
-        if (aNearGround !== bNearGround) return bNearGround - aNearGround;
-        return a.distToParcel - b.distToParcel;
-      });
+      // Tri par proximité immédiate à la parcelle/adresse
+      qualifiedPostes.sort((a, b) => a.distToParcel - b.distToParcel);
 
       setEnedisNetwork({
         postes: qualifiedPostes,
@@ -805,45 +755,24 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
         setDetectedPoste(best);
         setMarkerA(nextA);
         setMarkerB(nextB);
-        setMapCenter(nextA);
-        setActiveClickTarget('B');
-
-        const typeLabel = best.isGround
-          ? 'Transformateur HTA/BT au sol détecté automatiquement via Enedis'
-          : 'Poste HTA/BT Enedis détecté';
-        setEnedisNotice(
-          `${typeLabel}. Le point A a été placé sur le transformateur et le point B sur votre parcelle. Vous pouvez ajuster B sur l'emplacement souhaité.`
-        );
+        setMapCenter({
+          lat: (nextA.lat + nextB.lat) / 2,
+          lng: (nextA.lng + nextB.lng) / 2,
+        });
       } else {
         setDetectedPoste(null);
-        setActiveClickTarget('A');
-        setEnedisNotice(
-          "Aucun poste Enedis répertorié à proximité immédiate. Déplacez le point A sur le transformateur et le point B sur votre terrain."
-        );
       }
     } catch (err) {
       console.warn('Erreur chargement SIG Enedis / Cadastre:', err);
-      setEnedisNotice(
-        'Déplacez le point A sur le transformateur électrique et le point B sur votre terrain.'
-      );
-    } finally {
-      setIsLoadingEnedis(false);
     }
   }, []);
 
-  // Clic sur un autre transformateur Enedis affiché sur la carte
-  const handleSelectEnedisTransformer = useCallback(
-    (poste) => {
-      const nextA = { lat: poste.lat, lng: poste.lng };
-      setDetectedPoste(poste);
-      setMarkerA(nextA);
-      if (poste.suggestedTerrainPoint) {
-        setMarkerB(poste.suggestedTerrainPoint);
-      }
-      setActiveClickTarget('B');
-    },
-    []
-  );
+  // Clic sur un transformateur Enedis affiché sur la carte
+  const handleSelectEnedisTransformer = useCallback((poste) => {
+    const nextA = { lat: poste.lat, lng: poste.lng };
+    setDetectedPoste(poste);
+    setMarkerA(nextA);
+  }, []);
 
   // Sélection d'une adresse depuis l'autocomplétion
   const handleSelectAddressFeature = (feature) => {
@@ -974,7 +903,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
           ? detectedPoste.isGround
             ? `Transfo Sol Enedis (HTA souterrain à ${detectedPoste.distSouterrain}m)`
             : `Poste HTA/BT Enedis (HTA aérien à ${detectedPoste.distAerien}m)`
-          : 'Positionné manuellement',
+          : 'Poste Enedis',
         distanceMesureeMetres: `${distanceMeters ?? 'Non mesurée'} m`,
         statutEligibilite:
           eligibilityStatus === 'eligible'
@@ -1070,42 +999,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
           </p>
         </div>
 
-        {/* Barre de progression des 4 étapes */}
-        <div className="max-w-3xl mx-auto mb-8">
-          <div className="grid grid-cols-4 gap-2">
-            {[
-              { num: 1, label: '1. Adresse' },
-              { num: 2, label: '2. Carte satellite' },
-              { num: 3, label: '3. Votre Rente' },
-              { num: 4, label: '4. Validation' },
-            ].map((item) => {
-              const isActive = step === item.num;
-              const isDone = step > item.num;
-              return (
-                <button
-                  key={item.num}
-                  type="button"
-                  onClick={() => {
-                    if (item.num < step || (item.num === 2 && selectedAddress)) {
-                      setStep(item.num);
-                    }
-                  }}
-                  className={`py-2.5 px-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-1.5 border ${
-                    isActive
-                      ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-lg shadow-emerald-500/25'
-                      : isDone
-                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-500/40 cursor-pointer'
-                      : 'bg-slate-800/70 text-slate-400 border-slate-700 cursor-default'
-                  }`}
-                >
-                  {isDone && <Check className="w-4 h-4 text-emerald-400 shrink-0" />}
-                  <span className="truncate">{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Conteneur Principal du Wizard */}
         <div className="bg-white text-slate-900 rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
           {/* =============================================================== */}
@@ -1115,9 +1008,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
             <div className="p-6 sm:p-10 md:p-12">
               <div className="max-w-2xl mx-auto space-y-6">
                 <div className="text-center space-y-2">
-                  <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs uppercase tracking-wider">
-                    Étape 1 sur 4 • Localisation de la parcelle
-                  </span>
                   <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900">
                     Où se situe votre terrain ?
                   </h3>
@@ -1226,14 +1116,11 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
           {/* ÉTAPE 2 : CARTE SATELLITE INTERACTIVE                           */}
           {/* =============================================================== */}
           {step === 2 && (
-            <div className="p-5 sm:p-8 space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-200">
+            <div className="p-5 sm:p-8 space-y-5">
+              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-200">
                 <div>
-                  <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-700 font-bold text-xs uppercase tracking-wider mb-1">
-                    Étape 2 sur 4 • Localisation Satellite & Réseau Enedis
-                  </span>
                   <h3 className="text-xl sm:text-2xl font-extrabold text-slate-900">
-                    Positionnez le transformateur (A) et votre terrain (B)
+                    Positionnez l&apos;emplacement souhaité sur votre terrain
                   </h3>
                   <div className="flex flex-wrap items-center gap-3 mt-1">
                     <p className="text-xs sm:text-sm text-slate-600 flex items-center gap-1.5">
@@ -1265,80 +1152,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                 </button>
               </div>
 
-              {/* Bandeau d'information Enedis */}
-              <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs sm:text-sm text-blue-950 flex items-start gap-2.5">
-                {isLoadingEnedis ? (
-                  <Loader2 className="w-5 h-5 text-blue-600 animate-spin shrink-0 mt-0.5" />
-                ) : (
-                  <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                )}
-                <div>
-                  <strong>Réseau Enedis HTA/BT :</strong> {enedisNotice}
-                </div>
-              </div>
-
-              {/* Sélecteur de mode de clic rapide (idéal mobile & desktop) */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setActiveClickTarget('A')}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition flex items-center justify-between cursor-pointer ${
-                    activeClickTarget === 'A'
-                      ? 'border-orange-500 bg-orange-50 shadow-md'
-                      : 'border-slate-200 hover:border-orange-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-orange-500 text-white font-black text-sm flex items-center justify-center shrink-0">
-                      A
-                    </span>
-                    <div>
-                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                        Point A : Transformateur électrique
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        Placé automatiquement sur le transfo Enedis (ou glissez A)
-                      </div>
-                    </div>
-                  </div>
-                  {activeClickTarget === 'A' && (
-                    <span className="text-[10px] font-black uppercase bg-orange-500 text-white px-2 py-0.5 rounded-full">
-                      Actif
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveClickTarget('B')}
-                  className={`p-3.5 rounded-2xl border-2 text-left transition flex items-center justify-between cursor-pointer ${
-                    activeClickTarget === 'B'
-                      ? 'border-emerald-500 bg-emerald-50 shadow-md'
-                      : 'border-slate-200 hover:border-emerald-300 bg-white'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-full bg-emerald-600 text-white font-black text-sm flex items-center justify-center shrink-0">
-                      B
-                    </span>
-                    <div>
-                      <div className="font-extrabold text-slate-900 text-xs sm:text-sm">
-                        Point B : Emplacement sur mon terrain
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        Cliquez sur la carte ou glissez le point B
-                      </div>
-                    </div>
-                  </div>
-                  {activeClickTarget === 'B' && (
-                    <span className="text-[10px] font-black uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-full">
-                      Actif
-                    </span>
-                  )}
-                </button>
-              </div>
-
-              {/* Carte Satellite Interactive */}
+              {/* Carte Satellite Interactive agrandie */}
               <div className="relative rounded-2xl overflow-hidden border-2 border-slate-300 shadow-inner">
                 <BessInteractiveMap
                   mapCenter={mapCenter}
@@ -1346,23 +1160,21 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   markerB={markerB}
                   setMarkerA={setMarkerA}
                   setMarkerB={setMarkerB}
-                  activeClickTarget={activeClickTarget}
-                  setActiveClickTarget={setActiveClickTarget}
                   enedisNetwork={enedisNetwork}
                   parcelData={parcelData}
                   onSelectEnedisTransformer={handleSelectEnedisTransformer}
                 />
 
-                {/* Jauge de distance en direct superposée */}
+                {/* Cadre unique en bas à gauche indiquant la distance et le commentaire */}
                 <div className="absolute bottom-3 left-3 right-3 sm:right-auto z-[400] bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl border border-white/15 flex items-center justify-between sm:justify-start gap-4">
                   <div className="text-xl sm:text-2xl font-black flex items-center gap-2">
                     <span>{distanceMeters !== null ? `${distanceMeters} m` : '—'}</span>
-                    {distanceMeters !== null && distanceMeters <= 30 && (
+                    {distanceMeters !== null && distanceMeters <= OPTIMAL_RADIUS_METERS && (
                       <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950">
                         ✓ Zone optimale
                       </span>
                     )}
-                    {distanceMeters !== null && distanceMeters > 30 && (
+                    {distanceMeters !== null && distanceMeters > OPTIMAL_RADIUS_METERS && (
                       <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950">
                         Étude spécifique
                       </span>
@@ -1371,29 +1183,8 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                 </div>
               </div>
 
-              {/* Boutons de navigation Étape 2 -> Étape 3 */}
-              <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (detectedPoste) {
-                      const nextA = { lat: detectedPoste.lat, lng: detectedPoste.lng };
-                      setMarkerA(nextA);
-                      setMarkerB(
-                        detectedPoste.suggestedTerrainPoint ||
-                          offsetCoordsMeters(nextA, -6, 6)
-                      );
-                      setMapCenter(nextA);
-                    } else if (searchedCoords) {
-                      analyzeLocationWithEnedisAndCadastre(searchedCoords.lat, searchedCoords.lng);
-                    }
-                  }}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs sm:text-sm font-bold flex items-center gap-2 cursor-pointer"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Recaler sur le transfo Enedis</span>
-                </button>
-
+              {/* Bouton de validation vers l'Étape 3 */}
+              <div className="flex items-center justify-end pt-1">
                 <button
                   type="button"
                   onClick={() => setStep(3)}
@@ -1500,7 +1291,7 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                   className="px-5 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm flex items-center gap-2 cursor-pointer"
                 >
                   <ArrowLeft className="w-4 h-4" />
-                  <span>Ajuster les marqueurs sur la carte</span>
+                  <span>Retour à la carte</span>
                 </button>
 
                 <button
@@ -1557,9 +1348,6 @@ export default function BessEligibilitySimulator({ isDirectMode = false }) {
                 <div className="max-w-2xl mx-auto space-y-6">
                   <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-200">
                     <div>
-                      <span className="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs uppercase tracking-wider mb-1">
-                        Étape 4 sur 4 • Validation de votre rente de 2 000 €/an
-                      </span>
                       <h3 className="text-2xl sm:text-3xl font-black text-slate-900">
                         Où pouvons-nous vous envoyer votre proposition de bail ?
                       </h3>
