@@ -90,7 +90,7 @@ const Footer = ({ setActiveTab }) => {
               </a>
 
               {/* Logo KORTEXIA */}
-              <div className="pt-2">
+              <div className="pt-2 flex flex-col items-start">
                 <a
                   href="https://kortexia-lead.fr/"
                   target="_blank"
@@ -100,7 +100,7 @@ const Footer = ({ setActiveTab }) => {
                 >
                   <img
                     src="/logo-kortexia.png"
-                    alt="Logo KORTEXIA"
+                    alt="Logo KORTEXIA - Génération de leads"
                     width="173"
                     height="49"
                     className="h-9 w-auto object-contain rounded-lg bg-white p-1.5 shadow-sm"
@@ -108,6 +108,7 @@ const Footer = ({ setActiveTab }) => {
                     decoding="async"
                   />
                 </a>
+                <span className="text-xs font-semibold text-gray-400 tracking-wide uppercase mt-1">Génération de leads</span>
               </div>
             </div>
           </motion.div>
