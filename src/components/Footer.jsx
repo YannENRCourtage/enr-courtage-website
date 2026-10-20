@@ -88,6 +88,27 @@ const Footer = ({ setActiveTab }) => {
                 <Lock className="h-3.5 w-3.5 text-amber-400" />
                 <span>Espace Investisseurs (M&A)</span>
               </a>
+
+              {/* Logo KORTEXIA */}
+              <div className="pt-2">
+                <a
+                  href="https://kortexia-lead.fr/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block hover:opacity-80 transition-all duration-300"
+                  aria-label="Accès KORTEXIA"
+                >
+                  <img
+                    src="/logo-kortexia.png"
+                    alt="Logo KORTEXIA"
+                    width="173"
+                    height="49"
+                    className="h-9 w-auto object-contain rounded-lg bg-white p-1.5 shadow-sm"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
