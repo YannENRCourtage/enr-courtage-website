@@ -43,6 +43,7 @@ import {
   ComposedChart,
 } from 'recharts';
 import { useInvestorStore } from '@/stores/useInvestorStore';
+import BessDailyCycleVisualizer from './BessDailyCycleVisualizer';
 import { investorService } from '@/services/investorService';
 import InvestorHeader from './InvestorHeader';
 import InvestorSidebar from './InvestorSidebar';
@@ -610,33 +611,10 @@ export default function PortfolioDetailPage() {
           {/* ============================================================= */}
           {/* SECTION 4b — CHRONOMÉTRIE DU DOUBLE CYCLE (BESS only)         */}
           {/* ============================================================= */}
-          {!isPv && teaser.cycleTimeline && teaser.cycleTimeline.length > 0 && (
+          {!isPv && (
             <section className="bg-white px-4 sm:px-12 py-8 border-b border-slate-200">
-              <div className="max-w-7xl mx-auto">
-                <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 shadow-2xs">
-                  <div className="text-[11px] text-blue-700 uppercase tracking-widest font-black mb-4">
-                    CHRONOMÉTRIE DU DOUBLE CYCLE QUOTIDIEN
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
-                    {teaser.cycleTimeline.map((phase, i) => (
-                      <div
-                        key={i}
-                        className={`rounded-2xl p-4 border ${
-                          phase.color === 'cyan'
-                            ? 'bg-blue-50/80 border-blue-200 text-blue-950'
-                            : 'bg-amber-50/80 border-amber-200 text-amber-950'
-                        }`}
-                      >
-                        <div className={`text-xs font-black ${
-                          phase.color === 'cyan' ? 'text-blue-800' : 'text-amber-800'
-                        }`}>
-                          {phase.label}
-                        </div>
-                        <div className="text-[11px] text-slate-600 font-mono font-bold mt-1.5">{phase.time}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+              <div className="max-w-7xl mx-auto space-y-4">
+                <BessDailyCycleVisualizer defaultHour={13} />
               </div>
             </section>
           )}
