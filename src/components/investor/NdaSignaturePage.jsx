@@ -87,7 +87,7 @@ export default function NdaSignaturePage() {
             Accord de Confidentialité Bilatéral (NDA)
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 max-w-2xl mx-auto">
-            L'accès aux données financières, techniques, foncières et à la Data Room des portefeuilles Hélios & Volta requiert la signature préalable de cet accord.
+            L'accès aux données financières, techniques, foncières et à la Data Room du portefeuille Hélios requiert la signature préalable de cet accord.
           </p>
         </div>
 

@@ -86,33 +86,19 @@ export default function OfferModal({
     submitOffer,
     modifyOffer,
     investorCounterOffer,
-    soldSites = { helios: [], volta: [] },
-    deletedSites = { helios: [], volta: [] },
-    customSites = { helios: [], volta: [] },
+    soldSites = { helios: [] },
+    deletedSites = { helios: [] },
+    customSites = { helios: [] },
   } = useInvestorStore();
 
   // Wizard Step: 1 = Périmètre & Projets, 2 = Tarif / Montant, 3 = Jalonnements
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Target Portfolio ID resolution
-  const resolvedPortfolioId = useMemo(() => {
-    if (portfolio && typeof portfolio === 'object' && portfolio.id) {
-      return String(portfolio.id).toLowerCase().includes('volta') ? 'volta' : 'helios';
-    }
-    if (typeof portfolio === 'string') {
-      return portfolio.toLowerCase().includes('volta') ? 'volta' : 'helios';
-    }
-    if (defaultPortfolioId) {
-      return String(defaultPortfolioId).toLowerCase().includes('volta') ? 'volta' : 'helios';
-    }
-    if (existingOffer?.portfolioId) {
-      return String(existingOffer.portfolioId).toLowerCase().includes('volta') ? 'volta' : 'helios';
-    }
-    return 'helios';
-  }, [portfolio, defaultPortfolioId, existingOffer]);
+  // Target Portfolio ID resolution (HÉLIOS only)
+  const resolvedPortfolioId = 'helios';
 
   // Form State
-  const [targetPortfolio, setTargetPortfolio] = useState(resolvedPortfolioId);
+  const [targetPortfolio, setTargetPortfolio] = useState('helios');
   const [offerType, setOfferType] = useState('total');
   const [localSelectedSiteIds, setLocalSelectedSiteIds] = useState([]);
   const [siteSearchTerm, setSiteSearchTerm] = useState('');
@@ -131,10 +117,9 @@ export default function OfferModal({
 
   // Retrieve base raw sites
   const heliosBaseSites = useMemo(() => PORTFOLIOS.find((p) => p.id === 'helios')?.sites || [], []);
-  const voltaBaseSites = useMemo(() => PORTFOLIOS.find((p) => p.id === 'volta')?.sites || [], []);
 
-  // Is modal locked to a specific portfolio (when opened from a portfolio page or with preset default)
-  const isLockedPortfolio = Boolean(portfolio || defaultPortfolioId);
+  // Is modal locked to a specific portfolio
+  const isLockedPortfolio = true;
 
   // Dynamic Portfolio stats calculations (accounting for deleted and sold sites)
   const heliosStats = useMemo(() => {
@@ -154,26 +139,7 @@ export default function OfferModal({
     };
   }, [heliosBaseSites, soldSites, deletedSites, customSites]);
 
-  const voltaStats = useMemo(() => {
-    const curSold = Array.isArray(soldSites?.volta) ? soldSites.volta : [];
-    const curDel = Array.isArray(deletedSites?.volta) ? deletedSites.volta : [];
-    const curCust = Array.isArray(customSites?.volta) ? customSites.volta : [];
-    const all = [...voltaBaseSites, ...curCust].filter((s) => !curDel.includes(s.id));
-    const active = all.filter((s) => !curSold.includes(s.id));
-    const totalKw = active.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
-    const powerStr = `${(totalKw / 1000).toFixed(2).replace('.', ',')} MW`;
-    return {
-      name: 'Portefeuille VOLTA',
-      count: active.length,
-      powerStr,
-      label: `${powerStr} sur ${active.length} station${active.length > 1 ? 's' : ''}`,
-      icon: '🔋',
-    };
-  }, [voltaBaseSites, soldSites, deletedSites, customSites]);
-
-  const targetStats = useMemo(() => {
-    return targetPortfolio === 'volta' ? voltaStats : heliosStats;
-  }, [targetPortfolio, voltaStats, heliosStats]);
+  const targetStats = heliosStats;
 
   // Initialize or reset ONLY when modal opens
   useEffect(() => {
@@ -201,12 +167,11 @@ export default function OfferModal({
         setAmountEur(targetAmt ? formatThousands(targetAmt) : '');
 
         // Initialisation du tarif au MW pour l'offre existante
-        const pKey = resolvedPortfolioId;
-        const pSites = pKey === 'volta' ? voltaBaseSites : heliosBaseSites;
+        const pSites = heliosBaseSites;
         const offSites = (existingOffer.offerType === 'partial' && Array.isArray(existingOffer.selectedSiteIds))
           ? pSites.filter((s) => existingOffer.selectedSiteIds.includes(s.id))
           : pSites;
-        const capKw = offSites.reduce((sum, s) => sum + (Number(s.kw) || Number(s.kwc) || (pKey === 'volta' ? 500 : 315)), 0);
+        const capKw = offSites.reduce((sum, s) => sum + (Number(s.kwc) || 315), 0);
         const capMw = capKw / 1000;
 
         if (targetAmt && capMw > 0) {
@@ -247,22 +212,16 @@ export default function OfferModal({
         setMilestones(INITIAL_STANDARD_MILESTONES.map((m) => ({ ...m, selected: false, comment: '' })));
       }
     }
-  }, [isOpen, resolvedPortfolioId, existingOffer, selectedSiteIds, voltaBaseSites, heliosBaseSites]);
+  }, [isOpen, existingOffer, selectedSiteIds, heliosBaseSites]);
 
-  // Compute available active sites for target portfolio (Strictly single-portfolio: HELIOS or VOLTA)
+  // Compute available active sites for HÉLIOS
   // Excludes both deletedSites and soldSites
   const availableSites = useMemo(() => {
-    let list = [];
-    const pKey = targetPortfolio === 'volta' ? 'volta' : 'helios';
-    const curSold = Array.isArray(soldSites?.[pKey]) ? soldSites[pKey] : [];
-    const curDel = Array.isArray(deletedSites?.[pKey]) ? deletedSites[pKey] : [];
-    const curCust = Array.isArray(customSites?.[pKey]) ? customSites[pKey] : [];
+    const curSold = Array.isArray(soldSites?.helios) ? soldSites.helios : [];
+    const curDel = Array.isArray(deletedSites?.helios) ? deletedSites.helios : [];
+    const curCust = Array.isArray(customSites?.helios) ? customSites.helios : [];
 
-    if (pKey === 'volta') {
-      list = [...voltaBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'volta', portfolioName: 'VOLTA (BESS)' }));
-    } else {
-      list = [...heliosBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
-    }
+    const list = [...heliosBaseSites, ...curCust].map((s) => ({ ...s, portfolioId: 'helios', portfolioName: 'HÉLIOS (PV)' }));
 
     return list.filter((site) => {
       if (!site || !site.id) return false;
@@ -270,7 +229,7 @@ export default function OfferModal({
       if (curSold.includes(site.id)) return false;
       return true;
     });
-  }, [targetPortfolio, heliosBaseSites, voltaBaseSites, deletedSites, soldSites, customSites]);
+  }, [heliosBaseSites, deletedSites, soldSites, customSites]);
 
   // Filter sites for search inside partial selection
   const filteredModalSites = useMemo(() => {
@@ -293,16 +252,16 @@ export default function OfferModal({
     return availableSites.filter((s) => localSelectedSiteIds.includes(s.id));
   }, [availableSites, offerType, localSelectedSiteIds]);
 
-  const unitLabel = targetPortfolio === 'volta' ? 'MW' : 'MWc';
+  const unitLabel = 'MWc';
 
   const totalSelectedMw = useMemo(() => {
     if (!selectedSitesList || selectedSitesList.length === 0) return 0;
     const totalKwOrKwc = selectedSitesList.reduce((sum, s) => {
-      const p = Number(s.kw) || Number(s.kwc) || (targetPortfolio === 'volta' ? 500 : 315);
+      const p = Number(s.kwc) || 315;
       return sum + p;
     }, 0);
     return totalKwOrKwc / 1000;
-  }, [selectedSitesList, targetPortfolio]);
+  }, [selectedSitesList]);
 
   const numericAmount = parseThousands(amountEur);
 
@@ -559,10 +518,7 @@ export default function OfferModal({
     setIsSubmitting(true);
 
     try {
-      const pName =
-        targetPortfolio === 'volta'
-          ? 'Portefeuille VOLTA (BESS)'
-          : 'Portefeuille HÉLIOS (PV)';
+      const pName = 'Portefeuille HÉLIOS (PV)';
 
       const numericRatePerMw = parseThousands(ratePerMw) || (totalSelectedMw > 0 ? Math.round(numericAmount / totalSelectedMw) : 0);
       const valStr = numericRatePerMw > 0 ? `${formatThousands(numericRatePerMw)} € / ${unitLabel}` : '';
@@ -811,72 +767,25 @@ export default function OfferModal({
                     Sélection du Portefeuille cible
                   </label>
 
-                  {/* If opened directly from a Portfolio page, show a single locked banner */}
-                  {isLockedPortfolio ? (
-                    <div className={`p-4 rounded-2xl border ${
-                      targetPortfolio === 'volta'
-                        ? 'bg-cyan-50/80 border-cyan-300 text-slate-900'
-                        : 'bg-amber-50/80 border-amber-300 text-slate-900'
-                    } shadow-xs`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{targetStats.icon}</span>
-                          <div>
-                            <div className={`text-[10px] font-black uppercase tracking-wider ${
-                              targetPortfolio === 'volta' ? 'text-cyan-800' : 'text-amber-800'
-                            }`}>
-                              Portefeuille Sélectionné
-                            </div>
-                            <div className="text-sm font-black text-slate-900">
-                              {targetStats.name} — {targetStats.label}
-                            </div>
+                  {/* Portefeuille cible HÉLIOS */}
+                  <div className="p-4 rounded-2xl border bg-amber-50/80 border-amber-300 text-slate-900 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{targetStats.icon}</span>
+                        <div>
+                          <div className="text-[10px] font-black uppercase tracking-wider text-amber-800">
+                            Portefeuille Disponible
+                          </div>
+                          <div className="text-sm font-black text-slate-900">
+                            {targetStats.name} — {targetStats.label}
                           </div>
                         </div>
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold ${
-                          targetPortfolio === 'volta'
-                            ? 'bg-cyan-100 text-cyan-800 border border-cyan-200'
-                            : 'bg-amber-100 text-amber-800 border border-amber-200'
-                        }`}>
-                          Actif
-                        </span>
                       </div>
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                        En Cession
+                      </span>
                     </div>
-                  ) : (
-                    /* Otherwise allow selecting between Hélios and Volta with live dynamic stats */
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <button
-                        type="button"
-                        onClick={() => setTargetPortfolio('helios')}
-                        className={`p-3.5 rounded-2xl border text-center font-semibold transition cursor-pointer ${
-                          targetPortfolio === 'helios'
-                            ? 'bg-amber-50 border-amber-400 text-amber-900 shadow-sm ring-2 ring-amber-400/30'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                      >
-                        <div className="text-xl mb-1">☀️</div>
-                        <div className="font-black text-sm">HÉLIOS (PV)</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                          {heliosStats.powerStr} • {heliosStats.count} sites
-                        </div>
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setTargetPortfolio('volta')}
-                        className={`p-3.5 rounded-2xl border text-center font-semibold transition cursor-pointer ${
-                          targetPortfolio === 'volta'
-                            ? 'bg-cyan-50 border-cyan-400 text-cyan-900 shadow-sm ring-2 ring-cyan-400/30'
-                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                        }`}
-                      >
-                        <div className="text-xl mb-1">🔋</div>
-                        <div className="font-black text-sm">VOLTA (BESS)</div>
-                        <div className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                          {voltaStats.powerStr} • {voltaStats.count} stations
-                        </div>
-                      </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
                 <div>
@@ -1051,10 +960,10 @@ export default function OfferModal({
                 {/* Récapitulatif du périmètre retenu et de la puissance */}
                 <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center space-x-2.5">
-                    <span className="text-xl">{targetPortfolio === 'volta' ? '🔋' : '☀️'}</span>
+                    <span className="text-xl">☀️</span>
                     <div>
                       <div className="text-xs font-bold text-slate-900">
-                        {targetPortfolio === 'volta' ? 'Portefeuille VOLTA (BESS)' : 'Portefeuille HÉLIOS (PV)'} — {sitesToIncludeCount} {targetPortfolio === 'volta' ? 'station(s)' : 'projet(s)'}
+                        Portefeuille HÉLIOS (PV) — {sitesToIncludeCount} projet(s)
                       </div>
                       <div className="text-[11px] text-slate-500">
                         {offerType === 'total' ? 'Intégralité du portefeuille' : 'Sélection sur-mesure de sites'}

@@ -86,6 +86,12 @@ export default function PortfolioDetailPage() {
 
   const portfolio = useMemo(() => investorService.getPortfolioById(id), [id]);
 
+  React.useEffect(() => {
+    if (!portfolio || id === 'volta') {
+      navigate('/investisseurs/dashboard', { replace: true });
+    }
+  }, [portfolio, id, navigate]);
+
   const [selectedSiteIds, setSelectedSiteIds] = useState([]);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isNdaModalOpen, setIsNdaModalOpen] = useState(false);

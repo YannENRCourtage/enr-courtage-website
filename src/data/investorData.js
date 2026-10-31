@@ -452,7 +452,7 @@ SAS, dont le siège social est situé au 2 rue du Puigmal, 66800 Saillagouse, im
 (Ci-après désignées collectivement les "Parties" et individuellement une "Partie")
 
 PRÉAMBULE
-Les Parties souhaitent entrer en discussions concernant l'acquisition potentielle par la Partie Réceptrice des droits de développement d'un ou plusieurs portefeuilles de projets photovoltaïques et de stockage d'énergie par batteries (BESS) développés par la Partie Divulgatrice (ci-après le "Projet").
+Les Parties souhaitent entrer en discussions concernant l'acquisition potentielle par la Partie Réceptrice des droits de développement d'un ou plusieurs portefeuilles de projets photovoltaïques développés par la Partie Divulgatrice (ci-après le "Projet").
 Dans ce cadre, la Partie Divulgatrice sera amenée à communiquer à la Partie Réceptrice des informations strictement confidentielles et stratégiques.
 
 ARTICLE 1 - DÉFINITION DES INFORMATIONS CONFIDENTIELLES
@@ -460,7 +460,7 @@ Sont considérées comme "Informations Confidentielles" toutes les informations,
 Cela inclut expressément, sans s'y limiter :
 - Les listes de projets, fichiers Excel, coordonnées géographiques, parcelles cadastrales et documents d'urbanisme (Déclarations Préalables, Permis de Construire).
 - Les accords fonciers, promesses de bail emphytéotique et conditions financières associées.
-- Les accords de distribution, de partenariat, et les structures de coûts (CAPEX/OPEX) négociés avec des tiers (notamment les fournisseurs de batteries et constructeurs).
+- Les accords de distribution, de partenariat, et les structures de coûts (CAPEX/OPEX) négociés avec des tiers (notamment les constructeurs et équipementiers).
 - L'existence même des discussions entre les Parties.
 
 ARTICLE 2 - OBLIGATIONS DE LA PARTIE RÉCEPTRICE
@@ -834,65 +834,6 @@ const PV_SITES = [
 ];
 
 // ============================================================================
-// PROJETS BESS - Portefeuille VOLTA (29 Stations dans 26 Projets / 14.50 MW / 30.28 MWh)
-// ============================================================================
-const BESS_SITES = [
-  { id: 1, name: 'BRANTÔME EN PÉRIGORD', dept: '24', cp: '24310', client: 'LATOURNERIE', bailleur: 'LATOURNERIE Franck', posteSource: 'BRANTOME', distHta: '3.5 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '4.9 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.328888, lng: 0.651648 },
-  { id: 2, name: 'ROCHECHOUART', dept: '87', cp: '87600', client: 'PAILLOT', bailleur: 'PAILLOT Noël', posteSource: 'PLAUD', distHta: '6.6 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.847811, lng: 0.852996 },
-  { id: 3, name: 'MONGAUSY', dept: '32', cp: '32220', client: 'BATIOT', bailleur: 'BATIOT Olivier', posteSource: 'SEMEZIES', distHta: '5.9 km', quotePart: '64,11 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 43.495370, lng: 0.834241 },
-  { id: 4, name: 'MEUZAC', dept: '87', cp: '87380', client: 'DOMERGUE', bailleur: 'DOMERGUE Daniel', posteSource: 'LE REPAIRE', distHta: '8.6 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.566247, lng: 1.397687 },
-  { id: 5, name: 'SAINT-JULIEN-LE-VENDÔMOIS', dept: '19', cp: '19210', client: 'CUBERTAFON', bailleur: 'CUBERTAFON René', posteSource: 'LUBERSAC', distHta: '8.3 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.460274, lng: 1.298166 },
-  { id: 6, name: 'PORT-DE-LANNE', dept: '40', cp: '40300', client: 'PLANTE', bailleur: 'PLANTE Jean-Pierre', posteSource: 'GUICHE', distHta: '4.9 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 43.558940, lng: -1.199501 },
-  { id: 7, name: 'GRISOLLES', dept: '82', cp: '82170', client: 'PRAVIE', bailleur: 'PRAVIE Clémence', posteSource: 'LESQUIVE 2', distHta: '2.3 km', quotePart: '64,11 k€', ebitda: '56 215 €', payback: '4.5 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 43.896232, lng: 1.295833 },
-  { id: 8, name: 'CONCÈZE', dept: '19', cp: '19350', client: 'DAVID', bailleur: 'DAVID Louis', posteSource: 'LUBERSAC', distHta: '8.6 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.351329, lng: 1.314195 },
-  { id: 9, name: 'SAINT-ÉLOY-LES-TUILERIES', dept: '19', cp: '19210', client: 'GRANGER', bailleur: 'GRANGER Bruno', posteSource: 'LUBERSAC', distHta: '10.5 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.442533, lng: 1.267710 },
-  {
-    id: 10,
-    name: 'CASTEBRUNET (Cluster 4 stations BESS)',
-    dept: '82',
-    cp: '82300',
-    ville: 'CAUSSADE • MONTEILS • SAINT-CIRQ',
-    address: 'Caussade 1 & 2 • Monteils • Saint-Cirq (82300)',
-    client: 'CASTEBRUNET',
-    bailleur: 'CASTEBRUNET (1, 2, 3 & 4)',
-    posteSource: 'LERE (HTA 20 kV)',
-    distHta: '5.3 km moy.',
-    quotePart: '64,11 k€',
-    ebitda: '220 212 €',
-    payback: '5.1 ans',
-    kw: 2000,
-    kwh: 4176,
-    type: 'Batterie SA 16×125kW (4 stations)',
-    statut: 'URBA OK',
-    lat: 44.1325,
-    lng: 1.5695,
-    stationsCount: 4,
-    subSites: [
-      { id: '10-1', name: 'CASTEBRUNET 1', ville: 'CAUSSADE', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '5.7 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 1', statut: 'URBA OK' },
-      { id: '10-2', name: 'CASTEBRUNET 2', ville: 'CAUSSADE', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '5.7 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 2', statut: 'URBA OK' },
-      { id: '10-3', name: 'CASTEBRUNET 3', ville: 'MONTEILS', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '3.6 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 3', statut: 'URBA OK' },
-      { id: '10-4', name: 'CASTEBRUNET 4', ville: 'SAINT-CIRQ', cp: '82300', dept: '82', kw: 500, kwh: 1044, posteSource: 'LERE', distHta: '6.2 km', quotePart: '64,11 k€', ebitda: '55 053 €', bailleur: 'CASTEBRUNET 4', statut: 'URBA OK' },
-    ],
-  },
-  { id: 11, name: 'MONESTIER', dept: '24', cp: '24240', client: 'BERTRANDIE', bailleur: 'BERTRANDIE Sébastien', posteSource: 'STE-FOY-LA-GRANDE', distHta: '9 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.773569, lng: 0.300107 },
-  { id: 12, name: 'LEYRAT', dept: '23', cp: '23600', client: 'GIOT', bailleur: 'GIOT Aurélien', posteSource: 'BOUSSAC', distHta: '5.9 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.360561, lng: 2.308566 },
-  { id: 13, name: 'DURAS', dept: '47', cp: '47120', client: 'ARBOIN', bailleur: 'ARBOIN Régis', posteSource: 'LA SAUVETAT', distHta: '11.8 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.659495, lng: 0.222735 },
-  { id: 14, name: 'SAINT-SAUD-LACOUSSIÈRE', dept: '24', cp: '24470', client: 'MISSAULT', bailleur: 'MISSAULT Cécile', posteSource: 'NONTRON', distHta: '13.7 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.558769, lng: 0.904488 },
-  { id: 15, name: 'MOURIOUX-VIEILLEVILLE', dept: '23', cp: '23210', client: 'MEILLAT 1', bailleur: 'MEILLAT Patrick', posteSource: 'CHATELUS 2', distHta: '5.4 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.082964, lng: 1.638518 },
-  { id: 16, name: 'VAL-DE-LIVENNE', dept: '33', cp: '33860', client: 'SOULIGNAC', bailleur: 'SOULIGNAC Gérard', posteSource: 'ETAULIERS', distHta: '7.7 km', quotePart: '64,11 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.264357, lng: -0.550408 },
-  { id: 17, name: 'PAYZAC', dept: '24', cp: '24270', client: 'CHAUFFAILLE', bailleur: 'CHAUFFAILLE Alain', posteSource: 'LUBERSAC', distHta: '6.9 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.436230, lng: 1.288720 },
-  { id: 18, name: 'JUILLAC', dept: '33', cp: '33890', client: 'CIROLI', bailleur: 'CIROLI Vincent', posteSource: 'AURIOLLES', distHta: '7.9 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.809547, lng: -0.037304 },
-  { id: 19, name: 'MANSAN', dept: '65', cp: '65140', client: 'BOURDETTES', bailleur: 'BOURDETTES Pierre', posteSource: 'VIC-EN-BIGORRE', distHta: '10.8 km', quotePart: '42,71 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 43.345738, lng: 0.194628 },
-  { id: 20, name: 'SAINT EUTROPE DE BORN', dept: '47', cp: '47210', client: 'FRECHEVILLE', bailleur: 'FRECHEVILLE Mathieu', posteSource: 'CANCON', distHta: '7.2 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.588327, lng: 0.665431 },
-  { id: 21, name: 'BEYCHAC-ET-CAILLAU', dept: '33', cp: '33750', client: 'DOUMENS', bailleur: 'DOUMENS Jacques', posteSource: 'POMPIGNAC', distHta: '4.0 km', quotePart: '64,11 k€', ebitda: '56 215 €', payback: '4.9 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.870054, lng: -0.397698 },
-  { id: 22, name: 'VENDAYS-MONTALIVET', dept: '33', cp: '33930', client: 'HOUSSAIT-YOUNG', bailleur: 'HOUSSAIT-YOUNG Paul', posteSource: 'ST-VIVIEN', distHta: '9.9 km', quotePart: '64,11 k€', ebitda: '55 053 €', payback: '5.2 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.338321, lng: -1.071016 },
-  { id: 23, name: 'SAINT-MARTIN-DE-FRESSENGEAS', dept: '24', cp: '24800', client: 'MISSAULT', bailleur: 'MISSAULT Cécile', posteSource: 'THIVIERS', distHta: '6.7 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.438589, lng: 0.815692 },
-  { id: 24, name: 'MOURIOUX-VIEILLEVILLE', dept: '23', cp: '23210', client: 'MEILLAT 2', bailleur: 'MEILLAT Patrick', posteSource: 'CHATELUS 2', distHta: '5.4 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 46.081523, lng: 1.633909 },
-  { id: 25, name: 'ARGENCES EN AUBRAC', dept: '12', cp: '12420', client: 'DOMERGUE', bailleur: 'DOMERGUE Daniel', posteSource: 'RUEYRES', distHta: '5.9 km', quotePart: '42,71 k€', ebitda: '57 271 €', payback: '5.0 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 44.807528, lng: 2.790446 },
-  { id: 26, name: 'SAINT-ÉLOY-LES-TUILERIES', dept: '19', cp: '19210', client: 'COMBY', bailleur: 'COMBY Fabrice', posteSource: 'LUBERSAC', distHta: '8.3 km', quotePart: '42,71 k€', ebitda: '56 215 €', payback: '5.1 ans', kw: 500, kwh: 1044, type: 'Batterie SA 4×125kW', statut: 'URBA OK', lat: 45.452887, lng: 1.284563 },
-];
-
-// ============================================================================
 // PORTEFEUILLES
 // ============================================================================
 export const PORTFOLIOS = [
@@ -1087,194 +1028,6 @@ export const PORTFOLIOS = [
       ],
     },
   },
-  {
-    id: 'volta',
-    name: 'Portefeuille Consolidé BESS VOLTA',
-    type: 'BESS',
-    typeBadge: 'Stockage Réseau BESS Stand-Alone',
-    seller: 'ENR COURTAGE (100%)',
-    color: 'cyan',
-    icon: 'Battery',
-    description: 'Portefeuille homogène de 26 projets (29 stations) de stockage par batteries (BESS) Stand-alone de 500 kW / 1 044 kWh (14.50 MW / 30.28 MWh), détenu en totalité par ENR COURTAGE.',
-    descriptionShort: 'Audit certifié du 06 octobre 2026 : 29 stations raccordées HTA en Nouvelle-Aquitaine et Occitanie, optimisées 2 cycles/jour (FCR, SPOT, Capacité RTE) sous régime TURPE 7 CRE 2025-227.',
-    kpis: {
-      totalPower: '14.50 MW',
-      totalPowerLabel: 'Volume Consolidé',
-      totalPowerSub: '29 unités / 30.28 MWh',
-      sites: 29,
-      sitesLabel: 'stations standardisées (26 projets)',
-      sitesStatus: '500 kW / 1 044 kWh',
-      metric1: { label: 'Capacité Énergie', value: '30.28 MWh', sub: '29 stations de 1 044 kWh' },
-      metric2: { label: 'CAPEX Clé en main', value: '8.40 M€', sub: '~290 k€ / site raccordé' },
-    },
-    highlights: [
-      {
-        icon: 'Lock',
-        title: 'Foncier Sécurisé sur 20 Ans (PdB Notariées)',
-        text: '29 Promesses de Bail (PdB) signées sur 20 ans avec un loyer annuel maîtrisé de 750 €/brique de 125 kW, soit 3 000 €/an par site de 500 kW.',
-      },
-      {
-        icon: 'Tags',
-        title: 'Accord Fournisseur Négocié à 35 k€ / 125 kW',
-        text: 'Accord de fourniture exclusif permettant d\'équiper un site de 500 kW pour 140 000 € HT en batteries CESC Mercury. CAPEX clé en main total de 8.40 M€ (~290 k€/site).',
-      },
-      {
-        icon: 'TrendingUp',
-        title: 'Le Pivot Réglementaire TURPE 7 (CRE 2025-227)',
-        text: 'Exonération de plus de 80% des composantes TURPE pour le stockage, générant un gain consolidé annuel audité de +411 307 €/an net pour les 29 stations.',
-      },
-    ],
-    advantages: [],
-    economicMatrix: [
-      { param: 'Nombre de projets', value: '26 projets (29 stations)', justification: '29 unités de 500 kW / 1 044 kWh' },
-      { param: 'Puissance / Capacité', value: '14,50 MW / 30,28 MWh', justification: 'Dimensionnements validés (2 cycles/jour)' },
-      { param: 'Chiffre d\'Affaires An 1', value: '2,70 M€ (2 701 952 €/an)', justification: 'Value Stacking FCR + SPOT + Capacité' },
-      { param: 'EBITDA Net An 1', value: '1,62 M€ / an', justification: 'Marge opérationnelle ~60% après OPEX et loyers' },
-      { param: 'CAPEX Clé en main', value: '8,40 M€ (~290 k€ / site)', justification: 'Accord fabricant batteries 35 k€ / 125 kW' },
-      { param: 'Financement Senior', value: 'Dette 12 ans à 4.30% (Annuité 910 519 €/an)', justification: 'DSCR moyen portefeuille : 1.91x' },
-    ],
-    sites: BESS_SITES,
-    footerNote: 'Fiches projets, PdB, devis et analyses réseau sous NDA',
-    dataRoom: {
-      categories: [
-        { name: 'Juridique', icon: 'Scale', files: [
-          { name: 'Promesse de Bail BESS — BATIOT (32220 MONGAUSY) [24 pages]', type: 'PDF', size: '623 Ko', fileUrl: '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf' },
-          { name: 'Promesse de Bail BESS — CASTEBRUNET (82300 CAUSSADE) [25 pages]', type: 'PDF', size: '906 Ko', fileUrl: '/documents/dataroom/Nouvelle_promesse_de_bail_batterie_CASTEBRUNET_82300_CAUSSADE.pdf' },
-          { name: 'Promesse de Bail BESS — COMBY (19210 SAINT-ÉLOY) [24 pages]', type: 'PDF', size: '840 Ko', fileUrl: '/documents/dataroom/Nouvelle_Promesse_de_bail_batteries_COMBY_19210_SAINT_ELOY_LES_TUILLERIES.pdf' },
-          { name: 'Promesses de Bail (PdB) — 29 stations BESS', type: 'PDF', size: '18.7 Mo', fileUrl: '/documents/dataroom/Nouvelle_Promesse_de_bail_batterie_BATIOT_32220_MONGAUSY.pdf' },
-          { name: 'Accord fournisseur batteries CESC (35 k€ / 125 kW)', type: 'PDF', size: '3.2 Mo' },
-        ]},
-        { name: 'Technique', icon: 'Wrench', files: [
-          { name: 'Fiches synoptiques — 29 stations BESS', type: 'PDF', size: '22.4 Mo' },
-          { name: 'Spécifications batteries 125 kW', type: 'PDF', size: '4.8 Mo' },
-          { name: 'Plans dalle & implantation type', type: 'PDF', size: '6.1 Mo' },
-        ]},
-        { name: 'Financier', icon: 'Calculator', files: [
-          { name: 'Matrice économique BESS consolidée (14.50 MW)', type: 'XLSX', size: '38 Ko', fileUrl: '/documents/dataroom/Matrice_economique_BESS_consolidee_VOLTA.xlsx' },
-          { name: 'Hypothèses revenus FCR/aFRR/MdC', type: 'XLSX', size: '38 Ko', fileUrl: '/documents/dataroom/Hypotheses_revenus_FCR_aFRR_MdC_VOLTA.xlsx' },
-        ]},
-        { name: 'Réseau', icon: 'Network', files: [
-          { name: 'Cartographie transformateurs sol identifiés', type: 'PDF', size: '14.5 Mo' },
-          { name: 'Analyse capacités raccordement Enedis', type: 'PDF', size: '8.2 Mo' },
-        ]},
-      ],
-    },
-    teaserData: {
-      financialKpis: [
-        { label: 'TRI PROJET / EQUITY', value: '20,5% / 37,4%', sub: 'TRI Projet 20,5% • Equity 37,4%', detail: 'SRI Bancabilité élevée (DSCR 1.91x)', color: 'cyan' },
-        { label: 'PAYBACK NET', value: '5,0 ans', sub: 'Sur Fonds Propres : 2,2 ans', detail: 'Retour rapide sur investissement', color: 'emerald' },
-        { label: 'EBITDA NET AN 1', value: '1,62 M€', sub: 'Consolidé 29 stations', detail: '1 624 851 € après loyer & maintenance', color: 'white' },
-        { label: 'CA BRUT AN 1', value: '2,70 M€', sub: '2 701 952 € sur 2 cycles/jour', detail: 'FCR + SPOT + Capacité RTE', color: 'cyan' },
-        { label: 'GAIN TURPE 7', value: '+411 307 €', sub: 'Délibéré CRE 2025-227', detail: 'Exonération >80% soutirage/injection', color: 'emerald' },
-        { label: 'CAPEX TOTAL', value: '8,40 M€', sub: '~290 k€ / site raccordé', detail: 'Clé en main 29 stations BESS', color: 'white' },
-      ],
-      pillars: [
-        {
-          icon: 'MapPin',
-          title: 'Défrichage Foncier & Urbanisme Sans Appel',
-          items: [
-            '29 stations sécurisées sur dalle béton standardisée 19.84 m²',
-            'Déclarations Préalables (DP < 20 m²) déposées / obtenues',
-            'Promesses de Bail 20 ans notariées signées (3 000 € HT/an/site)',
-            'Dossiers de raccordement Enedis prêts au dépôt',
-          ],
-          bottomStat: { label: 'Emprise au sol compacte < 20 m²', value: true },
-        },
-        {
-          icon: 'TrendingUp',
-          title: 'Le Pivot Réglementaire TURPE 7 (CRE 2025-227)',
-          items: [
-            'Suppression de la double taxation sur soutirage / injection',
-            'Exonération de >80% des composantes TURPE pour le stockage',
-            'Gain consolidé annuel audité de +411 307 € pour les 29 stations',
-            'Cadre réglementaire stabilisé par la CRE sur la période tarifaire',
-          ],
-          bottomStat: { label: '+411 307 € de gain réseau annuel net', value: true },
-        },
-        {
-          icon: 'Zap',
-          title: 'Monétisation Multi-Marchés (2 Cycles/Jour)',
-          items: [
-            '1. Réserve Primaire 50 Hz (FCR) & PICASSO (aFRR) : 1 584 144 € / an (58.7%)',
-            '2. Arbitrage Spot EPEX (Day-Ahead & Intraday) : 884 065 € / an (31.8%)',
-            '3. Marché de Capacité RTE (Pointes Hiver PP2) : 253 750 € / an (9.5%)',
-          ],
-          bottomStat: { label: 'Chiffre d\'affaires annuel An 1 : 2,70 M€', value: true },
-        },
-        {
-          icon: 'Repeat',
-          title: 'Standardisation Industrielle Réplicable',
-          items: [
-            'Architecture modulaire éprouvée : 116 armoires CESC Mercury 261 (4 / site)',
-            'Dalle normalisée 6.20 × 5.20m clé en main',
-            'Accord fournisseur batteries négocié à 35 k€ / 125 kW',
-            'Contrat d\'agrégation et maintenance centralisé à distance',
-          ],
-          bottomStat: { label: '100% approvisionnement fournitures clé en main', value: true },
-        },
-      ],
-      revenueArchitecture: {
-        total: '2,70 M€',
-        totalLabel: 'CA brut annuel consolidé (2 701 952 €)',
-        cycleLabel: '2 cycles quotidiens (FCR + SPOT + Capacité)',
-        sources: [
-          { name: '1. Réserve Primaire 50 Hz (FCR) & PICASSO (aFRR Réglage Secondaire)', value: '1 584 144 €', pct: '58.7%', color: '#06b6d4' },
-          { name: '2. Arbitrage Spot EPEX (Day-Ahead & Intraday — 2 Cycles / Jour)', value: '884 065 €', pct: '31.8%', color: '#22d3ee' },
-          { name: '3. Marché de Capacité RTE (Garantie de Puissance Pointes Hiver PP2)', value: '253 750 €', pct: '9.5%', color: '#67e8f9' },
-        ],
-      },
-      stationSpecs: [
-        { label: 'Configuration technique', value: '116 armoires extérieures réparties sur 29 sites (CESC Mercury 261)' },
-        { label: 'Puissance nominale & Capacité', value: '14.50 MW / 30.28 MWh consolidés (29 unités de 500 kW / 1 044 kWh)' },
-        { label: 'Emprise au sol & Génie Civil', value: '19.84 m² sur dalle béton (< 20 m² Déclaration Préalable DP)' },
-        { label: 'Clôture & Sécurité', value: 'Grillage rigide thermo-laqué H 2.00m avec portillon sécurisé' },
-        { label: 'Rendement Round-Trip (AC-AC)', value: '88.0% certifié en cycles nominaux' },
-        { label: 'Refroidissement & Sécurité incendie', value: 'Liquide HVAC + Aérosol NFPA 855 asservi' },
-        { label: 'Raccordement Réseau Enedis', value: 'HTA 20 000 V (Option HTA1 Courte Utilisation)' },
-        { label: 'Sécurisation foncière', value: 'Promesses de bail 20 ans signées (3 000 € HT/an/site)' },
-        { label: 'Bancabilité & Dette', value: 'Dette 12 ans @ 4.30% (Annuité 910 519 €/an • DSCR 1.91x)' },
-        { label: 'Payback projet portefeuille', value: '5.0 ans (Fonds propres : 2.2 ans)' },
-      ],
-      cycleTimeline: [
-        { label: 'Charge Cycle 1 (Creux Nuit)', time: '01:00 → 05:00', color: 'cyan' },
-        { label: 'Décharge Cycle 1 (Pointe Matin)', time: '07:30 → 09:30', color: 'amber' },
-        { label: 'Charge Cycle 2 (Creux Solaire)', time: '12:00 → 15:00', color: 'cyan' },
-        { label: 'Décharge Cycle 2 (Pointe Soir)', time: '18:30 → 21:00', color: 'amber' },
-      ],
-      turpeComparison: {
-        rows: [
-          { component: 'Composante Soutirage brut (CS)', oldRegime: 'Même si sur 10,7% de l\'énergie chargée', newRegime: 'Exonération totale sur 80% et spécial', gain: '+226 776 € / an' },
-          { component: 'Composante Prix de Puissance (CS Pss)', oldRegime: 'Tarification longue durée analogie', newRegime: 'HTN+Courrier du batteur (15,20 €/MWh)', gain: '+56 437 € / an' },
-          { component: 'Pertes Réseau Non Récupérables', oldRegime: 'Double taxation si même maille régional', newRegime: 'Strictement limitée au 1,5% des pertes', gain: '+83 913 € / an' },
-          { component: 'Composante Gestion & Comptage (CG/CC)', oldRegime: 'Forfaits conventionnels', newRegime: 'Comptage + quadrants inté-relevé directe (0,14 €/an)', gain: '+44 181 € / an' },
-        ],
-        total: { label: 'TOTAL FACTURE ANNUELLE RÉSEAU', oldTotal: '652 434 € / an', newTotal: '241 127 € / an (-63%)', gain: '+411 307 € / an' },
-        consolidatedGain: 'Gain Consolidé : +411 307 € / an net',
-      },
-      financialProjection: [
-        { year: 2026, ca: 2701952, opex: 1077101, ebitda: 1624851, dette: 910519, cashflow: 714332, cumul: 714332 },
-        { year: 2027, ca: 2736163, opex: 1092247, ebitda: 1643916, dette: 910519, cashflow: 733397, cumul: 1447729 },
-        { year: 2028, ca: 2771086, opex: 1107990, ebitda: 1663096, dette: 910519, cashflow: 752577, cumul: 2200306 },
-        { year: 2029, ca: 2806737, opex: 1124336, ebitda: 1682401, dette: 910519, cashflow: 771882, cumul: 2972188 },
-        { year: 2030, ca: 2843207, opex: 1141380, ebitda: 1701827, dette: 910519, cashflow: 791308, cumul: 3763496 },
-        { year: 2031, ca: 2880427, opex: 1159023, ebitda: 1721404, dette: 910519, cashflow: 810885, cumul: 4574381 },
-        { year: 2032, ca: 2918438, opex: 1177411, ebitda: 1741027, dette: 910519, cashflow: 830508, cumul: 5404889 },
-        { year: 2033, ca: 2957257, opex: 1196551, ebitda: 1760706, dette: 910519, cashflow: 850187, cumul: 6255076 },
-        { year: 2034, ca: 2996931, opex: 1216478, ebitda: 1780453, dette: 910519, cashflow: 869934, cumul: 7125010 },
-        { year: 2035, ca: 3037504, opex: 1237215, ebitda: 1800289, dette: 910519, cashflow: 889770, cumul: 8014780 },
-        { year: 2036, ca: 3078724, opex: 1243552, ebitda: 1835172, dette: 910519, cashflow: 924653, cumul: 8939433 },
-        { year: 2037, ca: 3120930, opex: 1262171, ebitda: 1858759, dette: 910519, cashflow: 948240, cumul: 9887673 },
-        { year: 2038, ca: 3164046, opex: 1281179, ebitda: 1882867, dette: 0, cashflow: 1882867, cumul: 11770540 },
-        { year: 2039, ca: 3208092, opex: 1300575, ebitda: 1907517, dette: 0, cashflow: 1907517, cumul: 13678057 },
-        { year: 2040, ca: 3253095, opex: 1320364, ebitda: 1932731, dette: 0, cashflow: 1932731, cumul: 15610788 },
-      ],
-      cumulativeKpis: [
-        { label: 'CA CUMULÉ 15 ANS', value: '44,48 M€', sub: 'Hypothèse 2 cycles/jour indexés' },
-        { label: 'EBITDA CUMULÉ 15 ANS', value: '26,67 M€', sub: 'Marge opérationnelle ~60%' },
-        { label: 'TRÉSORERIE CUMULÉE 15 ANS', value: '15,61 M€', sub: 'Post-dette senior 12 ans (4.30%)' },
-      ],
-    },
-  },
 ];
 
 // ============================================================================
@@ -1342,7 +1095,7 @@ export function generateExclusiveMandateText({
   rcsCity = '[Ville]',
   representativeName = '[Nom Représentant]',
   representativeRole = '[Fonction]',
-  portfolioName = 'Portefeuille HÉLIOS & VOLTA',
+  portfolioName = 'Portefeuille HÉLIOS',
   offerType = 'total',
   selectedSitesCount = 25,
   amountEur = 2500000,
@@ -1465,7 +1218,7 @@ ${legalForm}, dont le siège social est situé au ${headOffice}, immatriculée a
 (Ci-après désignées collectivement les "Parties" et individuellement une "Partie")
 
 PRÉAMBULE
-Les Parties souhaitent entrer en discussions concernant l'acquisition potentielle par la Partie Réceptrice des droits de développement d'un ou plusieurs portefeuilles de projets photovoltaïques et de stockage d'énergie par batteries (BESS) développés par la Partie Divulgatrice (ci-après le "Projet").
+Les Parties souhaitent entrer en discussions concernant l'acquisition potentielle par la Partie Réceptrice des droits de développement d'un ou plusieurs portefeuilles de projets photovoltaïques développés par la Partie Divulgatrice (ci-après le "Projet").
 Dans ce cadre, la Partie Divulgatrice sera amenée à communiquer à la Partie Réceptrice des informations strictement confidentielles et stratégiques.
 
 ARTICLE 1 - DÉFINITION DES INFORMATIONS CONFIDENTIELLES
@@ -1473,7 +1226,7 @@ Sont considérées comme "Informations Confidentielles" toutes les informations,
 Cela inclut expressément, sans s'y limiter :
 - Les listes de projets, fichiers Excel, coordonnées géographiques, parcelles cadastrales et documents d'urbanisme (Déclarations Préalables, Permis de Construire).
 - Les accords fonciers, promesses de bail emphytéotique et conditions financières associées.
-- Les accords de distribution, de partenariat, et les structures de coûts (CAPEX/OPEX) négociés avec des tiers (notamment les fournisseurs de batteries et constructeurs).
+- Les accords de distribution, de partenariat, et les structures de coûts (CAPEX/OPEX) négociés avec des tiers (notamment les constructeurs et équipementiers).
 - L'existence même des discussions entre les Parties.
 
 ARTICLE 2 - OBLIGATIONS DE LA PARTIE RÉCEPTRICE

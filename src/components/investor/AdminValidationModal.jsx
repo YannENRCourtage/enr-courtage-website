@@ -353,9 +353,8 @@ Voici vos identifiants d'accès à l'Espace Investisseurs d'ENR Courtage :
 - Identifiant (e-mail) : ${user.email}
 - Mot de passe confidentiel : ${user.password}
 
-Vous pouvez dès à présent vous connecter pour accéder aux Teasers complets et aux Data Rooms des portefeuilles :
+Vous pouvez dès à présent vous connecter pour accéder au Teaser complet et à la Data Room du portefeuille :
 - Portefeuille HÉLIOS (PV 6.24 MWc / 15 centrales solaires)
-- Portefeuille VOLTA (BESS 14.50 MW / 30.28 MWh / 29 stations)
 
 Bien cordialement,
 Yann BARBERIS — ENR COURTAGE
@@ -1094,9 +1093,9 @@ y.barberis@enr-courtage.fr`;
               </div>
 
               <div className="bg-gray-800/60 p-3.5 rounded-xl border border-gray-700">
-                <span className="text-[10px] text-gray-400 uppercase font-bold">Périmètres sollicités</span>
+                <span className="text-[10px] text-gray-400 uppercase font-bold">Périmètre sollicité</span>
                 <div className="text-sm font-bold text-white mt-1">
-                  PV (HÉLIOS), BESS (VOLTA) & Combiné
+                  PV (HÉLIOS)
                 </div>
                 <span className="text-[10px] text-amber-400">Ventilation par jalons de closing</span>
               </div>
@@ -1139,16 +1138,6 @@ y.barberis@enr-courtage.fr`;
                   }`}
                 >
                   ☀️ HÉLIOS
-                </button>
-                <button
-                  onClick={() => setOfferPortfolioFilter('volta')}
-                  className={`px-3 py-1 rounded-lg transition ${
-                    offerPortfolioFilter === 'volta'
-                      ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  🔋 VOLTA
                 </button>
                 <button
                   onClick={() => setOfferPortfolioFilter('both')}
@@ -1519,36 +1508,15 @@ y.barberis@enr-courtage.fr`;
               <div className="text-xs">
                 <span className="text-gray-400 font-semibold block">Portefeuille cible pour la mise à disposition :</span>
                 <span className="text-sm font-bold text-white">
-                  {selectedDataRoomPortfolio === 'helios' ? '☀️ Projet HÉLIOS (Photovoltaïque)' : '🔋 Projet VOLTA (Batteries BESS)'}
+                  ☀️ Projet HÉLIOS (Photovoltaïque)
                 </span>
               </div>
 
               <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setSelectedDataRoomPortfolio('helios')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                    selectedDataRoomPortfolio === 'helios'
-                      ? 'bg-amber-500 text-gray-950 shadow-md shadow-amber-500/20'
-                      : 'bg-gray-800 text-gray-300 hover:text-white border border-gray-700'
-                  }`}
-                >
+                <div className="px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 text-gray-950 shadow-md shadow-amber-500/20 flex items-center gap-1.5">
                   <Sun className="w-4 h-4" />
                   <span>Portefeuille HÉLIOS</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedDataRoomPortfolio('volta')}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                    selectedDataRoomPortfolio === 'volta'
-                      ? 'bg-cyan-500 text-gray-950 shadow-md shadow-cyan-500/20'
-                      : 'bg-gray-800 text-gray-300 hover:text-white border border-gray-700'
-                  }`}
-                >
-                  <Battery className="w-4 h-4" />
-                  <span>Portefeuille VOLTA</span>
-                </button>
+                </div>
               </div>
             </div>
 

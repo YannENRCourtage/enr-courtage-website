@@ -60,22 +60,6 @@ export default function InvestorSidebar({
     };
   }, [soldSites, deletedSites, customSites]);
 
-  const voltaStats = useMemo(() => {
-    const p = PORTFOLIOS.find((x) => x.id === 'volta');
-    const curSold = soldSites?.volta || [];
-    const curDel = deletedSites?.volta || [];
-    const curCust = customSites?.volta || [];
-    const all = [...(p?.sites || []), ...curCust].filter((s) => !curDel.includes(s.id));
-    const active = all.filter((s) => !curSold.includes(s.id));
-    const totalKw = active.reduce((sum, s) => sum + (Number(s.kw) || 500), 0);
-    const powerStr = `${(totalKw / 1000).toFixed(2).replace('.', ',')} MW`;
-    return {
-      count: active.length,
-      powerStr,
-      label: `${active.length} site${active.length > 1 ? 's' : ''} 500 kW`,
-    };
-  }, [soldSites, deletedSites, customSites]);
-
   const myOffers = offers.filter(
     (o) =>
       isAdmin ||
@@ -246,7 +230,7 @@ export default function InvestorSidebar({
                     <FolderLock className="w-4 h-4 text-cyan-400 shrink-0" />
                     <span>Gestion Data Room</span>
                   </div>
-                  <span className="text-[9px] text-cyan-400 font-mono">2 portef.</span>
+                  <span className="text-[9px] text-cyan-400 font-mono">1 portef.</span>
                 </button>
 
                 {/* 4. Gestion Utilisateurs */}
@@ -299,7 +283,7 @@ export default function InvestorSidebar({
                 Portefeuilles en Vente
               </span>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-300 border border-gray-700">
-                2 actifs
+                1 actif
               </span>
             </div>
 
@@ -327,32 +311,6 @@ export default function InvestorSidebar({
                 <div className="text-[10px] text-gray-400 pl-8 mt-1 flex items-center justify-between">
                   <span>{heliosStats.label}</span>
                   <span className="text-amber-400 font-mono text-[9px]">Consulter →</span>
-                </div>
-              </button>
-
-              {/* Portefeuille VOLTA (BESS) */}
-              <button
-                onClick={() => handleNavigate('/investisseurs/portefeuille/volta')}
-                className={`w-full text-left p-2.5 rounded-xl transition border cursor-pointer ${
-                  activePage === 'volta'
-                    ? 'bg-cyan-500/15 border-cyan-500/50 text-white shadow-sm ring-1 ring-cyan-500/30'
-                    : 'bg-gray-900/40 border-gray-800/80 text-gray-300 hover:bg-gray-800/60 hover:text-white hover:border-gray-700'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-6 h-6 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0">
-                      <Battery className="w-3.5 h-3.5" />
-                    </div>
-                    <span className="text-xs font-bold text-white">VOLTA (BESS)</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">
-                    {voltaStats.powerStr}
-                  </span>
-                </div>
-                <div className="text-[10px] text-gray-400 pl-8 mt-1 flex items-center justify-between">
-                  <span>{voltaStats.label}</span>
-                  <span className="text-cyan-400 font-mono text-[9px]">Consulter →</span>
                 </div>
               </button>
             </div>

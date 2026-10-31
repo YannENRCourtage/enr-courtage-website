@@ -61,7 +61,7 @@ export async function generateFicheProjetPdf(site = {}, portfolio = {}) {
     color: darkNavy,
   });
 
-  page.drawText(`Portefeuille : ${isPv ? 'HÉLIOS (Photovoltaïque Toitures)' : 'VOLTA (Stockage Réseau BESS)'}`, {
+  page.drawText('Portefeuille : HÉLIOS (Photovoltaïque Toitures)', {
     x: 48,
     y: height - 72,
     size: 9,

@@ -339,11 +339,11 @@ export const useInvestorStore = create(
           investorCompany: 'ENEE',
           investorEmail: 'contact@enr-courtage.fr',
           investorPhone: '07 63 54 21 33',
-          portfolioId: 'both',
-          portfolioName: 'Portefeuilles Combinés (HÉLIOS PV + VOLTA BESS)',
+          portfolioId: 'helios',
+          portfolioName: 'Portefeuille HÉLIOS (PV 6.24 MWc)',
           offerType: 'total',
           selectedSiteIds: [],
-          selectedSitesCount: 56,
+          selectedSitesCount: 15,
           amountEur: 3850000,
           valuationPerMw: '163 760 €/MW',
           milestones: [
@@ -1760,9 +1760,8 @@ Vos identifiants personnels de connexion sont les suivants :
 
 Vous pouvez dès à présent vous connecter pour accéder à l'ensemble des éléments transactionnels :
 - Portefeuille HÉLIOS (PV 6.24 MWc / 15 centrales solaires en toitures et hangars)
-- Portefeuille VOLTA (BESS 14.50 MW / 30.28 MWh / 29 stations BESS)
 - Teasers d'investissement et matrices économiques détaillées
-- Data Room virtuelle complète (fiches synoptiques, devis travaux, PdB, accord fournisseur BESS)
+- Data Room virtuelle complète (fiches synoptiques, devis travaux, PdB)
 - Formulaire de proposition d'achat indicatif (global ou partiel selon jalonnements)
 
 Nous restons à votre entière disposition pour tout échange complémentaire.
@@ -2720,15 +2719,6 @@ y.barberis@enr-courtage.fr
                 fileSize: '12.5 Mo',
                 downloadedAt: '2026-09-17T10:15:00.000Z',
               },
-              {
-                id: 'DL-SEED-02',
-                portfolioId: 'volta',
-                portfolioName: 'PROJET VOLTA',
-                fileName: 'Fiches synoptiques — 29 stations BESS',
-                fileType: 'PDF',
-                fileSize: '22.4 Mo',
-                downloadedAt: '2026-09-17T11:42:00.000Z',
-              },
             ],
             'contact@enr-courtage.fr': [
               {
@@ -2739,15 +2729,6 @@ y.barberis@enr-courtage.fr
                 fileType: 'XLSX',
                 fileSize: '1.8 Mo',
                 downloadedAt: '2026-09-16T16:20:00.000Z',
-              },
-              {
-                id: 'DL-SEED-04',
-                portfolioId: 'volta',
-                portfolioName: 'PROJET VOLTA',
-                fileName: 'Accord fournisseur batteries',
-                fileType: 'PDF',
-                fileSize: '3.2 Mo',
-                downloadedAt: '2026-09-17T09:05:00.000Z',
               },
             ],
           };

@@ -242,7 +242,7 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
   // Moving doc modal state
   const [movingDoc, setMovingDoc] = useState(null);
-  const [targetMovePortfolio, setTargetMovePortfolio] = useState('volta');
+  const [targetMovePortfolio, setTargetMovePortfolio] = useState('helios');
   const [targetMoveCategory, setTargetMoveCategory] = useState('Juridique');
 
   // Assign doc modal state
@@ -1762,14 +1762,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   >
                     HÉLIOS (PV)
                   </button>
-                  <button
-                    onClick={() => setOfferPortfolioFilter('volta')}
-                    className={`px-3 py-1 rounded-lg transition ${
-                      offerPortfolioFilter === 'volta' ? 'bg-cyan-100 text-cyan-900 font-black' : 'text-slate-600'
-                    }`}
-                  >
-                    VOLTA (BESS)
-                  </button>
                 </div>
               </div>
 
@@ -2063,28 +2055,9 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
 
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
-                    <button
-                      onClick={() => {
-                        setSelectedDataRoomPortfolio('helios');
-                        if (dataRoomSubTab === 'reseau') setDataRoomSubTab('urbanisme');
-                      }}
-                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                        selectedDataRoomPortfolio === 'helios' ? 'bg-amber-500 text-slate-950 font-black shadow-xs' : 'text-slate-600'
-                      }`}
-                    >
-                      ☀️ HÉLIOS (PV)
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedDataRoomPortfolio('volta');
-                        if (dataRoomSubTab === 'urbanisme') setDataRoomSubTab('reseau');
-                      }}
-                      className={`px-3 py-1.5 rounded-lg transition cursor-pointer ${
-                        selectedDataRoomPortfolio === 'volta' ? 'bg-cyan-600 text-white font-black shadow-xs' : 'text-slate-600'
-                      }`}
-                    >
-                      🔋 VOLTA (BESS)
-                    </button>
+                    <div className="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-black shadow-xs flex items-center gap-1.5">
+                      <span>☀️ HÉLIOS (PV)</span>
+                    </div>
                   </div>
 
                   <button
@@ -2795,22 +2768,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                   portfolio={portfolios.find((p) => p.id === 'helios')}
                 />
               </div>
-
-              {/* Portefeuille VOLTA (BESS) */}
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-cyan-500"></span>
-                    <h3 className="text-base font-black text-[#0b192c]">
-                      Portefeuille VOLTA — Stockage Réseau Stand-Alone (BESS 14,50 MW)
-                    </h3>
-                  </div>
-                </div>
-                <TeaserSitesTable
-                  sites={portfolios.find((p) => p.id === 'volta')?.sites || []}
-                  portfolio={portfolios.find((p) => p.id === 'volta')}
-                />
-              </div>
             </div>
           )}
         </div>
@@ -2973,43 +2930,9 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
             <form onSubmit={handleUploadDoc} className="space-y-4 text-xs">
               <div>
                 <label className="block font-bold text-slate-700 mb-1">Portefeuille de destination *</label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50/50 cursor-pointer text-center">
-                    <input
-                      type="radio"
-                      name="destPort"
-                      disabled={isUploadingToFirebase}
-                      checked={selectedDataRoomPortfolio === 'helios'}
-                      onChange={() => setSelectedDataRoomPortfolio('helios')}
-                      className="sr-only"
-                    />
-                    <span className="font-bold text-slate-900 block text-xs">Projet HÉLIOS</span>
-                    <span className="text-[10px] text-slate-400">PV 6.24 MWc</span>
-                  </label>
-                  <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-cyan-500 has-[:checked]:bg-cyan-50/50 cursor-pointer text-center">
-                    <input
-                      type="radio"
-                      name="destPort"
-                      disabled={isUploadingToFirebase}
-                      checked={selectedDataRoomPortfolio === 'volta'}
-                      onChange={() => setSelectedDataRoomPortfolio('volta')}
-                      className="sr-only"
-                    />
-                    <span className="font-bold text-slate-900 block text-xs">Projet VOLTA</span>
-                    <span className="text-[10px] text-slate-400">BESS 14,5 MW</span>
-                  </label>
-                  <label className="p-3 rounded-xl border-2 border-slate-200 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50 cursor-pointer text-center">
-                    <input
-                      type="radio"
-                      name="destPort"
-                      disabled={isUploadingToFirebase}
-                      checked={selectedDataRoomPortfolio === 'both' || selectedDataRoomPortfolio === 'global'}
-                      onChange={() => setSelectedDataRoomPortfolio('both')}
-                      className="sr-only"
-                    />
-                    <span className="font-bold text-slate-900 block text-xs">Global</span>
-                    <span className="text-[10px] text-slate-400">HÉLIOS & VOLTA</span>
-                  </label>
+                <div className="p-3 rounded-xl border-2 border-amber-500 bg-amber-50/50 text-center">
+                  <span className="font-bold text-slate-900 block text-xs">Projet HÉLIOS</span>
+                  <span className="text-[10px] text-slate-500">PV 6.24 MWc</span>
                 </div>
               </div>
 
@@ -3542,8 +3465,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                         className="px-2.5 py-1 rounded-lg bg-white border border-slate-300 text-xs font-bold text-slate-800"
                       >
                         <option value="helios">☀️ HÉLIOS (PV)</option>
-                        <option value="volta">🔋 VOLTA (BESS)</option>
-                        <option value="both">🌐 Les deux (Global)</option>
                       </select>
                       <button
                         type="button"
@@ -3649,8 +3570,6 @@ export default function AdminConsoleView({ initialTab = 'users', initialChatEmai
                             className="px-2 py-1 rounded-lg bg-slate-50 border border-slate-300 font-bold text-[11px] text-slate-800"
                           >
                             <option value="helios">☀️ HÉLIOS</option>
-                            <option value="volta">🔋 VOLTA</option>
-                            <option value="both">🌐 Global</option>
                           </select>
 
                           {/* Catégorie */}

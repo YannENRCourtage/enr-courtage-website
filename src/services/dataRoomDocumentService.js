@@ -339,7 +339,7 @@ export async function downloadOrViewDoc(file, portfolio, action = 'download', tr
       const wb = XLSX.utils.book_new();
       const rows = [
         ['ENR COURTAGE — DATA ROOM M&A'],
-        ['Portefeuille', portfolio?.name || portfolio?.id || 'HÉLIOS / VOLTA'],
+        ['Portefeuille', portfolio?.name || portfolio?.id || 'HÉLIOS'],
         ['Document', file?.name || 'Matrice Économique M&A'],
         ['Date de consultation', new Date().toLocaleDateString('fr-FR')],
         ['Investisseur accrédité', currentInvestor?.name || 'Partenaire'],
@@ -684,40 +684,6 @@ export function getDocumentsForSite(site, portfolioId, state) {
         }
       }
     });
-  }
-
-  // Pour VOLTA (BESS) : rattacher également la fiche technique et le certificat de garantie Mercury 261
-  if (pId === 'volta') {
-    if (!siteDocs.some((d) => (d.name || '').toLowerCase().includes('garantie') && (d.name || '').toLowerCase().includes('mercury'))) {
-      siteDocs.push({
-        id: `garantie-mercury-${site.id}`,
-        name: 'Certificat de garantie CESC Mercury 261',
-        fileName: 'Certificat_de_garantie_CESC_Mercury_261.pdf',
-        fileUrl: '/documents/dataroom/Certificat_de_garantie_CESC_Mercury_261.pdf',
-        category: 'Technique',
-        type: 'PDF',
-        size: '491 Ko',
-        isFiche: false,
-        isBail: false,
-        site,
-        portfolioId: 'volta',
-      });
-    }
-    if (!siteDocs.some((d) => (d.name || '').toLowerCase().includes('fiche') && (d.name || '').toLowerCase().includes('mercury'))) {
-      siteDocs.push({
-        id: `fiche-tech-mercury-${site.id}`,
-        name: 'Fiche technique CESC Mercury 261',
-        fileName: 'Fiche_technique_CESC_Mercury_261.pdf',
-        fileUrl: '/documents/dataroom/Fiche_technique_CESC_Mercury_261.pdf',
-        category: 'Technique',
-        type: 'PDF',
-        size: '270 Ko',
-        isFiche: false,
-        isBail: false,
-        site,
-        portfolioId: 'volta',
-      });
-    }
   }
 
   return siteDocs;

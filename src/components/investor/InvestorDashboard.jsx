@@ -155,7 +155,6 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
 
   const portfolios = useMemo(() => investorService.getPortfolios(), []);
   const heliosPortfolio = portfolios.find((p) => p.id === 'helios');
-  const voltaPortfolio = portfolios.find((p) => p.id === 'volta');
 
   // Filter offers for the current investor (or all if admin viewing)
   const myOffers = useMemo(() => {
@@ -359,7 +358,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                 }`}
               >
                 <Layers className="w-4 h-4" />
-                <span>Portefeuilles en Cession (2)</span>
+                <span>Portefeuilles en Cession ({portfolios.length})</span>
               </button>
 
               <button
@@ -391,7 +390,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
             {/* SOUS-VUE A : PORTEFEUILLES DISPONIBLES EN CESSION             */}
             {/* ============================================================= */}
             {investorSubTab === 'portfolios' && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 max-w-2xl gap-6">
                 {/* CARTE PORTEFEUILLE 1 : PROJET HÉLIOS (SOLAIRE PV 6,24 MWc) */}
                 <div className="bg-white border border-slate-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
                   <div>
@@ -474,93 +473,6 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     </button>
                   </div>
                 </div>
-
-                {/* CARTE PORTEFEUILLE 2 : PROJET VOLTA (BATTERIES BESS 14,50 MW) */}
-                <div className="bg-white border-2 border-cyan-200 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between hover:border-cyan-400 transition-all relative">
-                  <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full text-[11px] font-extrabold uppercase tracking-wider bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-xs">
-                    Optimisé Délibération CRE 2025-227
-                  </div>
-
-                  <div>
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="px-2.5 py-1 rounded-md text-xs font-black uppercase tracking-wider bg-cyan-50 text-cyan-800 border border-cyan-200">
-                        Stockage BESS Stand-Alone HTA
-                      </span>
-                      <span className="text-xs font-bold text-slate-500">
-                        Vendeur : <strong className="text-slate-800">ENR COURTAGE (100%)</strong>
-                      </span>
-                    </div>
-
-                    <h3 className="text-2xl font-black text-[#0b192c] tracking-tight">
-                      Portefeuille VOLTA — 14.50 MW / 30.28 MWh
-                    </h3>
-                    <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
-                      29 stations BESS (26 projets). Monétisation à 2 cycles/jour (FCR, aFRR PICASSO, SPOT EPEX, Capacité RTE).
-                    </p>
-
-                    {/* Métriques Volta */}
-                    <div className="grid grid-cols-3 gap-2.5 my-5">
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
-                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          Unités BESS
-                        </span>
-                        <span className="text-lg font-black text-[#0b192c]">29 stations</span>
-                        <span className="text-[10px] font-bold text-cyan-700 block">500 kW / 1 044 kWh</span>
-                      </div>
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
-                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          EBITDA An 1
-                        </span>
-                        <span className="text-lg font-black text-emerald-700">1.62 M€</span>
-                        <span className="text-[10px] font-bold text-slate-400 block">Marge &gt; 60%</span>
-                      </div>
-                      <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-center">
-                        <span className="text-[10px] uppercase tracking-wider font-extrabold text-slate-500 block">
-                          TRI & Payback
-                        </span>
-                        <span className="text-lg font-black text-blue-700">37.4 %</span>
-                        <span className="text-[10px] font-bold text-purple-700 block">Payback : 5.0 ans (Equity 2.2 ans)</span>
-                      </div>
-                    </div>
-
-                    {/* Atouts */}
-                    <ul className="text-xs space-y-2 text-slate-600 font-medium border-t border-slate-100 pt-4">
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>Gain TURPE 7 délibéré CRE 2025-227 (+411 307 €/an d'économie réseau consolidée)</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>Raccordements HTA 20 kV Enedis qualifiés (postes sources ODRE répertoriés)</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-cyan-600 shrink-0" />
-                        <span>CAPEX clé en main 8,40 M€ (~290 k€/site) • DSCR moyen portefeuille 1.91x</span>
-                      </li>
-                    </ul>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
-                    <button
-                      onClick={() => navigate('/investisseurs/portefeuille/volta')}
-                      className="px-4 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-800 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
-                    >
-                      <span>Accès Portefeuille</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setOfferModalTargetPortfolio('volta');
-                        setIsOfferModalOpen(true);
-                      }}
-                      className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-black text-xs shadow-xs transition-all flex items-center gap-1.5 cursor-pointer active:scale-95"
-                    >
-                      <Coins className="w-4 h-4" />
-                      <span>Faire une offre sur Volta</span>
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -581,7 +493,7 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="px-2.5 py-0.5 rounded-md text-xs font-black uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300">
-                            {activeOffer.portfolioName || 'Offre Combinée (HÉLIOS + VOLTA)'}
+                            {activeOffer.portfolioName || 'Portefeuille HÉLIOS'}
                           </span>
                           <span className="text-xs text-slate-400 font-mono">Réf: {activeOffer.id}</span>
                           {activeOffer.status === 'counter_by_admin' && (
@@ -782,15 +694,15 @@ export default function InvestorDashboard({ defaultToAdmin = false }) {
                     <div className="max-w-md mx-auto">
                       <h3 className="text-base font-black text-[#0b192c]">Aucune offre déposée pour le moment</h3>
                       <p className="text-xs text-slate-500 mt-1">
-                        Vous n'avez pas encore formulé d'offre d'acquisition sur les portefeuilles HÉLIOS ou VOLTA. Vous pouvez déposer une offre globale ou partielle avec échéancier de paiement personnalisé.
+                        Vous n'avez pas encore formulé d'offre d'acquisition sur le portefeuille HÉLIOS. Vous pouvez déposer une offre globale ou partielle avec échéancier de paiement personnalisé.
                       </p>
                     </div>
                     <button
                       onClick={() => {
-                        setOfferModalTargetPortfolio('both');
+                        setOfferModalTargetPortfolio('helios');
                         setIsOfferModalOpen(true);
                       }}
-                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-bold text-xs shadow-md shadow-cyan-600/20 transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
+                      className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs shadow-md transition-all inline-flex items-center gap-2 cursor-pointer active:scale-95"
                     >
                       <Coins className="w-4 h-4" />
                       <span>+ Déposer une Offre d'Acquisition</span>
